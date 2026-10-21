@@ -123,10 +123,6 @@ if (isset(\App\modules\email\services\MailMessage::getInstance()->ref_FILES['upl
 	$file_name = \App\modules\email\services\MailMessage::getInstance()->stripslashes_gpc(trim(\App\modules\email\services\MailMessage::getInstance()->ref_FILES['uploadedfile']['name']));
 	$file_size = \App\modules\email\services\MailMessage::getInstance()->stripslashes_gpc(trim(\App\modules\email\services\MailMessage::getInstance()->ref_FILES['uploadedfile']['size']));
 	$file_type = \App\modules\email\services\MailMessage::getInstance()->stripslashes_gpc(trim(\App\modules\email\services\MailMessage::getInstance()->ref_FILES['uploadedfile']['type']));
-	if ($fup_debug > 1)
-	{
-		echo 'ref_FILE dump: ' . htmlspecialchars(serialize(\App\modules\email\services\MailMessage::getInstance()->ref_FILES)) . '<br />';
-	}
 }
 
 // sometimes PHP is very clue-less about MIME types, and gives NO file_type
@@ -209,12 +205,6 @@ while (false !== ($file = $dh->dir()))
 			$real_file_size .= 'b';
 		}
 
-		if ($fup_debug > 2)
-		{
-			echo 'FILE contents DUMP: <pre>';
-			print_r(file("{$uploaddir}/{$real_file}"));
-			echo '</pre>';
-		}
 		// for every file, fill the file list template with it
 		$GLOBALS['phpgw']->template->set_var('ckbox_delete_name', 'delete[]');
 		$GLOBALS['phpgw']->template->set_var('ckbox_delete_value', substr($file, 0, -5));
@@ -271,10 +261,6 @@ if (count($file_info) > 0)
 }
 $debuginfo .= '<br />';
 //print_debug('$debuginfo', $debuginfo);
-if ($fup_debug > 1)
-{
-	echo '$debuginfo: ' . $debuginfo . '<br />';
-}
 // end DEBUG INFO
 
 $charset = lang('charset');

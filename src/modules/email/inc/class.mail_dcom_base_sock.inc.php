@@ -114,7 +114,6 @@ $GLOBALS['month_array'] = array(
 	'dec' => 12
 );
 
-
 /**
  * Part of mail Data Communications class
  *
@@ -138,7 +137,6 @@ class mailbox_status
 	var $quota = '';
 	var $quota_all = '';
 }
-
 
 /**
  * Get information about the current mailbox
@@ -186,7 +184,6 @@ class mailbox_msg_info
 	 */
 	var $Size = '';
 }
-
 
 /**
  * Read the structure of a particular message
@@ -288,7 +285,6 @@ class msg_params
 	}
 }
 
-
 /**
  * Attribute Parameter
  *
@@ -299,7 +295,6 @@ class att_parameter
 	var $attribute;
 	var $value;
 }
-
 
 /**
  * Address
@@ -313,7 +308,6 @@ class address
 	var $host;
 	var $adl;
 }
-
 
 /**
  * Read an overview of the information in the headers of the given message.
@@ -381,7 +375,6 @@ class msg_overview
 	var $draft;
 }
 
-
 /**
  * Read the header of the message
  *
@@ -431,7 +424,6 @@ class hdr_info_envelope
 	var $size = '';
 	var $Size = '';
 }
-
 
 /**
  * After mail_dcom_base is loaded, a top level class mail_dcom is created 
@@ -488,15 +480,13 @@ class mail_dcom_base extends phpgwapi_network
 
 	// DEBUG FLAG: Debug Levels are 0=none, 1=basic, 2=detailed, 3=more detailed
 	var $debug_dcom = 0;
-	//var $debug_dcom=1;
-	//var $debug_dcom=2;
+
 	var $serverSettings;
 	var $phpgwapi_common;
 	var $userSettings;
 	var $errorset;
 	var $tempfile;
 	var $att_files_dir;
-	
 
 	function __construct()
 	{
@@ -841,10 +831,6 @@ class mail_dcom_base extends phpgwapi_network
 			{
 				//$new_list[$key] = $this->convert_date($value);
 				$new_list[$key] = $this->make_udate($value);
-				if ($this->debug_dcom >= 2)
-				{
-					echo 'base_sock: convert_date_array: field_list: "' . $new_list[$key] . '" was "' . $value . '"<br />';
-				}
 			}
 		}
 		return $new_list;

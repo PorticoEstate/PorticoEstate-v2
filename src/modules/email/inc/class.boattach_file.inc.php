@@ -27,8 +27,6 @@ class boattach_file
 		'attach'	=> True
 	);
 	var $debug = 0;
-	//var $debug = 3;
-	//var $debug = 4;
 
 	var $msg_bootstrap;
 	var $var_holder = '##NOTHING##';
@@ -45,7 +43,6 @@ class boattach_file
 	// but if it is NOT a reference ("##NOTHING##") then the 
 	// template class we will use only to store variables for us.
 	//var $ref_TPL='##NOTHING##';
-
 
 	/*!
 		@function boattach_file *CONSTRUCTOR*
@@ -76,7 +73,6 @@ class boattach_file
 		//return;
 	}
 
-
 	/*!
 		@function set_ref_var_holder UNDEDER DEVELOPMENT
 		@abstract set the thing to hold the values the "attach" function produces, i.e. the UI Template. IT MUST BE AVAILABLE 
@@ -96,16 +92,6 @@ class boattach_file
 	function set_ref_var_holder(&$ref_template)
 	{
 		// NOT IMPLEMENTED YET
-		if ($this->debug > 1)
-		{
-			echo 'emai1.boattach_file.set_ref_var_holder (' . __LINE__ . '): param (a reference) is gettype ' . serialize(gettype($ref_template)) . ' and param\'s class name is [' . get_class($ref_template) . '] <br />';
-		}
-		if ($this->debug > 2)
-		{
-			echo 'emai1.boattach_file.set_ref_var_holder (' . __LINE__ . '): param (a reference) DUMP<pre>';
-			print_r($ref_template);
-			echo '</pre>';
-		}
 		if ((isset($ref_template))
 			&& ($this->var_holder != '##NOTHING')
 		)
@@ -127,22 +113,10 @@ class boattach_file
 	 */
 	function fill_control_data_gpc()
 	{
-		if ($this->debug > 2)
-		{
-			echo 'emai.boattach_file.attach (' . __LINE__ . '): $GLOBALS[phpgw]->msg->ref_POST data DUMP<pre>';
-			print_r(\App\modules\email\services\MailMessage::getInstance()->ref_POST);
-			echo '</pre>';
-		}
 
 		$this->control_data['action'] = htmlentities(Sanitizer::get_var('action', 'string', 'POST'));
 		$this->control_data['delete'] = Sanitizer::get_var('delete', 'array', 'POST');
 
-		if ($this->debug > 2)
-		{
-			echo 'emai.boattach_file.attach (' . __LINE__ . '): $this->control_data DUMP<pre>';
-			print_r($this->control_data);
-			echo '</pre>';
-		}
 	}
 
 	/**
@@ -157,21 +131,9 @@ class boattach_file
 	 */
 	function fill_file_data_gpc()
 	{
-		if ($this->debug > 0)
-		{
-			echo 'ENTERING emai.boattach_file.fill_file_data_gpc (' . __LINE__ . ') <br />';
-		}
 
 		if (isset($_FILES['uploadedfile']))
 		{
-			if ($this->debug > 1)
-			{
-				echo 'emai.boattach_file.fill_file_data_gpc (' . __LINE__ . '): using msg->ref_FILES to fill $this->file_data[] <br />';
-			}
-			if ($this->debug > 2)
-			{
-				echo 'emai.boattach_file.fill_file_data_gpc (' . __LINE__ . '): msg->ref_FILE dump: ' . htmlspecialchars(serialize($_FILES)) . '<br />';
-			}
 			$this->file_data['file_tmp_name'] = \App\modules\email\services\MailMessage::getInstance()->stripslashes_gpc(trim($_FILES['uploadedfile']['tmp_name']));
 			$this->file_data['file_name'] = \App\modules\email\services\MailMessage::getInstance()->stripslashes_gpc(trim($_FILES['uploadedfile']['name']));
 			$this->file_data['file_size'] = \App\modules\email\services\MailMessage::getInstance()->stripslashes_gpc(trim($_FILES['uploadedfile']['size']));
@@ -187,18 +149,7 @@ class boattach_file
 			$this->file_data['file_type'] = $mime_type_default;
 		}
 
-		if ($this->debug > 2)
-		{
-			echo 'emai.boattach_file.fill_file_data_gpc (' . __LINE__ . '): filled $this->file_data DUMP<pre>';
-			print_r($this->file_data);
-			echo '</pre>';
-		}
-		if ($this->debug > 0)
-		{
-			echo 'LEAVING emai.boattach_file.fill_file_data_gpc (' . __LINE__ . ')<br />';
-		}
 	}
-
 
 	/*!
 		@function attach
@@ -210,16 +161,6 @@ class boattach_file
 		*/
 	function attach($api_mode = False)
 	{
-		if ($this->debug > 0)
-		{
-			echo 'ENTERING emai.boattach_file.attach' . '<br />';
-		}
-		if ($this->debug > 2)
-		{
-			echo 'emai.boattach_file.attach: initial $GLOBALS[phpgw_info][flags] DUMP<pre>';
-			print_r($GLOBALS['phpgw_info']['flags']);
-			echo '</pre>';
-		}
 
 		// TRICK1: use the GLOBAL template established in the UI file (called first)
 		// TRICK2: if for some reason we were not called by the UIATTACH_FILE
@@ -285,10 +226,6 @@ class boattach_file
 			|| $this->control_data['action'] == htmlentities(lang('Delete'))
 		)
 		{
-			if ($this->debug > 1)
-			{
-				echo 'boattach_file.attach (' . __LINE__ . '): <b>REQUEST TO DELETE</b> detected $this->control_data[action] (' . $this->control_data['action'] . ') == lang(Delete) (' . lang('Delete') . '): <br />';
-			}
 			// sometimes $this->control_data[delete][] seems to have multiple entries for the same filename
 			for ($i = 0; $i < count($this->control_data['delete']); $i++)
 			{
@@ -296,34 +233,18 @@ class boattach_file
 				$full_fname_metafile = "{$this->uploaddir}/{$this->control_data['delete'][$i]}.info";
 				if (file_exists($full_fname_attachment))
 				{
-					if ($this->debug > 1)
-					{
-						echo 'boattach_file.attach (' . __LINE__ . '): loop[' . $i . '] deleting file: [' . $full_fname_attachment . ']: <br />';
-					}
 					unlink($full_fname_attachment);
 				}
 				else
 				{
-					if ($this->debug > 1)
-					{
-						echo 'boattach_file.attach (' . __LINE__ . '): loop[' . $i . '] request to deleting NON-EXISTING file: [' . $full_fname_attachment . ']: <br />';
-					}
 				}
 				// and the associated ".info" metafile
 				if (file_exists($full_fname_metafile))
 				{
-					if ($this->debug > 1)
-					{
-						echo 'boattach_file.attach (' . __LINE__ . '): loop[' . $i . '] deleting related meta file: [' . $full_fname_metafile . ']: <br />';
-					}
 					unlink($full_fname_metafile);
 				}
 				else
 				{
-					if ($this->debug > 1)
-					{
-						echo 'boattach_file.attach (' . __LINE__ . '): loop[' . $i . '] request to deleting NON-EXISTING file: [' . $full_fname_metafile . ']: <br />';
-					}
 				}
 			}
 		}
@@ -389,12 +310,6 @@ class boattach_file
 					$real_file_size .= 'b';
 				}
 
-				if ($fup_debug > 2)
-				{
-					echo 'FILE contents DUMP: <pre>';
-					print_r(file("{$this->uploaddir}/{$real_file}"));
-					echo '</pre>';
-				}
 				$attachments[] = [
 					'id' => $real_file,
 					'name' => trim((string) ($file_info[1] ?? 'attachment')),
@@ -464,10 +379,6 @@ class boattach_file
 		}
 		$debuginfo .= '<br />';
 		//print_debug('$debuginfo', $debuginfo);
-		if ($this->debug > 1)
-		{
-			echo '$debuginfo: ' . $debuginfo . '<br />';
-		}
 		// end DEBUG INFO
 
 		// where to submit the form to
@@ -524,9 +435,5 @@ class boattach_file
 			(new \phpgwapi_common())->phpgw_exit(False);
 			*/
 
-		if ($this->debug > 0)
-		{
-			echo 'LEAVING emai.boattach_file.attach' . '<br />';
-		}
 	}
 }

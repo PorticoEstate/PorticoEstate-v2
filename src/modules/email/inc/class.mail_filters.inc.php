@@ -11,8 +11,6 @@
 	* @internal Based on AngleMail http://www.anglemail.org/
 	*/
 
-
-
 	/**
 	* Filters
 	*
@@ -25,9 +23,9 @@
 		var $finished_mlist = '';
 		var $submit_mlist_to_class_form = '';
 		var $submit_flag = '';
-		//var $debug_level = 0;
+
 		var $debug_level = 1;
-		//var $debug_level = 2;
+
 		var $sieve_to_imap_fields=array();
 		var $result_set = Array();
 		var $result_set_mlist = Array();
@@ -66,7 +64,6 @@
 			// do we have data
 			if  (!isset($_POST[$this->submit_flag]))
 			{
-				if ($this->debug_level > 0) { echo 'mail_filters: distill_filter_args: NO data submitted<br />'."\r\n"; }
 				return Array();
 			}
 			
@@ -78,7 +75,6 @@
 				{
 					// put the raw data dor this particular filter into a local var
 					$filter_X = $_POST[$key];
-					if ($this->debug_level > 0) { echo 'mail_filters: distill_filter_args: filter_X dump <strong><pre>'; print_r($filter_X); echo "</pre></strong>\r\n"; }
 					
 					// prepare to fill your structured array
 					$this_idx = count($this->filters);
@@ -119,11 +115,9 @@
 							{
 								// now we grab the index value from the key string
 								$match_this_idx = (int)$filter_X_key[6];
-								if ($this->debug_level > 1) { echo 'mail_filters: distill_filter_args: match_this_idx grabbed value: ['.$match_this_idx.']<br />'; }
 								// grab "key" that comes after that match_this_idx we just got
 								// remember "substr" uses 1 as the first letter in a string, not 0, AND starts returning the letter AFTER the specified location
 								$match_grabbed_key = substr($filter_X_key, 8);
-								if ($this->debug_level > 1) { echo 'mail_filters: distill_filter_args: match_grabbed_key value: ['.$match_grabbed_key.']<br />'; }
 								$this->filters[$this_idx]['matches'][$match_this_idx][$match_grabbed_key] = $filter_X[$filter_X_key];
 							}
 				/*!
@@ -145,18 +139,15 @@
 							{
 								// now we grab the index value from the key string
 								$action_this_idx = (int)$filter_X_key[7];
-								if ($this->debug_level > 1) { echo 'mail_filters: distill_filter_args: action_this_idx grabbed value: ['.$action_this_idx.']<br />'; }
 								// grab "key" that comes after that match_this_idx we just got
 								// remember "substr" uses 1 as the first letter in a string, not 0, AND starts returning the letter AFTER the specified location
 								$action_grabbed_key = substr($filter_X_key, 9);
-								if ($this->debug_level > 1) { echo 'mail_filters: distill_filter_args: action_grabbed_key value: ['.$action_grabbed_key.']<br />'; }
 								$this->filters[$this_idx]['actions'][$action_this_idx][$action_grabbed_key] = $filter_X[$filter_X_key];
 							}
 						}
 					}
 				}
 			}
-			if ($this->debug_level > 0) { echo 'mail_filters: distill_filter_args: this->filters[] dump <strong><pre>'; print_r($this->filters); echo "</pre></strong>\r\n"; }
 		}
 
 		/*!
@@ -166,7 +157,6 @@
 		*/
 		function sieve_to_imap_string()
 		{
-			if ($this->debug_level > 2) { echo 'mail_filters: sieve_to_imap_string: mappings are:<pre>'; print_r($this->sieve_to_imap_fields); echo "</pre>\r\n"; }
 			$look_here_sieve = $this->filters[0]['matches'][0]['examine'];
 			$look_here_imap = $this->sieve_to_imap_fields[$look_here_sieve];
 			$for_this = $this->filters[0]['matches'][0]['matchthis'];
@@ -177,23 +167,19 @@
 			|| ($look_here_imap == ''))
 			{
 				$conv_error = 'invalid or no examine data';
-				if ($this->debug_level > 0) { echo '<b> *** error</b>: mail_filters: sieve_to_imap_string: error: '.$conv_error."<br /> \r\n"; }
 				return '';
 			}
 			elseif ((!isset($for_this))
 			|| (trim($for_this) == ''))
 			{
 				$conv_error = 'invalid or no search string data';
-				if ($this->debug_level > 0) { echo '<b> *** error</b>: mail_filters: sieve_to_imap_string: error: '.$conv_error."<br /> \r\n"; }
 				return '';
 			}
 			
 			$imap_str = $look_here_imap.' "'.$for_this.'"';
-			if ($this->debug_level > 0) { echo 'mail_filters: sieve_to_imap_string: string is: '.$imap_str."<br />\r\n"; }
 			return $imap_str;
 		}
 
-		
 		/*!
 		@function do_imap_search
 		@abstract ? 
@@ -204,7 +190,6 @@
 			$imap_search_str = $this->sieve_to_imap_string();
 			if (!$imap_search_str)
 			{
-				if ($this->debug_level > 0) { echo '<b> *** error</b>: mail_filters: do_imap_search: sieve_to_imap_string returned empty<br />'."\r\n"; }
 				return array();
 			}
 			
@@ -212,8 +197,7 @@
 			//$this->msg_bootstrap = CreateObject("email.msg_bootstrap");
 			//$this->msg_bootstrap->ensure_mail_msg_exists('email.bofilters.do_imap_search', $this->debug_level);
 			// need to replace below code with this bootstrap code
-			
-			
+
 			//$attempt_reuse = True;
 			$attempt_reuse = False;
 			if (!\App\modules\email\services\MailMessage::hasInstance())
@@ -233,7 +217,6 @@
 				if ((isset($this->filters[0]['source_folder']))
 				&& ($this->filters[0]['source_folder'] != ''))
 				{
-					if ($this->debug_level > 0) { echo 'mail_filters: do_imap_search: this->filters[0][source_folder] = ' .$this->filters[0]['source_folder'].'<br />'."\r\n"; }
 					$args_array['folder'] = $this->filters[0]['source_folder'];
 				}
 				else
@@ -245,14 +228,12 @@
 			}
 			else
 			{
-				if ($this->debug_index_data == True) { echo 'mail_filters: do_imap_search: creating new login email.mail_msg, cannot or not trying to reusing existing'.'<br />'; }
 				// new login 
 				// (1) folder (if specified) - can be left empty or unset, mail_msg will then assume INBOX
 				$args_array = Array();
 				if ((isset($this->filters[0]['source_folder']))
 				&& ($this->filters[0]['source_folder'] != ''))
 				{
-					if ($this->debug_level > 0) { echo 'mail_filters: do_imap_search: this->filters[0][source_folder] = ' .$this->filters[0]['source_folder'].'<br />'."\r\n"; }
 					$args_array['folder'] = $this->filters[0]['source_folder'];
 				}
 				else
@@ -262,7 +243,6 @@
 				// (2) should we log in
 				$args_array['do_login'] = True;
 			}
-
 
 			/*
 			//$GLOBALS['phpgw']->msg = CreateObject("email.mail_msg");
@@ -296,7 +276,6 @@
 			else
 			{
 				$this->result_set = $initial_result_set;
-				if ($this->debug_level > 0) { echo 'mail_filters: do_imap_search: number of matches = ' .count($this->result_set).'<br />'."\r\n"; }
 				// make a "fake" folder_info array to make things simple for get_msg_list_display
 				$this->fake_folder_info['is_imap'] = True;
 				$this->fake_folder_info['folder_checked'] = \App\modules\email\services\MailMessage::getInstance()->get_arg_value('folder');
@@ -307,7 +286,6 @@
 				$this->result_set_mlist = \App\modules\email\services\MailMessage::getInstance()->get_msg_list_display($this->fake_folder_info,$this->result_set);
 			}
 			\App\modules\email\services\MailMessage::getInstance()->end_request();
-			//echo 'mail_filters: do_imap_search: returned:<br />'; var_dump($this->result_set); echo "<br />\r\n";
 		}
 
 		/*!
@@ -389,8 +367,6 @@
 			}
 			
 		}
-		
-		
-	
+
 	// end of class
 	}

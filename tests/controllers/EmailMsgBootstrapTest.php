@@ -448,7 +448,6 @@ namespace Tests\Controllers
 		public function testInitializationPreservesTypedStorageAndMissingTableFallback(): void
 		{
 			require_once __DIR__ . '/../../src/modules/email/inc/class.so_mail_msg.inc.php';
-			require_once __DIR__ . '/../../src/modules/email/inc/class.svc_debug.inc.php';
 			$mail = new \mail_msg();
 			$this->assertNull($mail->so);
 			$storage = $this->getMockBuilder(\so_mail_msg::class)
@@ -458,7 +457,6 @@ namespace Tests\Controllers
 			$storage->expects($this->once())->method('so_am_table_exists')->willReturn(false);
 			$storage->expects($this->once())->method('so_prop_use_group_data')->with(false);
 			$mail->so = $storage;
-			$mail->dbug = new \svc_debug();
 			$originalGet = $_GET;
 			$_GET = [];
 			try
@@ -475,20 +473,54 @@ namespace Tests\Controllers
 			}
 		}
 
-		public function testMoveDebuggingUsesTheTypedLogger(): void
+		public function testMoveDoesNotEmitVerboseDebugOutput(): void
 		{
-			require_once __DIR__ . '/../../src/modules/email/inc/class.svc_debug.inc.php';
 			$mail = $this->getMockBuilder(\mail_msg::class)->onlyMethods(['buffer_move_commands', 'track_expungable_folders'])->getMock();
-			$this->assertNull($mail->dbug);
-			$logger = $this->getMockBuilder(\svc_debug::class)->onlyMethods(['out'])->getMock();
-			$logger->expects($this->exactly(2))->method('out');
-			$mail->dbug = $logger;
+			$this->expectOutputString('');
 			$mail->debug_wrapper_dcom_calls = 1;
 			$msgball = ['acctnum' => 3, 'folder' => 'INBOX', 'msgnum' => 12];
 			$target = ['acctnum' => 3, 'folder' => 'Archive'];
 			$mail->expects($this->once())->method('buffer_move_commands')->with($msgball, $target);
 			$mail->expects($this->once())->method('track_expungable_folders')->with($msgball);
 			$this->assertTrue($mail->industrial_interacct_mail_move($msgball, $target));
+		}
+
+		public function testEmailModuleDoesNotDumpDataOrLogRawExceptionMessages(): void
+		{
+			$parser = (new \PhpParser\ParserFactory())->createForHostVersion();
+			$finder = new \PhpParser\NodeFinder();
+			$violations = [];
+			$files = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator(__DIR__ . '/../../src/modules/email'));
+			foreach ($files as $file)
+			{
+				if (!$file->isFile() || $file->getExtension() !== 'php') continue;
+				$nodes = $parser->parse(file_get_contents($file->getPathname()));
+				foreach ($finder->findInstanceOf($nodes, \PhpParser\Node\Expr\PropertyFetch::class) as $fetch)
+				{
+					if ($fetch->name instanceof \PhpParser\Node\Identifier && $fetch->name->name === 'dbug')
+					{
+						$violations[] = $file->getFilename() . ':' . $fetch->getStartLine() . ' legacy debug service';
+					}
+				}
+				foreach ($finder->findInstanceOf($nodes, \PhpParser\Node\Expr\FuncCall::class) as $call)
+				{
+					if (!$call->name instanceof \PhpParser\Node\Name) continue;
+					$name = strtolower($call->name->toString());
+					if (in_array($name, ['var_dump', 'print_r'], true))
+					{
+						$violations[] = $file->getFilename() . ':' . $call->getStartLine() . ' data dump';
+					}
+					if ($name !== 'error_log') continue;
+					foreach ($finder->findInstanceOf($call->args, \PhpParser\Node\Expr\MethodCall::class) as $method)
+					{
+						if ($method->name instanceof \PhpParser\Node\Identifier && $method->name->name === 'getMessage')
+						{
+							$violations[] = $file->getFilename() . ':' . $call->getStartLine() . ' raw exception log';
+						}
+					}
+				}
+			}
+			$this->assertSame([], $violations);
 		}
 
 		public function testEndRequestClosesTheOwnedAccountStream(): void

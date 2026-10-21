@@ -21,9 +21,6 @@
 	<xsl:template match="generic_out">
 		<xsl:value-of disable-output-escaping="yes" select="email_page" />
 		<!-- optional debug data -->
-		<xsl:if test="debugdata != ''">
-			<xsl:call-template name="show_debugdata"/>
-		</xsl:if>
 	</xsl:template>
 	
 	<xsl:template match="index">
@@ -120,9 +117,6 @@
 			<xsl:value-of disable-output-escaping="yes" select="geek_bar"/>
 		</xsl:if>
 		<!-- optional debug data -->
-		<xsl:if test="debugdata != ''">
-			<xsl:call-template name="show_debugdata"/>
-		</xsl:if>
 	</xsl:template>
 	
 	
@@ -222,21 +216,3 @@
 			</td>
 		</tr>
 	</xsl:template>
-	
-	<xsl:template name="show_debugdata">
-		<xsl:choose>
-			<xsl:when test="debugdata/js_another_window != ''">
-				<xsl:value-of disable-output-escaping="yes" select="debugdata/js_another_window"/>
-			</xsl:when>
-			<xsl:otherwise>
-				<div style="text-align: left; font-size: x-small;">
-				<p>
-				<code>
-					<xsl:value-of disable-output-escaping="yes" select="debugdata"/>
-				</code>
-				</p>
-				</div>
-			</xsl:otherwise>
-		</xsl:choose>
-	</xsl:template>
-	

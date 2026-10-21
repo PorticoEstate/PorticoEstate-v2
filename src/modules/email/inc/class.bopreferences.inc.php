@@ -13,7 +13,6 @@
  * @internal Based on AngleMail http://www.anglemail.org/
  */
 
-
 /**
  * Preferences
  *
@@ -52,16 +51,9 @@ class email_bopreferences
 	var $pref_errors = '';
 	var $args = array();
 	var $debug_set_prefs = 0;
-	//var $debug_set_prefs = 3;
-	//var $debug_set_prefs = 4;
-
 
 	public function __construct()
 	{
-		if ($this->debug_set_prefs > 0)
-		{
-			echo 'email.bopreferences *constructor*: ENTERING <br />';
-		}
 		/*!
 			@capability initialize class mail_msg object but do not login
 			@abstract we need functions in class mail_msg but we not want a login 
@@ -76,19 +68,11 @@ class email_bopreferences
 		//$this->msg_bootstrap->set_do_login(False);
 		// USE NEW login instructions, defined in bootstrap class
 		$this->msg_bootstrap->set_do_login(BS_LOGIN_NEVER);
-		if ($this->debug_set_prefs > 1)
-		{
-			echo 'email.bopreferences. *constructor*: call this->msg_bootstrap->ensure_mail_msg_exists, msg_bootstrap->get_do_login(): ' . serialize($this->msg_bootstrap->get_do_login()) . '<br />';
-		}
 		$this->msg_bootstrap->ensure_mail_msg_exists('email.bopreferences. *constructor*', $this->debug_set_prefs);
 		// make the convience reference
 		if ($this->msg == '##NOTHING##')
 		{
 			$this->msg = \App\modules\email\services\MailMessage::getInstance();
-		}
-		if ($this->debug_set_prefs > 0)
-		{
-			$this->msg->dbug->out('email.bopreferences. *constructor*: LEAVING<br />');
 		}
 		//return;
 	}
@@ -117,10 +101,6 @@ class email_bopreferences
 		*/
 	function init_available_prefs()
 	{
-		if ($this->debug_set_prefs > 0)
-		{
-			$this->msg->dbug->out('email.bopreferences.init_available_prefs: ENTERING, use debug level 4 for a data dump on leaving<br />');
-		}
 
 		$this->std_prefs = array();
 		$i = 0;
@@ -660,23 +640,13 @@ class email_bopreferences
 		);
 		if ($this->debug_set_prefs > 3)
 		{
-			$this->msg->dbug->out('email.bopreferences.init_available_prefs: data dump: calling debug_dump_prefs<br />');
 			$this->debug_dump_prefs();
 		}
-		if ($this->debug_set_prefs > 0)
-		{
-			$this->msg->dbug->out('email.bopreferences.init_available_prefs: LEAVING<br />');
-		}
 	}
-
-
 
 	function debug_dump_prefs()
 	{
 		// DEBUG begin
-		//$this->msg->dbug->out('<br /><br />');
-		$this->msg->dbug->out('email.bopreferences.debug_dump_prefs: std_prefs var DUMP:', $this->std_prefs);
-		$this->msg->dbug->out('email.bopreferences.debug_dump_prefs: cust_prefs var DUMP:', $this->cust_prefs);
 		//Header('Location: ' . phpgw::link('/preferences/index.php'));
 		//return;
 		// DEBUG end
@@ -724,10 +694,6 @@ class email_bopreferences
 		*/
 	function grab_set_prefs()
 	{
-		if ($this->debug_set_prefs > 0)
-		{
-			$this->msg->dbug->out('email.bopreferences: call to grab_set_prefs<br />');
-		}
 		// better make sure we have created the available prefs schema
 		$this->init_available_prefs();
 
@@ -741,10 +707,6 @@ class email_bopreferences
 		}
 		else
 		{
-			if ($this->debug_set_prefs > 1)
-			{
-				$this->msg->dbug->out('email.bopreferences: call to grab_set_prefs CALLER UNKNOWN<br />');
-			}
 			$this->pref_errors .= 'email: bopreferences: grab_set_prefs: unsupported "caller" variable<br />';
 		}
 	}
@@ -770,10 +732,6 @@ class email_bopreferences
 		*/
 	function grab_set_prefs_args_gpc()
 	{
-		if ($this->debug_set_prefs > 0)
-		{
-			$this->msg->dbug->out('email.bopreferences: call to grab_set_prefs_args_gpc<br />');
-		}
 		// ----  HANDLE GRABBING PREFERENCE GPC HTTP_POST_VARS ARGS  -------
 		// for abstraction from phpgw UI and from PHP's GPC data, put the submitted GPC data
 		// into a class var $this->args[] array. This array is then used to represent the submitted
@@ -783,10 +741,6 @@ class email_bopreferences
 		// ----  DEFAULT EMAIL ACCOUNT  ----
 		if (isset(\App\modules\email\services\MailMessage::getInstance()->ref_POST[$this->submit_token]))
 		{
-			if ($this->debug_set_prefs > 1)
-			{
-				$this->msg->dbug->out('email.bopreferences: INSIDE grab_set_prefs_args_gpc for Default Email Account data<br />');
-			}
 
 			// EXPIRE stuff that may get stale by changing prefs
 			$this->expire_related_cached_items(0);
@@ -802,23 +756,11 @@ class email_bopreferences
 				// existence of $this->submit_token indicates this data is intended for the default email account
 				if (!stristr($this->std_prefs[$i]['accts_usage'], 'default'))
 				{
-					if ($this->debug_set_prefs > 1)
-					{
-						$this->msg->dbug->out(' * * (std pref) _SKIP_ this item [' . $this->std_prefs[$i]['id'] . '], it does not apply to the default email account<br />');
-					}
 				}
 				else
 				{
 					// ok, we have a pref item that applies to the default email account
 					$this_pref_name = $this->std_prefs[$i]['id'];
-					if ($this->debug_set_prefs > 1)
-					{
-						$this->msg->dbug->out(' * * (std pref) $this_pref_name: ' . $this_pref_name . '<br />');
-					}
-					if ($this->debug_set_prefs > 1)
-					{
-						$this->msg->dbug->out(' * * (std pref) $GLOBALS[HTTP_POST_VARS][$this_pref_name]: ' . \App\modules\email\services\MailMessage::getInstance()->ref_POST[$this_pref_name] . '<br />');
-					}
 					if (isset(\App\modules\email\services\MailMessage::getInstance()->ref_POST[$this_pref_name]))
 					{
 						$this->args[$this_pref_name] = \App\modules\email\services\MailMessage::getInstance()->ref_POST[$this_pref_name];
@@ -834,23 +776,11 @@ class email_bopreferences
 				// existence of $this->submit_token indicates this data is intended for the default email account
 				if (!stristr($this->cust_prefs[$i]['accts_usage'], 'default'))
 				{
-					if ($this->debug_set_prefs > 1)
-					{
-						$this->msg->dbug->out(' * * (cust pref) _SKIP_ this item [' . $this->cust_prefs[$i]['id'] . '], it does not apply to the default email account<br />');
-					}
 				}
 				else
 				{
 					// ok, we have a pref item that applies to the default email account
 					$this_pref_name = $this->cust_prefs[$i]['id'];
-					if ($this->debug_set_prefs > 1)
-					{
-						$this->msg->dbug->out(' * * (cust pref) $this_pref_name: ' . $this_pref_name . '<br />');
-					}
-					if ($this->debug_set_prefs > 1)
-					{
-						$this->msg->dbug->out(' * * (cust pref) $GLOBALS[HTTP_POST_VARS][$this_pref_name]: ' . \App\modules\email\services\MailMessage::getInstance()->ref_POST[$this_pref_name] . '<br />');
-					}
 					if (isset(\App\modules\email\services\MailMessage::getInstance()->ref_POST[$this_pref_name]))
 					{
 						$this->args[$this_pref_name] = \App\modules\email\services\MailMessage::getInstance()->ref_POST[$this_pref_name];
@@ -861,10 +791,6 @@ class email_bopreferences
 		// ----  EXTRA EMAIL ACCOUNTS  ----
 		elseif (isset(\App\modules\email\services\MailMessage::getInstance()->ref_POST[$this->submit_token_extra_accounts]))
 		{
-			if ($this->debug_set_prefs > 1)
-			{
-				$this->msg->dbug->out('email.bopreferences: INSIDE grab_set_prefs_args_gpc for EXTRA EMAIL ACCOUNTS data<br />');
-			}
 
 			//$this->args['submit_prefs'] = $GLOBALS['phpgw']->msg->ref_POST['submit_prefs'];
 			$this->args[$this->submit_token_extra_accounts] = \App\modules\email\services\MailMessage::getInstance()->ref_POST[$this->submit_token_extra_accounts];
@@ -890,23 +816,11 @@ class email_bopreferences
 				// extra email accounts
 				if (!stristr($this->std_prefs[$i]['accts_usage'], 'extra_accounts'))
 				{
-					if ($this->debug_set_prefs > 1)
-					{
-						$this->msg->dbug->out(' * * (std pref) _SKIP_ this item [' . $this->std_prefs[$i]['id'] . '], it does not apply to extra email accounts<br />');
-					}
 				}
 				else
 				{
 					// ok, we have a pref item that applies to the default email account
 					$this_pref_name = $this->std_prefs[$i]['id'];
-					if ($this->debug_set_prefs > 1)
-					{
-						$this->msg->dbug->out(' * * (std pref) $this_pref_name: ' . $this_pref_name . '<br />');
-					}
-					if ($this->debug_set_prefs > 1)
-					{
-						$this->msg->dbug->out(' * * (std pref) $GLOBALS[HTTP_POST_VARS][$this->acctnum(' . $this->acctnum . ')][$this_pref_name(' . $this_pref_name . ')]: [' . \App\modules\email\services\MailMessage::getInstance()->ref_POST[$this->acctnum][$this_pref_name] . ']<br />');
-					}
 					if (isset(\App\modules\email\services\MailMessage::getInstance()->ref_POST[$this->acctnum][$this_pref_name]))
 					{
 						$this->args[$this->acctnum][$this_pref_name] = \App\modules\email\services\MailMessage::getInstance()->ref_POST[$this->acctnum][$this_pref_name];
@@ -923,23 +837,11 @@ class email_bopreferences
 				// extra email accounts
 				if (!stristr($this->cust_prefs[$i]['accts_usage'], 'extra_accounts'))
 				{
-					if ($this->debug_set_prefs > 1)
-					{
-						$this->msg->dbug->out(' * * (cust pref) _SKIP_ this item [' . $this->cust_prefs[$i]['id'] . '], it does not apply to extra email accounts<br />');
-					}
 				}
 				else
 				{
 					// ok, we have a pref item that applies to extra email accounts
 					$this_pref_name = $this->cust_prefs[$i]['id'];
-					if ($this->debug_set_prefs > 1)
-					{
-						$this->msg->dbug->out(' * * (cust pref) $this_pref_name: ' . $this_pref_name . '<br />');
-					}
-					if ($this->debug_set_prefs > 1)
-					{
-						$this->msg->dbug->out(' * * (cust pref) $GLOBALS[HTTP_POST_VARS][$this->acctnum(' . $this->acctnum . ')][$this_pref_name(' . $this_pref_name . ')]: [' . \App\modules\email\services\MailMessage::getInstance()->ref_POST[$this->acctnum][$this_pref_name] . ']<br />');
-					}
 					if (isset(\App\modules\email\services\MailMessage::getInstance()->ref_POST[$this->acctnum][$this_pref_name]))
 					{
 						$this->args[$this->acctnum][$this_pref_name] = \App\modules\email\services\MailMessage::getInstance()->ref_POST[$this->acctnum][$this_pref_name];
@@ -964,7 +866,6 @@ class email_bopreferences
 	function grab_set_prefs_args_xmlrpc()
 	{
 		// STUB, for future use
-		$this->msg->dbug->out('email boprefs: call to un-implemented function grab_set_prefs_args_xmlrpc<br />');
 	}
 
 	/*!
@@ -987,19 +888,11 @@ class email_bopreferences
 		$c_prefs = count($prefs_set);
 		if ($c_prefs == 0)
 		{
-			if ($this->debug_set_prefs > 1)
-			{
-				$this->msg->dbug->out('email: bopreferences: process_submitted_prefs: empty array, no prefs set supplied, exiting<br />');
-			}
 			return False;
 		}
 
 		for ($i = 0; $i < $c_prefs; $i++)
 		{
-			if ($this->debug_set_prefs > 1)
-			{
-				$this->msg->dbug->out('email: bopreferences: process_submitted_prefs: inside preferences loop [' . $i . ']<br />');
-			}
 
 			$this_pref = $prefs_set[$i];
 
@@ -1011,10 +904,6 @@ class email_bopreferences
 				// we are not supposed to show this item for the default account, skip this pref item
 				// continue is used within looping structures to skip the rest of the current loop 
 				// iteration and continue execution at the beginning of the next iteration
-				if ($this->debug_set_prefs > 1)
-				{
-					$this->msg->dbug->out('email: bopreferences: process_submitted_prefs: _SKIP_ this item ["' . $this_pref['id'] . '"], it does not apply to the default email account<br />');
-				}
 				continue;
 			}
 
@@ -1027,10 +916,6 @@ class email_bopreferences
 				// ----  OR an empty string was submitted for this pref item  ----
 
 				// so how do we handle this, for this pref...
-				if ($this->debug_set_prefs > 1)
-				{
-					$this->msg->dbug->out('email: bopreferences: process_submitted_prefs: submitted_pref for ["' . $this_pref['id'] . '"] not set or empty string<br />');
-				}
 				if (isset($this_pref['write_props']) && stristr($this_pref['write_props'], 'empty_no_delete'))
 				{
 					// DO NOT DELETE
@@ -1038,10 +923,6 @@ class email_bopreferences
 					// note there may or may not actually be an existing value in the prefs table
 					// but it does not matter here, because we do not touch this items value at all.
 					// Typical Usage: passwords
-					if ($this->debug_set_prefs > 1)
-					{
-						$this->msg->dbug->out('email: bopreferences: no change to repository for empty or blank ["' . $this_pref['id'] . '"] because of "empty_no_delete"<br />');
-					}
 				}
 				elseif (isset($this_pref['write_props']) && stristr($this_pref['write_props'], 'empty_string_ok'))
 				{
@@ -1049,10 +930,6 @@ class email_bopreferences
 					// i.e. this pref can take an empty string as a valid value
 					// whereas most other prefs are simply deleted from the repository if value is empty
 					// Typical Usage: email sig, UWash Mail Folder
-					if ($this->debug_set_prefs > 1)
-					{
-						$this->msg->dbug->out('email: bopreferences: save empty string to repository for ["' . $this_pref['id'] . '"] because of "empty_string_ok"<br />');
-					}
 					// a) as always, delete the pref before we assign a value
 					\App\modules\phpgwapi\services\Preferences::getInstance()->delete('email', $this_pref['id']);
 					// b) now assign a blank string value
@@ -1061,10 +938,6 @@ class email_bopreferences
 				else
 				{
 					// just delete it from the preferences repository
-					if ($this->debug_set_prefs > 1)
-					{
-						$this->msg->dbug->out('email: bopreferences: deleting empty or blank pref ["' . $this_pref['id'] . '"] from the repository<br />');
-					}
 					\App\modules\phpgwapi\services\Preferences::getInstance()->delete('email', $this_pref['id']);
 				}
 			}
@@ -1076,10 +949,6 @@ class email_bopreferences
 				$submitted_pref = $this->args[$this_pref['id']];
 				// init a var to hold the processed submitted_pref
 				$processed_pref = '';
-				if ($this->debug_set_prefs > 1)
-				{
-					$this->msg->dbug->out('* * ** email: bopreferences: process_submitted_prefs:  submitted_pref: [' . $submitted_pref . ']<br />');
-				}
 
 				// most "user_string"s need special processing before they can go into the repository
 				if ($this_pref['type'] == 'user_string')
@@ -1130,10 +999,6 @@ class email_bopreferences
 					// all other data needs no special processing before going into the repository
 					$processed_pref = $submitted_pref;
 				}
-				if ($this->debug_set_prefs > 1)
-				{
-					$this->msg->dbug->out('email: bopreferences: process_submitted_prefs: about to assign pref ["' . $this_pref['id'] . '"] this value, post processing (if any):', phpgw::strip_html($processed_pref));
-				}
 
 				// a) as always, delete the pref before we assign a value
 				\App\modules\phpgwapi\services\Preferences::getInstance()->delete('email', $this_pref['id']);
@@ -1154,22 +1019,10 @@ class email_bopreferences
 		*/
 	function preferences($api_mode = False)
 	{
-		if ($this->debug_set_prefs > 0)
-		{
-			$this->msg->dbug->out('email.bopreferences.preferences(): ENTERING<br />');
-		}
 		// establish all available prefs for email
-		if ($this->debug_set_prefs > 1)
-		{
-			$this->msg->dbug->out('email.bopreferences.preferences(): about to call $this->init_available_prefs()<br />');
-		}
 		$this->init_available_prefs();
 
 		// this will fill $this->args[] array with any submitted prefs args
-		if ($this->debug_set_prefs > 1)
-		{
-			$this->msg->dbug->out('email.bopreferences.preferences(): about to call $this->grab_set_prefs()<br />');
-		}
 		$this->grab_set_prefs();
 
 		// ----  HANDLE SETING PREFERENCE   -------
@@ -1181,40 +1034,20 @@ class email_bopreferences
 			// constructor will initialize $GLOBALS['phpgw']->msg
 
 			// ---  Process Standard Prefs  ---
-			if ($this->debug_set_prefs > 1)
-			{
-				$this->msg->dbug->out('email.bopreferences.preferences: about to process Standard Prefs<br />');
-			}
 			$this->process_submitted_prefs($this->std_prefs);
 
 			// ---  Process Custom Prefs  ---
-			if ($this->debug_set_prefs > 1)
-			{
-				$this->msg->dbug->out('email.bopreferences.preferences: about to process Custom Prefs<br />');
-			}
 			if (isset($this->args['use_custom_settings']))
 			{
 				// custom settings are in use, process them
-				if ($this->debug_set_prefs > 1)
-				{
-					$this->msg->dbug->out('email.bopreferences.preferences: custom prefs are in use, calling $this->process_submitted_prefs($this->cust_prefs)<br />');
-				}
 				$this->process_submitted_prefs($this->cust_prefs);
 			}
 			else
 			{
 				// custom settings are NOT being used, DELETE them from the repository
 				$c_prefs = count($this->cust_prefs);
-				if ($this->debug_set_prefs > 1)
-				{
-					$this->msg->dbug->out('email.bopreferences.preferences: custom prefs NOT in use, deleting them<br />');
-				}
 				for ($i = 0; $i < $c_prefs; $i++)
 				{
-					if ($this->debug_set_prefs > 2)
-					{
-						$this->msg->dbug->out(' *(loop)* email.bopreferences: preferences: deleting custom pref $this->cust_prefs[' . $i . '][id] : [' . $this->cust_prefs[$i]['id'] . ']<br />');
-					}
 					\App\modules\phpgwapi\services\Preferences::getInstance()->delete('email', $this->cust_prefs[$i]['id']);
 				}
 			}
@@ -1222,14 +1055,9 @@ class email_bopreferences
 			// DONE processing prefs, SAVE to the Repository
 			if ($this->debug_set_prefs > 1)
 			{
-				$this->msg->dbug->out('email.bopreferences.preferences(): *debug* at [' . $this->debug_set_prefs . '] so skipping save_repository<br />');
 			}
 			else
 			{
-				if ($this->debug_set_prefs > 1)
-				{
-					$this->msg->dbug->out('email.bopreferences.preferences(): SAVING REPOSITORY<br />');
-				}
 				\App\modules\phpgwapi\services\Preferences::getInstance()->save_repository();
 			}
 			// end the email session
@@ -1241,20 +1069,11 @@ class email_bopreferences
 				'/preferences/index.php'
 			);
 
-			if ($this->debug_set_prefs > 0)
-			{
-				$this->msg->dbug->out('email.bopreferences.preferences(): almost LEAVING, about to issue a redirect to:<br />' . $take_me_to_url . '<br />');
-			}
 			if ($this->debug_set_prefs > 1)
 			{
-				$this->msg->dbug->out('email.bopreferences.preferences(): LEAVING, *debug* at [' . $this->debug_set_prefs . '] so skipping Header redirection to: [' . $take_me_to_url . ']<br />');
 			}
 			else
 			{
-				if ($this->debug_set_prefs > 0)
-				{
-					$this->msg->dbug->out('email.bopreferences.preferences: LEAVING with redirect to: <br />' . $take_me_to_url . '<br />');
-				}
 				Header('Location: ' . $take_me_to_url);
 			}
 		}
@@ -1413,7 +1232,6 @@ class email_bopreferences
 			*/
 	}
 
-
 	/*!
 		@function process_ex_account_submitted_prefs
 		@abstract Extra Email Accounts Process incoming submitted prefs, process the data, and save to repository 
@@ -1422,10 +1240,6 @@ class email_bopreferences
 		*/
 	function process_ex_accounts_submitted_prefs($prefs_set = '')
 	{
-		if ($this->debug_set_prefs > 0)
-		{
-			$this->msg->dbug->out('email: bopreferences: process_ex_accounts_submitted_prefs: ENTERING<br />');
-		}
 		// basicly, copy and paste the real "process_submitted_prefs" and tweak for extra_accounts applicablility
 		if (!$prefs_set)
 		{
@@ -1434,41 +1248,21 @@ class email_bopreferences
 		$c_prefs = count($prefs_set);
 		if ($c_prefs == 0)
 		{
-			if ($this->debug_set_prefs > 0)
-			{
-				$this->msg->dbug->out('email: bopreferences: process_ex_accounts_submitted_prefs: LEAVING, empty array, no prefs set supplied<br />');
-			}
 			return False;
 		}
 
 		// ==== ACCTNUM ====
-		if ($this->debug_set_prefs > 1)
-		{
-			$this->msg->dbug->out('email: bopreferences: process_ex_accounts_submitted_prefs: pre discovery $this->acctnum : [' . serialize($this->acctnum) . ']<br />');
-		}
 		if ((!isset($this->acctnum))
 			|| ((string)$this->acctnum == '')
 		)
 		{
 			$this->acctnum = $this->obtain_ex_acctnum();
 		}
-		if ($this->debug_set_prefs > 1)
-		{
-			$this->msg->dbug->out('email: bopreferences: process_ex_accounts_submitted_prefs: post discovery $this->acctnum : [' . serialize($this->acctnum) . ']<br />');
-		}
 
 		for ($i = 0; $i < $c_prefs; $i++)
 		{
-			if ($this->debug_set_prefs > 1)
-			{
-				$this->msg->dbug->out(' <b>* (next loop) *</b> email: bopreferences: process_ex_accounts_submitted_prefs: inside preferences loop [' . $i . ']<br />');
-			}
 
 			$this_pref = $prefs_set[$i];
-			if ($this->debug_set_prefs > 1)
-			{
-				$this->msg->dbug->out('email: bopreferences: process_ex_accounts_submitted_prefs: $this_pref = $prefs_set[' . $i . '] : $this_pref DUMP:', $prefs_set[$i]);
-			}
 
 			// ----  skip this item logic  ----
 			// we are ONLY concerned with items that apply to the extra email accounts
@@ -1477,10 +1271,6 @@ class email_bopreferences
 				// we are not supposed to handle this item for the extra email accounts, skip this pref item
 				// continue is used within looping structures to skip the rest of the current loop 
 				// iteration and continue execution at the beginning of the next iteration
-				if ($this->debug_set_prefs > 1)
-				{
-					$this->msg->dbug->out('email: bopreferences: process_ex_accounts_submitted_prefs: _SKIP_ this item ["' . $this_pref['id'] . '"], it does not apply to Extra Email Accounts <br />');
-				}
 				continue;
 			}
 
@@ -1491,10 +1281,6 @@ class email_bopreferences
 			{
 				// nothing submitted for this preference item
 				// OR an empty string was submitted for this pref item
-				if ($this->debug_set_prefs > 1)
-				{
-					$this->msg->dbug->out('email: bopreferences: process_ex_accounts_submitted_prefs: submitted_pref for ["' . $this_pref['id'] . '"] not set or empty string<br />');
-				}
 				if (stristr($this_pref['write_props'], 'empty_no_delete'))
 				{
 					// DO NOT DELETE
@@ -1502,10 +1288,6 @@ class email_bopreferences
 					// note there may or may not actually be an existing value in the prefs table
 					// but it does not matter here, because we do not touch this items value at all.
 					// Typical Usage: passwords
-					if ($this->debug_set_prefs > 1)
-					{
-						$this->msg->dbug->out('email: bopreferences: process_ex_accounts_submitted_prefs: no change to repository for empty or blank ["' . $this_pref['id'] . '"] because of "empty_no_delete"<br />');
-					}
 				}
 				elseif (stristr($this_pref['write_props'], 'empty_string_ok'))
 				{
@@ -1513,36 +1295,16 @@ class email_bopreferences
 					// i.e. this pref can take an empty string as a valid value
 					// whereas most other prefs are simply deleted from the repository if value is empty
 					// Typical Usage: email sig, UWash Mail Folder
-					if ($this->debug_set_prefs > 1)
-					{
-						$this->msg->dbug->out('email: bopreferences process_ex_accounts_submitted_prefs: save empty string to repository for ["' . $this_pref['id'] . '"] because of "empty_string_ok"<br />');
-					}
 					// a) as always, delete the pref before we assign a value
 					$pref_struct_str = '["ex_accounts"][' . $this->acctnum . ']["' . $this_pref['id'] . '"]';
-					if ($this->debug_set_prefs > 1)
-					{
-						$this->msg->dbug->out('email: bopreferences process_ex_accounts_submitted_prefs: using preferences->delete_struct("email", $pref_struct_str) which will eval $pref_struct_str=' . $pref_struct_str . '<br />');
-					}
 					\App\modules\phpgwapi\services\Preferences::getInstance()->delete_struct('email', $pref_struct_str);
 					// b) now assign a blank string value
-					if ($this->debug_set_prefs > 1)
-					{
-						$this->msg->dbug->out('email: bopreferences: process_ex_accounts_submitted_prefs: using preferences->add_struct("email", $pref_struct_str, \'\') which will eval $pref_struct_str=' . $pref_struct_str . '<br />');
-					}
 					\App\modules\phpgwapi\services\Preferences::getInstance()->add_struct('email', $pref_struct_str, '');
 				}
 				else
 				{
 					// just delete it from the preferences repository
-					if ($this->debug_set_prefs > 1)
-					{
-						$this->msg->dbug->out('email: bopreferences: process_ex_accounts_submitted_prefs deleting empty or blank pref ["' . $this_pref['id'] . '"] from the repository<br />');
-					}
 					$pref_struct_str = '["ex_accounts"][' . $this->acctnum . ']["' . $this_pref['id'] . '"]';
-					if ($this->debug_set_prefs > 1)
-					{
-						$this->msg->dbug->out('email: bopreferences: process_ex_accounts_submitted_prefs: using preferences->delete_struct("email", $pref_struct_str) which will eval $pref_struct_str=' . $pref_struct_str . '<br />');
-					}
 					\App\modules\phpgwapi\services\Preferences::getInstance()->delete_struct('email', $pref_struct_str);
 				}
 			}
@@ -1552,10 +1314,6 @@ class email_bopreferences
 				$submitted_pref = $this->args[$this->acctnum][$this_pref['id']];
 				// init a var to hold the processed submitted_pref
 				$processed_pref = '';
-				if ($this->debug_set_prefs > 1)
-				{
-					$this->msg->dbug->out('* * email: bopreferences: process_ex_accounts_submitted_prefs:  submitted_pref: [' . $submitted_pref . ']<br />');
-				}
 
 				// most "user_string"s need special processing before they can go into the repository
 				if ($this_pref['type'] == 'user_string')
@@ -1595,23 +1353,11 @@ class email_bopreferences
 					// all other data needs no special processing before going into the repository
 					$processed_pref = $submitted_pref;
 				}
-				if ($this->debug_set_prefs > 1)
-				{
-					$this->msg->dbug->out('email: bopreferences: process_ex_accounts_submitted_prefs: about to assign pref ["' . $this_pref['id'] . '"] this value, post processing (if any):', phpgw::strip_html($processed_pref));
-				}
 
 				// a) as always, delete the pref before we assign a value
 				$pref_struct_str = '["ex_accounts"][' . $this->acctnum . ']["' . $this_pref['id'] . '"]';
-				if ($this->debug_set_prefs > 1)
-				{
-					$this->msg->dbug->out('email: bopreferences process_ex_accounts_submitted_prefs: using preferences->delete_struct("email", $pref_struct_str) which will eval $pref_struct_str=' . $pref_struct_str . '<br />');
-				}
 				\App\modules\phpgwapi\services\Preferences::getInstance()->delete_struct('email', $pref_struct_str);
 				// b) now assign that processed data to this pref item in the repository
-				if ($this->debug_set_prefs > 1)
-				{
-					$this->msg->dbug->out('email: bopreferences: process_ex_accounts_submitted_prefs: using preferences->add_struct("email", $pref_struct_str, $processed_pref) which will eval $pref_struct_str=' . $pref_struct_str . '<br />');
-				}
 				\App\modules\phpgwapi\services\Preferences::getInstance()->add_struct('email', $pref_struct_str, $processed_pref);
 				// SORT THAT ARRAY by key, so the integer array heys go from lowest to hightest
 				\App\modules\phpgwapi\services\Preferences::getInstance()->sort_struct('email', '["ex_accounts"]');
@@ -1631,18 +1377,6 @@ class email_bopreferences
 		*/
 	function ex_accounts_delete($acctnum = '', $api_mode = False)
 	{
-		if ($this->debug_set_prefs > 0)
-		{
-			$this->msg->dbug->out('email.bopreferences.ex_accounts_delete ENTERING feed acctnum: [' . serialize($acctnum) . ']<br />');
-		}
-		if ($this->debug_set_prefs > 2)
-		{
-			$this->msg->dbug->out('email: bopreferences.ex_accounts_delete: $GLOBALS[HTTP_POST_VARS] DUMP:', \App\modules\email\services\MailMessage::getInstance()->ref_POST);
-		}
-		if ($this->debug_set_prefs > 2)
-		{
-			$this->msg->dbug->out('email: bopreferences.ex_accounts_delete: $GLOBALS[HTTP_GET_VARS] DUMP:', \App\modules\email\services\MailMessage::getInstance()->ref_GET);
-		}
 
 		$this->account_group = 'extra_accounts';
 
@@ -1662,32 +1396,16 @@ class email_bopreferences
 		}
 
 		$actually_did_something = False;
-		if ($this->debug_set_prefs > 1)
-		{
-			$this->msg->dbug->out('email.bopreferences.ex_accounts_delete obtained acctnum [' . $this->acctnum . ']<br />');
-		}
 
 		if ((isset($this->acctnum))
 			&& ((string)$this->acctnum != '')
 		)
 		{
-			if ($this->debug_set_prefs > 1)
-			{
-				$this->msg->dbug->out('email.bopreferences.ex_accounts_delete obtained VALID acctnum [' . $this->acctnum . '], proceed...<br />');
-			}
 
 			// delete the extra account pref item
 			$pref_struct_str = '["ex_accounts"][' . $this->acctnum . ']';
-			if ($this->debug_set_prefs > 1)
-			{
-				$this->msg->dbug->out('email: bopreferences.ex_accounts_delete: using preferences->delete_struct("email", $pref_struct_str) which will eval $pref_struct_str=' . $pref_struct_str . '<br />');
-			}
 			\App\modules\phpgwapi\services\Preferences::getInstance()->delete_struct('email', $pref_struct_str);
 
-			if ($this->debug_set_prefs > 1)
-			{
-				$this->msg->dbug->out('email: bopreferences.ex_accounts_delete: Preferences service data DUMP:', \App\modules\phpgwapi\services\Preferences::getInstance()->data);
-			}
 			// let the code below this block know we actually did something that requires saving the repository
 			$actually_did_something = True;
 		}
@@ -1696,15 +1414,10 @@ class email_bopreferences
 		if (!$actually_did_something)
 		{
 			// nothing happened above that requires saving the repository
-			if ($this->debug_set_prefs > 1)
-			{
-				$this->msg->dbug->out('email.bopreferences.ex_accounts_delete: nothing happened that requires save_repository, $actually_did_something=' . serialize($actually_did_something) . '<br />');
-			}
 		}
 		elseif ($this->debug_set_prefs > 2)
 		{
 			// we actually did something that requires saving repository, but are we in debug mode
-			$this->msg->dbug->out('email.bopreferences.ex_accounts_delete: *debug* skipping save_repository<br />');
 		}
 		else
 		{
@@ -1720,7 +1433,6 @@ class email_bopreferences
 		// redirect user back to main preferences page
 		if ($this->debug_set_prefs > 2)
 		{
-			$this->msg->dbug->out('email.bopreferences.ex_accounts_delete: *debug* skipping Header redirection<br />');
 		}
 		else
 		{
@@ -1729,10 +1441,6 @@ class email_bopreferences
 				'menuaction=email.uipreferences.ex_accounts_list'
 			);
 
-			if ($this->debug_set_prefs > 0)
-			{
-				$this->msg->dbug->out('email.bopreferences.ex_accounts_delete: LEAVING with redirect to: [' . $take_me_to_url . ']<br />');
-			}
 			Header('Location: ' . $take_me_to_url);
 		}
 	}
@@ -1746,18 +1454,6 @@ class email_bopreferences
 		*/
 	function ex_accounts_edit($acctnum = '', $api_mode = False)
 	{
-		if ($this->debug_set_prefs > 0)
-		{
-			$this->msg->dbug->out('email.bopreferences.ex_accounts_edit ENTERING <br />');
-		}
-		if ($this->debug_set_prefs > 2)
-		{
-			$this->msg->dbug->out('email: bopreferences.ex_accounts_edit: $GLOBALS[HTTP_POST_VARS] DUMP:', \App\modules\email\services\MailMessage::getInstance()->ref_POST);
-		}
-		if ($this->debug_set_prefs > 2)
-		{
-			$this->msg->dbug->out('email: bopreferences.ex_accounts_edit: $GLOBALS[HTTP_GET_VARS] DUMP:', \App\modules\email\services\MailMessage::getInstance()->ref_GET);
-		}
 
 		// ==== ACCTNUM ====
 		// this tells people that we are dealing with the extra email accounts
@@ -1784,11 +1480,6 @@ class email_bopreferences
 		// this will fill $this->args[] array with any submitted prefs args
 		$this->grab_set_prefs();
 
-		if ($this->debug_set_prefs > 0)
-		{
-			$this->msg->dbug->out('email.bopreferences.ex_accounts_edit(): just passed this->grab_set_prefs<br />');
-		}
-
 		// ----  HANDLE SETING PREFERENCE   -------
 		if (isset($this->args[$this->submit_token_extra_accounts]))
 		{
@@ -1801,30 +1492,14 @@ class email_bopreferences
 			// constructor will (has taken care of) initialize $GLOBALS['phpgw']->msg
 
 			// ---  Process Standard Prefs  ---
-			if ($this->debug_set_prefs > 1)
-			{
-				$this->msg->dbug->out('email.bopreferences.ex_accounts_edit(): about to process_ex_accounts_submitted_prefs Standard Prefs<br />');
-			}
 			$this->process_ex_accounts_submitted_prefs($this->std_prefs);
 
 			// ---  Process Custom Prefs  ---
 			// CUSTOM PREFS ARE MANDATORY! FOR EXTRA ACCOUNTS
 			// first, delete whatever value was there for "use custom settings" (during pre-release, at times this actually was an option, make sure it's gone grom the db)
 			$pref_struct_str = '["ex_accounts"][' . $this->acctnum . ']["' . $this->cust_prefs[0]['id'] . '"]';
-			if ($this->debug_set_prefs > 1)
-			{
-				$this->msg->dbug->out('email: bopreferences.ex_accounts_edit(): "use_custom_settings" pref, delete it, reference it by ["ex_accounts"][$this->acctnum]["$this->cust_prefs[0][id]"]<br />');
-			}
-			if ($this->debug_set_prefs > 1)
-			{
-				$this->msg->dbug->out('email: bopreferences.ex_accounts_edit(): using preferences->delete_struct("email", $pref_struct_str) which will eval $pref_struct_str=' . $pref_struct_str . '<br />');
-			}
 			\App\modules\phpgwapi\services\Preferences::getInstance()->delete_struct('email', $pref_struct_str);
 
-			if ($this->debug_set_prefs > 1)
-			{
-				$this->msg->dbug->out('email.bopreferences.ex_accounts_edit(): about to process_ex_accounts_submitted_prefs Custom Prefs, which are MANDATORY for extra email accounts<br />');
-			}
 			$this->process_ex_accounts_submitted_prefs($this->cust_prefs);
 
 			/*
@@ -1851,33 +1526,20 @@ class email_bopreferences
 				}
 				*/
 
-			if ($this->debug_set_prefs > 1)
-			{
-				$this->msg->dbug->out('email: bopreferences.ex_accounts_edit: Preferences service data DUMP:', \App\modules\phpgwapi\services\Preferences::getInstance()->data);
-			}
 		}
 
 		// DONE processing prefs, SAVE to the Repository
 		if (!$actually_did_something)
 		{
 			// nothing happened above that requires saving the repository
-			if ($this->debug_set_prefs > 1)
-			{
-				$this->msg->dbug->out('email.bopreferences.ex_accounts_edit(): nothing happened that requires save_repository, $actually_did_something=' . serialize($actually_did_something) . '<br />');
-			}
 		}
 		elseif ($this->debug_set_prefs > 1)
 		{
 			// we actually did something that requires saving repository, but are we in debug mode
-			$this->msg->dbug->out('email.bopreferences.ex_accounts_edit(): *debug* at [' . $this->debug_set_prefs . '] so skipping save_repository<br />');
 		}
 		else
 		{
 			// we actually did something that requires saving repository, and we have the go-ahead
-			if ($this->debug_set_prefs > 0)
-			{
-				$this->msg->dbug->out('email.bopreferences.ex_accounts_edit(): SAVING REPOSITORY<br />');
-			}
 			\App\modules\phpgwapi\services\Preferences::getInstance()->save_repository();
 		}
 
@@ -1894,20 +1556,11 @@ class email_bopreferences
 			'menuaction=email.uipreferences.ex_accounts_list'
 		);
 
-		if ($this->debug_set_prefs > 0)
-		{
-			$this->msg->dbug->out('email.bopreferences.ex_accounts_edit(): almost LEAVING, about to issue a redirect to:<br />' . $take_me_to_url . '<br />');
-		}
 		if ($this->debug_set_prefs > 1)
 		{
-			$this->msg->dbug->out('email.bopreferences.ex_accounts_edit(): LEAVING, *debug* at [' . $this->debug_set_prefs . '] so skipping Header redirection to: [' . $take_me_to_url . ']<br />');
 		}
 		else
 		{
-			if ($this->debug_set_prefs > 0)
-			{
-				$this->msg->dbug->out('email.bopreferences.ex_accounts_edit: LEAVING with redirect to: <br />' . $take_me_to_url . '<br />');
-			}
 			Header('Location: ' . $take_me_to_url);
 		}
 	}
@@ -1920,10 +1573,6 @@ class email_bopreferences
 		*/
 	function ex_accounts_list()
 	{
-		if ($this->debug_set_prefs > 0)
-		{
-			$this->msg->dbug->out('email.bopreferences.ex_accounts_list: ENTERING<br />');
-		}
 
 		$extra_accounts = \App\modules\email\services\MailMessage::getInstance()->extra_accounts;
 		// list accounts, except "empty" ones (show "enabled" and "disabled"
@@ -1933,23 +1582,11 @@ class email_bopreferences
 			$this_acctnum = $extra_account['acctnum'];
 			$this_status = $extra_account['status'];
 
-			if ($this->debug_set_prefs > 1)
-			{
-				$this->msg->dbug->out('email.bopreferences.ex_accounts_list: account [' . $this_acctnum . '] status [' . $this_status . ']<br />');
-			}
 			if ($this_status == 'empty')
 			{
-				if ($this->debug_set_prefs > 1)
-				{
-					$this->msg->dbug->out('email.bopreferences.ex_accounts_list: $GLOBALS[phpgw]->msg->extra_accounts[' . $i . '][status] == empty <br />');
-				}
 			}
 			else
 			{
-				if ($this->debug_set_prefs > 1)
-				{
-					$this->msg->dbug->out('email.bopreferences.ex_accounts_list: $GLOBALS[phpgw]->msg->extra_accounts[' . $i . '][status] != empty <br />');
-				}
 				$next_pos = count($return_list);
 				//$next_pos = $this_acctnum - 1;
 				$return_list[$next_pos]['acctnum'] = $this_acctnum;
@@ -2022,20 +1659,8 @@ class email_bopreferences
 				}
 				// NEXT: html encode the acctname string
 				// html encode entities on the fullname so it's safe to display in the browser, and prefix with the acctnum
-				if ($this->debug_set_prefs > 1)
-				{
-					$this->msg->dbug->out('email.bopreferences.ex_accounts_list: fullname raw: <code>' . serialize($accountname) . '</code><br />');
-				}
 				$accountname = \App\modules\email\services\MailMessage::getInstance()->htmlspecialchars_decode($accountname);
-				if ($this->debug_set_prefs > 1)
-				{
-					$this->msg->dbug->out('email.bopreferences.ex_accounts_list: fullname B: <code>' . serialize($accountname) . '</code><br />');
-				}
 				$accountname = \App\modules\email\services\MailMessage::getInstance()->htmlspecialchars_encode($accountname);
-				if ($this->debug_set_prefs > 1)
-				{
-					$this->msg->dbug->out('email.bopreferences.ex_accounts_list: fullname C: <code>' . serialize($accountname) . '</code><br />');
-				}
 				// FINALLY we have a string we are going to display to the user that is the name of the account
 				$return_list[$next_pos]['display_string'] = '[' . $this_acctnum . '] ' . $accountname;
 
@@ -2053,14 +1678,6 @@ class email_bopreferences
 			}
 		}
 
-		if ($this->debug_set_prefs > 2)
-		{
-			$this->msg->dbug->out('email.bopreferences.ex_accounts_list: returning $return_list[] DUMP:', $return_list);
-		}
-		if ($this->debug_set_prefs > 0)
-		{
-			$this->msg->dbug->out('email.bopreferences.ex_accounts_list: LEAVING, returning $return_list <br />');
-		}
 		return $return_list;
 	}
 
@@ -2072,21 +1689,9 @@ class email_bopreferences
 		*/
 	function get_first_empty_ex_acctnum()
 	{
-		if ($this->debug_set_prefs > 0)
-		{
-			$this->msg->dbug->out('email.bopreferences.get_first_empty_ex_acctnum: ENTERING<br />');
-		}
-		if ($this->debug_set_prefs > 2)
-		{
-			$this->msg->dbug->out('email: bopreferences.get_first_empty_ex_acctnum: $GLOBALS[phpgw]->msg->extra_accounts DUMP:', \App\modules\email\services\MailMessage::getInstance()->extra_accounts);
-		}
 		$loops = count(\App\modules\email\services\MailMessage::getInstance()->extra_accounts);
 		if ($loops == 0)
 		{
-			if ($this->debug_set_prefs > 1)
-			{
-				$this->msg->dbug->out('email.bopreferences.get_first_empty_ex_acctnum: count($GLOBALS[phpgw]->msg->extra_accounts =[' . serialize(count(\App\modules\email\services\MailMessage::getInstance()->extra_accounts)) . ']<br />');
-			}
 			$first_empty_ex_acctnum = 1;
 		}
 		else
@@ -2097,16 +1702,8 @@ class email_bopreferences
 				$this_acctnum = \App\modules\email\services\MailMessage::getInstance()->extra_accounts[$i]['acctnum'];
 				$this_status = \App\modules\email\services\MailMessage::getInstance()->extra_accounts[$i]['status'];
 				// loop =0 *would* = acctnum 1 *if* acctnum slots are filled in order, they'd always be 1 apart
-				if ($this->debug_set_prefs > 1)
-				{
-					$this->msg->dbug->out('email.bopreferences.get_first_empty_ex_acctnum: in loop [' . $i . '] : status: [' . $this_status . '] ; acctnum: [' . $this_acctnum . ']<br />');
-				}
 				if ($this_status == 'empty')
 				{
-					if ($this->debug_set_prefs > 1)
-					{
-						$this->msg->dbug->out('email.bopreferences.get_first_empty_ex_acctnum: [status] == empty for acctnum [' . $this_acctnum . ']<br />');
-					}
 					$first_empty_ex_acctnum = (int)$this_acctnum;
 					$did_get_acctnum = True;
 					break;
@@ -2114,10 +1711,6 @@ class email_bopreferences
 				elseif ((int)($i + 1) != (int)$this_acctnum)
 				{
 					$first_empty_ex_acctnum = (int)($i + 1);
-					if ($this->debug_set_prefs > 1)
-					{
-						$this->msg->dbug->out('email.bopreferences.get_first_empty_ex_acctnum: slots have an empty spot, unused $acctnum is [' . $first_empty_ex_acctnum . ']<br />');
-					}
 					$did_get_acctnum = True;
 					break;
 				}
@@ -2128,15 +1721,7 @@ class email_bopreferences
 				$first_empty_ex_acctnum = count(\App\modules\email\services\MailMessage::getInstance()->extra_accounts);
 				// since extra accounts are not zero based, add one to that count to get real next available
 				$first_empty_ex_acctnum++;
-				if ($this->debug_set_prefs > 1)
-				{
-					$this->msg->dbug->out('email.bopreferences.get_first_empty_ex_acctnum: no empty spaces extra_accounts[], advance to next int: $first_empty_ex_acctnum [' . $first_empty_ex_acctnum . ']<br />');
-				}
 			}
-		}
-		if ($this->debug_set_prefs > 0)
-		{
-			$this->msg->dbug->out('email.bopreferences.get_first_empty_ex_acctnum: LEAVING, returning $first_empty_ex_acctnum [' . serialize($first_empty_ex_acctnum) . ']<br />');
 		}
 		return $first_empty_ex_acctnum;
 	}
@@ -2149,18 +1734,6 @@ class email_bopreferences
 		*/
 	function obtain_ex_acctnum()
 	{
-		if ($this->debug_set_prefs > 0)
-		{
-			$this->msg->dbug->out('email: bopreferences.obtain_ex_acctnum: ENTERING<br />');
-		}
-		if ($this->debug_set_prefs > 2)
-		{
-			$this->msg->dbug->out('email: bopreferences.obtain_ex_acctnum: $GLOBALS[HTTP_POST_VARS] DUMP:', \App\modules\email\services\MailMessage::getInstance()->ref_POST);
-		}
-		if ($this->debug_set_prefs > 2)
-		{
-			$this->msg->dbug->out('email: bopreferences.obtain_ex_acctnum: $GLOBALS[HTTP_GET_VARS] DUMP:', \App\modules\email\services\MailMessage::getInstance()->ref_GET);
-		}
 		// get fromPOST or GET
 		$prelim_acctnum = '##NOTHING##';
 		if ((isset(\App\modules\email\services\MailMessage::getInstance()->ref_POST['ex_acctnum'])
@@ -2189,10 +1762,6 @@ class email_bopreferences
 		else
 		{
 			$final_acctnum = $prelim_acctnum;
-		}
-		if ($this->debug_set_prefs > 0)
-		{
-			$this->msg->dbug->out('email.bopreferences.obtain_ex_acctnum: LEAVING, returning $final_acctnum: [' . serialize($final_acctnum) . '] <br />');
 		}
 		return $final_acctnum;
 	}

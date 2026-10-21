@@ -11,7 +11,6 @@
 	* @internal Based on AngleMail http://www.anglemail.org/
 	*/
 
-	
 	/**
 	* Handles spell checking for email messages. Give it all necessary data and it 
 	* handles the rest. All class params are private unless an OOP style access 
@@ -130,20 +129,14 @@
 		var $body_display='';
 		var $body_with_suggest='';
 		var $form_open_tags='';
-		
-		
-		//var $debug = 3;
-		var $debug_init = 0;
-		var $debug_spellcheck = 0;
+
 		var $debug_spell_finished = 0;
-		
-		
+
 		/**
 		* Constructor
 		*/
 		function __construct()
 		{
-			if ($this->debug_init > 0) { echo 'ENTERING: email.spell.CONSTRUCTOR'.'<br />'."\r\n"; }
 			
 			/*!
 			@class requires including header utility file spell_struct
@@ -187,8 +180,7 @@
 			$this->body_orig = '';
 			$this->body_array = array();
 			$this->body_display = '';
-			
-			
+
 			//$this->my_validator = CreateObject("phpgwapi.validator");
 			$this->widgets = CreateObject("email.html_widgets");
 			$this->user_lang = $GLOBALS['phpgw_info']['user']['preferences']['common']['lang'];
@@ -201,7 +193,6 @@
 			//if ('one' == 'two')
 			if (function_exists('pspell_new') && function_exists('pspell_check'))
 			{
-				if ($this->debug_init > 0) { echo 'email.spell.CONSTRUCTOR: loading real spell service "spell_svc_php"'.'<br />'."\r\n"; }
 				// load the spell service class for php builtin pspell extension
 				$this->spell_svc = CreateObject("email.spell_svc_php");
 				// open connection to dictionary backend 
@@ -209,7 +200,6 @@
 			}
 			else
 			{
-				if ($this->debug_init > 0) { echo 'email.spell.CONSTRUCTOR: loading DUMMY spell service'.'<br />'."\r\n"; }
 				// load the DUMMY spell service class so php does not complain about undefined functions.
 				$this->spell_svc = CreateObject("email.spell_svc_none");
 				
@@ -222,9 +212,7 @@
 			// ask this service how it wants its input, single words or lines of text
 			// This spell class is required to discover that and make it public
 			$this->set_sp_feed_type($this->spell_svc->get_sp_feed_type());
-			if ($this->debug_init > 0) { echo 'email.spell.CONSTRUCTOR: $this->get_can_spell() returns: ['.serialize($this->get_can_spell()).']<br />'."\r\n"; }
 			
-			if ($this->debug_init > 0) { echo 'EXIT: email.spell.CONSTRUCTOR'.'<br />'."\r\n"; }
 		}
 		
 		/**************************************************************************\
@@ -559,8 +547,7 @@
 				return True;
 			}
 		}
-		
-		
+
 		/*!
 		@function strip_punctuation
 		@abstract this utility function will strip punctuation from text
@@ -621,7 +608,6 @@
 				$this_bad_word_element = $this->bad_words[$x];
 				if ($this_bad_word_element->line_num == $line_num)
 				{
-					if ($this->debug_spellcheck > 0) { echo 'bad word ['.$this_bad_word_element->orig_word.'] exists on this line num ['.$this_bad_word_element->line_num.'], it is word num ['.$this_bad_word_element->word_num.']<br />'; }
 					// make this particular bad word bolded
 					$word_in_question = $line_array[$this_bad_word_element->word_num];
 					// is there any punctuation we need to consider seperate from this word?
@@ -685,8 +671,7 @@
 			$remade_line = implode(' ', $line_array);
 			return $remade_line;
 		}
-		
-		
+
 		/*!
 		@function add_option_boxes
 		@abstract takes one line of text and inserts suggestion comboboxes after each misspelled word.
@@ -712,7 +697,6 @@
 				$this_bad_word_element = $this->bad_words[$x];
 				if ($this_bad_word_element->line_num == $line_num)
 				{
-					if ($this->debug_spellcheck > 0) { echo 'bad word ['.$this_bad_word_element->orig_word.'] exists on this line num ['.$this_bad_word_element->line_num.'], it is word num ['.$this_bad_word_element->word_num.']<br />'; }
 					// make this particular bad word bolded
 					// update: we don;t care about this unclean version, we want the word that the spellchecker got, stripped of punctuation
 					// however the punctuation around it must be preserved for the email message
@@ -850,12 +834,10 @@
 					//if ($this->debug_spell_finished > 2) { echo 'email.spell.replace_badwords_this_line: bad word: ['.$this_bad_word_element->orig_word_clean.'] :: user wants this replacement: ['.$this_bad_word_element->suggestions[0].'], if it is "K_E_E_P", do not replace<br />'; }
 					if ($this_bad_word_element->suggestions[0] == "K_E_E_P")
 					{
-						if ($this->debug_spell_finished > 1) { echo 'email.spell.replace_badwords_this_line: bad word: ['.$this_bad_word_element->orig_word_clean.'] :: user wants NO CHANGE, found "K_E_E_P" as suggextion[0], skipping to next bad_word loop via "continue"'; }
 						continue;
 					}
 					
 					// ... replace the word ...
-					if ($this->debug_spell_finished > 1) { echo 'email.spell.replace_badwords_this_line: bad word: ['.$this_bad_word_element->orig_word_clean.'] :: user wants it replaced with ['.$this_bad_word_element->suggestions[0].']<br />'; }
 					$word_in_quesion_raw = $line_array[$this_bad_word_element->word_num];
 					$processed_word = str_replace($this_bad_word_element->orig_word_clean, $this_bad_word_element->suggestions[0], $word_in_quesion_raw);
 					$line_array[$this_bad_word_element->word_num] = $processed_word;
@@ -870,11 +852,9 @@
 		// DEPRECIATED
 		function basic_spcheck()
 		{
-			if ($this->debug_spellcheck > 0) { echo 'ENTERING: email.spell.basic_spcheck'.'<br />'; }
 			
 			// DEPRECIATED
 			
-			if ($this->debug_spellcheck > 0) { echo 'LEAVING: email.spell.basic_spcheck'.'<br />'; }
 		}
 		
 		/*!
@@ -885,11 +865,7 @@
 		*/
 		function spell_review()
 		{
-			
-			if ($this->debug_spellcheck > 0) { echo 'ENTERING: email.spell.spell_review'.'<br />'; }
-			if ($this->debug_spellcheck > 0) { echo 'spell_review lang(charset): ['.lang('charset').']<br />'; }
-			if ($this->debug_spellcheck > 0) { echo 'spell_review $this->user_lang: ['.$this->user_lang.']<br />'; }
-			
+
 			unset($GLOBALS['phpgw_info']['flags']['noheader']);
 			unset($GLOBALS['phpgw_info']['flags']['nonavbar']);
 			$GLOBALS['phpgw_info']['flags']['noappheader'] = True;
@@ -923,60 +899,46 @@
 			// now prepare to check words.
 			$this->body_array = array();
 			$this->body_array = \App\modules\email\services\MailMessage::getInstance()->explode_linebreaks($this->body_orig);
-			
-			if ($this->debug_spellcheck > 0) { echo 'spell_review: $this->body_array DUMP <pre>'; print_r($this->body_array); echo '</pre>'; }
-			
-			
+
 			$loops = count($this->body_array);
 			for ($i=0; $i < $loops; $i++)
 			{
 				$this_line_str = $this->body_array[$i];
-				if ($this->debug_spellcheck > 0) { echo '<br />spell_review: this_line: ['.$this_line_str.']<br />'; }
 				
 				if (strlen($this_line_str) == 0)
 				{
 					// is this a blank line
-					if ($this->debug_spellcheck > 0) { echo 'spell_review: skipping this line, it\'s blank'.'<br />'; }
 				}
 				elseif ((stristr($this_line_str, ">"))
 				&& ($this_line_str[0] == '>'))
 				{
 					// does the line begin with a repoly quoting char
-					if ($this->debug_spellcheck > 0) { echo 'spell_review: skipping this line, it starts with a reply quote &gt; char'.'<br />'; }
 				}
 				else
 				{
 					// Line OK to check
-					if ($this->debug_spellcheck > 0) { echo 'spell_review: we will examine this line... '.'<br />'; }
 					$word_for_word = array();
 					$word_for_word = explode(' ', $this_line_str);
-					//echo 'spell_review: $word_for_word DUMP <pre>'; print_r($word_for_word); echo '</pre>';
 					$words = count($word_for_word);
 					for ($x=0; $x < $words; $x++)
 					{
 						$this_word = $word_for_word[$x];
-						if ($this->debug_spellcheck > 0) { echo '&nbsp; spell_review: $this_word: ['.$this_word.'] ; htmlspecialchars($this_word) ['.htmlspecialchars($this_word).']<br />'; }
 						if ($this->care_about_word($this_word) == False)
 						{
-							if ($this->debug_spellcheck > 0) { echo '&nbsp; spell_review: 1st test $this->care_about_word advises to IGNORE this word, skipping to next word via "continue"'.'<br /> ... reject_reason: '.$this->reject_reason.'<br /> . . . <br />'; }
 							continue;
 						}
 						//strip punctuation
 						$this_word_clean = $this->strip_punctuation($this_word);
 						
-						if ($this->debug_spellcheck > 0) { echo '&nbsp; spell_review: $this->strip_punctuation('.$this_word.') returns ['.$this_word_clean.']<br />'; }
 						if ($this->care_about_word($this_word_clean) == False)
 						{
-							if ($this->debug_spellcheck > 0) { echo '&nbsp; spell_review: 2nd test $this->care_about_word advises to IGNORE this word, skipping to next word via "continue"'.'<br /> ... reject_reason: '.$this->reject_reason.'<br /> . . . <br />'; }
 							continue;
 						}
 						
-						if ($this->debug_spellcheck > 0) { echo '&nbsp; spell_review: Spell Check OK to proceed on word: ['.$this_word_clean.']<br />'; }
 						// DO THE SPELL CHECK
 						
 						if ($this->spell_svc->pgw_pspell_check ($this->pspell_link, $this_word_clean))
 						{
-							if ($this->debug_spellcheck > 0) { echo '&nbsp; &nbsp; spell_review: spelling OK for ['.$this_word_clean.']<br />'; }
 						}
 						else
 						{
@@ -987,17 +949,14 @@
 							$this->bad_words[$idx]->line_num = $i;
 							$this->bad_words[$idx]->word_num = $x;
 							$this->bad_words[$idx]->suggestions = array();
-							
-							
+
 							$cur_suggest=0;
 							$suggestions = $this->spell_svc->pgw_pspell_suggest ($this->pspell_link, $this_word_clean);
 							if ( count($suggestions) == 0)
 							{
-								if ($this->debug_spellcheck > 0) { echo '&nbsp; &nbsp; spell_review: ['.$this_word_clean.'] has spelling problems, got '.count($suggestions).' suggestions, sorry'.'<br />'; }
 							}
 							else
 							{
-								if ($this->debug_spellcheck > 0) { echo '&nbsp; &nbsp; spell_review: ['.$this_word_clean.'] has spelling problems, got '.count($suggestions).' suggestions, first '.$this->max_suggest.' are:<pre>'; }
 								foreach ($suggestions as $suggestion)
 								{
 									if ($cur_suggest > $this->max_suggest)
@@ -1005,24 +964,18 @@
 										break;
 									}
 									//echo ' * for ['.$this_word.'] Possible spelling: ['.$suggestion.']'.'<br />'."\r\n";
-									if ($this->debug_spellcheck > 0) { echo ' * '.$suggestion.'<br />'."\r\n"; }
 									$this->bad_words[$idx]->suggestions[$cur_suggest] = $suggestion;
 									$cur_suggest++;
 								}
 								//echo 'done suggesting'.'<br /><br />'."\r\n";
-								if ($this->debug_spellcheck > 0) { echo '</pre>'."\r\n"; }
 							}
 						}
 						// debug out a spacer before we go to the next word
-						if ($this->debug_spellcheck > 0) { echo ' . . . <br />'."\r\n"; }
 					}
 				}
 				
 			}
-			if ($this->debug_spellcheck > 0) { echo 'spell_review: done with body array spell check loop'.'<br />'; }
-			if ($this->debug_spellcheck > 0) { echo 'spell_review: $this->bad_words DUMP<pre>'; print_r($this->bad_words); echo '</pre>'; }
-			
-			
+
 			// put body_array back together inserting bad_words data
 			$loops = count($this->body_array);
 			for ($i=0; $i < $loops; $i++)
@@ -1031,7 +984,6 @@
 				// first, we can encode the html specialchars that exist in the orig line
 				// this *should* not add any spaces, so word number data should still be valid
 				$this_line_str = \App\modules\email\services\MailMessage::getInstance()->htmlspecialchars_encode($this_line_str);
-				if ($this->debug_spellcheck > 0) { echo 'spell_review: RECONSTRUCT BODY this_line: ['.$this_line_str.']<br />'; }
 				
 				// any and all bad words in this line of text are flagged now
 				//$this_line_str = $this->html_mark_entire_line($this_line_str, $i);
@@ -1051,10 +1003,8 @@
 			$GLOBALS['phpgw']->template->set_var('btn_cancel', $btn_cancel);
 			
 			$GLOBALS['phpgw']->template->pfp('out','T_spell_main');
-			if ($this->debug_spellcheck > 0) { echo 'EXITT: email.spell.spell_review'.'<br />'; }
 		
 		}
-
 
 		/*!
 		@function spell_finished
@@ -1068,30 +1018,23 @@
 		*/
 		function spell_finished()
 		{
-			if ($this->debug_spell_finished > 0) { echo 'ENTERING: email.spell.spell_finished'.'<br />'; }
 			// this function is in class.msgl_bootstrap.inc.php, we created in the constructor for this class.
 			$this->msg_bootstrap->ensure_mail_msg_exists('email.spell.spell_finished', $this->debug_spell_finished);
-			
-			if ($this->debug_spell_finished > 2) { 	echo 'email.spell.spell_finished: data dump: $GLOBALS[HTTP_POST_VARS]<pre>'; print_r(\App\modules\email\services\MailMessage::getInstance()->ref_POST); echo '</pre>'."\r\n";
-									echo 'email.spell.spell_finished: data dump: $GLOBALS[HTTP_GET_VARS]<pre>'; print_r(\App\modules\email\services\MailMessage::getInstance()->ref_GET); echo '</pre>'."\r\n"; }
-			
+
 			// recover the body_orig
 			$this->body_orig = urldecode(\App\modules\email\services\MailMessage::getInstance()->ref_POST['body_orig_b64_urlencode']);
 			$this->body_orig = base64_decode($this->body_orig);
-			if ($this->debug_spell_finished > 1) { echo 'email.spell.spell_finished: recovered $this->body_orig DUMP:<pre>'; print_r($this->body_orig); echo '</pre>'; }
 			
 			// CANCEL OR APPLY - which button was pressed
 			if ((isset(\App\modules\email\services\MailMessage::getInstance()->ref_POST['btn_apply']))
 			&& (\App\modules\email\services\MailMessage::getInstance()->ref_POST['btn_apply'] != ''))
 			{
-				if ($this->debug_spell_finished > 1) { echo 'email.spell.spell_finished: btn_apply was pressed<br />'; }
 				// recover the spellcheck data which was encooded as a URI get string in the spelling comboboxes
 				$all_badwords = array();
 				// ----  extract any "fake_uri" embedded data from HTTP_POST_VARS  ----
 				// note: this happens automatically for HTTP_GET_VARS 
 				if (is_array(\App\modules\email\services\MailMessage::getInstance()->ref_POST))
 				{
-					if ($this->debug_spell_finished > 1) { echo '$GLOBALS[HTTP_POST_VARS] is array<br />'; }
 					//@reset($GLOBALS['phpgw']->msg->ref_POST);
 					//while(list($key,$value) = each($GLOBALS['phpgw']->msg->ref_POST))
 					foreach(\App\modules\email\services\MailMessage::getInstance()->ref_POST as $key => $value)
@@ -1115,25 +1058,19 @@
 						}
 					}
 				}
-				if ($this->debug_spell_finished > 1) { echo 'email.spell.spell_finished: recovered $all_badwords DUMP:<pre>'; print_r($all_badwords); echo '</pre>'; }
 				$this->make_correction_struct_from_array($all_badwords);
-				if ($this->debug_spell_finished > 1) { echo 'email.spell.spell_finished: $this->make_correction_struct_from_array($all_badwords) Fills $this->bad_words[] DUMP:<pre>'; print_r($this->bad_words); echo '</pre>'; }
 			
 				// REPLACE WORDS
-				if ($this->debug_spell_finished > 1) { echo 'email.spell.spell_finished: btn_apply was pressed, fix misspelled words if necessary <br />'; }
 				
 				$this->body_array = array();
 				$this->body_array = \App\modules\email\services\MailMessage::getInstance()->explode_linebreaks($this->body_orig);
-				
-				if ($this->debug_spell_finished > 2) { echo 'email.spell.spell_finished: $this->body_array DUMP <pre>'; print_r($this->body_array); echo '</pre>'; }
-				
+
 				// put the corrected line in $this->body_with_suggest 
 				$this->body_with_suggest = '';
 				$loops = count($this->body_array);
 				for ($i=0; $i < $loops; $i++)
 				{
 					$this_line_str = $this->body_array[$i];
-					if ($this->debug_spell_finished > 0) { echo '<br />email.spell.spell_finished: this_line: ['.$this_line_str.']<br />'; }
 					// any and all replacable bad words in this line of text are replaced now, the entire line os processed at the same time
 					$this_line_str = $this->replace_badwords_this_line($this_line_str, $i);
 					$this->body_with_suggest .= $this_line_str."\r\n";
@@ -1142,24 +1079,18 @@
 			}
 			else
 			{
-				if ($this->debug_spell_finished > 1) { echo 'email.spell.spell_finished: btn_cancel was pressed (or at lease, btn_apply was not pressed ...)<br />'; }
 				// CANCEL was pressed, user wants no word substitutions
 				// simply fill $this->body_with_suggest with $this->body_orig, then the rest of the code is the same
 				$this->body_with_suggest = $this->body_orig;
 			}
 			
 			//$this->body_with_suggest = ereg_replace("\r\n","<br />",$this->body_with_suggest);
-			if ($this->debug_spell_finished > 1) { echo 'email.spell.spell_finished: FINAL PROCESSED BODY: $this->body_with_suggest:<pre>'.$this->body_with_suggest.'</pre>'; }
 			
 			// TELL BOCOMPOSE TO DO ITS THING WITH THIS SPELL FIXED BODY
 			\App\modules\email\services\MailMessage::getInstance()->set_arg_value('body', $this->body_with_suggest);
 			$compose = CreateObject("email.uicompose");
 			$compose->compose('mail_spell_special_handling');
-			
-			
-			
-			if ($this->debug_spell_finished > 0) { echo 'EXIT: email.spell.spell_finished'.'<br />'; }
-		}
 
+		}
 
 	}

@@ -141,6 +141,5 @@ function check_all()
 
 {geek_bar}
 
-{debugdata}
 <br /> 
 <!-- end ndex_mail_b0_l2.tpl -->

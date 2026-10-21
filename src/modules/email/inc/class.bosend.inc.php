@@ -13,7 +13,6 @@
 	* @internal Server side attachment storage technique borrowed from Squirrelmail
 	*/
 
-	
 	/**
 	* Send non-SMTP functions
 	*
@@ -36,19 +35,13 @@
 		var $smtp;
 		var $api_mode = false;
 		var $xi;
-		
-		// debug level between 0 to 3
-		var $debug_constructor = 0;
-		var $debug_sendorspell = 0;
-		var $debug_spellcheck = 0;
+
 		var $debug_send = 0;
-		var $debug_struct = 0;
-		//var $debug_struct = 3;
+
 		var $company_disclaimer = '';
 		
 		function __construct()
 		{
-			if ($this->debug_constructor > 0) { echo 'email.bosend *constructor*: ENTERING<br />'; }
 			
 			// May 9, 2003 Ryan Bonham adds company disclaimer code
 			// This Disclaimer will be added to any out going mail
@@ -58,7 +51,6 @@
 			$this->msg_bootstrap->ensure_mail_msg_exists('email.bosend.constructor', $this->debug_send);
 			
 			$this->not_set = \App\modules\email\services\MailMessage::getInstance()->not_set;
-			if ($this->debug_constructor > 0) { echo 'email.bosend *constructor*: LEAVING<br />'; }
 		}
 		
 		/**
@@ -90,9 +82,7 @@
 			}
 			return $got_ip;
 		}
-		
-		
-		
+
 		/** 
 		* Put a message in "Sent" Folder, if Applicable. This MUST be a message that has been sent already!
 		* 
@@ -210,66 +200,30 @@
 		*/
 		function sendorspell()
 		{
-			if ($this->debug_sendorspell > 0)
-			{
-				echo 'ENTERING: email.bosend.sendorspell'.'<br />';
-			}
-			
-			if ($this->debug_sendorspell > 2)
-			{
-				echo 'email.bosend.sendorspell: data dump: $GLOBALS[HTTP_POST_VARS]<pre>'; 
-				print_r(\App\modules\email\services\MailMessage::getInstance()->ref_POST);
-				echo '</pre>'."\r\n";
-				
-				echo 'email.bosend.sendorspell: data dump: $GLOBALS[HTTP_GET_VARS]<pre>';
-				print_r(\App\modules\email\services\MailMessage::getInstance()->ref_GET);
-				echo '</pre>'."\r\n";
-			}
 
 			if ((isset(\App\modules\email\services\MailMessage::getInstance()->ref_POST['draft']))
 			&& (\App\modules\email\services\MailMessage::getInstance()->ref_POST['draft'] == 'save'))
 			{
-				if ($this->debug_sendorspell > 1)
-				{
-					echo 'email.bosend.sendorspell: "draft" is set && == save; calling $this->save_draftk()'.'<br />';
-				}
 				$this->save_draft();
 			}
 			
 			if ((isset(\App\modules\email\services\MailMessage::getInstance()->ref_POST['btn_spellcheck']))
 			&& (\App\modules\email\services\MailMessage::getInstance()->ref_POST['btn_spellcheck'] != ''))
 			{
-				if ($this->debug_sendorspell > 1)
-				{
-					echo 'email.bosend.sendorspell: "btn_spellcheck" is set; calling $this->spellcheck()'.'<br />';
-				}
 				$this->spellcheck();
 			}
 			elseif ((isset(\App\modules\email\services\MailMessage::getInstance()->ref_POST['btn_send']))
 			&& (\App\modules\email\services\MailMessage::getInstance()->ref_POST['btn_send'] != ''))
 			{
-				if ($this->debug_sendorspell > 1)
-				{
-					echo 'email.bosend.sendorspell: "btn_send" is set; calling $this->send()'.'<br />';
-				}
 				$this->send();
 			}
 			else
 			{
-				if ($this->debug_sendorspell > 1)
-				{
-					echo ': email.bosend.sendorspell: ERROR: neither "btn_spellcheck" not "btn_send" is set; fallback action $this->send()'.'<br />';
-				}
 				$this->send();
 			}
 			
-			if ($this->debug_sendorspell > 0)
-			{
-				echo 'LEAVING: email.bosend.sendorspell'.'<br />';
-			}
 		}
-		
-		
+
 		/*!
 		@function spellcheck
 		@abstract if the compose page was submitted as a pellcheck, this function is called, it then calls the emai.spell class
@@ -279,11 +233,7 @@
 		*/
 		function spellcheck()
 		{
-			if ($this->debug_spellcheck > 0) { echo 'ENTERING: email.bosend.spellcheck'.'<br />'; }
-			
-			if ($this->debug_spellcheck > 2) { 	echo 'email.bosend.spellcheck: data dump: $GLOBALS[HTTP_POST_VARS]<pre>'; print_r(\App\modules\email\services\MailMessage::getInstance()->ref_POST); echo '</pre>'."\r\n";
-									echo 'email.bosend.spellcheck: data dump: $GLOBALS[HTTP_GET_VARS]<pre>'; print_r(\App\modules\email\services\MailMessage::getInstance()->ref_GET); echo '</pre>'."\r\n"; }
-			
+
 			// we may strip slashes, but that is all we should do before handing the body to the spell class
 			//$my_body = $GLOBALS['phpgw']->msg->stripslashes_gpc(trim($GLOBALS['phpgw']->msg->get_arg_value('body')));
 			//$this->mail_spell->set_body_orig($my_body);
@@ -317,10 +267,7 @@
 			
 			//$this->mail_spell->basic_spcheck();
 			$this->mail_spell->spell_review();
-			
-			
-			
-			if ($this->debug_spellcheck > 0) { echo 'LEAVING: email.bosend.spellcheck'.'<br />'; }
+
 		}
 		
 		/**
@@ -436,21 +383,10 @@
 		*/
 		function prepare_message()
 		{
-			
-			if ($this->debug_send > 0)
-			{
-				echo 'ENTERING: email.bosend.send'.'<br />';
-			}
-			
+
 			if ($this->debug_send > 2)
 			{
-				echo 'email.bosend.send: data dump: $GLOBALS[HTTP_POST_VARS]<pre>'; 
-				print_r(\App\modules\email\services\MailMessage::getInstance()->ref_POST);
-				echo '</pre>'."\r\n";
 				
-				echo 'email.bosend.send: data dump: $GLOBALS[HTTP_GET_VARS]<pre>';
-				print_r(\App\modules\email\services\MailMessage::getInstance()->ref_GET);
-				echo '</pre>'."\r\n";
 				return;
 			}
 			
@@ -692,31 +628,7 @@
 				}
 				unset($bcc_array);
 			}
-			
-			/*
-			// ===== DEBUG =====	
-			echo '<br />';
-			//$dubug_info = $to;
-			//$dubug_info = ereg_replace("\r\n.", "CRLF_WSP", $dubug_info);
-			//$dubug_info = ereg_replace("\r\n", "CRLF", $dubug_info);
-			//$dubug_info = ereg_replace(" ", "SP", $dubug_info);
-			//$dubug_info = $GLOBALS['phpgw']->msg->htmlspecialchars_encode($dubug_info);
-			//echo serialize($dubug_info);
-			
-			//$to = $GLOBALS['phpgw']->msg->addy_array_to_str($to, True);
-			//echo 'to including personal: '.$GLOBALS['phpgw']->msg->htmlspecialchars_encode($to).'<br />';
-			
-			echo '<br /> var dump mail_out <br />';
-			var_dump($this->mail_out);
-			//echo '<br /> var dump cc <br />';
-			//var_dump($cc);
-			echo '<br />';
-			
-			$GLOBALS['phpgw']->common->phpgw_footer();
-			exit;
-			// ===== DEBUG ===== 
-			*/
-			
+
 			// ----  Attachment Detection  -----
 			// some of this attachment uploading and handling code is from squirrelmail (www.squirrelmail.org)
 			$upload_dir = \App\modules\email\services\MailMessage::getInstance()->att_files_dir;
@@ -775,25 +687,10 @@
 					$fwd_this['sub_body'] = preg_replace("/(?<!(\r\n\r\n))[-]{2}$dash_dash$this_boundary$dash_dash/", "\r\n\r\n".'--'.$this_boundary.'--', $fwd_this['sub_body']);
 					$fwd_this['sub_body'] = trim($fwd_this['sub_body']);
 				}
-				
-				
+
 				// assemble it and add the blank line that seperates the headers from the body
 				$fwd_this['processed'] = $fwd_this['sub_header']."\r\n"."\r\n".$fwd_this['sub_body'];
-				
-				
-				/*
-				//echo 'fwd_this[sub_header]: <br /><pre>'.$GLOBALS['phpgw']->msg->htmlspecialchars_encode($fwd_this['sub_header']).'</pre><br />';
-				//echo 'fwd_this[matches]: <br /><pre>'.$GLOBALS['phpgw']->msg->htmlspecialchars_encode(serialize($fwd_this['matches'])).'</pre><br />';
-				//echo 'fwd_this[boundaries]: <br /><pre>'.$GLOBALS['phpgw']->msg->htmlspecialchars_encode($fwd_this['boundaries']).'</pre><br />';
-				//echo '=== var dump    fwd_this <br /><pre>';
-				//var_dump($fwd_this);
-				//echo '</pre><br />';			
-				echo 'fwd_this[processed]: <br /><pre>'.$GLOBALS['phpgw']->msg->htmlspecialchars_encode($fwd_this['processed']).'</pre><br />';
-				unset($fwd_this);
-				exit;
-				*/
-				
-				
+
 				$this->smtp->AddStringAttachment($fwd_this['processed'], lang('forwarded_message'), '7bit', 'message/rfc822');
 				// clear this no longer needed var
 				$fwd_this = '';
@@ -813,8 +710,7 @@
 			exit;
 			// ===== DEBUG ===== 
 			*/
-			
-			
+
 			/*
 			// ===== DEBUG =====	
 			echo '<br />';
@@ -875,7 +771,6 @@
 						'start'=>\App\modules\email\services\MailMessage::getInstance()->get_arg_value('start'));
 		
 		}
-				
 
 		function save_draft()
 		{

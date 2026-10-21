@@ -163,6 +163,5 @@ function check_all()
 		</td>
 	</tr>
 </table>
-	{debugdata}
 <!-- end index_main_b0_l1.tpl -->
 

@@ -60,6 +60,5 @@
 </tr>
 </table>
 </form>
-{debugdata}
 <br />
 <!-- end folder.tpl -->

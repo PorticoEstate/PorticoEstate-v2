@@ -54,6 +54,7 @@ class EmailPreferencesController
 		}
 		catch (\Throwable $exception)
 		{
+			error_log('[email] EmailPreferencesController::index failed (' . get_class($exception) . ')');
 			return $this->json($response, [
 				'error' => lang('Unable to load email preferences'),
 				'reason' => $exception->getMessage(),
@@ -105,6 +106,7 @@ class EmailPreferencesController
 		}
 		catch (\Throwable $exception)
 		{
+			error_log('[email] EmailPreferencesController::save failed (' . get_class($exception) . ')');
 			return $this->json($response, [
 				'error' => lang('Unable to save email preferences'),
 				'reason' => $exception->getMessage(),
@@ -135,6 +137,7 @@ class EmailPreferencesController
 		}
 		catch (\Throwable $exception)
 		{
+			error_log('[email] EmailPreferencesController::accounts failed (' . get_class($exception) . ')');
 			return $this->json($response, [
 				'error' => lang('Unable to load email accounts'),
 				'reason' => $exception->getMessage(),
@@ -197,6 +200,7 @@ class EmailPreferencesController
 		}
 		catch (\Throwable $exception)
 		{
+			error_log('[email] EmailPreferencesController::accountEditor failed (' . get_class($exception) . ')');
 			return $this->json($response, [
 				'error' => lang('Unable to load email account'),
 				'reason' => $exception->getMessage(),
@@ -257,6 +261,7 @@ class EmailPreferencesController
 		}
 		catch (\Throwable $exception)
 		{
+			error_log('[email] EmailPreferencesController::saveAccount failed (' . get_class($exception) . ')');
 			return $this->json($response, [
 				'error' => lang('Unable to save email account'),
 				'reason' => $exception->getMessage(),
@@ -289,6 +294,7 @@ class EmailPreferencesController
 		}
 		catch (\Throwable $exception)
 		{
+			error_log('[email] EmailPreferencesController::deleteAccount failed (' . get_class($exception) . ')');
 			return $this->json($response, [
 				'error' => lang('Unable to delete email account'),
 				'reason' => $exception->getMessage(),

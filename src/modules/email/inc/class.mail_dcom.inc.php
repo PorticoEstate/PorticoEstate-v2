@@ -31,10 +31,6 @@ if (extension_loaded('imap') && function_exists('imap_open') && !$debug_dcom)
 {
 	$imap_builtin = True;
 	$sock_fname = '';
-	if ($debug_dcom)
-	{
-		echo 'imap builtin extension is available<br />';
-	}
 }
 else if (
 	$debug_dcom
@@ -44,19 +40,11 @@ else if (
 {
 	$imap_builtin = False;
 	$sock_fname = '_sock';
-	if ($debug_dcom)
-	{
-		echo 'DCOM DEBUG: force socket class for $mail_server_type [' . $mail_server_type . ']<br />';
-	}
 }
 else
 {
 	$imap_builtin = False;
 	$sock_fname = '_sock';
-	if ($debug_dcom)
-	{
-		echo 'imap builtin extension NOT available, using socket class<br />';
-	}
 }
 
 $inc_basedir = PHPGW_INCLUDE_ROOT . '/email/inc/';
@@ -65,10 +53,6 @@ $inc_basedir = PHPGW_INCLUDE_ROOT . '/email/inc/';
  * Include dcom base or base_sock
  */
 require_once "{$inc_basedir}class.mail_dcom_base{$sock_fname}.inc.php";
-if ($debug_dcom)
-{
-	echo "including: {$inc_basedir}class.mail_dcom_base{$sock_fname}.inc.php<br>\n";
-}
 
 switch ($mail_server_type)
 {
@@ -87,7 +71,3 @@ switch ($mail_server_type)
 }
 
 require_once "{$inc_basedir}class.mail_dcom_{$server_type}{$sock_fname}.inc.php";
-if ($debug_dcom)
-{
-	echo "including: '{$inc_basedir}class.mail_dcom_{$server_type}{$sock_fname}.inc.php'<br>";
-}

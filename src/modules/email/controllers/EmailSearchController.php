@@ -105,6 +105,7 @@ class EmailSearchController
 		}
 		catch (\Throwable $exception)
 		{
+			error_log('[email] EmailSearchController::search failed (' . get_class($exception) . ')');
 			return $this->json($response, ['error' => lang('Unable to search messages')], 500);
 		}
 		finally

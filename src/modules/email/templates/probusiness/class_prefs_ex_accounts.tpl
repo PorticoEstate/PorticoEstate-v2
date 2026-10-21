@@ -25,6 +25,5 @@
     <tr><td colspan="4" class="center">{add_new_acct_href}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{done_href}</td></tr>
   </table>
 <p>&nbsp;</p>
-{debugdata}
 <!-- end class_prefs_ex_accounts.tpl -->
 

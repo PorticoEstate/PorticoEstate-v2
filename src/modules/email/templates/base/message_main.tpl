@@ -207,5 +207,4 @@ In the future, this will process a specially formated email msg.<hr />
 </table>
 {geek_bar}
 <!-- lame sep ##### Lame Sep -->
-{debugdata}
 <!-- end message_main.tpl -->

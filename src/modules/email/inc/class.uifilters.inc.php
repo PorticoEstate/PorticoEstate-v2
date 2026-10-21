@@ -11,7 +11,6 @@
 	* @internal Based on AngleMail http://www.anglemail.org/
 	*/
 
-
 	/**
 	* Sieve Email Filters and Search Mode
 	*
@@ -151,8 +150,7 @@
 			$this->tpl->set_var('lang_submit',lang('Submit'));
 			$this->tpl->set_var('lang_clear',lang('Clear'));
 			$this->tpl->set_var('lang_cancel',lang('Cancel'));
-			
-			
+
 			//= = = = TESTING NEW LISTBOX WIDGET = = = 
 			if (!(isset($this->widgets))
 			|| (!is_object($this->widgets)))
@@ -169,9 +167,7 @@
 			// what filter are we supposed to edit
 			$filter_num = $this->bo->obtain_filer_num();
 			$this->tpl->set_var('filter_num',$filter_num);
-			
-			if ($this->debug > 2) { echo 'uifilters.filters: $this->bo->obtain_filer_num(): ['.$this->bo->obtain_filer_num().'] ; $this->bo->all_filters DUMP<pre>'; print_r($this->bo->all_filters); echo '</pre>'."\r\n"; }
-			
+
 			// setup some form vars
 			//$form_edit_filter_action = phpgw::link(
 			//					'/index.php',
@@ -198,8 +194,7 @@
 			
 			$this->tpl->set_var('apply_this_filter_href',$apply_this_filter_href);
 			$this->tpl->set_var('test_this_filter_href',$test_this_filter_href);
-			
-			
+
 			// does the data exist or is this a new filter
 			/*
 			if ((isset($this->bo->all_filters[$filter_num]))
@@ -526,19 +521,15 @@
 			$this->tpl->set_var('row_on',$this->theme['row_on']);
 			$this->tpl->set_var('row_off',$this->theme['row_off']);
 			$this->tpl->set_var('row_text',$this->theme['row_text']);
-			
-			
-			
+
 			// debugging result list
 			$mlist_html = '';
 			if (count($this->bo->filters) > 0)
 			{
 				
-				if ($this->debug > 1) { echo 'uifilters.filters_edit: count($this->bo->filters): ['.count($this->bo->filters).'] ; <br />'."\r\n"; }
 				//$this->bo->sieve_to_imap_string();
 				// WHAT THE F*** IS THIS - this is OLD left over code
 				//$this->bo->do_imap_search();
-				//if ($this->debug > 0) { echo 'message list print_r dump:<b><pre>'."\r\n"; print_r($this->bo->result_set_mlist); echo '</pre><br /><br />'."\r\n"; }
 				$this->bo->make_mlist_box();
 				$mlist_html = 
 					'<table border="0" cellpadding="4" cellspacing="1" width="90%" align="center">'."\r\n"
@@ -550,12 +541,9 @@
 			
 			}
 			$this->tpl->set_var('V_mlist_html',$mlist_html);
-			
-			// new way to handle debug data, if there is debug data, this will put it in the template source data vars
-			$this->tpl->set_var('debugdata', trim(\App\modules\email\services\MailMessage::getInstance()->dbug->notice_pagedone()));
+
 			if (\App\modules\email\services\MailMessage::getInstance()->phpgw_before_xslt)
 			{
-				//$this->tpl->set_var('debugdata', $GLOBALS['phpgw']->msg->dbug->notice_pagedone());
 				// COMMENT NEXT LINE OUT for producvtion use, (unknowns should be "remove"d in production use)
 				$this->tpl->set_unknowns('comment');
 				//$this->tpl->pparse('out','T_filters_out');
@@ -591,8 +579,6 @@
 		{			
 
 			// GENERAL INFO
-			//echo 'get_loaded_extensions returns:<br /><pre>'; print_r(get_loaded_extensions()); echo '</pre>';
-			//echo 'phpinfo returns:<br /><pre>'; print_r(phpinfo()); echo '</pre>';
 			
 			$imap_constants = array(
 				'SA_MESSAGES' => 1,
@@ -640,8 +626,7 @@
 			}
 			
 		}
-		
-		
+
 		/*!
 		@function filters_list
 		@abstract Display the list of all filters stored in the users pref table. 
@@ -715,10 +700,7 @@
 			// AND the if the constructor sees "uifilters" in the menuaction, it LEAVES the pref data html encoded for use in the form
 			//$filters_list = $this->bo->read_filter_data_from_prefs();
 			$filters_list = $this->bo->all_filters;
-			
-			
-			if ($this->debug > 2) { echo 'email.uifilters.filters_list: $filters_list dump<pre>'; print_r($filters_list); echo '</pre>'; }
-			
+
 			$tr_color = $this->theme['row_off'];
 			$loops = count($filters_list);
 			if ($loops == 0)
@@ -846,9 +828,7 @@
 			
 			$test_all_filters_href = '<a href="'.$test_all_filters_url.'">'.lang('Test All Filters').'</a>';
 			$this->tpl->set_var('test_all_filters_href',$test_all_filters_href);
-			
-			// new way to handle debug data, if there is debug data, this will put it in the template source data vars
-			$this->tpl->set_var('debugdata', \App\modules\email\services\MailMessage::getInstance()->dbug->notice_pagedone());
+
 			if (\App\modules\email\services\MailMessage::getInstance()->phpgw_before_xslt)
 			{
 				// COMMENT NEXT LINE OUT for producvtion use, (unknowns should be "remove"d in production use)
@@ -873,6 +853,5 @@
 			// tell the msg object we are done with it
 			\App\modules\email\services\MailMessage::getInstance()->end_request();
 		}
-		
-		
+
 	}

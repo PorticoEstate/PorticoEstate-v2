@@ -11,7 +11,6 @@
 	* @internal Based on AngleMail http://www.anglemail.org/
 	*/
 
-
 	/**
 	* UI Class for Attaching Files
 	*
@@ -27,9 +26,7 @@
 		var $bo;
 		
 		var $debug = 0;
-		//var $debug = 3;
-		//var $debug = 4;
-		
+
 		function __construct()
 		{
 			//return;
@@ -37,11 +34,8 @@
 		
 		function attach()
 		{
-			if ($this->debug > 0) { echo 'ENTERING emai.uiattach_file.attach'.'<br />'; }
-			if ($this->debug > 2) { echo 'emai.uiattach_file.attach: initial $GLOBALS[phpgw_info][flags] DUMP<pre>'; print_r($GLOBALS['phpgw_info']['flags']);  echo '</pre>'; }
 			//return;
-			
-			
+
 			$phpgw_flags = Array(
 				'currentapp' => 'email',
 				'enable_network_class' => True,
@@ -85,9 +79,7 @@
 			}
 			
 			// shut down this transaction
-			if ($this->debug > 0) { echo 'LEAVING emai.uiattach_file.attach with call to phpgw_exit'.'<br />'; }
 			$GLOBALS['phpgw']->common->phpgw_exit(False);
 		}
-	
-	
+
 	}

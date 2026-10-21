@@ -37,6 +37,7 @@ class EmailComposeController
 			$result = $businessObject->send();
 			if (empty($result['sent']))
 			{
+				error_log('[email] Message submission failed');
 				return $this->json($response, ['error' => lang('Unable to send message')], 502);
 			}
 			return $this->json($response, ['sent' => true]);
@@ -53,6 +54,7 @@ class EmailComposeController
 		}
 		catch (\Throwable $exception)
 		{
+			error_log('[email] EmailComposeController::send failed (' . get_class($exception) . ')');
 			if (\App\modules\email\services\MailMessage::hasInstance() && \App\modules\email\services\MailMessage::hasInstance())
 			{
 				\App\modules\email\services\MailMessage::getInstance()->end_request();

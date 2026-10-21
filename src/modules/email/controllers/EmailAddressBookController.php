@@ -57,6 +57,7 @@ class EmailAddressBookController
 		}
 		catch (\Throwable $exception)
 		{
+			error_log('[email] EmailAddressBookController::search failed (' . get_class($exception) . ')');
 			return $this->json($response, [
 				'error' => lang('Unable to search the address book'),
 				'reason' => $exception->getMessage(),

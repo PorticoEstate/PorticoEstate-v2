@@ -16,6 +16,7 @@ class EmailAttachmentController
 		}
 		catch (\Throwable $exception)
 		{
+			error_log('[email] EmailAttachmentController::index failed (' . get_class($exception) . ')');
 			return $this->json($response, [
 				'error' => lang('Unable to load attachments'),
 				'reason' => $exception->getMessage(),
@@ -56,6 +57,7 @@ class EmailAttachmentController
 		}
 		catch (\Throwable $exception)
 		{
+			error_log('[email] EmailAttachmentController::upload failed (' . get_class($exception) . ')');
 			return $this->json($response, [
 				'error' => lang('Unable to upload attachment'),
 				'reason' => $exception->getMessage(),
@@ -96,6 +98,7 @@ class EmailAttachmentController
 		}
 		catch (\Throwable $exception)
 		{
+			error_log('[email] EmailAttachmentController::delete failed (' . get_class($exception) . ')');
 			return $this->json($response, [
 				'error' => lang('Unable to delete attachments'),
 				'reason' => $exception->getMessage(),

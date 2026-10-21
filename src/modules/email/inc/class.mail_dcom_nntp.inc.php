@@ -158,10 +158,6 @@ require_once __DIR__ . '/imap_config.php';
 		{
 			//$debug_logins = True;
 			$debug_logins = False;
-			if($debug_logins)
-			{
-				echo 'CALL TO LOGIN IN CLASS MSG POP3'.'<br />'.'userid='.$GLOBALS['phpgw_info']['user']['preferences']['email']['userid'];
-			}
 	
 			error_reporting(error_reporting() - 2);
 			if($folder!='INBOX')

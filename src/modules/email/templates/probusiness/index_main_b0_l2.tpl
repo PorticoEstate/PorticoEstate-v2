@@ -107,6 +107,5 @@
 </table>
 
 {geek_bar}
-{debugdata}
 <br />
 

@@ -50,7 +50,6 @@
 		*/
 		$inbox_data = Array();
 		$inbox_data = \App\modules\email\services\MailMessage::getInstance()->new_message_check();
-		//if ($debug_hook_home > 2) { echo 'hook_home('.__LINE__.'): $inbox_data dump:<pre>'; print_r($inbox_data); echo '</pre>'; } 
 
 		$title = '<font color="#FFFFFF">'.lang('EMail').' '.$inbox_data['alert_string'].'</font>';
 
@@ -67,7 +66,6 @@
 			$msgball_list = array();
 			$msgball_list = \App\modules\email\services\MailMessage::getInstance()->get_msgball_list();
 		}
-		//if ($debug_hook_home > 2) { echo 'hook_home('.__LINE__.'): call to "get_msgball_list" returns $msgball_list dump:<pre>'; print_r($msgball_list); echo '</pre>'; } 
 		for($i=0; $i<$check_msgs; $i++)
 		{
 			$this_loop_msgball = \App\modules\email\services\MailMessage::getInstance()->ball_data_parse_str($msgball_list[$i]);

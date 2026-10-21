@@ -11,7 +11,6 @@
 	* @internal Based on AngleMail http://www.anglemail.org/
 	*/
 
-
 	/**
 	* Compose and SpellCheck
 	*
@@ -36,8 +35,7 @@
 		var $addybook_choice;
 		
 		var $debug = 0;
-		//var $debug = 3;
-		
+
 		function __construct()
 		{
 			/*!
@@ -270,7 +268,6 @@
 		*/
 		function compose($special_instructions='')
 		{
-			if ($this->debug) { echo 'ENTERING: email.bocompose.compose :: $special_instructions: '.$special_instructions.'<br />'; }
 			
 			// this function is in class.msg_bootstrap.inc.php, we created in the constructor for this class.
 			$this->msg_bootstrap->ensure_mail_msg_exists('email.bocompose.compose', $this->debug);
@@ -301,8 +298,6 @@
 			}
 			elseif (\App\modules\email\services\MailMessage::getInstance()->get_isset_arg('["msgball"]["msgnum"]'))
 			{
-				if ($this->debug > 1) { echo 'email.bocompose.compose: get_isset_arg ["msgball"]["msgnum"] is TRUE <br />'; }
-				if ($this->debug > 1) { echo 'email.bocompose.compose: $GLOBALS[phpgw]->msg->get_arg_value(action) : ['.\App\modules\email\services\MailMessage::getInstance()->get_arg_value('action').'] <br />'; }
 				$msgball = \App\modules\email\services\MailMessage::getInstance()->get_arg_value('msgball');
 				$msg_headers = \App\modules\email\services\MailMessage::getInstance()->phpgw_header($msgball);
 				$msg_struct = \App\modules\email\services\MailMessage::getInstance()->phpgw_fetchstructure($msgball);
@@ -434,8 +429,7 @@
 					{
 						$body = $this->quote_inline_message($body."\r\n",$msgball, \App\modules\email\services\MailMessage::getInstance()->reply_prefix);
 					}
-					
-					
+
 					//echo '<br />orig_headers <br /><pre>' .$GLOBALS['phpgw']->msg->htmlspecialchars_encode($orig_headers) .'</pre><br />';
 					//echo '<br />reg_matches ' .serialize($reg_matches) .'<br />';
 					//echo '<br />orig_boundary ' .$orig_boundary .'<br />';
@@ -492,7 +486,6 @@
 						{
 							$partball = $msgball;
 							$partball['part_no'] = $id + 1;
-							//echo '<pre>'; print_r($part); echo '</pre>';
 						
 							$filename = '';
 							if($part->ifdparameters)
@@ -516,7 +509,6 @@
 								$filename = lang('attachment') . $id;
 							}
 
-							
 							$random_number = mt_rand(1000,999999999);
 							$newfilename = md5($filename.', '.$GLOBALS['phpgw_info']['user']['sessionid'].time().$_SERVER['REMOTE_ADDR'].$random_number);
 							$part_string = \App\modules\email\services\MailMessage::getInstance()->phpgw_fetchbody($partball);
@@ -590,9 +582,7 @@
 			
 			// what value does the "Send" button need
 			$send_btn_action = $this->get_compose_form_action_url();
-			
-			
-			
+
 			// ADDRESSBOOK
 			// there are 2 possibilities
 			// (1) the original addressbook "orig"
@@ -635,7 +625,6 @@
 												update_opener:1
 											}"
 							);
-
 
 			//echo '$addylink_lex: '.$addylink_lex.'<br />';
 			
@@ -846,6 +835,5 @@
 			}
 			
 		}
-
 
 	}

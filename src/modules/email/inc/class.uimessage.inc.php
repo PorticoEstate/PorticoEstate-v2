@@ -11,7 +11,6 @@
 	* @internal Based on AngleMail http://www.anglemail.org/
 	*/
 
-
 	/**
 	* UI Class for Message Lists
 	*
@@ -192,8 +191,7 @@
 			{
 				$this->tpl->set_var('V_attach_list','');
 			}
-			
-			
+
 			$tpl_vars = Array(
 				// ----  Images and Hrefs For Reply, ReplyAll, Forward, and Delete  -----
 			//	'theme_font'		=> $this->bo->xi['theme_font'],
@@ -211,8 +209,7 @@
 				//'ilnk_delete'		=> $this->bo->xi['ilnk_delete']
 			);
 			$this->tpl->set_var($tpl_vars);
-			
-			
+
 			// ---- DEBUG: Show Information About Each Part  -----
 			//  the debug output needs updating
 			if ($this->bo->debug > 0)
@@ -328,8 +325,7 @@
 				$this->tpl->set_block('T_message_main', 'edit_message', 'edit_msg');
 				$this->tpl->set_var('edit_msg', '');
 			}
-			
-			
+
 			// -----  SHOW MESSAGE  -------
 			//@set_time_limit(120);
 			
@@ -399,10 +395,7 @@
 				$final_V_display_part = '';
 				unset($final_V_display_part);
 			//}
-			
-			// new way to handle debug data, if there is debug data, this will put it in the template source data vars
-			$this->tpl->set_var('debugdata', \App\modules\email\services\MailMessage::getInstance()->dbug->notice_pagedone());
-			
+
 			if ((isset($did_echo_dump))
 			&& ($did_echo_dump == True))
 			{
@@ -423,10 +416,8 @@
 				//$data['function_msg'] = lang('show message');
 				$GLOBALS['phpgw_info']['flags']['email']['app_header'] = lang('E-Mail') . ': ' . lang('show message');
 				$data['email_page'] = $this->tpl->parse('out','T_message_main');
-				// new way to handle debug data, if this array has anything, put it in the template source data vars
-				//if ($GLOBALS['phpgw']->msg->dbug->debugdata)
+
 				//{
-				//	$data['debugdata'] = $GLOBALS['phpgw']->msg->dbug->get_debugdata_stack();
 				//}
 				//phpgwapi_xslttemplates::getInstance()->set_var('phpgw',array('uimessage' => $data));
 				phpgwapi_xslttemplates::getInstance()->set_var('phpgw',array('generic_out' => $data));
@@ -504,8 +495,7 @@
 				$GLOBALS['phpgw_info']['flags']['noappheader'] = True;
 				$GLOBALS['phpgw_info']['flags']['noappfooter'] = True;
 			}
-			
-			
+
 			$this->tpl->set_file(array(
 				'T_message_printable' => 'message_printable.tpl',
 				'T_message_echo_dump' => 'message_echo_dump.tpl'

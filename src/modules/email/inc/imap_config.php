@@ -15,9 +15,6 @@
 
 define('IMAP_MODE', 'auto');
 
-// Enable IMAP debugging (logs fallbacks and errors)
-define('IMAP_DEBUG', true);
-
 // Include the IMAP Manager
 require_once __DIR__ . '/IMAPManager.php';
 

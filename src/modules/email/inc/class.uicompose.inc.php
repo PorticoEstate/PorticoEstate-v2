@@ -11,7 +11,6 @@
 	* @internal Based on AngleMail http://www.anglemail.org/
 	*/
 
-	
 	/**
 	* UI Class for Message Lists
 	*
@@ -98,13 +97,10 @@
 				)
 			);
 			$this->tpl->set_block('T_compose_out','B_checkbox_sig','V_checkbox_sig');
-			
-			if ($this->debug > 2) { echo 'GLOBALS[phpgw_info] dump:<pre>'; print_r($GLOBALS['phpgw_info']) ; echo '</pre>'; }
-			
+
 			//= = = = TOOLBAR WIDGET = = = 
 			$this->widgets = CreateObject('email.html_widgets');
 			$this->tpl->set_var('widget_toolbar',$this->widgets->get_toolbar());
-			
 
 			// fill template vars
 			$tpl_vars = Array(
@@ -179,9 +175,7 @@
 			{
 				$this->tpl->set_var('ischecked_checkbox_req_notify','');
 			}
-			
-			// new way to handle debug data, if there is debug data, this will put it in the template source data vars
-			$this->tpl->set_var('debugdata', \App\modules\email\services\MailMessage::getInstance()->dbug->notice_pagedone());
+
 			if (\App\modules\email\services\MailMessage::getInstance()->phpgw_before_xslt)
 			{
 				// we are the BO and the UI, we take care of outputting the HTML to the client browser

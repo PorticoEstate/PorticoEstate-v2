@@ -18,7 +18,6 @@
 	* @internal Based on AngleMail http://www.anglemail.org/
 	*/
 
-	
 	/**
 	* Sockets based SMTP class, will communicate with an MTA to send mail
 	*
@@ -32,15 +31,10 @@
 		var $err = array();
 		var $to_res = array();
 		var $default_smtp_port = 25;
-		
-		//var $debug_fake_send = True;
+
 		var $debug_fake_send = False;
 		
 		var $retain_copy = False;
-		
-		// trace flag 0 = none, 1 = server only, 2 = server and client, 3 = totally extra verbose
-		var $trace_flag = 0;
-		var $trace_data = array();
 		
 		// some of the MTA communication should not go into the copy, like ELHO stuff
 		var $retain_copy_ignore = True;
@@ -51,7 +45,6 @@
 			$this->err['code'] = '';
 			$this->err['msg']  = '';
 			$this->err['desc'] = '';
-			$this->err['server_chat'] = "\r\n";
 		}
 		
 		function send_init()
@@ -59,11 +52,6 @@
 			// depreciated
 		}
 		
-		function log_trace($prefix='', $data)
-		{
-			$next_idx = count($this->trace_data);
-			$this->trace_data[$next_idx] = $prefix.' : '.htmlspecialchars(rtrim($data));
-		}
 		// ===  some sub-functions  ===
 
 		function socket2msg($socket)
@@ -80,14 +68,9 @@
 			{
 				//$rmsg = fgets($socket,255);
 				$rmsg = fgets($socket,1024);
-				$this->err['server_chat'] .= htmlspecialchars('s->c: '.$rmsg);
-				if ($this->trace_flag > 0) { $this->log_trace('socket2msg: rmsg', $rmsg); }
 				$this->err['code'] = substr($rmsg,0,3);
-				if ($this->trace_flag > 2) { $this->log_trace('socket2msg: $this->err[code]', $this->err['code']); }
 				$followme = substr($rmsg,3,1);
-				if ($this->trace_flag > 2) { $this->log_trace('socket2msg: $followme', $followme); }
 				$this->err['msg'] = substr($rmsg,4);
-				if ($this->trace_flag > 2) { $this->log_trace('socket2msg: $this->err[msg]', $this->err['msg']); }
 				if (substr($this->err['code'],0,1) != 2 && substr($this->err['code'],0,1) != 3)
 				{
 					$rc  = fclose($socket);
@@ -108,7 +91,6 @@
 		{
 			if ($this->debug_fake_send)
 			{
-				echo \App\modules\email\services\MailMessage::getInstance()->htmlspecialchars_encode($message);
 				return True;
 			}
 			// if we need a copy of this message for the "sent" folder, assemble it here
@@ -117,18 +99,11 @@
 			{
 				$this->assembled_copy .= "$message";
 			}
-			// on the contrary, server chat ONLY wants the pre- DATA stuff
-			if ($this->retain_copy_ignore)
-			{
-				// "retain_copy_ignore" means we are still in the handshake phase, which is what "server_chat" wants
-				$this->err['server_chat'] .= htmlspecialchars('c->s: '.$message);
-			}
-			
-			if ($this->trace_flag > 1) { $this->log_trace('msg2socket: $message', $message); }
-			
+
 			$rc = fputs($socket,"$message");
 			if (!$rc)
 			{
+				error_log('[email] SMTP connection lost while sending');
 				$this->err['code'] = '420';
 				$this->err['msg']  = 'lost connection';
 				$this->err['desc'] = 'Lost connection to smtp server.';
@@ -157,7 +132,6 @@
 				// we do not actually communicate with the SMTP server for a fake send
 				$socket = 41;
 				// announce the fact this is echo'd debug output, not an actual session
-				echo '<html><body><h2>FAKE SEND DEBUG:</h2> <h3>this is what the client *would* send to the SMTP server were this an actual send</h3>';
 			}
 			else
 			{
@@ -171,11 +145,11 @@
 				
 				// OPEN SOCKET - now we try to open the socket and check, if any smtp server responds
 				$socket = fsockopen($smtp_server,$smtp_port,$errcode,$errmsg,$timeout);
-				$this->err['server_chat'] .= htmlspecialchars('c->s: fsockopen('.$smtp_server.','.$smtp_port.','.$errcode.','.$errmsg.','.$timeout.') ; returned: '.$socket )."\r\n";
 
 			}
 			if (!$socket)
 			{
+				error_log('[email] SMTP connection failed');
 				$this->err['code'] = '420';
 				$this->err['msg']  = $errcode.':'.$errmsg;
 				$this->err['desc'] = 'Connection to '.$GLOBALS['phpgw_info']['server']['smtp_server'].':'.$GLOBALS['phpgw_info']['server']['smtp_port'].' failed - could not open socket.';
@@ -225,10 +199,6 @@ $mypassword = "xxxxxxxxxx";
 				);
 			}
 // END CHANGES JF
-			if ($this->debug_fake_send)
-			{
-				echo '<pre>';
-			}
 			for ($src=true,$rrc=true,$i=0; $i<count($cmds);$i++)
 			{
 				eval ($cmds[$i]);
@@ -385,12 +355,7 @@ $mypassword = "xxxxxxxxxx";
 			{
 				return false;
 			}
-			
-			if ($this->debug_fake_send)
-			{
-				echo '</pre><h3>end of Fake Send</h3></body></html>';
-			}
-			
+
 			if (!$this->debug_fake_send)
 			{
 				do

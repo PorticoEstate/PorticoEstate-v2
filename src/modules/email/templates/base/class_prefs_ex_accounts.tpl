@@ -55,5 +55,4 @@
 <p>
 	&nbsp;
 </p>
-{debugdata}
 <!-- end class_prefs_ex_accounts.tpl -->

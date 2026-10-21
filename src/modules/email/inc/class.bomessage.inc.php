@@ -11,7 +11,6 @@
 	* @internal Based on AngleMail http://www.anglemail.org/
 	*/
 
-	
 	/**
 	* Message content
 	*
@@ -42,14 +41,10 @@
 		//var $hide_alt_hide = False;
 		
 		var $debug = 0;
-		//var $debug = 2;
-		//var $debug = 3;
-		
+
 		// Special Debug data assembled about the message
 		var $show_debug_parts_summary=0;
 		//var $show_debug_parts_summary=1;
-		
-		var $debug_nav = 0;
 
 		var $flags = array();
 		
@@ -74,7 +69,6 @@
 		*/
 		function __construct()
 		{
-			if ($this->debug > 0) { echo 'ENTERING: email.bomessage.*constructor*'.'<br />'; }
 			
 			// should "msg_bootstrap" code go here?
 			
@@ -167,18 +161,12 @@ lang_warn_style_sheet = lang of "warn_style_sheet"
 			$this->xi['lang_warn_attachment_only_mail'] = lang('There is no text or other part of the email to display to the user, all part(s) are attachments.');
 			$this->xi['lang_warn_attachment_name_dangerous'] = lang('Message has an attachment that is some kind of script or exe file that Windows users should be warned not to click on it. These are filenames like attachments the end with the usual "bad stuff", such as bat, inf, pif, com, exe, reg, vbs, and scr');			
 			$this->xi['lang_warn_style_sheet'] = lang('This is really a visual template conflict issue. The phpGW template already has it own CSS, and style sheets are cascading, subsequent CSS can be inherited by the page and TOTALLY B0RK the look of the template theme. Or maybe not, only certain CSS tags are really capable of this such as the css BODY property, or the A (href) properties.');
-			
-			
-			if ($this->debug > 2) { echo 'class.bomessage.*constructor* ('.__LINE__.'): langs put in $this->xi DUMP:<pre>'; print_r($this->xi); echo '</pre>'; } 
-			
-			if ($this->debug > 0) { echo 'LEAVING: email.bomessage.*constructor*'.'<br />'; }
-			
+
 			// also, this "return" *may* (need to check) effect constructor of a a inherit-ee roll thru the constructoes
 			// uncomment the return when we understand implications of it geing here.
 			//return;
 		}
-		
-		
+
 		/*!
 		@function message_data
 		@abtract The cheese is made here, means the real down and dirty code for the 
@@ -196,9 +184,7 @@ lang_warn_style_sheet = lang of "warn_style_sheet"
 				$this->msg = \App\modules\email\services\MailMessage::getInstance();
 			}
 			// now we can use msg object debug calls
-			if ($this->debug > 0) { $this->msg->dbug->out('ENTERING: email.bomessage.message_data('.__LINE__.')'.'<br />'); }
-			
-			
+
 			// ---- BEGIN BOMESSAGE ----
 			
 			// if preserving no_fmt then add it to every navigation (prev, next) links
@@ -307,10 +293,7 @@ lang_warn_style_sheet = lang of "warn_style_sheet"
 			{
 				$this->xi['delmov_listbox'] = '&nbsp;';
 			}
-			
-			
-			
-			
+
 			// ----  Fill Some Important Variables  -----
 			$sm_envelope_img = \App\modules\email\services\MailMessage::getInstance()->img_maketag(\App\modules\email\services\MailMessage::getInstance()->_image_on('email',$this->icon_theme.'/address-conduit-16','_on'),lang('add to address book'),'','','0');
 
@@ -319,13 +302,9 @@ lang_warn_style_sheet = lang of "warn_style_sheet"
 			// ----  General Information about The Message  -----
 			$msgball = \App\modules\email\services\MailMessage::getInstance()->get_arg_value('msgball');
 			
-			if ($this->debug > 2) { $this->msg->dbug->out('email.bomessage.message_data('.__LINE__.'):  processed msgball DUMP:', $msgball); } 
 			$msg_struct = \App\modules\email\services\MailMessage::getInstance()->phpgw_fetchstructure($msgball);
 			$msg_headers = \App\modules\email\services\MailMessage::getInstance()->phpgw_header($msgball);
-			
-			if ($this->debug > 2) { $this->msg->dbug->out('class.bomessage.message_data('.__LINE__.'): $msg_struct DUMP:', $msg_struct);  }
-			if ($this->debug > 2) { $this->msg->dbug->out('class.bomessage.message_data('.__LINE__.'): $msg_headers DUMP:', $msg_headers);  }
-			
+
 			/*
 			// MOVED TO EVENT, TRIGGERED BY GETTING A BODY OR BODY PART
 			// CACHE NOTE: FLAGS: if this message we are about to read has flags saying it is UNREAD 
@@ -350,7 +329,6 @@ lang_warn_style_sheet = lang of "warn_style_sheet"
 			
 			$folder_info = array();
 			$folder_info = \App\modules\email\services\MailMessage::getInstance()->get_folder_status_info();
-			if ($this->debug > 2) { $this->msg->dbug->out('email.bomessage.message_data('.__LINE__.'):  get_folder_status_info() DUMP:', $folder_info); }
 			$totalmessages = $folder_info['number_all'];
 			
 			$subject = \App\modules\email\services\MailMessage::getInstance()->get_subject($msg_headers,'');
@@ -487,7 +465,6 @@ $msg_headers->udate = $new_time;
 			// NOTE: the one arg for this function is only there to support the old, broken method
 			// in the event that the "get_msgball_list()" returns bogus data or is not available
 			$nav_data = \App\modules\email\services\MailMessage::getInstance()->prev_next_navigation($folder_info['number_all']);
-			if ($this->debug_nav > 2) { $this->msg->dbug->out('email.bomessage.message_data('.__LINE__.'): $nav_data[] DUMP:', $nav_data); }
 
 			// ----  "Go To Previous Message" Handling  -----
 			if ($nav_data['prev_msg'] != $not_set)
@@ -550,8 +527,7 @@ $msg_headers->udate = $new_time;
 			// these are the clickable images for prev and next message navigation
 			$this->xi['ilnk_prev_msg'] = $ilnk_prev_msg;
 			$this->xi['ilnk_next_msg'] = $ilnk_next_msg;
-			
-			
+
 			// ----  "MOVE THIS MESSAGE TO" MENU BAR BOX  ----
 			// now that we have obtained "$next_msg_link" we can make this combobox widget
 			// since we already need and use prev / next message navigation data on this page
@@ -671,8 +647,7 @@ $msg_headers->udate = $new_time;
 			}
 			
 			$this->xi['from_data_final'] = $from_data_final;
-			
-			
+
 			// ----  To:  Message Data  -----
 			if (!$msg_headers->to)
 			{
@@ -838,9 +813,7 @@ $msg_headers->udate = $new_time;
 			$this->part_nice = Array();
 			// NO NEED TO CACHE THIS DATA, NO CONTACT WITH MAILSERVER IS NEEDED FOR THIS DATA
 			$this->part_nice = \App\modules\email\services\MailMessage::getInstance()->get_flat_pgw_struct($msg_struct);
-			if ($this->debug > 2) { $this->msg->dbug->out('email.bomessage.message_data('.__LINE__.'): $this->part_nice DUMP:', $this->part_nice); }
-			
-			
+
 			// ---- Attachments List Creation  -----
 			$list_of_files = '';
 			for ($j = 0; $j < count($this->part_nice); $j++)
@@ -1131,7 +1104,6 @@ $msg_headers->udate = $new_time;
 				//$msg_body_info .= '</pre>' .$crlf;
 				//$this->xi['msg_body_info'] = $msg_body_info;
 				$this->xi['msg_body_info'] = '';
-				$this->msg->dbug->out('email.bomessage.message_data('.__LINE__.'): assembled debug data $msg_body_info DUMP:', $msg_body_info);
 				
 			}
 			else
@@ -1139,8 +1111,7 @@ $msg_headers->udate = $new_time;
 				//$GLOBALS['phpgw']->template->set_var('V_debug_parts','');
 				$this->xi['msg_body_info'] = '';
 			}
-			
-			
+
 			// -----  Message_Display Template Handles it from here  -------
 	//		$this->xi['theme_font'] = $GLOBALS['phpgw_info']['theme']['font'];
 	//		$this->xi['theme_th_bg'] = $GLOBALS['phpgw_info']['theme']['th_bg'];
@@ -1215,16 +1186,12 @@ $msg_headers->udate = $new_time;
 			$this->xi['view_printable_href'] = $view_printable_href;
 			$view_printable_ilnk = '<a href="'.$view_printable_url.'" target="new">'.$view_printable_img.'</a>';
 			$this->xi['view_printable_ilnk'] = $view_printable_ilnk;
-			
-			
+
 			// Force Echo Out Unformatted Text for email with 1 part which is a large text messages (in bytes) , such as a system report from cron
 			// php (4.0.4pl1 last tested) and some imap servers (courier and uw-imap are confirmed) will time out retrieving this type of message
 			//$force_echo_size = 20000;
 			$force_echo_size = 60000;
-			
-			
-			
-			
+
 			// -----  GET BODY AND SHOW MESSAGE  -------
 			$time_limit_from_ini = ini_get('max_execution_time');
 			// this could take a long time, make time limit not b0rk because of a big message
@@ -1260,8 +1227,6 @@ $msg_headers->udate = $new_time;
 			$d1_num_parts = $count_part_nice; // Sigurd: not totally shore on this one
 			for ($i = 0; $i < $count_part_nice; $i++)
 			{
-				if ($this->debug > 2) { $this->msg->dbug->out('email.bomessage.message_data('.__LINE__.'): disp loop: '.($i+1).' of '.$count_part_nice.'<br />'); }
-				if ($this->debug > 3) { $this->msg->dbug->out('email.bomessage.message_data('.__LINE__.'): d_loop: $this->part_nice[$i] DUMP:', $this->part_nice[$i]); }
 				// Do We Break out of this Loop Block
 				if ($done_processing)
 				{
@@ -1282,7 +1247,6 @@ $msg_headers->udate = $new_time;
 				&&  (($this->part_nice[$i]['m_description'] == 'container') 
 				|| ($this->part_nice[$i]['m_description'] == 'packagelist')) )
 				{
-					if ($this->debug > 2) { $this->msg->dbug->out('email.bomessage.message_data('.__LINE__.'): d_loop: "Mime-Ignorant Email Server", Num Parts is 1 AND part is a container OR packagelist <br />'); }
 					
 					// ====  MIME IGNORANT SERVER  ====
 					$title_text = '&nbsp;Mime-Ignorant Email Server: ';
@@ -1329,8 +1293,7 @@ $msg_headers->udate = $new_time;
 					$dsp .= \App\modules\email\services\MailMessage::getInstance()->phpgw_fetchbody($this_msgball);
 					
 					$this->part_nice[$i]['message_body'] = $dsp;
-					
-					
+
 					// ----  DISPLAY INSTRUCTIONS  ----
 					$this->part_nice[$i]['d_instructions'] = 'show';
 					$this->part_nice[$i]['d_processed_as'] = 'mime_ignorant_server';
@@ -1344,7 +1307,6 @@ $msg_headers->udate = $new_time;
 				&& (($this->part_nice[$i]['m_part_num_mime'] == 1) || ((string)$this->part_nice[$i]['m_part_num_mime'] == '1.1'))
 				&& ((int)$this->part_nice[$i]['bytes'] > $force_echo_size))
 				{
-					if ($this->debug > 2) { $this->msg->dbug->out('email.bomessage.message_data('.__LINE__.'): d_loop: ECHO OUT: part meets five criteria <br />'); }
 					
 					$title_text = '&nbsp;'.$this->xi['lang_message'].': ';
 					$display_str = $this->xi['lang_keywords'].': '.$this->part_nice[$i]['m_keywords'].' - '.\App\modules\email\services\MailMessage::getInstance()->format_byte_size($this->part_nice[$i]['bytes'])
@@ -1358,8 +1320,7 @@ $msg_headers->udate = $new_time;
 					$this->part_nice[$i]['d_processed_as'] = 'php_bug_needs_echo';
 					// LOOP CONTROL
 					$done_processing = True;
-					
-					
+
 					/*
 					// output a blank message body, we'll use an alternate method below
 					$GLOBALS['phpgw']->template->set_var('V_display_part','');
@@ -1396,7 +1357,6 @@ $msg_headers->udate = $new_time;
 				// enriched = part of APPLE MAIL multipart / alternative subpart where the html part usually is
 				// HOWEVER enriched is not complete html so it will not render anything special in a browser so we can NOT treat enriched like html
 				{
-					if ($this->debug > 2) { $this->msg->dbug->out('email.bomessage.message_data('.__LINE__.'): d_loop: part is HTML, presentable <br />'); }
 					
 					// get the body
 					$this_msgball = $msgball;
@@ -1449,7 +1409,6 @@ $msg_headers->udate = $new_time;
 					//|| (stristr($this->part_nice[$parent_idx]['subtype'], 'RELATED')))
 					)
 					{
-						if ($this->debug > 2) { $this->msg->dbug->out('email.bomessage.message_data('.__LINE__.'): d_loop: * part is RELATED, HTML, presentable <br />'); }
 						// typically it's the NEXT mime part that should be inserted into this one
 						for ($rel = $i+1; $rel < count($this->part_nice)+1; $rel++)
 						{
@@ -1492,7 +1451,6 @@ $msg_headers->udate = $new_time;
 						
 						if (preg_match("/<iframe.*>.*<\/iframe>/ismx", $dsp))
 						{
-							if ($this->debug > 2) { $this->msg->dbug->out('email.bomessage.message_data('.__LINE__.'): d_loop: part ** HAS IFRAME <br />'); }
 							//$this->part_nice[$i]['d_threat_level'] .= 'warn_HAS_IFRAME_maybe_KLEZ ';
 							$this->part_nice[$i]['d_threat_level'] .= $this->xi['lang_warn_has_iframe_maybe_klez'].' ';
 						}
@@ -1544,8 +1502,7 @@ $msg_headers->udate = $new_time;
 							.'<p>'
 								.'&nbsp;&nbsp; '.'<b>'.$this->part_nice[$i]['d_threat_level'].'</b>'
 							.'</p>';
-							
-							
+
 							// ----  DISPLAY INSTRUCTIONS  ----
 							$this->part_nice[$i]['d_instructions'] = 'show';
 							$this->part_nice[$i]['d_processed_as'] = 'html_button_related';
@@ -1582,8 +1539,7 @@ $msg_headers->udate = $new_time;
 							.'<p>'
 								.'&nbsp;&nbsp; '.'<b>'.$this->part_nice[$i]['d_threat_level'].'</b>'
 							.'</p>';
-							
-							
+
 							// ----  DISPLAY INSTRUCTIONS  ----
 							$this->part_nice[$i]['d_instructions'] = 'show';
 							$this->part_nice[$i]['d_processed_as'] = 'html_button_unrelated';
@@ -1595,8 +1551,7 @@ $msg_headers->udate = $new_time;
 					{
 						// -- "Normal" show html part - no special button, no html/related id replacement
 						// it can't be that bad, just show it
-							
-							
+
 						// ----  DISPLAY INSTRUCTIONS  ----
 						$this->part_nice[$i]['d_instructions'] = 'show';
 						$this->part_nice[$i]['d_processed_as'] = 'html_normal';
@@ -1623,7 +1578,6 @@ $msg_headers->udate = $new_time;
 				&& ($this->hide_alt_hide == True))
 				{
 					// is this a multipart alternative set, and this is the plain part, and do not want to show it
-					if ($this->debug > 2) { $this->msg->dbug->out('email.bomessage.message_data('.__LINE__.'): d_loop: part is presentable BUT it is alt_hide so we do NOT want to show it <br />'); }
 					
 					// ----  DISPLAY INSTRUCTIONS  ----
 					$this->part_nice[$i]['d_instructions'] = 'skip';
@@ -1634,35 +1588,13 @@ $msg_headers->udate = $new_time;
 				}
 				elseif ($this->part_nice[$i]['m_description'] == 'presentable')
 				{
-					if ($this->debug > 2) { $this->msg->dbug->out('email.bomessage.message_data('.__LINE__.'): d_loop: part is presentable (non-html) <br />'); }
 					
 					// ----- get the part from the server
 					$this_msgball = $msgball;
 					$this_msgball['part_no'] = $this->part_nice[$i]['m_part_num_mime'];
 					$dsp = \App\modules\email\services\MailMessage::getInstance()->phpgw_fetchbody($this_msgball);
 					$dsp = trim($dsp);
-					
-					/*
-					$dsp = str_replace("{", " BLA ", $dsp);
-					$dsp = str_replace("}", " ALB ", $dsp);
-					
-					$b_slash = chr(92);
-					$f_slash = chr(47);
-					$dsp = str_replace($b_slash, " B_SLASH ", $dsp);
-					$dsp = str_replace($f_slash, " F_SLASH ", $dsp);
-					
-					$dbl_quo = chr(34);
-					$single_quo = chr(39);
-					$dsp = str_replace($dbl_quo, " dbl_quo ", $dsp);
-					$dsp = str_replace($single_quo, " single_quo ", $dsp);
-					
-					$colon = chr(58);
-					$dsp = str_replace($colon, " colon ", $dsp);
-					
-					echo '<br />'.$this->part_nice[$i]['m_part_num_mime'].'<br />';
-					var_dump($dsp);
-					*/
-					
+
 					// ----- when to skip showing a part (i.e. blank part - no alpha chars)
 					$skip_this_part = False;
 					if (strlen($dsp) < 3)
@@ -1671,8 +1603,7 @@ $msg_headers->udate = $new_time;
 						$this->part_nice[$i]['title_text'] = '';
 						$this->part_nice[$i]['display_str'] = '';
 						$this->part_nice[$i]['message_body'] = '';
-						
-						
+
 						// ----  DISPLAY INSTRUCTIONS  ----
 						$this->part_nice[$i]['d_instructions'] = 'skip';
 						$this->part_nice[$i]['d_processed_as'] = 'empty_part';
@@ -1785,7 +1716,6 @@ $msg_headers->udate = $new_time;
 				&& ($this->hide_alt_hide == True))
 				{
 					// is this a multipart alternative set, and this is the plain part, and do not want to show it
-					if ($this->debug > 2) { $this->msg->dbug->out('email.bomessage.message_data('.__LINE__.'): d_loop: part is presentable IMAGE BUT it is alt_hide because it is html related to a parent so we do NOT want to show it again<br />'); }
 					
 					// ----  DISPLAY INSTRUCTIONS  ----
 					$this->part_nice[$i]['d_instructions'] = 'skip';
@@ -1796,7 +1726,6 @@ $msg_headers->udate = $new_time;
 				}
 				elseif ($this->part_nice[$i]['m_description'] == 'presentable/image')
 				{
-					if ($this->debug > 2) { $this->msg->dbug->out('email.bomessage.message_data('.__LINE__.'): d_loop: part is presentable image <br />'); }
 					
 					$title_text = $this->xi['lang_section'].': '.$this->part_nice[$i]['m_part_num_mime'];
 					$title_text = \App\modules\email\services\MailMessage::getInstance()->ascii2utf($title_text);
@@ -1811,8 +1740,7 @@ $msg_headers->udate = $new_time;
 					// view_image will then handle this request as the browser requests this "img src" for inline display
 					$img_inline = '<img src="'.$this->part_nice[$i]['ex_part_href'].'">';
 					$this->part_nice[$i]['message_body'] = $img_inline;
-					
-					
+
 					// ----  DISPLAY INSTRUCTIONS  ----
 					$this->part_nice[$i]['d_instructions'] = 'show';
 					$this->part_nice[$i]['d_processed_as'] = 'image_href';
@@ -1821,12 +1749,10 @@ $msg_headers->udate = $new_time;
 				}
 				elseif ($this->part_nice[$i]['m_description'] == 'attachment')
 				{
-					if ($this->debug > 2) { $this->msg->dbug->out('email.bomessage.message_data('.__LINE__.'): d_loop: part is attachment <br />'); }
 					
 					// if this is a 1 part message with only this attachment, WARN
 					if (count($this->part_nice) == 1)
 					{
-						if ($this->debug > 2) { $this->msg->dbug->out('email.bomessage.message_data('.__LINE__.'): d_loop: * WARN message has only 1 part and it is an attachment <br />'); }
 						//$this->part_nice[$i]['d_threat_level'] .= 'warn_attachment_only_mail ';
 						$this->part_nice[$i]['d_threat_level'] .= $this->xi['lang_warn_attachment_only_mail'].' ';
 					}
@@ -1834,7 +1760,6 @@ $msg_headers->udate = $new_time;
 					// warn for typically BAD attachments bat, inf, pif, con, reg, vbs, scr
 					if (preg_match('/^.*\.(bat|inf|pif|com|exe|reg|vbs|scr)$/', $this->part_nice[$i]['ex_part_name']))
 					{
-						if ($this->debug > 2) { $this->msg->dbug->out('email.bomessage.message_data('.__LINE__.'): d_loop: * WARN attachment has NEFARIOUS filename extension, ex_part_name: '.$this->part_nice[$i]['ex_part_name'].'<br />'); }
 						//$this->part_nice[$i]['d_threat_level'] .= 'warn_attachment_name_DANGEROUS ';
 						$this->part_nice[$i]['d_threat_level'] .= $this->xi['lang_warn_attachment_name_dangerous'].' ';
 					}
@@ -1864,7 +1789,6 @@ $msg_headers->udate = $new_time;
 				elseif (($this->part_nice[$i]['m_description'] != 'container')
 				&& ($this->part_nice[$i]['m_description'] != 'packagelist'))
 				{
-					if ($this->debug > 2) { $this->msg->dbug->out('email.bomessage.message_data('.__LINE__.'): d_loop: part is ERROR - unknown <br />'); }
 					
 					// if we get here then we've got some kind of error, all things we know about are handle above
 					$title_text = $this->xi['lang_section'].': '.$this->part_nice[$i]['m_part_num_mime'];
@@ -1890,8 +1814,7 @@ $msg_headers->udate = $new_time;
 					//$GLOBALS['phpgw']->template->set_var('message_body',$msg_text);
 					$this->part_nice[$i]['message_body'] = $msg_text;
 					//$GLOBALS['phpgw']->template->parse('V_display_part','B_display_part', True);
-					
-					
+
 					// ----  DISPLAY INSTRUCTIONS  ----
 					$this->part_nice[$i]['d_instructions'] = 'show';
 					$this->part_nice[$i]['d_processed_as'] = 'unknown_handler';
@@ -1929,7 +1852,6 @@ $msg_headers->udate = $new_time;
 			
 			// DO NOT end request yet because the "echo_out" part (if exists) will require this connection
 			//$GLOBALS['phpgw']->msg->end_request();
-			if ($this->debug > 2) { $this->msg->dbug->out('email.bomessage.message_data('.__LINE__.'):  $this->part_nice (With Instructions) DUMP:', $this->part_nice); }
 
 		}
 	}

@@ -11,7 +11,6 @@
 	* @internal Based on AngleMail http://www.anglemail.org/
 	*/
 
-	
 	/**
 	* Utility class shared throught out the email app which ensures the GLOBALS->msg exists and is logged in
 	*
@@ -43,8 +42,7 @@
 		var $do_login_ex = 0;
 		
 		var $debug_level=0;
-		//var $debug_level=3;
-		
+
 		function __construct()
 		{
 			$loginModes = array(
@@ -58,8 +56,7 @@
 				if (!defined($name)) define($name, $value);
 			}
 		}
-		
-		
+
 		/*!
 		@function set_do_login REIMPLEMENTATION
 		@abstract whether to try to login to the mail server or not during a call to "ensure_mail_msg_exists". 
@@ -84,7 +81,6 @@
 		*/
 		function set_do_login($do_login='##NOTHING##', $called_by='not_provided')
 		{
-			if ($this->debug_level > 0) { echo 'ENTERING: msg_bootstrap: set_do_login: (called_by: '.$called_by.') param $do_login: ['.serialize($do_login).']'.'<br />'; } 
 			// backward compat, when this was only true or false
 			if (is_bool($do_login))
 			{
@@ -176,7 +172,6 @@
 			{
 				$this->debug_level = $debug_level;
 			}
-			if ($this->debug_level > 0) { echo 'ENTERING: msg_bootstrap: ensure_mail_msg_exists: (called_by: '.$called_by.')'.'<br />'; }
 			
 			// make sure do_login has been set
 			if ($this->get_do_login_ex() == self::LOGIN_NOT_SPECIFIED)
@@ -194,7 +189,6 @@
 			if ($mail->get_isset_arg('already_grab_class_args_gpc'))
 			{
 				// mail_msg had already run thru "begin_request", do not call it again
-				if ($this->debug_level > 0) { echo 'msg_bootstrap: ensure_mail_msg_exists('.__LINE__.'): (called_by: '.$called_by.'): LEAVING , msg object already initialized<br />'; }
 				return true;
 			}
 			
@@ -207,7 +201,6 @@
 			$args_array['api_request'] = $isApiRequest;
 			
 			// "start your engines"
-			if ($this->debug_level > 1) { echo 'msg_bootstrap: ensure_mail_msg_exists: (called_by: '.$called_by.'): call msg->begin_request with args array:<pre>'; print_r($args_array); echo '</pre>'; }
 			$some_stream = $mail->begin_request($args_array);
 			// error if login failed
 			if (  $args_array['do_login']  && !$some_stream )
@@ -222,8 +215,6 @@
 			}
 			// login error will halt this script execution
 			// else all is good to go and script continues... 
-			if ($this->debug_level > 2) { echo 'msg_bootstrap: about to leave ensure_mail_msg_exists, $GLOBALS[] DUMP:<pre>'; print_r($GLOBALS); echo '</pre>'; }
-			if ($this->debug_level > 0) { echo 'EXIT: msg_bootstrap: ensure_mail_msg_exists: (called_by: '.$called_by.')'.'<br />'; }
 		}
 		
 		/*!
@@ -241,22 +232,16 @@
 		{
 			// DEBUG - override debug_level param
 			//$debug_level = 3;
-			
-			if ($this->debug_level > 0) { echo 'ENTERING: msg_bootstrap: ensure_utility_classes: <br />'; }
-			
+
 			if (is_object($this->widgets))
 			{
-				if ($this->debug_level > 1) { echo 'msg_bootstrap: ensure_utility_classes: is_object test: $GLOBALS[phpgw]->widgets is already set, do not create again<br />'; }
 			}
 			else
 			{
-				if ($this->debug_level > 1) { echo 'msg_bootstrap: ensure_utility_classes: $GLOBALS[phpgw]->widgets is NOT set, creating html_widgets object<br />'; }
 				$my_widgets = CreateObject("email.html_widgets");
 				$this->widgets = $my_widgets;
 			}
-			
-			
-			if ($this->debug_level > 0) { echo 'EXIT: msg_bootstrap: ensure_utility_classes: <br />'; }
+
 		}
 
 	}

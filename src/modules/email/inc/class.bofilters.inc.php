@@ -64,7 +64,6 @@
 		*/
 		function __construct()
 		{
-			if ($this->debug > 0) { echo 'email.bofilters *constructor*: ENTERING <br />'; }
 			
 			define('F_ROW_0_MATCH',1);
 			define('F_ROW_1_MATCH',2);
@@ -120,22 +119,17 @@
 			{
 				$my_menuaction = 'error: none found';
 			}
-			if ($this->debug > 0) { echo 'email.bofilters. *constructor*('.__LINE__.'): $my_menuaction ['.$my_menuaction.']<br />'; }
 			
 			if (stristr($my_menuaction, 'email.uifilter'))
 			{
-				if ($this->debug > 0) { echo 'email.bofilters. *constructor*('.__LINE__.'): GPC menuaction indicates this is a UI call, NOT applying filters, so do NOT html decode pref filter data<br />'; }
 				$also_undo_defang = False;
 			}
 			else
 			{
-				if ($this->debug > 0) { echo 'email.bofilters. *constructor*('.__LINE__.'): GPC menuaction indicates this is NOT simply a UI call, so DO html decode (defang) pref filter data<br />'; } 
 				$also_undo_defang = True;
 			}
 			
-			if ($this->debug > 0) { echo 'email.bofilters. *constructor*: calling $this->read_filter_data_from_prefs('.serialize($also_undo_defang).')<br />'; } 
 			$this->read_filter_data_from_prefs($also_undo_defang);
-			if ($this->debug > 0) { echo 'email.bofilters. *constructor*: LEAVING<br />'; }
 			//return;
 		}
 		
@@ -157,7 +151,6 @@
 		*/
 		function read_filter_data_from_prefs($also_undo_defang='')
 		{
-			if ($this->debug > 0) { echo 'bofilters.read_filter_data_from_prefs('.__LINE__.'): ENTERING, param $also_undo_defang ['.serialize($also_undo_defang).']<br />'."\r\n"; } 
 			/*
 			$this->all_filters = array();
 			// read sublevel data from prefs
@@ -197,15 +190,11 @@
 			// UNDO the DATABASE DEFANG if instructions specified this
 			if ($also_undo_defang)
 			{
-				if ($this->debug > 1) { echo 'bofilters.read_filter_data_from_prefs('.__LINE__.'): about to call $this->all_filters_bulk_undo_defang because param $also_undo_defang is ['.serialize($also_undo_defang).']<br />'."\r\n"; }
 				$this->all_filters_bulk_undo_defang();
 			}
 			else
 			{
-				if ($this->debug > 1) { echo 'bofilters.read_filter_data_from_prefs('.__LINE__.'): leaving html encoded chars AS-IS because param $also_undo_defang is ['.serialize($also_undo_defang).']<br />'."\r\n"; } 
 			}
-			if ($this->debug > 2) { echo 'bofilters.read_filter_data_from_prefs('.__LINE__.'): obtained $this->all_filters DUMP:<pre>'; print_r($this->all_filters); echo '</pre>'."\r\n"; } 
-			if ($this->debug > 0) { echo 'bofilters.read_filter_data_from_prefs('.__LINE__.'): LEAVING <br />'."\r\n"; }
 			return $this->all_filters;
 		}
 		
@@ -217,7 +206,6 @@
 		*/
 		function obtain_filer_num($get_next_avail_if_none=True)
 		{
-			if ($this->debug > 0) { echo 'bofilters.obtain_filer_num: ENTERING ; $get_next_avail_if_none : [<code>'.serialize($get_next_avail_if_none).'</code>]<br />'."\r\n"; }
 			if (isset(\App\modules\email\services\MailMessage::getInstance()->ref_POST['filter_num']))
 			{
 				if (\App\modules\email\services\MailMessage::getInstance()->ref_POST['filter_num'] == $this->add_new_filter_token)
@@ -250,7 +238,6 @@
 			{
 				$filter_num = $this->not_set;
 			}
-			if ($this->debug > 0) { echo 'bofilters.obtain_filer_num: LEAVING ; returning $filter_num : [<code>'.serialize($filter_num).'</code>]<br />'."\r\n"; }
 			return $filter_num;
 		}
 		
@@ -316,21 +303,17 @@
 		{
 			// "False" means  return $this->not_set  if no filter number was found anywhere
 			$found_filter_num = $this->obtain_filer_num(False);
-			if ($this->debug > 1) { echo 'bofilters.move_up: $found_filter_num : [<code>'.serialize($found_filter_num).'</code>]<br />'."\r\n"; }
 			
 			if ($found_filter_num == $this->not_set)
 			{
-				if ($this->debug > 0) { echo 'bofilters.move_up: LEAVING with error, no filter num was found<br />'."\r\n"; }
 				return False;
 			}
 			elseif($this->filter_exists($found_filter_num) == False)
 			{
-				if ($this->debug > 0) { echo 'bofilters.move_up: LEAVING with error, filter $found_filter_num [<code>'.serialize($found_filter_num).'</code>] does not exist<br />'."\r\n"; }
 				return False;
 			}
 			elseif((string)$found_filter_num == '0')
 			{
-				if ($this->debug > 0) { echo 'bofilters.move_up: LEAVING with error, filter $found_filter_num [<code>'.serialize($found_filter_num).'</code>] can not be moved up<br />'."\r\n"; }
 				return False;
 			}
 			// if we get here we need to move up this filter
@@ -346,7 +329,6 @@
 			$take_me_to_url = phpgw::link(
 										'/index.php',array(
 										'menuaction'=>'email.uifilters.filters_list'));
-			if ($this->debug > 0 || $this->debug_set_prefs > 0 ) { echo 'bofilters.move_up: LEAVING with redirect to: <br />'.$take_me_to_url.'<br />'; }
 			Header('Location: ' . $take_me_to_url);
 		}
 		
@@ -359,21 +341,17 @@
 		{
 			// "False" means  return $this->not_set  if no filter number was found anywhere
 			$found_filter_num = $this->obtain_filer_num(False);
-			if ($this->debug > 1) { echo 'bofilters.move_down: $found_filter_num : [<code>'.serialize($found_filter_num).'</code>]<br />'."\r\n"; }
 			
 			if ($found_filter_num == $this->not_set)
 			{
-				if ($this->debug > 0) { echo 'bofilters.move_down: LEAVING with error, no filter num was found<br />'."\r\n"; }
 				return False;
 			}
 			elseif($this->filter_exists($found_filter_num) == False)
 			{
-				if ($this->debug > 0) { echo 'bofilters.move_down: LEAVING with error, filter $found_filter_num [<code>'.serialize($found_filter_num).'</code>] does not exist<br />'."\r\n"; }
 				return False;
 			}
 			elseif($found_filter_num == (count($this->all_filters)-1))
 			{
-				if ($this->debug > 0) { echo 'bofilters.move_down: LEAVING with error, filter $found_filter_num [<code>'.serialize($found_filter_num).'</code>] can not be moved down<br />'."\r\n"; }
 				return False;
 			}
 			// if we get here we need to move up this filter
@@ -389,7 +367,6 @@
 			$take_me_to_url = phpgw::link(
 										'/index.php',array(
 										'menuaction'=>'email.uifilters.filters_list'));
-			if ($this->debug_set_prefs > 0) { echo 'bofilters.move_down: LEAVING with redirect to: <br />'.$take_me_to_url.'<br />'; }
 			Header('Location: ' . $take_me_to_url);
 		}
 		
@@ -408,22 +385,18 @@
 		*/
 		function all_filters_bulk_undo_defang()
 		{
-			if ($this->debug > 0) { echo 'bofilters.all_filters_bulk_undo_defang('.__LINE__.'): ENTERING<br />'."\r\n"; } 
 			$did_decode = False;
 			if (!$this->all_filters)
 			{
-				if ($this->debug > 0) { echo 'bofilters.all_filters_bulk_undo_defang('.__LINE__.'): LEAVING early, nothing to process, $this->all_filters is empty, returning $did_decode ['.serialize($did_decode).']<br />'."\r\n"; } 
 				return $did_decode;
 			}
 			// UNDO the DATABASE DEFANG, 
-			if ($this->debug > 1) { echo 'bofilters.all_filters_bulk_undo_defang('.__LINE__.'): about to UNDO the pref friendly defanged chars, so the the html encoding of certain offending chars prefs is UNDONE here<br />'."\r\n"; }
 			$did_decode = False;
 			for ($filter_idx=0; $filter_idx < count($this->all_filters); $filter_idx++)
 			{
 				// currently only 2 elements get the defang, undefang treatment
 				// 1. filtername
 				$refanged_filtername = $this->string_undo_defang($this->all_filters[$filter_idx]['filtername']);
-				if ($this->debug > 1) { echo 'bofilters.all_filters_bulk_undo_defang('.__LINE__.'): still defanged $this->all_filters['.$filter_idx.'][filtername] is ['.serialize($this->all_filters[$filter_idx]['filtername']).'], RE-fanged $refanged_filtername ['.serialize($refanged_filtername).']<br />'."\r\n"; } 
 				if ($refanged_filtername != $this->all_filters[$filter_idx]['filtername'])
 				{
 					$did_decode = True;
@@ -433,7 +406,6 @@
 				for ($matches_idx=0; $matches_idx < count($this->all_filters[$filter_idx]['matches']); $matches_idx++)
 				{
 					$refanged_matchthis = $this->string_undo_defang($this->all_filters[$filter_idx]['matches'][$matches_idx]['matchthis']);
-					if ($this->debug > 1) { echo 'bofilters.all_filters_bulk_undo_defang('.__LINE__.'): still defanged $this->all_filters['.$filter_idx.'][matches]['.$matches_idx.'][matchthis] is ['.serialize($this->all_filters[$filter_idx]['matches'][$matches_idx]['matchthis']).'], RE-fanged $refanged_matchthis ['.serialize($refanged_matchthis).']<br />'."\r\n"; }
 					if ($refanged_matchthis != $this->all_filters[$filter_idx]['matches'][$matches_idx]['matchthis'])
 					{
 						$did_decode = True;
@@ -441,8 +413,6 @@
 					$this->all_filters[$filter_idx]['matches'][$matches_idx]['matchthis'] = $refanged_matchthis;
 				}
 			}
-			if ($this->debug > 2) { echo 'bofilters.all_filters_bulk_undo_defang('.__LINE__.'): defanged $this->all_filters DUMP:<pre>'; print_r($this->all_filters); echo '</pre>'."\r\n"; } 
-			if ($this->debug > 0) { echo 'bofilters.all_filters_bulk_undo_defang('.__LINE__.'): LEAVING, returning $did_decode ['.serialize($did_decode).']<br />'."\r\n"; } 
 			return $did_decode;
 		}
 		
@@ -453,7 +423,6 @@
 		*/
 		function string_undo_defang($pref_string='')
 		{
-			if ($this->debug_set_prefs > 0) { echo 'bofilters.string_undo_defang('.__LINE__.'): ENTERING, param $pref_string ['.serialize($pref_string).']<br />'."\r\n"; } 
 			if (!$pref_string)
 			{
 				return '';
@@ -461,7 +430,6 @@
 			// undo the _LAME_ way to make the value "database friendly"
 			// return slashes and quotes to their actual form as slashes and quotes
 			$un_defanged_string = \App\modules\email\services\MailMessage::getInstance()->html_quotes_decode($pref_string);
-			if ($this->debug_set_prefs > 0) { echo 'bofilters.string_undo_defang('.__LINE__.'): LEAVING returning $un_defanged_string ['.serialize($un_defanged_string).']<br />'."\r\n"; } 
 			return $un_defanged_string;
 		}
 		
@@ -478,7 +446,6 @@
 		*/
 		function string_strip_and_defang($user_string='')
 		{
-			if ($this->debug_set_prefs > 0) { echo 'bofilters.string_strip_and_defang: ENTERING, para, $user_string ['.serialize($user_string).']<br />'."\r\n"; } 
 			if (!$user_string)
 			{
 				return '';
@@ -489,7 +456,6 @@
 			// and this is a _LAME_ way to make the value "database friendly"
 			// because slashes and quotes will FRY the whole preferences repository
 			$prepared_string = \App\modules\email\services\MailMessage::getInstance()->html_quotes_encode($prepared_string);
-			if ($this->debug_set_prefs > 0) { echo 'bofilters.string_strip_and_defang: LEAVING returning $prepared_string ['.serialize($prepared_string).']<br />'."\r\n"; } 
 			return $prepared_string;
 		}
 		
@@ -505,8 +471,6 @@
 		*/
 		function check_duplicate_submit_elements($key='source_accounts')
 		{
-			if ($this->debug_set_prefs > 0) { echo 'bofilters.check_duplicate_submit_elements('.__LINE__.'): ENTERING, param $key is ['.$key.'] <br />'."\r\n"; } 
-			if ($this->debug_set_prefs > 1) { echo 'bofilters.check_duplicate_submit_elements('.__LINE__.'): this checks for buggy apache2 duplicated source account POSTED form numbered array data<br />'."\r\n"; } 
 			$did_alter = False;
 			
 			//source_accounts
@@ -518,7 +482,6 @@
 				if (in_array(\App\modules\email\services\MailMessage::getInstance()->ref_POST[$key][$i], $seen_list_items) == True)
 				{
 					$did_alter = True;
-					if ($this->debug_set_prefs > 1) { echo 'bofilters: check_duplicate_submit_elements('.__LINE__.'): <u>unsetting</u> and *skipping* duplicate (buggy apache2) POST ['.$key.']['.$i.'] array item ['.\App\modules\email\services\MailMessage::getInstance()->ref_POST[$key][$i].'] <br />'; }
 					\App\modules\email\services\MailMessage::getInstance()->ref_POST[$key][$i] = '';
 					// can I UNSET this and have the next $i index item actually be the next one
 					// YES, a) array count calculated before loop, and b) does not squash array to unset an item
@@ -532,13 +495,11 @@
 				else
 				{
 					// track seen items for duplicate test
-					if ($this->debug_set_prefs > 1) { echo 'bofilters: check_duplicate_submit_elements('.__LINE__.'): good (not duplicate, not buggy apache2) POST ['.$key.']['.$i.'] array item ['.\App\modules\email\services\MailMessage::getInstance()->ref_POST[$key][$i].'] <br />'; }
 					$tmp_next_idx = count($seen_list_items);
 					$seen_list_items[$tmp_next_idx] = \App\modules\email\services\MailMessage::getInstance()->ref_POST[$key][$i];
 				}
 			}
 			
-			if ($this->debug_set_prefs > 0) { echo 'bofilters.check_duplicate_submit_elements('.__LINE__.'): LEAVING, returning $did_alter ['.serialize($did_alter).']<br />'."\r\n"; } 
 		}
 		
 		/*!
@@ -548,8 +509,6 @@
 		*/
 		function process_submitted_data($api_mode = False)
 		{
-			if ($this->debug_set_prefs > 0) { echo 'bofilters.process_submitted_data('.__LINE__.'): ENTERING<br />'."\r\n"; }
-			if ($this->debug_set_prefs > 2) { echo 'bofilters.process_submitted_data('.__LINE__.'): (pre-buggy apache2 check) ref_POST dump:<pre>'; print_r(\App\modules\email\services\MailMessage::getInstance()->ref_POST); echo '</pre>'."\r\n"; }
 			$this->check_duplicate_submit_elements('source_accounts');
 			
 			//if ($this->debug_set_prefs > 1) { echo 'bofilters.process_submitted_data: caling $this->distill_filter_args<br />'."\r\n"; }
@@ -567,7 +526,6 @@
 				if (!$api_mode) echo 'bofilters.process_submitted_data('.__LINE__.'): LEAVING with ERROR, unable to obtain POST filter_num';
 				return False;
 			}
-			if ($this->debug_set_prefs > 1) { echo 'bofilters.process_submitted_data('.__LINE__.'): $this_filter[filter_num]: ['.$found_filter_num.']<br />'; }
 			
 			// FILTER NAME
 			if ((isset(\App\modules\email\services\MailMessage::getInstance()->ref_POST['filtername']))
@@ -582,7 +540,6 @@
 				//$this_filter['filtername'] = 'Filter '.$found_filter_num;
 				$this_filter['filtername'] = 'My Mail Filter';
 			}
-			if ($this->debug_set_prefs > 1) { echo 'bofilters.process_submitted_data('.__LINE__.'): $this_filter[filtername]: ['.$this_filter['filtername'].']<br />'; }
 			
 			// ---- The Rest of the data is submitted in  Array Form ----
 			
@@ -607,7 +564,6 @@
 					$this_filter['source_accounts'][0]['folder'] = 'INBOX';
 					$this_filter['source_accounts'][0]['acctnum'] = 0;
 			}
-			if ($this->debug_set_prefs > 2) { echo '.process_submitted_data('.__LINE__.'): $this_filter[source_accounts] dump:<pre>'; print_r($this_filter['source_accounts']); echo '</pre>'."\r\n"; }
 			
 			// --- "deep" array form data ---
 			//@reset($GLOBALS['phpgw']->msg->ref_POST);
@@ -625,53 +581,42 @@
 				|| ($key == 'filtername')
 				|| ($key == 'source_accounts'))
 				{
-					if ($this->debug_set_prefs > 1) { echo 'bofilters.process_submitted_data('.__LINE__.'): $GLOBALS[HTTP_POST_VARS] key,value walk thru: $key: ['.$key.'] is data we already processed, skip to next loop<br />'; }
 					continue;
 				}
-				if ($this->debug_set_prefs > 1) { echo 'bofilters.process_submitted_data('.__LINE__.'): $GLOBALS[HTTP_POST_VARS] key,value walk thru: $key: ['.$key.'] ; $value DUMP:<pre>'; print_r($value); echo "</pre>\r\n"; }
 				// extract match and action data from this filter_X data array
 				if (strstr($key, 'match_'))
 				{
 					// now we grab the index value from the key string
 					$match_this_idx = (int)$key[6];
-					if ($this->debug_set_prefs > 1) { echo 'bofilters.process_submitted_data('.__LINE__.'): match_this_idx grabbed value: ['.$match_this_idx.']<br />'; }
 					$match_data = \App\modules\email\services\MailMessage::getInstance()->ref_POST[$key];
 					// is this row even being used?
 					if ((isset($match_data['andor']))
 					&& ($match_data['andor'] == 'ignore_me'))
 					{
-						if ($this->debug_set_prefs > 1) { echo 'bofilters.process_submitted_data('.__LINE__.'): SKIP this row, $match_data[andor]: ['.$match_data['andor'].']<br />'; }
 					}
 					else
 					{
-						if ($this->debug_set_prefs > 1) { echo 'bofilters.process_submitted_data('.__LINE__.'): $match_data[matchthis] PRE-defang ['.serialize($match_data['matchthis']).']<br />'; } 
 						// DEFANG on $match_data["matchthis"] (will need to reverse that on read) 
 						$match_data['matchthis'] = $this->string_strip_and_defang($match_data['matchthis']);
-						if ($this->debug_set_prefs > 1) { echo 'bofilters.process_submitted_data('.__LINE__.'): $match_data[matchthis] POST-defang ['.serialize($match_data['matchthis']).']<br />'; } 
 						$this_filter['matches'][$match_this_idx] = $match_data;
-						if ($this->debug_set_prefs > 1) { echo 'bofilters.process_submitted_data('.__LINE__.'): $this_filter[matches]['.$match_this_idx.'] = ['.serialize($this_filter['matches'][$match_this_idx]).']<br />'; }
 					}
 				}
 				elseif (strstr($key, 'action_'))
 				{
 					// now we grab the index value from the key string
 					$action_this_idx = (int)$key[7];
-					if ($this->debug_set_prefs > 1) { echo 'bofilters.process_submitted_data('.__LINE__.'): action_this_idx grabbed value: ['.$action_this_idx.']<br />'; }
 					$action_data = \App\modules\email\services\MailMessage::getInstance()->ref_POST[$key];
 					if ((isset($action_data['judgement']))
 					&& ($action_data['judgement'] == 'ignore_me'))
 					{
-						if ($this->debug_set_prefs > 1) { echo 'bofilters.process_submitted_data('.__LINE__.'): SKIP this row, $action_data[judgement]: ['.$match_data['andor'].']<br />'; }
 					}
 					else
 					{
 						$this_filter['actions'][$action_this_idx] = $action_data;
-						if ($this->debug_set_prefs > 1) { echo 'bofilters.process_submitted_data('.__LINE__.'): $this_filter[actions][$action_this_idx]: ['.serialize($this_filter['actions'][$action_this_idx]).']<br />'; }
 					}
 				}
                             }
                         }
-			if ($this->debug_set_prefs > 2) { echo 'bofilters.process_submitted_data('.__LINE__.'): $this_filter[] dump <strong><pre>'; print_r($this_filter); echo "</pre></strong>\r\n"; }
 			$this->all_filters[$found_filter_num] = array();
 			$this->all_filters[$found_filter_num] = $this_filter;
 			$this->save_all_filters_to_repository($api_mode);
@@ -723,12 +668,10 @@
 
 			// NEW we need to wipe the cached filters
 			$my_location = '0;cached_prefs';
-			if ($this->debug_set_prefs > 1) { echo 'bofilters.save_all_filters_to_repository('.__LINE__.'): NEW: EXPIRE CACHED PREFERENCES, calling ->msg->so->so_appsession_passthru('.$my_location.', " ")<br />'; }
 			\App\modules\email\services\MailMessage::getInstance()->so->so_appsession_passthru($my_location, ' ');
 			
 			// first we delete any existing data at the desired prefs location
 			$pref_struct_str = '["filters"]';
-			if ($this->debug_set_prefs > 1) { echo 'bofilters.save_all_filters_to_repository: using preferences->delete_struct("email", $pref_struct_str) which will eval $pref_struct_str='.$pref_struct_str.'<br />'; }
 			\App\modules\phpgwapi\services\Preferences::getInstance()->delete_struct('email',$pref_struct_str);
 			
 			for ($filter_idx=0; $filter_idx < count($this->all_filters); $filter_idx++)
@@ -741,7 +684,6 @@
 				
 				// $this_filter['filtername']	string (will require htmlslecialchars_encode and decode
 				$pref_struct_str = '["filters"]['.$filter_idx.']["filtername"]';
-				if ($this->debug_set_prefs > 1) { echo 'bofilters.save_all_filters_to_repository: using preferences->add_struct("email", $pref_struct_str, '.$this_filter['filtername'].') which will eval $pref_struct_str='.$pref_struct_str.'<br />'; }
 				\App\modules\phpgwapi\services\Preferences::getInstance()->add_struct('email', $pref_struct_str, $this_filter['filtername']);
 				
 				// $this_filter['source_accounts']	array
@@ -752,11 +694,9 @@
 				{
 					// folder
 					$pref_struct_str = '["filters"]['.$filter_idx.']["source_accounts"]['.$i.']["folder"]';
-					if ($this->debug_set_prefs > 1) { echo 'bofilters.save_all_filters_to_repository: using preferences->add_struct("email", $pref_struct_str, '.$this_filter['source_accounts'][$i]['folder'].') which will eval $pref_struct_str='.$pref_struct_str.'<br />'; }
 					\App\modules\phpgwapi\services\Preferences::getInstance()->add_struct('email', $pref_struct_str, $this_filter['source_accounts'][$i]['folder']);
 					// acctnum
 					$pref_struct_str = '["filters"]['.$filter_idx.']["source_accounts"]['.$i.']["acctnum"]';
-					if ($this->debug_set_prefs > 1) { echo 'bofilters.save_all_filters_to_repository: using preferences->add_struct("email", $pref_struct_str, '.$this_filter['source_accounts'][$i]['acctnum'].') which will eval $pref_struct_str='.$pref_struct_str.'<br />'; }
 					\App\modules\phpgwapi\services\Preferences::getInstance()->add_struct('email', $pref_struct_str, $this_filter['source_accounts'][$i]['acctnum']);
 				}
 				
@@ -772,16 +712,13 @@
 					if (isset($this_filter['matches'][$i]['andor']))
 					{
 						$pref_struct_str = '["filters"]['.$filter_idx.']["matches"]['.$i.']["andor"]';
-						if ($this->debug_set_prefs > 1) { echo 'bofilters.save_all_filters_to_repository: using preferences->add_struct("email", $pref_struct_str, '.$this_filter['matches'][$i]['andor'].') which will eval $pref_struct_str='.$pref_struct_str.'<br />'; }
 						\App\modules\phpgwapi\services\Preferences::getInstance()->add_struct('email', $pref_struct_str, $this_filter['matches'][$i]['andor']);
 					}
 					// examine
 					$pref_struct_str = '["filters"]['.$filter_idx.']["matches"]['.$i.']["examine"]';
-					if ($this->debug_set_prefs > 1) { echo 'bofilters.save_all_filters_to_repository: using preferences->add_struct("email", $pref_struct_str, '.$this_filter['matches'][$i]['examine'].') which will eval $pref_struct_str='.$pref_struct_str.'<br />'; }
 					\App\modules\phpgwapi\services\Preferences::getInstance()->add_struct('email', $pref_struct_str, $this_filter['matches'][$i]['examine']);
 					// comparator
 					$pref_struct_str = '["filters"]['.$filter_idx.']["matches"]['.$i.']["comparator"]';
-					if ($this->debug_set_prefs > 1) { echo 'bofilters.save_all_filters_to_repository: using preferences->add_struct("email", $pref_struct_str, '.$this_filter['matches'][$i]['comparator'].') which will eval $pref_struct_str='.$pref_struct_str.'<br />'; }
 					\App\modules\phpgwapi\services\Preferences::getInstance()->add_struct('email', $pref_struct_str, $this_filter['matches'][$i]['comparator']);
 					// matchthis
 					// user_string, may need htmlslecialchars_encode decode and/or the user may forget to tnter data here
@@ -791,7 +728,6 @@
 						$this_filter['matches'][$i]['matchthis'] = 'user_string_not_filled_by_user';
 					}
 					$pref_struct_str = '["filters"]['.$filter_idx.']["matches"]['.$i.']["matchthis"]';
-					if ($this->debug_set_prefs > 1) { echo 'bofilters.save_all_filters_to_repository: using preferences->add_struct("email", $pref_struct_str, '.$this_filter['matches'][$i]['matchthis'].') which will eval $pref_struct_str='.$pref_struct_str.'<br />'; }
 					\App\modules\phpgwapi\services\Preferences::getInstance()->add_struct('email', $pref_struct_str, $this_filter['matches'][$i]['matchthis']);
 				}
 				
@@ -805,21 +741,17 @@
 				{
 					// judgement
 					$pref_struct_str = '["filters"]['.$filter_idx.']["actions"]['.$i.']["judgement"]';
-					if ($this->debug_set_prefs > 1) { echo 'bofilters.save_all_filters_to_repository: using preferences->add_struct("email", $pref_struct_str, '.$this_filter['actions'][$i]['judgement'].') which will eval $pref_struct_str='.$pref_struct_str.'<br />'; }
 					\App\modules\phpgwapi\services\Preferences::getInstance()->add_struct('email', $pref_struct_str, $this_filter['actions'][$i]['judgement']);
 					// folder
 					$pref_struct_str = '["filters"]['.$filter_idx.']["actions"]['.$i.']["folder"]';
-					if ($this->debug_set_prefs > 1) { echo 'bofilters.save_all_filters_to_repository: using preferences->add_struct("email", $pref_struct_str, '.$this_filter['actions'][$i]['folder'].') which will eval $pref_struct_str='.$pref_struct_str.'<br />'; }
 					\App\modules\phpgwapi\services\Preferences::getInstance()->add_struct('email', $pref_struct_str, $this_filter['actions'][$i]['folder']);
 					// actiontext
 					$pref_struct_str = '["filters"]['.$filter_idx.']["actions"]['.$i.']["actiontext"]';
-					if ($this->debug_set_prefs > 1) { echo 'bofilters.save_all_filters_to_repository: using preferences->add_struct("email", $pref_struct_str, '.$this_filter['actions'][$i]['actiontext'].') which will eval $pref_struct_str='.$pref_struct_str.'<br />'; }
 					\App\modules\phpgwapi\services\Preferences::getInstance()->add_struct('email', $pref_struct_str, $this_filter['actions'][$i]['actiontext']);
 					// stop_filtering
 					if (isset($this_filter['actions'][$i]['stop_filtering']))
 					{
 						$pref_struct_str = '["filters"]['.$filter_idx.']["actions"]['.$i.']["stop_filtering"]';
-						if ($this->debug_set_prefs > 1) { echo 'bofilters.save_all_filters_to_repository: using preferences->add_struct("email", $pref_struct_str, '.$this_filter['actions'][$i]['stop_filtering'].') which will eval $pref_struct_str='.$pref_struct_str.'<br />'; }
 						\App\modules\phpgwapi\services\Preferences::getInstance()->add_struct('email', $pref_struct_str, $this_filter['actions'][$i]['stop_filtering']);
 					}
 				}
@@ -828,12 +760,9 @@
 			// DONE processing prefs, SAVE to the Repository
 			if ($this->debug_set_prefs > 3) 
 			{
-				echo 'bofilters.save_all_filters_to_repository: *debug* at ['.$this->debug_set_prefs.'] so skipping save_repository<br />';
 			}
 			else
 			{
-				if ($this->debug_set_prefs > 2) { echo 'bofilters.save_all_filters_to_repository: direct pre-save email filters DUMP:<pre>'; print_r(\App\modules\phpgwapi\services\Preferences::getInstance()->data['email']['filters'] ?? []); echo '</pre>'; }
-				if ($this->debug_set_prefs > 1) { echo 'bofilters.save_all_filters_to_repository: SAVING REPOSITORY<br />'; }
 				\App\modules\phpgwapi\services\Preferences::getInstance()->save_repository();
 				// re-grab data from prefs
 				
@@ -847,14 +776,11 @@
 										'/index.php',array(
 										'menuaction'=>'email.uifilters.filters_list'));
 			
-			if ($this->debug_set_prefs > 0) { echo 'bofilters.save_all_filters_to_repository: almost LEAVING, about to issue a redirect to:<br />'.$take_me_to_url.'<br />'; }
 			if ($this->debug_set_prefs > 1) 
 			{
-				echo 'bofilters.save_all_filters_to_repository: LEAVING, *debug* at ['.$this->debug_set_prefs.'] so skipping Header redirection to: ['.$take_me_to_url.']<br />';
 			}
 			else
 			{
-				if ($this->debug_set_prefs > 0) { echo 'bofilters.save_all_filters_to_repository: LEAVING with redirect to: <br />'.$take_me_to_url.'<br />'; }
 				Header('Location: ' . $take_me_to_url);
 			}
 		}
@@ -866,7 +792,6 @@
 		*/
 		function delete_filter($api_mode = False)
 		{
-			if ($this->debug_set_prefs > 0) { echo 'bofilters.delete_filter: ENTERING<br />'; }
 			// FILTER NUMBER
 			$filter_num = $this->obtain_filer_num();
 			
@@ -880,7 +805,6 @@
 			$this->all_filters[$filter_num] = array();
 			unset($this->all_filters[$filter_num]);
 			$this->save_all_filters_to_repository($api_mode);
-			if ($this->debug_set_prefs > 0) { echo 'bofilters.delete_filter: LEAVING<br />'; }
 			return True;
 		}
 		
@@ -892,10 +816,8 @@
 		*/
 		function do_filter($api_mode = False)
 		{
-			if ($this->debug > 0) { echo 'bofilters.do_filter('.__LINE__.'): ENTERING<br />'; }
 			if (count($this->all_filters) == 0)
 			{
-				if ($this->debug > 0) { echo 'bofilters.do_filter('.__LINE__.'): LEAVING with ERROR, no filters exist<br />'; } 
 				return False;
 			}
 			
@@ -904,12 +826,10 @@
 			//$GLOBALS['phpgw']->msg->event_begin_big_move(array(), 'bofilters.do_filter: LINE '.__LINE__);
 			
 			// filtering thousands of messages can require more time
-			if ($this->debug > 0) { echo 'bofilters.do_filter('.__LINE__.'): calling set_time_limit giving value of 120 ie 2 minutes? <br />'; } 
 			set_time_limit(120);
 			
 			// "False" means  return $this->not_set  if no filter number was found anywhere
 			$found_filter_num = $this->obtain_filer_num(False);
-			if ($this->debug > 1) { echo 'bofilters.do_filter('.__LINE__.'): $found_filter_num : [<code>'.serialize($found_filter_num).'</code>]<br />'."\r\n"; }
 			
 			if ($found_filter_num == $this->not_set)
 			{
@@ -917,7 +837,6 @@
 				$this->do_filter_apply_all = True;
 				for ($filter_idx=0; $filter_idx < count($this->all_filters); $filter_idx++)
 				{
-					if ($this->debug > 1) { echo 'bofilters.do_filter('.__LINE__.'): run_all_finters_mode: calling $this->run_single_filter['.$filter_idx.']<br />'; }
 					$this->run_single_filter((int)$filter_idx);
 					if ($this->just_testing())
 					{
@@ -930,7 +849,6 @@
 			{
 				// we were given a filter_num, that means run THAT FILTER ONLY
 				$this->do_filter_apply_all = False;
-				if ($this->debug > 1) { echo 'bofilters.do_filter('.__LINE__.'): run_single_filter mode: calling $this->run_single_filter['.$found_filter_num.']<br />'; }
 				$this->run_single_filter((int)$found_filter_num);
 				if ($this->just_testing())
 				{
@@ -940,10 +858,8 @@
 			}
 			
 			// ok, filters have run, EXPUNGE now
-			if ($this->debug > 1) { echo 'bofilters.do_filter ('.__LINE__.'): done filtering, now call $GLOBALS[phpgw]->msg->expunge_expungable_folders<br />'; }
 			$did_expunge = False;
 			$did_expunge = \App\modules\email\services\MailMessage::getInstance()->expunge_expungable_folders('bofilters.do_filter LINE '.__LINE__);
-			if ($this->debug > 1) { echo 'bofilters.do_filter ('.__LINE__.'): $GLOBALS[phpgw]->msg->expunge_expungable_folders() returns ['.serialize($did_expunge).']<br />'; }
 			$report = [];
 			for ($filter_idx = 0; $filter_idx < count($this->all_filters); $filter_idx++)
 			{
@@ -997,9 +913,7 @@
 					.'<p>&nbsp;</p>'."\r\n";
 				}
 			}
-			if ($this->debug > 1) { echo 'bofilters.do_filter('.__LINE__.'): calling end_request<br />'; }
 			\App\modules\email\services\MailMessage::getInstance()->end_request();
-			if ($this->debug > 0) { echo 'bofilters.do_filter('.__LINE__.'): LEAVING<br />'; }
 			if ($api_mode)
 			{
 				$matchReport = trim(html_entity_decode(strip_tags(str_ireplace(['<br />', '<br>'], "\n", $this->html_matches_table)), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
@@ -1013,7 +927,6 @@
 			//Header('Location: ' . $take_me_to_url);
 			echo '<br /><p>'.'&nbsp;&nbsp;&nbsp;'.$take_me_to_href.'</p><br />';
 
-			if ($this->debug > 0) { echo 'bofilters.do_filter('.__LINE__.'): LEAVING<br />'; }
 		}
 		
 		// PRIVATE
@@ -1025,24 +938,19 @@
 		*/
 		function run_single_filter($filter_num='')
 		{
-			if ($this->debug > 0) { echo 'bofilters.run_single_filter('.__LINE__.'): ENTERING, feed  $filter_num : [<code>'.serialize($filter_num).'</code>]<br />'; }
 			if (count($this->all_filters) == 0)
 			{
-				if ($this->debug > 0) { echo 'bofilters.run_single_filter('.__LINE__.'): LEAVING with ERROR, no filters exist<br />'; }
 			}
 			$filter_exists = $this->filter_exists($filter_num);
 			if (!$filter_exists)
 			{
-				if ($this->debug > 0) { echo 'bofilters.run_single_filter('.__LINE__.'): LEAVING with ERROR, filter data for $filter_num ['.$filter_num.'] does not exist, return False<br />'; }
 				return False;
 			}
 			$this_filter = $this->all_filters[$filter_num];
-			if ($this->debug > 2) { echo 'bofilters.run_single_filter('.__LINE__.'): $filter_num ['.$filter_num.'] ; $this_filter DUMP:<pre>'; print_r($this_filter); echo "</pre>\r\n"; }
 			
 			// WE NEED TO DO THIS FOR EVERY SOURCE ACCOUNT specified in this filter
 			for ($src_acct_loop_num=0; $src_acct_loop_num < count($this_filter['source_accounts']); $src_acct_loop_num++)
 			{
-				if ($this->debug > 1) { echo 'bofilters.run_single_filter('.__LINE__.'): source_accounts loop ['.$src_acct_loop_num.']<br />'; }
 				
 				// ACCOUNT TO SEARCH (always filter source is INBOX)
 				$fake_fldball = array();
@@ -1053,21 +961,17 @@
 				// only if not already exists
 				if (isset($this->inbox_full_msgball_list[$src_acct_loop_num]))
 				{
-					if ($this->debug > 1) { echo 'bofilters.run_single_filter('.__LINE__.'): already obtained inbox_full_msgball_list, during a previous filter, for $src_acct_loop_num ['.$src_acct_loop_num.']<br />'; }
 				}
 				else
 				{
 					// get FULL msgball list for this INBOX (we always filter INBOXs only)
-					if ($this->debug > 1) { echo 'bofilters.run_single_filter('.__LINE__.'): get_msgball_list for later XOR ing for <code>['.serialize($fake_fldball).']</code><br />'; }
 					//$this->inbox_full_msgball_list[$src_acct_loop_num] = $GLOBALS['phpgw']->msg->get_msgball_list($fake_fldball['acctnum'], $fake_fldball['folder']);
 					// FIXME: FOR BACKWARDS COMPAT WE GET AN OLD STYLE MSGBALL LIST
 					$this->inbox_full_msgball_list[$src_acct_loop_num] = \App\modules\email\services\MailMessage::getInstance()->get_msgball_list_oldschool($fake_fldball['acctnum'], $fake_fldball['folder']);
-					//if ($this->debug > 2) { echo 'bofilters.run_single_filter: $this->inbox_full_msgball_list['.$src_acct_loop_num.'] DUMP:<pre>'; print_r($this->inbox_full_msgball_list[$src_acct_loop_num]); echo "</pre>\r\n"; }
 				}
 				
 				// FOR EACH MSG, GET IT'S RAW HEADERS
 				// only if we have not got them yet
-				if ($this->debug > 1) { echo 'bofilters.run_single_filter('.__LINE__.'): get headers for each msg in $src_acct_loop_num ['.$src_acct_loop_num.']<br />'; }
 				for ($msg_iteration=0; $msg_iteration < count($this->inbox_full_msgball_list[$src_acct_loop_num]); $msg_iteration++)
 				{
 					if ((isset($this->inbox_full_msgball_list[$src_acct_loop_num][$msg_iteration]['headers_text']))
@@ -1075,7 +979,6 @@
 					{
 						// we ALREADY hav the headers
 						// continue to the next message
-						if ($this->debug > 1) { echo 'bofilters.run_single_filter('.__LINE__.'): already obtained headers, during a previous filter, for $src_acct_loop_num ['.$src_acct_loop_num.']<br />'; }
 						continue;
 					}
 					// we need to get the headers
@@ -1136,10 +1039,8 @@
 					$recipient_line = trim($recipient_line);
 					// using "\r\n" as an end poing knowing that even the final header line has an "\r\n"
 					$headers_text .= "\r\n".$recipient_line."\r\n";
-					if ($this->debug > 2) { echo 'bofilters.run_single_filter: received headers FINAL $headers_text <pre>'.$headers_text.'</pre>'; }
 					$this->inbox_full_msgball_list[$src_acct_loop_num][$msg_iteration]['headers_text'] = $headers_text;
 				}	 
-				//if ($this->debug > 2) { echo 'bofilters.run_single_filter: $this->inbox_full_msgball_list['.$src_acct_loop_num.'] DUMP:<pre>'; print_r($this->inbox_full_msgball_list[$src_acct_loop_num]); echo "</pre>\r\n"; }
 					
 					
 				// iterate thru EACH message's headers, msg by msg
@@ -1150,20 +1051,17 @@
 					if ($this->inbox_full_msgball_list[$src_acct_loop_num][$msg_iteration]['msgnum'] == $this->not_set)
 					{
 						// this message had already been filtered AND MOVED OR DELETED, continue to next loop
-						if ($this->debug > 1) { echo '<br />bofilters.run_single_filter('.__LINE__.'): skipping... this message has already been moved, deleted by a previous filter, $src_acct_loop_num ['.$src_acct_loop_num.'] $msg_iteration ['.$msg_iteration.']<br /><br />'; }
 						continue;
 					}
 					// we have a message to be filtered...
 					$headers_text = $this->inbox_full_msgball_list[$src_acct_loop_num][$msg_iteration]['headers_text'];
 					// this patiular message has not been looked at yet, initialize it match keeper value
 					$this->inbox_full_msgball_list[$src_acct_loop_num][$msg_iteration]['match_keeper'] = 0;
-					if ($this->debug > 2) { echo 'bofilters.run_single_filter('.__LINE__.'): $this->inbox_full_msgball_list['.$src_acct_loop_num.']['.$msg_iteration.'][headers_text] DUMP:<pre>'; print_r($this->inbox_full_msgball_list[$src_acct_loop_num][$msg_iteration]['headers_text']); echo "</pre>\r\n"; }
 						
 					// every header line gets looked at by every row of match criteria
 					// WE NEED TO DO THIS FOR EVERY MATCH ROW
 					for ($matches_row=0; $matches_row < count($this_filter['matches']); $matches_row++)
 					{
-						if ($this->debug > 1) { echo 'bofilters.run_single_filter('.__LINE__.'): source_accounts loop ['.$src_acct_loop_num.'] ; $msg_iteration ['.$msg_iteration.'] ; $matches_row ['.$matches_row.']<br />'; }
 						// Note on "RECIPIENT" :  to,cc, bcc  "tri-fecta" all three headers must be considered
 						// this is why we made a faux header line that contains all three of those in one line
 						// NOTE: recipient Contains vs. NotContains
@@ -1185,7 +1083,6 @@
 						// if this is really the 1st word of the header string, it will be preceeded by CRLF
 						$inspect_me = stristr($headers_text, "\r\n".$search_key_imap);
 						// inspect_me will be everything to the right of the "neede" INCLUDING the "needle" itself and the REST of the headers
-						if ($this->debug > 1) { echo 'bofilters.run_single_filter('.__LINE__.'): $search_key_imap  ['.$search_key_imap.'] ; $comparator ['.$comparator.'] ; $search_for ['.$search_for.']<br />'; }
 						if ($inspect_me)
 						{
 							// get rid of that "needle"  search_key_imap (it's included from the stristr above)
@@ -1196,7 +1093,6 @@
 							$cut_here = strpos($inspect_me, "\r\n");
 							// get everything FROM beginning of string TO  pos $cut_here (the end of the line);
 							$inspect_me = substr($inspect_me, 0, $cut_here);
-							if ($this->debug > 1) { echo 'bofilters.run_single_filter('.__LINE__.'): GOT HEADER TO LOOK IN: $inspect_me ['.htmlspecialchars($inspect_me).']<br />'; }
 							// look for EXISTS or NOT EXISTS our search string
 							if
 							(
@@ -1206,7 +1102,6 @@
 								&& (stristr($inspect_me, $search_for) == False))
 							)
 							{
-								if ($this->debug > 1) { echo 'bofilters.run_single_filter('.__LINE__.'): ** GOT ROW CRITERIA MATCH ** $matches_row '.$matches_row.'<br />'; }
 								// MATCH: this row matches the search criteria
 								// i.e. this header line does -or- does not have the seach for text, as requested
 								if ($matches_row == 0)
@@ -1241,7 +1136,6 @@
 						{
 							// header we are looking for does not exist in this messages headers
 							// probably lookinf for an "X-" header, like "X-Mailer:"
-							if ($this->debug > 1) { echo 'bofilters.run_single_filter('.__LINE__.'): requested header $search_key_imap  ['.$search_key_imap.'] not in this messages headers<br />'; }
 						}
 						// this is the last code that gets run BEFORE we move on to the next row of match criteria 
 						// this code is INSIDE the match criteria rows
@@ -1311,7 +1205,6 @@
 		*/
 		function filter_action_sequence($filter_num='', $src_acct_loop_num='', $msg_iteration='', $this_filter='')
 		{
-			if ($this->debug > 0) { echo 'bofilters.filter_action_sequence: ENTERING <br />'; }
 			if (((string)$filter_num == '')
 			|| ((string)$src_acct_loop_num == '')
 			|| ((string)$msg_iteration == '')
@@ -1322,15 +1215,7 @@
 			}
 			
 			$match_keeper = $this->inbox_full_msgball_list[$src_acct_loop_num][$msg_iteration]['match_keeper'];
-			if ($this->debug > 1) { echo 'bofilters.filter_action_sequence: FINAL match results for this message [<code>'.serialize($match_keeper).'</code>] <br />'; }
 			// test match keeper accuracy
-			if ($this->debug > 1)
-			{ 
-				if ($match_keeper & F_ROW_0_MATCH) { echo '<b>MATCH</b> row 0 criteria<br />'; }
-				if ($match_keeper & F_ROW_1_MATCH) { echo '<b>MATCH</b> row 1 criteria<br />'; }
-				if ($match_keeper & F_ROW_2_MATCH) { echo '<b>MATCH</b> row 2 criteria<br />'; }
-				if ($match_keeper & F_ROW_3_MATCH) { echo '<b>MATCH</b> row 3 criteria<br />'; }
-			}
 			
 			$do_apply_action = False;
 			
@@ -1339,12 +1224,10 @@
 			{
 				if ($match_keeper & F_ROW_0_MATCH)
 				{
-					if ($this->debug > 1) { echo 'bofilters.filter_action_sequence: single row criteria is a match and DOES trigger action<br />'; }
 					$do_apply_action = True;
 				}
 				else
 				{
-					if ($this->debug > 1) { echo 'bofilters.filter_action_sequence: single row criteria Fails<br />'; }
 				}
 			}
 			// 2 rows handler
@@ -1356,7 +1239,6 @@
 				&& ($match_keeper & F_ROW_0_MATCH)
 				&& ($match_keeper & F_ROW_1_MATCH))
 				{
-					if ($this->debug > 1) { echo 'bofilters.filter_action_sequence: 2 rows of criteria: "AND" logic chain is satisified, DO APPLY ACTION<br />'; }
 					$do_apply_action = True;
 				}
 				elseif (($this_filter['matches'][1]['andor'] == 'or')
@@ -1365,12 +1247,10 @@
 					)
 				)
 				{
-					if ($this->debug > 1) { echo 'bofilters.filter_action_sequence: 2 rows of criteria: "OR" logic chain is satisified, DO APPLY ACTION<br />'; }
 					$do_apply_action = True;
 				}
 				else
 				{
-					if ($this->debug > 1) { echo 'bofilters.filter_action_sequence: 2 rows of criteria: logic chain Fails<br />'; }
 				}
 			}
 			// 3 rows handler
@@ -1383,12 +1263,10 @@
 					|| ($match_keeper & $this->match_keeper_row_values[1])
 					|| ($match_keeper & $this->match_keeper_row_values[2]))
 					{
-						if ($this->debug > 1) { echo 'bofilters.filter_action_sequence: 3 rows of criteria: both "andor"s are "OR"s, logic chain is satisified, DO APPLY ACTION<br />'; }
 						$do_apply_action = True;
 					}
 					else
 					{
-						if ($this->debug > 1) { echo 'bofilters.filter_action_sequence: 3 rows of criteria: both "andor"s are "OR"s, logic chain Fails<br />'; }
 					}
 				}
 				// after 2 rows of match criteria, we need to handle more complex AND / OR logic
@@ -1420,9 +1298,7 @@
 							.' '.$andor_code[2].' '
 							.'$match_keeper & $this->match_keeper_row_values[2]'
 							.');';
-					if ($this->debug > 1) { echo ' * $code: '.$code.'<br />'; }
 					eval($code);
-					if ($this->debug > 1) { echo ' * $evaled: '.serialize($evaled).'<br />'; }
 					$do_apply_action = $evaled;
 				}
 			}
@@ -1435,7 +1311,6 @@
 			// = = = ACTION(S) = = = 
 			if ($do_apply_action == True)
 			{
-				if ($this->debug > 1) { echo 'bofilters.filter_action_sequence: <strong>### Filter MATCH ###</strong>, now apply the action... <br />'; }
 				// compile report
 				if (!isset($this->each_filter_mball_list[$filter_num]))
 				{
@@ -1450,7 +1325,6 @@
 				if ($this->just_testing() == False)
 				{
 					// NOT A TEST - APPLY THE ACTION(S)
-					if ($this->debug > 1) { echo 'bofilters.filter_action_sequence: NOT a Test, *Apply* the Action(s) ; $this_filter[actions][0][judgement] : ['.$this_filter['actions'][0]['judgement'].']<br />'; }
 					// ACTION: FILEINTO
 					if ($this_filter['actions'][0]['judgement'] == 'fileinto')
 					{
@@ -1471,26 +1345,21 @@
 						// parse_str will add escape slashes to folder names with quotes in them
 						$target_folder['folder'] = stripslashes($target_folder['folder']);
 						$target_folder['folder'] = urlencode($target_folder['folder']);
-						//if ($this->debug > 2) { echo 'bofilters.filter_action_sequence: $target_folder DUMP:<pre>'; print_r($target_folder); echo "</pre>\r\n"; }
 						$to_fldball = array();
 						$to_fldball['folder'] = $target_folder['folder'];
 						$to_fldball['acctnum'] = (int)$target_folder['acctnum'];
-						if ($this->debug > 2) { echo 'bofilters.filter_action_sequence: $to_fldball DUMP:<pre>'; print_r($to_fldball); echo "</pre>\r\n"; }
-						if ($this->debug > 1) { echo 'bofilters.filter_action_sequence: pre-move info: $mov_msgball [<code>'.serialize($mov_msgball).'</code>]<br />'; }
 						//echo 'EXIT NOT READY TO APPLY THE FILTER YET<br />';
 						$good_to_go = \App\modules\email\services\MailMessage::getInstance()->industrial_interacct_mail_move($mov_msgball, $to_fldball);
 							
 						if (!$good_to_go)
 						{
 							// ERROR
-							if ($this->debug > 1) { echo 'bofilters.filter_action_sequence: ERROR: industrial_interacct_mail_move returns FALSE<br />'; }
 							return False;
 						}
 					}
 					else
 					{
 						// not yet coded action
-						if ($this->debug > 1) { echo 'bofilters.filter_action_sequence: actions not yet coded: $this_filter[actions][0][judgement] : ['.$this_filter['actions'][0]['judgement'].']<br />'; }
 					}
 				}
 				
@@ -1498,13 +1367,10 @@
 				
 				// REMOVE THIS MSGBALL from the "inbox_full_msgball_list" IF we move, delete, etc... the message
 				// it must remain in sync with the actual mail box folder
-				if ($this->debug > 1) { echo 'bofilters.filter_action_sequence: action completed, REMOVE msgball from L1 cache class var inbox_full_msgball_list, change msgball["msgnum"] from '.serialize($this->inbox_full_msgball_list[$src_acct_loop_num][$msg_iteration]['msgnum']).' to not_set "-1"<br />'; }
 				$this->inbox_full_msgball_list[$src_acct_loop_num][$msg_iteration]['msgnum'] = $this->not_set;
 			}
 			
 			
-			if ($this->debug > 0) { echo 'bofilters.filter_action_sequence: LEAVING, returning True <br />'; }
-			if ($this->debug > 1) { echo '<br />'; }
 			// if we get to here, no error kicked us out of this function, so I guess we should retuen True
 			return True;
 		}
@@ -1520,8 +1386,6 @@
 			if (($this->just_testing())
 			&& (count($this->each_filter_mball_list[$filter_num] ?? []) > 0))
 			{
-				if ($this->debug > 1) { echo 'bofilters.make_filter_match_report: Filter Report Maker<br />'; }
-				if ($this->debug > 1) { echo 'bofilters.make_filter_match_report: number of matches $this->each_filter_mball_list['.$filter_num.'] = ' .count($this->each_filter_mball_list[$filter_num]).'<br />'."\r\n"; }
 				// make a "fake" folder_info array to make things simple for get_msg_list_display
 				$fake_folder_info['is_imap'] = True;
 				$fake_folder_info['folder_checked'] = 'INBOX';
@@ -1539,7 +1403,6 @@
 						.'&msgball[acctnum]='.$this->each_filter_mball_list[$filter_num][$mx]['acctnum'];
 					$new_style_msgball_list[$mx] = $uri_data;
 				}
-				if ($this->debug > 2) { echo 'bofilters.run_single_filter:  $this->each_filter_mball_list['.$filter_num.'] DUMP:<pre>'; print_r($this->each_filter_mball_list[$filter_num]); echo "</pre>\r\n"; }
 				// retrieve user displayable data for each message in the result set
 				//$this->result_set_mlist = $GLOBALS['phpgw']->msg->get_msg_list_display($fake_folder_info,$this->each_filter_mball_list[$filter_num]);
 				$this->result_set_mlist = \App\modules\email\services\MailMessage::getInstance()->get_msg_list_display($fake_folder_info,$new_style_msgball_list);
@@ -1556,219 +1419,6 @@
 		
 		}
 		
-		/*
-							$match_keeper = $this->inbox_full_msgball_list[$src_acct_loop_num][$msg_iteration]['match_keeper'];
-							// any previous match data to be aware of ?
-							if ($matches_row == 0)
-							{
-								$match_keeper = F_ROW_MATCHES;
-							}
-							// we have to compare to previous row, are we still matching all seen criteria ?
-							else
-							{
-								$prev_match_keeper = $this->inbox_full_msgball_list[$src_acct_loop_num][$msg_iteration-1]['match_keeper'];
-								if (($prev_match_keeper == F_ROW_MATCHES)
-								&& ($andor == 'and'))
-								{
-									// we are still matching, prev row matched AND this one does too
-									$match_keeper = F_ROW_MATCHES;
-								}
-								elseif ($andor == 'or')
-								{
-									// does not matter if prev ro0w was a match, this is an OR statement
-									$match_keeper = F_ROW_MATCHES;
-								}
-								else
-								{
-									// if we get to here we are no loger matching the chain of criteria
-									// of which this row is onlt one "link" in that chain
-									$match_keeper = '';
-								}
-							}
-							// put match keeper back in its association with this msgball
-							$this->inbox_full_msgball_list[$src_acct_loop_num][$msg_iteration]['match_keeper'] = $match_keeper;
-							// break out of this header line by line traversal now that we've got a match for this row
-							break;
-						}
-						else
-						{
-							// NOT a match, keep looking thru the headers
-						}
-					}
-					// this code gets run last thing before moving to the next header line for this message
-					// this code is last code INSIDE the line by line header traversal loop
-					// if we found a match already for this message, we "broke" out of this loop and bypassed this code
-					// if we reach here, there has not yet been a match in these headers for this message
-					// and we are still looking thru the headers for a match
-					// HOWEVER if this is the LAST LINE of headers and we STILL HAVE NO MATCH
-					// then this message has FAILED this row's criteria
-					// The only hope for this row now is that andor is OR
-					// that way this row can still preserve the last row's MATCH if there was one
-					$prev_match_keeper = $this->inbox_full_msgball_list[$src_acct_loop_num][$msg_iteration-1]['match_keeper'];
-					if (($hdr_line_num + 1 == count($headers_array))
-					&& ($prev_match_keeper == F_ROW_MATCHES)
-					&& ($andor == 'or'))
-					{
-						// this row retains its previous MATCH quality
-						// even though it failed this row's criteria
-						// because this row is OR'd to the previous row's results
-						$match_keeper = F_ROW_MATCHES;
-					}
-					else
-					{
-						// shame, shame! this row looses it's match quality if it had one
-						$match_keeper = '';
-					}
-					// put match keeper back in its association with this msgball
-					$this->inbox_full_msgball_list[$src_acct_loop_num][$msg_iteration]['match_keeper'] = $match_keeper;
-				}
-				// this is the last code that gets run BEFORE we move on to the next message, if any
-				// this code is INSIDE the message by message traversal of the folder's contents
-				// each row of match criteria gets to look at every message in the folder,
-				// before the next row of criteria gets its chance to look at the mesages
-			}
-					
-					
-					
-					
-					// this is the last code that gets run BEFORE we move on to the next row of match criteria 
-					// this code is INSIDE the match criteria rows
-					// to get here, this match criteria row has looked at all messages 
-					// by now, every message in the folder has either been stamped F_ROW_MATCHES or not
-					// F_ROW_MATCHES is cumulative, e.i. understands and stamps 
-					// depending on the previous row's stamp and whether this row is being AND's or OR'd
-					// to that previous row's stamp.
-				}
-				// code here is the last line in this SRC ACCT loop iteration
-				// this code is INSIDE the source account loop, the outermost loop of the matching system
-				// to get here, each row or search criteria has been compared to every message in the folder
-				// THUS, if we are here all criteria for this filter with respect to this folder HAS BEEN RUN
-				// our "match_keeper" will hold the stamp of F_ROW_MATCHES at this point ONLY if'
-				// every criteria row's conditions were satisfied
-				// after this loop has run thru each source account, this filters logic is exhausted
-				// we may then take the actions requested for any qualified messages
-			}
-			
-			// WE ARE in the outermost crust of THIS particular FILTER
-			// each account has had each message compared against any applicable critera
-			// messages that have a F_ROW_MATCHES need to be acted on according to the "action"
-			// specified for this filter
-			
-			// this is for holding report and/or debug data
-			// ACTION LOOP
-			// loop again, this time acting on F_ROW_MATCHES stamped messages
-			$this_filter_matching_msgballs = array();
-			for ($src_acct_loop_num=0; $src_acct_loop_num < count($this_filter['source_accounts']); $src_acct_loop_num++)
-			{
-				if ($this->debug > 1) { echo 'bofilters.run_single_filter: source_accounts ACTION loop ['.$src_acct_loop_num.']<br />'; }
-				for ($msg_iteration=0; $msg_iteration < count($this->inbox_full_msgball_list[$src_acct_loop_num]); $msg_iteration++)
-				{
-					if ($this->debug > 1) { echo 'bofilters.run_single_filter: source_accounts ['.$src_acct_loop_num.'] $msg_iteration iteration ['.$msg_iteration.'] ACTION loop<br />'; }
-					// do we need to do something with this message?
-					$match_keeper = $this->inbox_full_msgball_list[$src_acct_loop_num][$msg_iteration]['match_keeper'];
-					if ($match_keeper == F_ROW_MATCHES)
-					{
-						$positive_msgball = $this->inbox_full_msgball_list[$src_acct_loop_num][$msg_iteration];
-						// THIS IS WHERE WE TAKE ACTION
-						if ($this->just_testing())
-						{
-							// just testing, make a list of all matching msgball for later displaying
-							$next_pos = count($this_filter_matching_msgballs);
-							$this_filter_matching_msgballs[$next_pos] = $positive_msgball;
-						}
-						else
-						{
-							// NOT A TEST - APPLY THE ACTION(S)
-							if ($this->debug > 1) { echo 'bofilters.run_single_filter: NOT a Test, *Apply* the Action(s) ; $this_filter[actions][0][judgement] : ['.$this_filter['actions'][0]['judgement'].']<br />'; }
-							// ACTION: FILEINTO
-							if ($this_filter['actions'][0]['judgement'] == 'fileinto')
-							{
-								parse_str($this_filter['actions'][0]['folder'], $target_folder);
-								$target_folder['folder'] = urlencode($target_folder['folder']);
-								//if ($this->debug > 2) { echo 'bofilters.run_single_filter: $target_folder DUMP:<pre>'; print_r($target_folder); echo "</pre>\r\n"; }
-								$to_fldball = array();
-								$to_fldball['folder'] = $target_folder['folder'];
-								$to_fldball['acctnum'] = (int)$target_folder['acctnum'];
-								if ($this->debug > 2) { echo 'bofilters.run_single_filter: $to_fldball DUMP:<pre>'; print_r($to_fldball); echo "</pre>\r\n"; }
-								if ($this->debug > 1) { echo 'bofilters.run_single_filter: pre-move info: $mov_msgball [<code>'.serialize($mov_msgball).'</code>]<br />'; }
-								//echo 'EXIT NOT READY TO APPLY THE FILTER YET<br />';
-								$good_to_go = $GLOBALS['phpgw']->msg->industrial_interacct_mail_move($positive_msgball, $to_fldball);
-									
-								if (!$good_to_go)
-								{
-									// ERROR
-									if ($this->debug > 1) { echo 'bofilters.run_single_filter: ERROR: industrial_interacct_mail_move returns FALSE<br />'; }
-									return False;
-								}
-								// since we acted on this message, since we MOVED this message
-								// this message is NO LONGER IN THE SOURCE FOLDER
-								// in order to avoid having to re-fetch all headers, just remove this msgball
-								// from this list, so we stay in sync with the real folder without having
-								// to re-fetch all the data again for the next filter
-								$this->inbox_full_msgball_list[$src_acct_loop_num][$msg_iteration] = array();
-								unset($this->inbox_full_msgball_list[$src_acct_loop_num][$msg_iteration]);
-								// later we will "squash" this array to get rid of these gaps
-							}
-							else
-							{
-								// not yet coded action
-								if ($this->debug > 1) { echo 'bofilters.run_single_filter: actions not yet coded: $this_filter[actions][0][judgement] : ['.$this_filter['actions'][0]['judgement'].']<br />'; }
-							}
-							// POST ACTION STUFF
-							// n/a
-						}
-						
-					}
-					// last code before iterating to the next message number
-				}
-				// last code before moving to the next source account iteration
-				// PACK THE ARRAY
-				$packed_all_messages = array();
-				while(list($key,$value) = each($this->inbox_full_msgball_list[$src_acct_loop_num]))
-				{
-					$next_pos = count($packed_all_messages);
-					$this_msgball = $this->inbox_full_msgball_list[$src_acct_loop_num][$key];
-					$packed_all_messages[$next_pos] = $this_msgball;
-				}
-				// ok, now we have a compacted list with no gaps
-				$this->inbox_full_msgball_list[$src_acct_loop_num] = array();
-				$this->inbox_full_msgball_list[$src_acct_loop_num] = $packed_all_messages;
-			}
-			
-			// we are back at the outer crust of this function
-			// in the first big loop, messges were analysed and tagged
-			// in the second loop, just above, action was taken on those tagged messages
-			
-			// only thing left is the report
-			if (($this->just_testing())
-			&& (count($this_filter_matching_msgballs) > 0))
-			{
-				if ($this->debug > 1) { echo 'bofilters.run_single_filter: Filter Test Run<br />'; }
-				if ($this->debug > 1) { echo 'bofilters.run_single_filter: number of matches $this_filter_matching_msgballs = ' .count($this_filter_matching_msgballs).'<br />'."\r\n"; }
-				// make a "fake" folder_info array to make things simple for get_msg_list_display
-				$fake_folder_info['is_imap'] = True;
-				$fake_folder_info['folder_checked'] = 'INBOX';
-				$fake_folder_info['alert_string'] = 'you have search results';
-				$fake_folder_info['number_new'] = count($this_filter_matching_msgballs);
-				$fake_folder_info['number_all'] = count($this_filter_matching_msgballs);
-				if ($this->debug > 2) { echo 'bofilters.run_single_filter:  $this_filter_matching_msgballs DUMP:<pre>'; print_r($this_filter_matching_msgballs); echo "</pre>\r\n"; }
-				// retrieve user displayable data for each message in the result set
-				$this->result_set_mlist = $GLOBALS['phpgw']->msg->get_msg_list_display($fake_folder_info,$all_accounts_result_set);
-				// save this report data for later use, add it to any other previous report
-				$this->html_matches_table .= 
-					'<h3>Results for Filter ['.$filter_num.'] named: '.$this_filter['filtername'].'</h3>'."\r\n"
-					.'<table>'
-					.$this->make_mlist_box()
-					.'</table>'."\r\n";
-			}
-			// cleanup
-			$this_filter_matching_msgballs = array();
-			
-			if ($this->debug > 0) { echo 'bofilters.run_single_filter: LEAVING, return True because we made it to the end of the function<br /><br /><br />'; }
-			return True;
-			
-		}
-		*/
 		
 		// DEPRECIATED
 		/*!
@@ -1825,8 +1475,6 @@
 		*/
 		function make_imap_search_str($feed_filter)
 		{
-			if ($this->debug > 0) { echo 'bofilters.make_imap_search_str: ENTERING<br />'; }
-			if ($this->debug > 2) { echo 'bofilters.make_imap_search_str: $feed_filter DUMP:<pre>'; print_r($feed_filter); echo "</pre>\r\n"; }
 			/*
 			RFC2060:
 			search  =  "SEARCH" [SP "CHARSET" SP astring] 1*(SP search-key)
@@ -1879,11 +1527,9 @@
 			NOT k1 NOT k2           means (not k1) and (not k2)
 			*/
 			
-			if ($this->debug > 2) { echo 'bofilters: make_imap_search_str: mappings are:<pre>'; print_r($this->examine_imap_search_keys_map); echo "</pre>\r\n"; }
 			
 			// do we have one search or two, or more
 			$num_search_criteria = count($feed_filter['matches']);
-			if ($this->debug > 1) { echo 'bofilters.make_imap_search_str: $num_search_criteria: ['.$num_search_criteria.']<br />'; }
 			// 1st search criteria
 			// convert form submitted data into usable IMAP search keys
 			$search_key_sieve = $feed_filter['matches'][0]['examine'];
@@ -1946,7 +1592,6 @@
 			}
 			$imap_str = $look_here_imap.' "'.$for_this.'"';
 			*/
-			if ($this->debug > 0) { echo 'bofilters.make_imap_search_str: LEAVING, $one_line_only: ['.serialize($one_line_only).'] returning search string: <code>'.$final_search_str.'</code><br />'."\r\n"; }
 			return $final_search_str;
 		}
 
@@ -2037,107 +1682,6 @@
 		@function do_imap_search
 		@abstract DEPRECIATED - commented out
 		@author Angles
-		*/
-		/* // DEPRECIATED
-		function do_imap_search()
-		{
-			$imap_search_str = $this->make_imap_search_str();
-			if (!$imap_search_str)
-			{
-				if ($this->debug > 0) { echo '<b> *** error</b>: bofilters: do_imap_search: make_imap_search_str returned empty<br />'."\r\n"; }
-				return array();
-			}
-			
-			//$attempt_reuse = True;
-			$attempt_reuse = False;
-			if (!is_object($GLOBALS['phpgw']->msg))
-			{
-				$GLOBALS['phpgw']->msg = CreateObject("email.mail_msg");
-			}
-			
-			if ((is_object($GLOBALS['phpgw']->msg))
-			&& ($attempt_reuse == True))
-			{
-				// no not create, we will reuse existing
-				echo 'bofilters: do_imap_search: reusing existing mail_msg object'.'<br />';
-				// we need to feed the existing object some params begin_request uses to re-fill the msg->args[] data
-				$reuse_feed_args = $GLOBALS['phpgw']->msg->get_all_args();
-				$args_array = Array();
-				$args_array = $reuse_feed_args;
-				if ((isset($this->filters[0]['source_account']))
-				&& ($this->filters[0]['source_account'] != ''))
-				{
-					if ($this->debug > 0) { echo 'bofilters: do_imap_search: this->filters[0][source_account] = ' .$this->filters[0]['source_account'].'<br />'."\r\n"; }
-					$args_array['folder'] = $this->filters[0]['source_account'];
-				}
-				else
-				{
-					$args_array['folder'] = 'INBOX';
-				}
-				// add this to keep the error checking code (below) happy
-				$args_array['do_login'] = True;
-			}
-			else
-			{
-				if ($this->debug_index_data == True) { echo 'bofilters: do_imap_search: creating new login email.mail_msg, cannot or not trying to reusing existing'.'<br />'; }
-				// new login 
-				// (1) folder (if specified) - can be left empty or unset, mail_msg will then assume INBOX
-				$args_array = Array();
-				if ((isset($this->filters[0]['source_account']))
-				&& ($this->filters[0]['source_account'] != ''))
-				{
-					if ($this->debug > 0) { echo 'bofilters: do_imap_search: this->filters[0][source_account] = ' .$this->filters[0]['source_account'].'<br />'."\r\n"; }
-					$args_array['folder'] = $this->filters[0]['source_account'];
-				}
-				else
-				{
-					$args_array['folder'] = 'INBOX';
-				}
-				// (2) should we log in
-				$args_array['do_login'] = True;
-			}
-			//$GLOBALS['phpgw']->msg = CreateObject("email.mail_msg");
-			//$args_array = Array();
-			//if ((isset($this->filters[0]['source_account']))
-			//&& ($this->filters[0]['source_account'] != ''))
-			//{
-			//	if ($this->debug > 0) { echo 'bofilters: do_imap_search: this->filters[0][source_account] = ' .$this->filters[0]['source_account'].'<br />'."\r\n"; }
-			//	$args_array['folder'] = $this->filters[0]['source_account'];
-			//}
-			//else
-			//{
-			//	$args_array['folder'] = 'INBOX';
-			//}
-			//$args_array['do_login'] = True;
-			
-			$GLOBALS['phpgw']->msg->begin_request($args_array);
-			
-			$initial_result_set = Array();
-			$initial_result_set = $GLOBALS['phpgw']->msg->phpgw_search($imap_search_str);
-			// sanity check on 1 returned hit, is it for real?
-			if (($initial_result_set == False)
-			|| (count($initial_result_set) == 0))
-			{
-				echo 'bofilters: do_imap_search: no hits or possible search error<br />'."\r\n";
-				echo 'bofilters: do_imap_search: server_last_error (if any) was: "'.$GLOBALS['phpgw']->msg->phpgw_server_last_error().'"'."\r\n";
-				// we leave this->result_set_mlist an an empty array, as it was initialized on class creation
-			}
-			else
-			{
-				$this->result_set = $initial_result_set;
-				if ($this->debug > 0) { echo 'bofilters: do_imap_search: number of matches = ' .count($this->result_set).'<br />'."\r\n"; }
-				// make a "fake" folder_info array to make things simple for get_msg_list_display
-				$this->fake_folder_info['is_imap'] = True;
-				$this->fake_folder_info['folder_checked'] = $GLOBALS['phpgw']->msg->get_arg_value('folder');
-				$this->fake_folder_info['alert_string'] = 'you have search results';
-				$this->fake_folder_info['number_new'] = count($this->result_set);
-				$this->fake_folder_info['number_all'] = count($this->result_set);
-				// retrieve user displayable data for each message in the result set
-				$this->result_set_mlist = $GLOBALS['phpgw']->msg->get_msg_list_display($this->fake_folder_info,$this->result_set);
-			}
-			$GLOBALS['phpgw']->msg->end_request();
-			//echo 'bofilters: do_imap_search: returned:<br />'; var_dump($this->result_set); echo "<br />\r\n";
-		}
 		*/
 		
 	

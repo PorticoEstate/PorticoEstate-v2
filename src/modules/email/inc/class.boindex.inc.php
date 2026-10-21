@@ -30,8 +30,6 @@ class boindex
 	var $svc_nextmatches;
 	var $msg_bootstrap;
 
-	//var $debug_index_data = True;
-	//var $debug_index_data = 2;
 	var $debug_index_data = False;
 
 	//var $icon_size='16';
@@ -46,7 +44,6 @@ class boindex
 	{
 		//return;
 	}
-
 
 	function get_langed_labels()
 	{
@@ -356,10 +353,6 @@ class boindex
 	{
 
 		$flags = Settings::getInstance()->get('flags');
-		if ($this->debug_index_data == True)
-		{
-			echo 'ENTERING: email.boindex.index_data' . '<br />';
-		}
 		// create class objects
 		$this->nextmatchs = CreateObject('phpgwapi.nextmatchs');
 		// this svc_nextmatches handles email only stuff
@@ -371,7 +364,6 @@ class boindex
 
 		// any app may use these lang'd labels in their email UI
 		$this->get_langed_labels();
-
 
 		// ---  this->xi ("eXternal Interface") is an array that will hold ALL data necessary for an index page
 		// if auto-refresh is in use, it will need to know what to refresh, use with ->link to get full http string
@@ -650,7 +642,6 @@ class boindex
 		$this->xi['ilnk_accounts'] = \App\modules\email\services\MailMessage::getInstance()->href_maketag($this->xi['accounts_link'], $this->xi['accounts_img']);
 
 		$this->xi['accounts_href'] = '<a href="' . $this->xi['accounts_link'] . '">' . $this->xi['accounts_txt'] . '</a>';
-
 
 		// by now we have an acctnum!
 		if ((string)\App\modules\email\services\MailMessage::getInstance()->get_acctnum() == '0')
@@ -1040,12 +1031,6 @@ class boindex
 		$this->xi['ftr_backcolor_class'] = 'th';
 	}
 
-
-
-
-
-
-
 	/*!
 		@function mlist_data
 		@abstract DEPRECIATED - was used to display search results, NEEDS UPDATING
@@ -1055,32 +1040,14 @@ class boindex
 		// DISPLAY SEARCH RESULTS
 		$flags = Settings::getInstance()->get('flags');
 
-		if ($this->debug_index_data == True)
-		{
-			echo 'ENTERING: email.boindex: mlist_data' . '<br />';
-		}
-		if ($this->debug_index_data == True)
-		{
-			echo 'email.boindex.mlist_data: local var attempt_reuse=[' . serialize($attempt_reuse) . '] ; reuse_feed_args[] dump<pre>';
-			print_r($reuse_feed_args);
-			echo '</pre>';
-		}
 		// create class objects
 		$this->nextmatchs = CreateObject('phpgwapi.nextmatchs');
 
 		if (\App\modules\email\services\MailMessage::hasInstance())
 		{
-			if ($this->debug_index_data)
-			{
-				echo 'email.boindex.mlist_data: is_object test: $GLOBALS[phpgw]->msg is already set, do not create again<br />';
-			}
 		}
 		else
 		{
-			if ($this->debug_index_data)
-			{
-				echo 'email.boindex.mlist_data: is_object: $GLOBALS[phpgw]->msg is NOT set, creating mail_msg object<br />';
-			}
 			\App\modules\email\services\MailMessage::getInstance();
 		}
 
@@ -1426,9 +1393,5 @@ class boindex
 		}
 		$this->xi['ftr_backcolor'] = $GLOBALS['phpgw_info']['theme']['th_bg'];
 		$this->xi['ftr_backcolor_class'] = 'th';
-		if ($this->debug_index_data == True)
-		{
-			echo 'LEAVING: email.boindex: mlist_data' . '<br />';
-		}
 	}
 }

@@ -611,7 +611,6 @@
 							    'directory_uid' => $this->globaladduid
 							    );
 	//		print "<br />";
-	//		print_r($contactquery);		    
 					
 			
 				//This means the nameselect box was clicked to find out info for a given user
@@ -703,8 +702,6 @@
 			//it expects the templates are well initialized as far as the destboxes blocks go
 			$this->bo=(isset($this->bo)) ? $this->bo : CreateObject("email.bojsaddressbook");
 			$selectboxes=$this->bo->get_destboxes();
-			//print_r($selectboxes);
-			//print_r($this->bo->result);
 			
 			if(is_array($selectboxes['toselectbox']) && (!$this->hideto))
 			{
@@ -932,7 +929,6 @@
 		//
 		function ary_to_js($ary)
 		{
-			//print_r($ary);
 			//reset($ary);
 			//while(list($k,$v)=each($ary))
 			foreach($ary as $k => $v)

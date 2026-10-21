@@ -130,14 +130,6 @@ class mail_msg extends mail_msg_wrappers
 	*/
 	function common_folder_is($query_fldball = '##NOTHING##', $match_fld_name = '##NOTHING##')
 	{
-		if ($this->debug_args_special_handlers > 0)
-		{
-			$this->dbug->out('mail_msg(_display)(' . __LINE__ . '): common_folder_is: ENTERING <br />');
-		}
-		if ($this->debug_args_special_handlers > 1)
-		{
-			$this->dbug->out('mail_msg(_display)(' . __LINE__ . '): common_folder_is: param $query_fldball [' . htmlspecialchars(serialize($query_fldball)) . '] param $match_fld_name [' . htmlspecialchars($match_fld_name) . ']<br />');
-		}
 
 		//return 'FIX ME: stub function not completed. mail_msg_display.common_folder_is LINE '.__LINE__;
 		$acctnum = $query_fldball['acctnum'];
@@ -153,10 +145,6 @@ class mail_msg extends mail_msg_wrappers
 			|| ((string)$match_fld_name == $this->nothing)
 		)
 		{
-			if ($this->debug_args_special_handlers > 0)
-			{
-				$this->dbug->out('mail_msg(_display)(' . __LINE__ . '): common_folder_is: LEAVING with Error, not enough param data supplied, so returning False<br />');
-			}
 			return False;
 		}
 		elseif (($match_fld_name != 'INBOX')
@@ -164,23 +152,11 @@ class mail_msg extends mail_msg_wrappers
 			&& (strtolower($match_fld_name) != 'sent')
 		)
 		{
-			if ($this->debug_args_special_handlers > 0)
-			{
-				$this->dbug->out('mail_msg(_display)(' . __LINE__ . '): common_folder_is: LEAVING with Error, param $match_fld_name [' . htmlspecialchars($match_fld_name) . '] is not INBOX nor Trash, nor Sent, this function can not test for anything else, so returning False<br />');
-			}
 			return False;
 		}
 		elseif ($this->is_ball_data($query_fldball, 'any') == False)
 		{
-			if ($this->debug_args_special_handlers > 0)
-			{
-				$this->dbug->out('mail_msg(_display)(' . __LINE__ . '): common_folder_is: LEAVING with Error, input data fails $this->is_ball_data(' . htmlspecialchars(serialize($query_fldball)) . ', "any"), so returning False<br />');
-			}
 			return False;
-		}
-		if ($this->debug_args_special_handlers > 1)
-		{
-			$this->dbug->out('mail_msg(_display)(' . __LINE__ . '): common_folder_is: $query_fldball DUMP:', $query_fldball);
 		}
 
 		// First, handle the easiest test - INBOX
@@ -188,27 +164,15 @@ class mail_msg extends mail_msg_wrappers
 			&& ($query_fldball['folder'] == 'INBOX')
 		)
 		{
-			if ($this->debug_args_special_handlers > 0)
-			{
-				$this->dbug->out('mail_msg(_display)(' . __LINE__ . '): common_folder_is: LEAVING, returning True, tested for and found INBOX<br />');
-			}
 			return True;
 		}
 		else
 		{
-			if ($this->debug_args_special_handlers > 0)
-			{
-				$this->dbug->out('mail_msg(_display)(' . __LINE__ . '): common_folder_is: match_fld_name and $query_fldball["folder"], either one nor both were INBOX, so did not match the test, so continue with more checks...<br />');
-			}
 		}
 		// continue ...
 		// does the mailserver have folders, if not then there is NO trash folder no matter what
 		if ($this->get_mailsvr_supports_folders($acctnum) == False)
 		{
-			if ($this->debug_args_special_handlers > 0)
-			{
-				$this->dbug->out('mail_msg(_display)(' . __LINE__ . '): common_folder_is: LEAVING, mailserver does NOT support folders, and not testing for INBOX, so returning False<br />');
-			}
 			return False;
 		}
 		// continue ...
@@ -224,39 +188,19 @@ class mail_msg extends mail_msg_wrappers
 		}
 		else
 		{
-			if ($this->debug_args_special_handlers > 0)
-			{
-				$this->dbug->out('mail_msg(_wrappers)(' . __LINE__ . '): common_folder_is: LEAVING, with ERROR, we should not ever get here because param sanity test is above, param $match_fld_name [' . htmlspecialchars($match_fld_name) . '] needs to be either "Trash" or "Sent" at this point in the code, but it is not<br />');
-			}
 			return False;
 		}
 		// use that $needle to use the same code to handle both Trash and Sent matchings
-		if ($this->debug_args_special_handlers > 1)
-		{
-			$this->dbug->out('mail_msg(_display)(' . __LINE__ . '): common_folder_is: now testing if input data is "' . $needle . '" folder ...<br />');
-		}
 		// are we even supposed to use a trash or sent folder
 		if ((!$this->get_isset_pref('use_' . $needle . '_folder', $acctnum))
 			|| (!$this->get_pref_value('use_' . $needle . '_folder', $acctnum))
 		)
 		{
-			if ($this->debug_args_special_handlers > 0)
-			{
-				$this->dbug->out('mail_msg(_display)(' . __LINE__ . '): common_folder_is: [test: ' . $needle . '] LEAVING, returning False, testing for ' . $needle . ' folder but user preferences do NOT even want a ' . $needle . ' folder<br />');
-			}
 			return False;
 		}
 
 		// does the trash folder actually exist ?
-		if ($this->debug_args_special_handlers > 1)
-		{
-			$this->dbug->out('mail_msg(_wrappers)(' . __LINE__ . '): common_folder_is: [test: ' . $needle . '] humm... does the "' . $needle . '" folder actually exist :: this->get_pref_value("' . $needle . '_folder_name", ' . $acctnum . ') = [' . htmlspecialchars($this->get_pref_value($needle . '_folder_name', $acctnum)) . ']<br />');
-		}
 		$found_needle_folder_long = $this->folder_lookup('', $this->get_pref_value($needle . '_folder_name', $acctnum));
-		if ($this->debug_args_special_handlers > 1)
-		{
-			$this->dbug->out('mail_msg(_wrappers)(' . __LINE__ . '): common_folder_is: [test: ' . $needle . '] did lookup on pref value for "' . $needle . '" folder, got $found_needle_folder_long [' . htmlspecialchars($found_needle_folder_long) . ']<br />');
-		}
 		if ((isset($found_needle_folder_long))
 			&& ($found_needle_folder_long != '')
 		)
@@ -270,36 +214,16 @@ class mail_msg extends mail_msg_wrappers
 		// do we even need to continue
 		if ($havefolder == False)
 		{
-			if ($this->debug_args_special_handlers > 0)
-			{
-				$this->dbug->out('mail_msg(_display)(' . __LINE__ . '): common_folder_is: [test: ' . $needle . '] LEAVING, returning False, testing for ' . $needle . ' folder, user preferences DO want a ' . $needle . ' folder, but that folder does NOT exist, so param certainly can not be a real ' . $needle . ' folder. <br />');
-			}
 			return False;
 		}
 		// so the trash folder exists, does it match the param to test against
-		if ($this->debug_args_special_handlers > 1)
-		{
-			$this->dbug->out('mail_msg(_wrappers)(' . __LINE__ . '): common_folder_is: [test: ' . $needle . '] "' . $needle . '" folder exist, does it match a prepped param fldball, get prepped fldball folder string top use for the comparing<br />');
-		}
 		$query_folder_long = $this->prep_folder_in($query_fldball['folder'], $acctnum);
-		if ($this->debug_args_special_handlers > 1)
-		{
-			$this->dbug->out('mail_msg(_wrappers)(' . __LINE__ . '): common_folder_is: [test: ' . $needle . '] now we have folder long names to compare, does $query_folder_long [' . htmlspecialchars($query_folder_long) . '] equal $found_needle_folder_long [' . htmlspecialchars($found_needle_folder_long) . '] <br />');
-		}
 		if ($query_folder_long == $found_needle_folder_long)
 		{
-			if ($this->debug_args_special_handlers > 0)
-			{
-				$this->dbug->out('mail_msg(_wrappers)(' . __LINE__ . '): common_folder_is: LEAVING, return True, match ' . $needle . ', and found ' . $needle . ' folder exists and matched the input ball data <br />');
-			}
 			return True;
 		}
 		else
 		{
-			if ($this->debug_args_special_handlers > 0)
-			{
-				$this->dbug->out('mail_msg(_wrappers)(' . __LINE__ . '): common_folder_is: LEAVING, return False, match ' . $needle . ', and found ' . $needle . ' folder exists BUT input ball data does not match it. <br />');
-			}
 			return False;
 		}
 	}
@@ -355,16 +279,8 @@ class mail_msg extends mail_msg_wrappers
 			'first_line_txt'	=> lang('switch current folder to')
 		);
 		// loop thru $local_args[], replacing defaults with any args specified in $feed_args[]
-		if ($debug_widget)
-		{
-			$this->dbug->out('all_folders_listbox $feed_args data DUMP:', $feed_args);
-		}
 		if (count($feed_args) == 0)
 		{
-			if ($debug_widget)
-			{
-				$this->dbug->out('all_folders_listbox $feed_args is EMPTY<br />' . serialize($feed_args) . '<br />');
-			}
 		}
 		else
 		{
@@ -375,14 +291,6 @@ class mail_msg extends mail_msg_wrappers
 			foreach ($local_args as $key => $value)
 			{
 				// DEBUG
-				if ($debug_widget)
-				{
-					$this->dbug->out('a: local_args: key=[' . $key . '] value=[' . (string)$value . ']<br />');
-				}
-				if ($debug_widget)
-				{
-					$this->dbug->out('b: feed_args: key=[' . $key . '] value=[' . (string)$feed_args[$key] . ']<br />');
-				}
 				if ((isset($feed_args[$key]))
 					&& ($feed_args[$key] != $value)
 				)
@@ -392,18 +300,10 @@ class mail_msg extends mail_msg_wrappers
 					)
 					{
 						// do nothing, keep the default value, can not over write a good default stream with an empty value
-						if ($debug_widget)
-						{
-							$this->dbug->out('* keeping default [mailsvr_stream] value, can not override with a blank string<br />');
-						}
 					}
 					else
 					{
 						// we have a specified arg that should replace the default value
-						if ($debug_widget)
-						{
-							$this->dbug->out('*** override default value of [' . $local_args[$key] . '] with feed_args[' . $key . '] of [' . (string)$feed_args[$key] . ']<br />');
-						}
 						$local_args[$key] = $feed_args[$key];
 					}
 				}
@@ -412,10 +312,6 @@ class mail_msg extends mail_msg_wrappers
 			@reset($feed_args);
 		}
 		// at this point, local_args[] has anything that was passed in the feed_args[]
-		if ($debug_widget)
-		{
-			$this->dbug->out('FINAL Listbox Local Args:<br />' . serialize($local_args) . '<br />');
-		}
 
 		// init some important variables
 		$item_tags = '';
@@ -449,7 +345,6 @@ class mail_msg extends mail_msg_wrappers
 			$folder_list = $this->get_arg_value('folder_list');
 			//$folder_list =& $this->get_arg_value_ref('folder_list');
 
-			//echo '$folder_list DUMP<pre>'; print_r($folder_list); echo '</pre>';
 			// Save Origional Folder Name. $folder_status in the for statment below causes us to lose it.
 			// FIXED (angles)
 			//$origional_folder = $GLOBALS['phpgw']->msg->get_folder_short($GLOBALS['phpgw']->msg->prep_folder_out());
@@ -559,10 +454,6 @@ class mail_msg extends mail_msg_wrappers
 	{
 		$debug_mega_listbox = 0;
 		//$debug_mega_listbox = 3;
-		if ($debug_mega_listbox > 0)
-		{
-			$this->dbug->out('folders_mega_listbox(' . __LINE__ . '): ENTERING<br />');
-		}
 
 		if (!$feed_args)
 		{
@@ -585,16 +476,8 @@ class mail_msg extends mail_msg_wrappers
 			'first_line_txt'	=> lang('switch current folder to')
 		);
 		// loop thru $local_args[], replacing defaults with any args specified in $feed_args[]
-		if ($debug_mega_listbox > 1)
-		{
-			$this->dbug->out('folders_mega_listbox(' . __LINE__ . '): $feed_args data DUMP:', $feed_args);
-		}
 		if (count($feed_args) == 0)
 		{
-			if ($debug_mega_listbox > 1)
-			{
-				$this->dbug->out('folders_mega_listbox(' . __LINE__ . '): $feed_args is EMPTY<br />' . serialize($feed_args) . '<br />');
-			}
 		}
 		else
 		{
@@ -605,14 +488,6 @@ class mail_msg extends mail_msg_wrappers
 			foreach ($local_args as $key => $value)
 			{
 				// DEBUG
-				if ($debug_mega_listbox > 1)
-				{
-					$this->dbug->out('folders_mega_listbox(' . __LINE__ . '): a: local_args: key=[' . $key . '] value=[' . (string)$value . ']<br />');
-				}
-				if ($debug_mega_listbox > 1)
-				{
-					$this->dbug->out('folders_mega_listbox(' . __LINE__ . '): b: feed_args: key=[' . $key . '] value=[' . (string)$feed_args[$key] . ']<br />');
-				}
 				if ((isset($feed_args[$key]))
 					&& ($feed_args[$key] != $value)
 				)
@@ -622,18 +497,10 @@ class mail_msg extends mail_msg_wrappers
 					)
 					{
 						// do nothing, keep the default value, can not over write a good default stream with an empty value
-						if ($debug_mega_listbox > 1)
-						{
-							$this->dbug->out('folders_mega_listbox(' . __LINE__ . '): * keeping default [mailsvr_stream] value, can not override with a blank string<br />');
-						}
 					}
 					else
 					{
 						// we have a specified arg that should replace the default value
-						if ($debug_mega_listbox > 1)
-						{
-							$this->dbug->out('folders_mega_listbox(' . __LINE__ . '): *** override default value of [' . $local_args[$key] . '] with feed_args[' . $key . '] of [' . (string)$feed_args[$key] . ']<br />');
-						}
 						$local_args[$key] = $feed_args[$key];
 					}
 				}
@@ -642,10 +509,6 @@ class mail_msg extends mail_msg_wrappers
 			@reset($feed_args);
 		}
 		// at this point, local_args[] has anything that was passed in the feed_args[]
-		if ($debug_mega_listbox > 1)
-		{
-			$this->dbug->out('folders_mega_listbox(' . __LINE__ . '):FINAL Listbox Local Args:<br />' . serialize($local_args) . '<br />');
-		}
 
 		$item_tags = '';
 
@@ -657,24 +520,12 @@ class mail_msg extends mail_msg_wrappers
 			if ($this_status != 'enabled')
 			{
 				// Do Nothing, This account is not in use
-				if ($debug_mega_listbox > 1)
-				{
-					$this->dbug->out('folders_mega_listbox(' . __LINE__ . '): $this_acctnum [' . $this_acctnum . '] is not in use, so skip folderlist<br />');
-				}
 			}
 			else
 			{
 				// get the actual list of folders we are going to put into the combobox
 				//$folder_list = $this->get_folder_list($this_acctnum);
 				$folder_list = $this->get_arg_value('folder_list', $this_acctnum);
-				if ($debug_mega_listbox > 1)
-				{
-					$this->dbug->out('folders_mega_listbox(' . __LINE__ . '): $this_acctnum [' . $this_acctnum . '] IS enabled, got folder list<br />');
-				}
-				if ($debug_mega_listbox > 2)
-				{
-					$this->dbug->out('folders_mega_listbox(' . __LINE__ . '): $folder_list for $this_acctnum [' . $this_acctnum . '] DUMP:', $folder_list);
-				}
 				// NNTP = BORKED CODE!!!  (ignore for now) ...
 				if ($this->get_arg_value('newsmode', $this_acctnum))
 				{
@@ -749,10 +600,6 @@ class mail_msg extends mail_msg_wrappers
 			. $item_tags
 			. '</select>';
 		// return a pre-built HTML listbox (selectbox) widget
-		if ($debug_mega_listbox > 0)
-		{
-			$this->dbug->out('folders_mega_listbox(' . __LINE__ . '): LEAVING<br />');
-		}
 		return $listbox_widget;
 	}
 
@@ -876,12 +723,6 @@ class mail_msg extends mail_msg_wrappers
 			$this->set_arg_value('start', 0);
 		}
 
-		if ($debug_sort)
-		{
-			$this->dbug->out('sort: [' . $this->get_arg_value('sort') . ']<br />');
-			$this->dbug->out('order: [' . $this->get_arg_value('order') . ']<br />');
-			$this->dbug->out('start: [' . $this->get_arg_value('start') . ']<br />');
-		}
 	}
 
 	// ---- Go To Previous / Next Message Logic Handling  -----
@@ -897,10 +738,6 @@ class mail_msg extends mail_msg_wrappers
 		//$debug_nav = True;
 		//$debug_nav = False;
 		$debug_nav = $this->debug_index_page_display;
-		if ($debug_nav > 0)
-		{
-			$this->dbug->out('mail_msg_display: prev_next_navigation(' . __LINE__ . '): ENTERING, (try debug_index_page_display = 3 to see data dumps)<br />');
-		}
 
 		// but we do not want a COPY of this data it can be thousands of items, so we try to get a reference
 		$nav_data = array();
@@ -1021,10 +858,6 @@ class mail_msg extends mail_msg_wrappers
 			$nav_data['method'] = 'old_broken';
 		}
 
-		if ($debug_nav > 2)
-		{
-			$this->dbug->out('mail_msg_display: prev_next_navigation(' . __LINE__ . '): step1 $nav_data[] DUMP:', $nav_data);
-		}
 
 		// if it's not possible to have a prev message, then make "prev_msg" False
 		if ($nav_data['active_msgnum_idx'] <= $nav_data['lowest_left'])
@@ -1037,14 +870,6 @@ class mail_msg extends mail_msg_wrappers
 		{
 			// we are at the final message in this direction, there is no next message
 			$nav_data['next_msg'] = $this->not_set;
-		}
-		if ($debug_nav > 2)
-		{
-			$this->dbug->out('mail_msg_display: prev_next_navigation(' . __LINE__ . '): step2 $nav_data[] DUMP:', $nav_data);
-		}
-		if ($debug_nav > 0)
-		{
-			$this->dbug->out('mail_msg_display: prev_next_navigation(' . __LINE__ . '): LEAVING<br />');
 		}
 		return $nav_data;
 	}
@@ -1083,16 +908,8 @@ class mail_msg extends mail_msg_wrappers
 			'pre_select_multi'	=> (string)$acctnum
 		);
 		// loop thru $local_args[], replacing defaults with any args specified in $feed_args[]
-		if ($debug_widget)
-		{
-			$this->dbug->out('all_ex_accounts_listbox $feed_args data DUMP:', $feed_args);
-		}
 		if (count($feed_args) == 0)
 		{
-			if ($debug_widget)
-			{
-				$this->dbug->out('all_ex_accounts_listbox $feed_args is EMPTY<br />' . serialize($feed_args) . '<br />');
-			}
 		}
 		else
 		{
@@ -1103,24 +920,12 @@ class mail_msg extends mail_msg_wrappers
 			foreach ($local_args as $key => $value)
 			{
 				// DEBUG
-				if ($debug_widget)
-				{
-					$this->dbug->out('* a: local_args: key=[' . $key . '] value=[' . (string)$value . ']<br />');
-				}
-				if ($debug_widget)
-				{
-					$this->dbug->out('* b: feed_args: key=[' . $key . '] value=[' . (string)$feed_args[$key] . ']<br />');
-				}
 				if ((isset($feed_args[$key]))
 					//&& ($feed_args[$key] != $value))
 					&& ((string)$feed_args[$key] != (string)$value)
 				)
 				{
 					// we have a specified arg that should replace the default value
-					if ($debug_widget)
-					{
-						$this->dbug->out('*** override default value of [' . $local_args[$key] . '] with feed_args[' . $key . '] of [' . (string)$feed_args[$key] . ']<br />');
-					}
 					$local_args[$key] = $feed_args[$key];
 				}
 			}
@@ -1128,10 +933,6 @@ class mail_msg extends mail_msg_wrappers
 			@reset($feed_args);
 		}
 		// at this point, local_args[] has anything that was passed in the feed_args[]
-		if ($debug_widget)
-		{
-			$this->dbug->out('all_ex_accounts_listbox: FINAL Listbox Local Args:<br />' . serialize($local_args) . '<br />');
-		}
 
 		$item_tags = '';
 
@@ -1390,45 +1191,7 @@ class mail_msg extends mail_msg_wrappers
 	*/
 	function get_flat_pgw_struct($struct)
 	{
-		if ($this->debug_message_display > 0)
-		{
-			$this->dbug->out('mail_msg(display).get_flat_pgw_struct:  ENTERING <br />');
-		}
-		//if ($this->debug_message_display > 1) { $this->dbug->out('mail_msg(display).get_flat_pgw_struct:  param $msgball ['.serialize($msgball).']<br />'); }
-		if ($this->debug_message_display > 2)
-		{
-			$this->dbug->out('mail_msg(display).get_flat_pgw_struct:  param $struct DUMP:', $struct);
-		}
 
-		/*
-		// NO NEED TO CACHE THIS DATA, NO CONTACT WITH MAILSERVER IS NEEDED FOR THIS DATA
-		// try to get it from cache, this function handles checking for session_cache_extreme True or False
-		if ($this->session_cache_extreme == True)
-		{
-			if ((isset($msgball['folder']))
-			&& (trim($msgball['folder']) != '')
-			&& (isset($msgball['acctnum']))
-			&& ((string)($msgball['acctnum']) != ''))
-			{
-				$ex_folder = $msgball['folder'];
-				$ex_msgnum = $msgball['msgnum'];
-			}
-			else
-			{
-				$ex_folder = $this->prep_folder_out();
-				$ex_msgnum = $this->get_acctnum();
-			}
-			// the cached data is returned as a ready to use array if it exists, or False if not existing
-			$cache_flat_pgw_struct = $this->read_session_cache_item('flat_pgw_struct', $acctnum, $ex_folder, $ex_msgnum);
-			//echo '** flat_pgw_struct: $specific_key ['.$specific_key.'] :: $cache_flat_pgw_struct DUMP<pre>'; print_r($cache_phpgw_header); echo '</pre>';
-			if ($cache_flat_pgw_struct)
-			{
-				if ($this->debug_message_display > 0) { $this->dbug->out('mail_msg(display).get_flat_pgw_struct:  LEAVING returning cached data<br />'); }
-				return $cache_flat_pgw_struct;
-			}
-		}
-		if ($this->debug_message_display > 1) { $this->dbug->out('mail_msg(display).get_flat_pgw_struct: beginning ... no cached data available or caching is not enabled<br />'); }
-		*/
 
 		if (isset($this->not_set))
 		{
@@ -2136,14 +1899,6 @@ class mail_msg extends mail_msg_wrappers
 		}
 
 		// finally, return the customized flat phpgw msg structure array
-		if ($this->debug_message_display > 2)
-		{
-			$this->dbug->out('mail_msg(display).get_flat_pgw_struct: returning $part_nice DUMP:', $part_nice);
-		}
-		if ($this->debug_message_display > 0)
-		{
-			$this->dbug->out('mail_msg(display).get_flat_pgw_struct: LEAVING we made a $part_nice, returning it<br />');
-		}
 		return $part_nice;
 	}
 
@@ -2173,7 +1928,6 @@ class mail_msg extends mail_msg_wrappers
 		}
 
 		//echo 'BEGIN pgw_msg_struct<br />';
-		//echo var_dump($part);
 		//echo '<br />';
 
 		// TRANSLATE PART STRUCTURE CONSTANTS INTO STRINGS OR TRUE/FALSE
@@ -2400,7 +2154,6 @@ class mail_msg extends mail_msg_wrappers
 		$part_nice['ex_level_debth'] = $feed_debth;
 
 		//echo 'BEGIN DUMP<br />';
-		//echo var_dump($part_nice);
 		//echo '<br />END DUMP<br />';
 
 		return $part_nice;
@@ -2437,18 +2190,6 @@ class mail_msg extends mail_msg_wrappers
 		//	$debug = True;
 		//}
 
-		if ($debug)
-		{
-			$this->dbug->out('ENTER mime_number_smart<br />');
-		}
-		if ($debug)
-		{
-			$this->dbug->out('fed var flat_idx: ' . $flat_idx . '<br />');
-		}
-		if ($debug)
-		{
-			$this->dbug->out('fed var new_mime_dumb: ' . $new_mime_dumb . '<br />');
-		}
 		//error check
 		if ($new_mime_dumb == $not_set)
 		{
@@ -2459,18 +2200,10 @@ class mail_msg extends mail_msg_wrappers
 		$exploded_mime_dumb = array();
 		if (strlen($new_mime_dumb) == 1)
 		{
-			if ($debug)
-			{
-				$this->dbug->out('strlen(new_mime_dumb) = 1 :: TRUE ; FIRST debth level<br />');
-			}
 			$exploded_mime_dumb[0] = (int)$new_mime_dumb;
 		}
 		else
 		{
-			if ($debug)
-			{
-				$this->dbug->out('strlen(new_mime_dumb) = 1 :: FALSE<br />');
-			}
 			$exploded_mime_dumb = explode('.', $new_mime_dumb);
 		}
 
@@ -2479,42 +2212,23 @@ class mail_msg extends mail_msg_wrappers
 		{
 			$exploded_mime_dumb[$i] = (int)$exploded_mime_dumb[$i];
 		}
-		if ($debug)
-		{
-			$this->dbug->out('exploded_mime_dumb ' . serialize($exploded_mime_dumb) . '<br />');
-		}
 
 		// make an array of all parts of this family tree,  from the current part (the outermost) to innermost (closest to debth level 1)
 		$dumbs_part_nice = array();
 		//loop BACKWARDS
 		for ($i = count($exploded_mime_dumb) - 1; $i > -1; $i--)
 		{
-			if ($debug)
-			{
-				$this->dbug->out('exploded_mime_dumb reverse loop i=[' . $i . ']<br />');
-			}
 			// is this the outermost (current) part ?
 			if ($i == (count($exploded_mime_dumb) - 1))
 			{
 				$dumbs_part_nice[$i] = $part_nice[$flat_idx];
-				if ($debug)
-				{
-					$this->dbug->out('(outermost/current part) dumbs_part_nice[i(' . $i . ')] = part_nice[flat_idx(' . $flat_idx . ')]<br />');
-				}
-				//if ($debug) { $this->dbug->out(' - prev_parent_flat_idx: '.$prev_parent_flat_idx.'<br />'); }
 			}
 			else
 			{
 				$this_dumbs_idx = $dumbs_part_nice[$i + 1]['ex_parent_flat_idx'];
 				$dumbs_part_nice[$i] = $part_nice[$this_dumbs_idx];
-				if ($debug)
-				{
-					$this->dbug->out('dumbs_part_nice[i(' . $i . ')] = part_nice[this_dumbs_idx(' . $this_dumbs_idx . ')]<br />');
-				}
 			}
 		}
-		//if ($debug) { $this->dbug->out('dumbs_part_nice serialized: '.serialize($dumbs_part_nice) .'<br />'); }
-		//if ($debug) { $this->dbug->out('serialize exploded_mime_dumb: '.serialize($exploded_mime_dumb).'<br />'); }
 
 		// NOTE:  Packagelist -> Container EXCEPTION Conversions
 		// a.k.a "Exceptions for Less-Standart Subtypes"
@@ -2596,10 +2310,6 @@ class mail_msg extends mail_msg_wrappers
 					$smart_mime_number = $smart_mime_number . '.';
 				}
 			}
-		}
-		if ($debug)
-		{
-			$this->dbug->out('FINAL smart_mime_number: ' . $smart_mime_number . '<br /><br />');
 		}
 		return $smart_mime_number;
 	}
@@ -3004,10 +2714,6 @@ class mail_msg extends mail_msg_wrappers
 	{
 		//$debug_msg_list_display = 3;
 		$debug_msg_list_display = $this->debug_index_page_display;
-		if ($debug_msg_list_display > 0)
-		{
-			$this->dbug->out('mail_msg_display: get_msg_list_display(' . __LINE__ . '): ENTERING<br />');
-		}
 
 		if (!$folder_info)
 		{
@@ -3071,7 +2777,6 @@ class mail_msg extends mail_msg_wrappers
 			{
 				$msgball_list = &$this->getSessionCache()[$ex_acctnum]['msgball_list'][$ex_folder]['msgball_list'];
 				//$msgball_list =& $GLOBALS['phpgw_session']['phpgw_app_sessions']['email']['dat'][$ex_acctnum]['msgball_list']['msgball_list'];
-				//{ echo 'mail_msg_display: get_msg_list_display('.__LINE__.'): $msgball_list *REFERENCE* DUMP:<pre>'; print_r($msgball_list); echo '</pre>'; }
 				//$msgball_list = $GLOBALS['phpgw_session']['phpgw_app_sessions']['email']['dat'][$ex_acctnum]['msgball_list']['msgball_list'];
 			}
 			else
@@ -3109,10 +2814,6 @@ class mail_msg extends mail_msg_wrappers
 		for ($i = $start; $i < $totaltodisplay; $i++)
 		{
 			$this_loop_msgball = $this->ball_data_parse_str($msgball_list[$i]);
-			if ($debug_msg_list_display > 2)
-			{
-				$this->dbug->out('mail_msg_display: get_msg_list_display: $msgball_list[' . $i . '] [' . $msgball_list[$i] . '] $this_loop_msgball data DUMP:', $this_loop_msgball);
-			}
 			// we use $x to sequentially fill the $msg_list_display array
 			//$x++;
 			$x = $x + 1;
@@ -3473,14 +3174,6 @@ $hdr_envelope->udate = $new_time;
 				$to_data_final = implode(', ', $to_data_array);
 			}
 			$msg_list_display[$x]['to_data_final'] = $to_data_final;
-		}
-		if ($debug_msg_list_display > 2)
-		{
-			$this->dbug->out('mail_msg_display: get_msg_list_display: exiting $msg_list_display[] DUMP', $msg_list_display);
-		}
-		if ($debug_msg_list_display > 0)
-		{
-			$this->dbug->out('mail_msg_display: get_msg_list_display(' . __LINE__ . '): LEAVING<br />');
 		}
 		return $msg_list_display;
 	}

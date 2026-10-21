@@ -148,6 +148,5 @@
 	
 	<p>&nbsp;</p>
 
-{debugdata}
 
 <!-- END Sieve Mail Filters -->

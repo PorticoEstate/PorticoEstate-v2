@@ -11,7 +11,6 @@
 	* @internal Based on AngleMail http://www.anglemail.org/
 	*/
 
-
 	/**
 	* UI Class for Message Lists
 	*
@@ -101,8 +100,7 @@
 			$this->tpl->set_var('frm_delmov_name',$this->bo->xi['frm_delmov_name']);
 			$this->tpl->parse('V_mlist_form_init','B_mlist_form_init');
 			$this->bo->xi['V_mlist_form_init'] = $this->tpl->get_var('V_mlist_form_init');	
-			
-			
+
 			$tpl_vars = Array(
 				// fonts and font sizes
 			//	'ctrl_bar_font'		=> $this->bo->xi['ctrl_bar_font'],
@@ -154,8 +152,7 @@
 			{
 				$this->tpl->set_var('V_empty_trash', '');
 			}
-			
-			
+
 			//= = = = TESTING NEW TOOLBAR WIDGET = = = 
 			$this->widgets = CreateObject('email.html_widgets');
 			// this will have a msg to the user if messages were moved or deleted
@@ -294,7 +291,6 @@
 				}
 			}
 
-
 			//if ($this->bo->xi['report_this'] != '')
 			//{
 			//	$this->tpl->set_var('report_this',$this->bo->xi['report_this']);
@@ -408,10 +404,7 @@
 				$this->tpl->set_var('V_show_size','');
 			}
 			*/
-			
-			// new way to handle debug data, if this array has anything, put it in the template source data vars
-			$this->tpl->set_var('debugdata',\App\modules\email\services\MailMessage::getInstance()->dbug->notice_pagedone());
-			
+
 			// COMMENT NEXT LINE OUT for producvtion use, (unknowns should be "remove"d in production use)
 			$this->tpl->set_unknowns('comment');
 			// production use, use this:	$this->tpl->set_unknowns("remove");
@@ -487,9 +480,7 @@
 				'folder_info' => $this->bo->xi['folder_info'],
 				'auto_refresh_widget' => $this->bo->xi['auto_refresh_widget']
 			);
-			// new way to handle debug data, if this array has anything, put it in the template source data vars
-			$data['debugdata'] = \App\modules\email\services\MailMessage::getInstance()->dbug->notice_pagedone();
-			
+
 			$GLOBALS['phpgw_info']['flags']['email']['app_header'] = lang('E-Mail') . ': ' . lang('list messages');
 			$GLOBALS['phpgw_info']['flags']['app_header'] = lang('E-Mail') . ': ' . lang('list messages');
 			phpgwapi_xslttemplates::getInstance()->set_var('phpgw',array('index' => $data));
@@ -548,8 +539,7 @@ function check_all()
 EOD;
 			return $index_js;
 		}
-		
-		
+
 		// DISPLAY A PRE-DEFINED MESSAGE SET ARRAY
 		/*!
 		@function mlist  DEPRECIATED
@@ -705,7 +695,6 @@ EOD;
 				}
 			}
 
-
 			if ($this->bo->xi['report_this'] != '')
 			{
 				$GLOBALS['phpgw']->template->set_var('report_this',$this->bo->xi['report_this']);
@@ -831,6 +820,5 @@ EOD;
 			// note, for some reason, eventhough it seems we *should* call common->phpgw_footer(),
 			// if we do that, the client browser will get TWO page footers, so we do not call it here
 		}
-		
-		
+
 	}

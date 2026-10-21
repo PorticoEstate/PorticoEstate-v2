@@ -59,6 +59,7 @@ class EmailFilterController
 		}
 		catch (\Throwable $exception)
 		{
+			error_log('[email] EmailFilterController::editor failed (' . get_class($exception) . ')');
 			return $this->json($response, [
 				'error' => lang('Unable to load filter editor'),
 				'reason' => $exception->getMessage(),
@@ -167,6 +168,7 @@ class EmailFilterController
 		}
 		catch (\Throwable $exception)
 		{
+			error_log('[email] EmailFilterController::save failed (' . get_class($exception) . ')');
 			return $this->json($response, [
 				'error' => lang('Unable to save filter'),
 				'reason' => $exception->getMessage(),
@@ -194,6 +196,7 @@ class EmailFilterController
 		}
 		catch (\Throwable $exception)
 		{
+			error_log('[email] EmailFilterController::index failed (' . get_class($exception) . ')');
 			return $this->json($response, [
 				'error' => lang('Unable to load filters'),
 				'reason' => $exception->getMessage(),
@@ -234,6 +237,7 @@ class EmailFilterController
 		}
 		catch (\Throwable $exception)
 		{
+			error_log('[email] EmailFilterController::action failed (' . get_class($exception) . ')');
 			return $this->json($response, [
 				'error' => lang('Unable to update filter'),
 				'reason' => $exception->getMessage(),
@@ -281,6 +285,7 @@ class EmailFilterController
 		}
 		catch (\Throwable $exception)
 		{
+			error_log('[email] EmailFilterController::run failed (' . get_class($exception) . ')');
 			return $this->json($response, [
 				'error' => lang('Unable to run filters'),
 				'reason' => $exception->getMessage(),

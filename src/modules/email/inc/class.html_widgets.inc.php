@@ -11,7 +11,6 @@
 	* @internal Based on AngleMail http://www.anglemail.org/
 	*/
 
-	
 	/**
 	* Data structure used with class html_widgets
 	*
@@ -35,7 +34,6 @@
 			$this->selected = False;
 		}
 	}
-	
 
 	/**
 	* Data structure used with hidden data in forms
@@ -54,7 +52,6 @@
 			$this->value = '';
 		}
 	}
-	
 
 	/**
 	* Generate HTML widgets for use in web pages.
@@ -70,8 +67,7 @@
 		*	VARS
 		\**************************************************************************/		
 		var $debug = 0;
-		var $debug_init = 0;
-		
+
 		// if calling from home page it is optional to force currentapp as a constructor param
 		var $my_currentapp='';
 		// bootstraper for the msg class
@@ -119,14 +115,12 @@
 		var $F_error_report_text='';
 		var $F_go_somewhere_link='';
 		var $F_go_home_link='';
-		
-		
+
 		/**************************************************************************\
 		*	CONSTRUCTOR
 		\**************************************************************************/
 		function __construct()
 		{
-			if ($this->debug_init > 0) { echo 'ENTER: email.html_widgets.CONSTRUCTOR'.'<br />'."\r\n"; }
 			/*!
 			@class requires including spell_struct header file
 			@discussion  class html_widgets needs the special C-Style Include .h like file, 
@@ -142,11 +136,9 @@
 			//require_once(PHPGW_INCLUDE_ROOT.'/'.$GLOBALS['phpgw_info']['flags']['currentapp'].'/inc/class.'.$required_class.'.inc.php');
 			require_once(PHPGW_INCLUDE_ROOT.'/'.$this->my_currentapp.'/inc/class.'.$required_class.'.inc.php');
 			
-			if ($this->debug_init > 0) { echo 'EXIT: email.html_widgets.CONSTRUCTOR'.'<br />'."\r\n"; }
 			return;
 		}
-		
-		
+
 		/**************************************************************************\
 		*	HREF LINK WIDGET
 		\**************************************************************************/	
@@ -1134,8 +1126,7 @@
 				$this->tpl->set_var('form_folders_cbox_closetag', '');
 			}
 			// associated image is still filled from row one
-			
-			
+
 			// ---- account switchbox  ----
 			// <form name="acctbox" action="/mail/index.php?menuaction=email.uiindex.index" method="post">
 			$this->new_form();
@@ -1156,16 +1147,14 @@
 				$toolbar_report_msg = '&nbsp;';
 			}
 			$this->tpl->set_var('toolbar_report_msg', $toolbar_report_msg);
-			
-			
+
 			// make the 2nd row AND the 3rd row
 			$this->toolbar_row_two = $this->tpl->parse('V_toolbar_row_two','B_toolbar_row_two');
 			
 			return $this->toolbar_row_one . $this->toolbar_row_two;
 			
 		}
-		
-		
+
 		/*!
 		@function all_folders_combobox
 		@abstract high level function, uses functions in mail_msg and this class html_widgets to make an acct switchbox 
@@ -1277,8 +1266,7 @@
 			return $this->get_combobox();
 			
 		}
-		
-		
+
 		/*!
 		@function all_folders_mega_combobox
 		@abstract high level function, uses functions in mail_msg and this class html_widgets to make a listbox for 
@@ -1415,9 +1403,7 @@
 		{
 			$debug_mega_listbox = 0;
 			//$debug_mega_listbox = 3;
-			
-			if ($debug_mega_listbox > 0) { echo 'folders_mega_listbox('.__LINE__.'): ENTERING<br />'; }
-			
+
 			$this->new_combobox();
 			$this->set_cbox_name($this->F_megalist_widget_name);
 			
@@ -1442,13 +1428,10 @@
 				if ($this_status != 'enabled')
 				{
 					// Do Nothing, This account is not in use
-					if ($debug_mega_listbox > 1) { echo 'folders_mega_listbox('.__LINE__.'): $this_acctnum ['.$this_acctnum.'] is not in use, so skip folderlist<br />'; }
 				}
 				else
 				{
 					$folder_list = \App\modules\email\services\MailMessage::getInstance()->get_arg_value('folder_list', $this_acctnum);
-					if ($debug_mega_listbox > 1) { echo 'folders_mega_listbox('.__LINE__.'): $this_acctnum ['.$this_acctnum.'] IS enabled, got folder list<br />'; }
-					if ($debug_mega_listbox > 2) { echo 'folders_mega_listbox('.__LINE__.'): $folder_list for $this_acctnum ['.$this_acctnum.'] DUMP<pre>'; print_r($folder_list); echo '</pre>'; }
 					
 					// iterate thru the folder list for this acctnum
 					for ($i=0; $i<count($folder_list);$i++)
@@ -1465,7 +1448,6 @@
 						&& ($folder_acctnum == $this->F_megalist_skip_fldball['acctnum']))
 						{
 							// Do Nothing, this folder should not be included
-							if ($debug_mega_listbox > 1) { echo 'folders_mega_listbox('.__LINE__.'): skipping $this->F_megalist_skip_fldball ['.htmlspecialchars(serialize($this->F_megalist_skip_fldball)).'] has been matched<br />'; } 
 						}
 						else
 						{
@@ -1509,12 +1491,9 @@
 					}
 				}
 			}
-			if ($debug_mega_listbox > 0) { echo 'folders_mega_listbox('.__LINE__.'): LEAVING<br />'; }
 			return $this->get_combobox();
 		}
-		
 
-		
 		/*!
 		@function all_accounts_combobox
 		@abstract UNDER DEVELOPMENT

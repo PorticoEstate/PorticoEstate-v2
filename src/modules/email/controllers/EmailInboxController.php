@@ -64,6 +64,7 @@ class EmailInboxController
 		}
 		catch (\Throwable $exception)
 		{
+			error_log('[email] EmailInboxController::index failed (' . get_class($exception) . ')');
 			return $this->json($response, ['error' => lang('Unable to load messages')], 500);
 		}
 	}
@@ -124,6 +125,7 @@ class EmailInboxController
 		}
 		catch (\Throwable $exception)
 		{
+			error_log('[email] EmailInboxController::move failed (' . get_class($exception) . ')');
 			return $this->json($response, ['error' => lang('Unable to move message'), 'reason' => $exception->getMessage()], 500);
 		}
 		finally
@@ -188,6 +190,7 @@ class EmailInboxController
 		}
 		catch (\Throwable $exception)
 		{
+			error_log('[email] EmailInboxController::seen failed (' . get_class($exception) . ')');
 			return $this->json($response, ['error' => lang('Unable to update read status'), 'reason' => $exception->getMessage()], 500);
 		}
 		finally
@@ -300,6 +303,7 @@ class EmailInboxController
 		}
 		catch (\Throwable $exception)
 		{
+			error_log('[email] EmailInboxController::message failed (' . get_class($exception) . ')');
 			return $this->json($response, ['error' => lang('Unable to load message')], 500);
 		}
 	}
@@ -334,6 +338,7 @@ class EmailInboxController
 		}
 		catch (\Throwable $exception)
 		{
+			error_log('[email] EmailInboxController::folders failed (' . get_class($exception) . ')');
 			return $this->json($response, ['error' => lang('Unable to load folders')], 500);
 		}
 	}
@@ -407,6 +412,7 @@ class EmailInboxController
 		}
 		catch (\Throwable $exception)
 		{
+			error_log('[email] EmailInboxController::folderAction failed (' . get_class($exception) . ')');
 			return $this->json($response, [
 				'error' => lang('Unable to update folder'),
 				'reason' => $exception->getMessage(),
@@ -492,6 +498,7 @@ class EmailInboxController
 		}
 		catch (\Throwable $exception)
 		{
+			error_log('[email] EmailInboxController::attachment failed (' . get_class($exception) . ')');
 			return $this->json($response, ['error' => lang('Unable to download attachment')], 500);
 		}
 	}

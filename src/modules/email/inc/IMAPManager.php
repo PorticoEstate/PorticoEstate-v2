@@ -99,16 +99,18 @@ class IMAPManager
             && $wrapper === 'ModernIMAPWrapper';
     }
 
-    private static function fallbackToLegacy($function, $args, $reason)
+    private static function fallbackToLegacy($function, $args)
     {
         self::$fallbackOccurred = true;
         self::$currentWrapper = 'LegacyIMAPWrapper';
-        error_log("IMAP: Falling back to legacy wrapper for function: $function ($reason)");
+        error_log('[email] IMAP connection falling back to native implementation');
 
         try {
-            return call_user_func_array('LegacyIMAPWrapper::' . $function, $args);
+            $result = call_user_func_array('LegacyIMAPWrapper::' . $function, $args);
+            if ($result === false) error_log('[email] Native IMAP connection failed');
+            return $result;
         } catch (Exception $exception) {
-            error_log('IMAP: Legacy wrapper also failed: ' . $exception->getMessage());
+            error_log('[email] Native IMAP connection failed (' . get_class($exception) . ')');
             return false;
         }
     }
@@ -129,7 +131,7 @@ class IMAPManager
             
             // If result is false and we haven't tried legacy yet, try fallback
             if (self::canFallback($function, $wrapper, $oauthAuthentication) && $result === false) {
-                return self::fallbackToLegacy($function, $args, 'modern wrapper returned false');
+                return self::fallbackToLegacy($function, $args);
             }
             
             return $result;
@@ -137,10 +139,10 @@ class IMAPManager
         } catch (Exception $e) {
             // If exception occurs and we're in auto mode, try fallback
             if (self::canFallback($function, $wrapper, $oauthAuthentication)) {
-                return self::fallbackToLegacy($function, $args, $e->getMessage());
+                return self::fallbackToLegacy($function, $args);
             }
             
-            error_log("IMAP: Error in $wrapper::$function - " . $e->getMessage());
+            error_log("[email] $wrapper::$function failed (" . get_class($e) . ')');
             return false;
         }
     }

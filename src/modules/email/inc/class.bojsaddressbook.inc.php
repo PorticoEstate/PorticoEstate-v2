@@ -203,7 +203,6 @@
 				}//end while
 			}
 //			print "<br /> built query";
-//			print_r($this->contactquery);
 		}//end function
 		
 		//@function forget_query
@@ -305,11 +304,9 @@
 		//Previous disclaimer said, it works now, and will release this way.
 		function set_destboxes($aryboxes,$deleted='')
 		{
-			//print_r($aryboxes);
 //			print "<br /> SAVed DESTBOXES <br />";
 			//We get our own destboxes from the cache
 			$saveddestboxes=$this->get_destboxes();
-		//	print_r($saveddestboxes);
 			$found=false;
 			//We iterate into each box
 			//while(list($ak,$li)=each($aryboxes))
@@ -318,7 +315,6 @@
 				foreach($aryboxes as $ak => $li)
 				{
 	//				print $ak." ".$li."<br />";
-	//				print_r($li);
 	//				print "<br />";
 					//We make shure this box has an array in it
 					if(is_array($aryboxes[$ak]))
@@ -329,7 +325,6 @@
 						foreach($aryboxes[$ak] as $numary => $ary)
 						{
 	//						print "<br /> Iterating aryboxes $numary";	
-	//						print_r($ary);
 							//list($id,$name)=each($ary);
 							$id = key($ary);
 							$name = current($ary);
@@ -393,14 +388,12 @@
 					elseif(!$deleted[$ak])
 					{
 	//					print "<br />Saving $ak from destination data $deleted[$ak]<br />";
-	//					print_r($deleted);
 						//Delete the destboxes that need deletion
 						$aryboxes[$ak]=$saveddestboxes[$ak];
 					}
 				}
 			}
 //			print "<br />modified<br />";
-//				print_r($aryboxes);
 			reset($aryboxes);
 			//Save the resulting destboxes
 			$this->save_destboxes($aryboxes);
@@ -426,7 +419,6 @@
 			}
 			if($this->debug)
 			{
-				echo '<br />Saving: ';
 				_debug_array($data);
 			}
 		}
@@ -441,7 +433,6 @@
 			$data = \App\modules\phpgwapi\services\Cache::session_get('jsbook_data'.($location ? '_'.$location :""), 'session_data');
 			if($this->debug)
 			{
-				echo '<br />Read: ';
 				_debug_array($data);
 			}
 			return $data;

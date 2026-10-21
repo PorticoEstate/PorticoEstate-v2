@@ -29,9 +29,6 @@ class mail_dcom_base
 	var $err = array("code", "msg", "desc");
 	var $msg_info = array(array());
 
-	var $debug_utf7 = 0;
-	//var $debug_utf7=3;
-
 	var $tempfile;
 	var $folder_list_changed = False;
 	var $enable_utf7 = False;
@@ -69,24 +66,12 @@ class mail_dcom_base
 		*/
 	function utf7_encode($data, $called_by = 'not_provided')
 	{
-		if ($this->debug_utf7 > 0)
-		{
-			echo 'mail_dcom_base: utf7_encode (' . __LINE__ . '): ENTERING, $called_by [' . $called_by . ']<br />';
-		}
-		if ($this->debug_utf7 > 1)
-		{
-			echo 'mail_dcom_base: utf7_encode (' . __LINE__ . '): $data [' . serialize($data) . ']<br />';
-		}
 		// handle utf7 encoding of folder names, if necessary
 		if (($this->enable_utf7 == False)
 			|| (function_exists('imap_utf7_encode') == False)
 			|| (!isset($data))
 		)
 		{
-			if ($this->debug_utf7 > 0)
-			{
-				echo 'mail_dcom_base: utf7_encode (' . __LINE__ . '): LEAVING on error, returning param unmodified. Check if .. then to see why we exited here, $called_by [' . $called_by . ']<br />';
-			}
 			return $data;
 		}
 
@@ -99,29 +84,17 @@ class mail_dcom_base
 			{
 				$return_array[$i] = $this->utf7_encode_string($data[$i]);
 			}
-			if ($this->debug_utf7 > 0)
-			{
-				echo 'mail_dcom_base: utf7_encode (' . __LINE__ . '): LEAVING, returning $return_array [' . serialize($return_array) . '], $called_by [' . $called_by . ']<br />';
-			}
 			return $return_array;
 		}
 		elseif (gettype($data) == 'string')
 		{
 			// string data
 			$return_string = $this->utf7_encode_string($data);
-			if ($this->debug_utf7 > 0)
-			{
-				echo 'mail_dcom_base: utf7_encode (' . __LINE__ . '): LEAVING, returning $return_string [' . serialize($return_string) . '], $called_by [' . $called_by . ']<br />';
-			}
 			return $return_string;
 		}
 		else
 		{
 			// ERROR
-			if ($this->debug_utf7 > 0)
-			{
-				echo 'mail_dcom_base: utf7_encode (' . __LINE__ . '): LEAVING with ERROR, returning param unmodified. Data was not string nor array, $called_by [' . $called_by . ']<br />';
-			}
 			return $data;
 		}
 	}
@@ -169,10 +142,6 @@ class mail_dcom_base
 			$name['folder_after'] = IMAPManager::imap_utf7_encode($name['folder_before']);
 			$name['translated'] = $name['folder_after'];
 		}
-		if ($this->debug_utf7 > 1)
-		{
-			echo ' _ mail_dcom_base: utf7_encode_string (' . __LINE__ . '): $name DUMP: [' . htmlspecialchars(serialize($name)) . ']<br />';
-		}
 		return $name['translated'];
 	}
 
@@ -184,24 +153,12 @@ class mail_dcom_base
 		*/
 	function utf7_decode($data)
 	{
-		if ($this->debug_utf7 > 0)
-		{
-			echo 'mail_dcom_base: utf7_decode (' . __LINE__ . '): ENTERING<br />';
-		}
-		if ($this->debug_utf7 > 1)
-		{
-			echo 'mail_dcom_base: utf7_decode (' . __LINE__ . '): $data [' . serialize($data) . ']<br />';
-		}
 		// handle utf7 decoding of folder names, if necessary
 		if (($this->enable_utf7 == False)
 			|| (function_exists('imap_utf7_decode') == False)
 			|| (!isset($data))
 		)
 		{
-			if ($this->debug_utf7 > 0)
-			{
-				echo 'mail_dcom_base: utf7_decode (' . __LINE__ . '): LEAVING on error, returning param unmodified. Check if .. then to see why we exited here<br />';
-			}
 			return $data;
 		}
 
@@ -214,29 +171,17 @@ class mail_dcom_base
 			{
 				$return_array[$i] = $this->utf7_decode_string($data[$i]);
 			}
-			if ($this->debug_utf7 > 0)
-			{
-				echo 'mail_dcom_base: utf7_decode (' . __LINE__ . '): LEAVING, returning $return_array [' . serialize($return_array) . ']<br />';
-			}
 			return $return_array;
 		}
 		elseif (gettype($data) == 'string')
 		{
 			// string data
 			$return_string = $this->utf7_decode_string($data);
-			if ($this->debug_utf7 > 0)
-			{
-				echo 'mail_dcom_base: utf7_decode (' . __LINE__ . '): LEAVING, returning $return_string [' . serialize($return_string) . ']<br />';
-			}
 			return $return_string;
 		}
 		else
 		{
 			// ERROR
-			if ($this->debug_utf7 > 0)
-			{
-				echo 'mail_dcom_base: utf7_decode (' . __LINE__ . '): LEAVING with ERROR, returning param unmodified. Data was not string nor array.<br />';
-			}
 			return $data;
 		}
 	}
@@ -307,20 +252,12 @@ class mail_dcom_base
 			)
 			{
 				// no translation occured
-				if ($this->debug_utf7 > 0)
-				{
-					echo ' _ mail_dcom_base: utf7_decode_string (' . __LINE__ . '): returning unmodified name, NO decoding needed, returning feed $data_str: [' . htmlspecialchars(serialize($data_str)) . ']<br />';
-				}
 				return $data_str;
 			}
 			else
 			{
 				// replace old folder name with new folder name
 				$name['translated'] = str_replace($name['folder_before'], $name['folder_after'], $data_str);
-				if ($this->debug_utf7 > 0)
-				{
-					echo ' _ mail_dcom_base: utf7_decode_string (' . __LINE__ . '): returning decoded name, $name[] DUMP: [' . htmlspecialchars(serialize($name)) . ']<br />';
-				}
 				return $name['translated'];
 			}
 		}
@@ -337,18 +274,10 @@ class mail_dcom_base
 			)
 			{
 				// no translation occured
-				if ($this->debug_utf7 > 0)
-				{
-					echo ' _ mail_dcom_base: utf7_decode_string (' . __LINE__ . '): returning unmodified name, NO decoding needed, returning feed $data_str: [' . htmlspecialchars(serialize($data_str)) . ']<br />';
-				}
 				return $data_str;
 			}
 			else
 			{
-				if ($this->debug_utf7 > 0)
-				{
-					echo ' _ mail_dcom_base: utf7_decode_string (' . __LINE__ . '): returning decoded name, $name[] DUMP: [' . htmlspecialchars(serialize($name)) . ']<br />';
-				}
 				return $name['translated'];
 			}
 		}

@@ -11,7 +11,6 @@
 	* @internal Based on AngleMail http://www.anglemail.org/
 	*/
 
-
 	/**
 	* UI Class for Message Lists
 	*
@@ -83,8 +82,7 @@
 			// this will have a msg to the user if folder was renamed, created, or deleted
 			$this->widgets->set_toolbar_msg($this->bo->xi['action_report']);
 			$this->tpl->set_var('widget_toolbar',$this->widgets->get_toolbar());
-			
-			
+
 			for ($i=0; $i<count($this->bo->xi['folder_list_display']);$i++)
 			{
 		//		$this->tpl->set_var('list_backcolor',$this->bo->xi['folder_list_display'][$i]['list_backcolor']);
@@ -95,8 +93,6 @@
 				$this->tpl->set_var('msgs_total',$this->bo->xi['folder_list_display'][$i]['msgs_total']);
 				$this->tpl->parse('V_folder_list','B_folder_list',True);
 			}
-
-
 
 			$this->tpl->set_var('all_folders_listbox',$this->bo->xi['all_folders_listbox']);
 			
@@ -136,9 +132,7 @@
 			
 		//	$this->tpl->set_var('the_font',$this->bo->xi['the_font']);
 		//	$this->tpl->set_var('th_backcolor',$this->bo->xi['th_backcolor']);
-			
-			// new way to handle debug data, if there is debug data, this will put it in the template source data vars
-			$this->tpl->set_var('debugdata', \App\modules\email\services\MailMessage::getInstance()->dbug->notice_pagedone());
+
 			if (\App\modules\email\services\MailMessage::getInstance()->phpgw_before_xslt)
 			{
 				// COMMENT NEXT LINE OUT for producvtion use, (unknowns should be "remove"d in production use)

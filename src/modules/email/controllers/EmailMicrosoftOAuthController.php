@@ -44,6 +44,7 @@ class EmailMicrosoftOAuthController
 		}
 		catch (\Throwable $exception)
 		{
+			error_log('[email] EmailMicrosoftOAuthController::authorize failed (' . get_class($exception) . ')');
 			return $this->error($response, $exception->getMessage(), 500);
 		}
 	}
@@ -92,6 +93,7 @@ class EmailMicrosoftOAuthController
 		}
 		catch (\Throwable $exception)
 		{
+			error_log('[email] EmailMicrosoftOAuthController::callback failed (' . get_class($exception) . ')');
 			return $this->error($response, $exception->getMessage(), 400);
 		}
 	}

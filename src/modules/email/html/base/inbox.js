@@ -241,6 +241,7 @@
 					read.checked = seen;
 					row.classList.toggle('is-unseen', !seen);
 					moveStatus.textContent = seen ? 'Message marked as read' : 'Message marked as unread';
+					await load();
 					await loadFolders();
 				} catch (exception)
 				{

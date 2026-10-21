@@ -21,6 +21,146 @@
 	let draggedMessage = null;
 	let movePending = false;
 	let seenPending = false;
+	const selected = new Map();
+	const selectAll = document.getElementById('email-inbox-select-all');
+	const selectedCount = document.getElementById('email-inbox-selected');
+	const targetAccount = document.getElementById('email-inbox-target-account');
+	const targetFolder = document.getElementById('email-inbox-target-folder');
+	const moveSelected = document.getElementById('email-inbox-move-selected');
+	const deleteSelected = document.getElementById('email-inbox-delete-selected');
+	const emptyTrash = document.getElementById('email-inbox-empty-trash');
+	let pageItems = [];
+	let trashFolder = '';
+	let destinationsLoading = false;
+	let currentSort = String(selection.get('sort') || '1');
+	let currentOrder = String(selection.get('order') || '0');
+	root.querySelectorAll('[data-email-sort]').forEach(button =>
+	{
+		button.addEventListener('click', () =>
+		{
+			if (movePending || seenPending) return;
+			const url = new URL(window.location.href);
+			const history = url.searchParams.get('click_history');
+			url.searchParams.delete('click_history');
+			url.searchParams.set('sort', button.dataset.emailSort);
+			url.searchParams.set('order', currentSort === button.dataset.emailSort && currentOrder !== '1' ? '1' : '0');
+			url.searchParams.delete('start');
+			if (history !== null) url.searchParams.set('click_history', history);
+			window.location.assign(url.href);
+		});
+	});
+	function updateSortIndicators()
+	{
+		root.querySelectorAll('[data-email-sort]').forEach(button =>
+		{
+			button.closest('th').setAttribute('aria-sort', currentSort === button.dataset.emailSort ? (currentOrder === '1' ? 'descending' : 'ascending') : 'none');
+		});
+	}
+	updateSortIndicators();
+
+	function updateSelection()
+	{
+		selectedCount.textContent = selected.size + ' selected';
+		const available = pageItems.filter(item => item.sourceFolder);
+		selectAll.checked = available.length > 0 && selected.size === available.length;
+		selectAll.indeterminate = selected.size > 0 && selected.size < available.length;
+		moveSelected.disabled = !selected.size || movePending || seenPending || destinationsLoading || !targetFolder.value;
+		deleteSelected.disabled = !selected.size || movePending || seenPending;
+		emptyTrash.disabled = !trashFolder || movePending || seenPending;
+		selectAll.disabled = movePending || seenPending || !available.length;
+	}
+
+	function fillDestinations(result)
+	{
+		const previousFolder = targetFolder.value;
+		targetFolder.replaceChildren();
+		window.emailFolderHierarchy(result.items || [], result.delimiter || '').forEach(folder =>
+		{
+			const option = new Option('\u00a0\u00a0'.repeat(folder.depth) + folder.label, folder.longName);
+			option.title = folder.longName;
+			targetFolder.add(option);
+		});
+		if ([...targetFolder.options].some(option => option.value === previousFolder)) targetFolder.value = previousFolder;
+		updateSelection();
+	}
+
+	targetAccount.addEventListener('change', async () =>
+	{
+		destinationsLoading = true;
+		targetFolder.replaceChildren();
+		updateSelection();
+		const account = targetAccount.value;
+		try
+		{
+			const url = new URL(root.dataset.foldersApiUrl, window.location.origin);
+			url.searchParams.set('fldball[acctnum]', account);
+			const response = await fetch(url, { headers: { Accept: 'application/json' } });
+			const result = await response.json();
+			if (!response.ok) throw new Error(result.error || 'Unable to load destination folders');
+			if (targetAccount.value === account) fillDestinations(result);
+		} catch (exception)
+		{
+			error.textContent = exception.message;
+			error.hidden = false;
+		} finally
+		{
+			if (targetAccount.value === account) destinationsLoading = false;
+			updateSelection();
+		}
+	});
+	targetFolder.addEventListener('change', updateSelection);
+	selectAll.addEventListener('change', () =>
+	{
+		const checked = selectAll.checked;
+		selected.clear();
+		rows.querySelectorAll('[data-message-select]').forEach(input =>
+		{
+			if (input.disabled) return;
+			input.checked = checked;
+			if (checked) selected.set(input.dataset.messageSelect, pageItems[Number(input.dataset.messageSelect)]);
+		});
+		updateSelection();
+	});
+
+	async function batchAction(action)
+	{
+		if (movePending || seenPending || (action !== 'emptyTrash' && !selected.size)) return;
+		if (action === 'move' && (destinationsLoading || !targetFolder.value)) return;
+		if (action === 'emptyTrash' && !trashFolder) return;
+		if (action !== 'move' && !window.confirm(action === 'emptyTrash'
+			? 'Permanently delete every message in Trash?'
+			: 'Delete selected messages? Messages already in Trash, or accounts without Trash, are permanently deleted.')) return;
+		const payload = { action, account: activeAccount, confirmed: action !== 'move', messages: [...selected.values()].map(item => ({ acctnum: item.account, folder: item.sourceFolder, msgnum: item.messageNumber })) };
+		if (action === 'move') payload.target_fldball = { acctnum: Number(targetAccount.value), folder: targetFolder.value };
+		movePending = true;
+		updateSelection();
+		error.hidden = true;
+		moveStatus.textContent = 'Updating messages';
+		try
+		{
+			const result = await window.emailMessageAction(root, payload);
+			await load();
+			await loadFolders();
+			moveStatus.textContent = result.completed.length + ' completed, ' + result.failed.length + ' failed';
+			if (result.failed.length)
+			{
+				error.textContent = result.failed.map(item => item.message.msgnum + ': ' + item.error).join('; ');
+				error.hidden = false;
+			}
+		} catch (exception)
+		{
+			moveStatus.textContent = '';
+			error.textContent = exception.message;
+			error.hidden = false;
+		} finally
+		{
+			movePending = false;
+			updateSelection();
+		}
+	}
+	moveSelected.addEventListener('click', () => batchAction('move'));
+	deleteSelected.addEventListener('click', () => batchAction('delete'));
+	emptyTrash.addEventListener('click', () => batchAction('emptyTrash'));
 
 	function canDrop(folder)
 	{
@@ -39,6 +179,7 @@
 		if (movePending || seenPending) return;
 		movePending = true;
 		root.setAttribute('aria-busy', 'true');
+		updateSelection();
 		moveStatus.textContent = 'Moving message';
 		error.hidden = true;
 		try
@@ -70,6 +211,7 @@
 		{
 			movePending = false;
 			root.setAttribute('aria-busy', 'false');
+			updateSelection();
 		}
 	}
 
@@ -83,6 +225,14 @@
 			const result = await response.json();
 			if (!response.ok) throw new Error(result.reason || result.error || 'Unable to load folders');
 			const folders = window.emailFolderHierarchy(result.items || [], result.delimiter || '');
+			trashFolder = result.trashFolder || '';
+			if (!targetAccount.options.length)
+			{
+				(result.accounts?.length ? result.accounts : [{ id: activeAccount, name: 'Account ' + activeAccount }]).forEach(account => targetAccount.add(new Option(account.name, String(account.id))));
+				targetAccount.value = String(activeAccount);
+			}
+			if (Number(targetAccount.value) === activeAccount) fillDestinations(result);
+			updateSelection();
 			folderList.replaceChildren();
 			const lists = [folderList];
 			folders.forEach(folder =>
@@ -176,19 +326,36 @@
 
 	function renderItems(items, errorText)
 	{
+		pageItems = items;
+		selected.clear();
 		rows.replaceChildren();
+		updateSelection();
 		if (!items.length)
 		{
 			const row = document.createElement('tr');
 			const empty = cell(row, errorText || 'No messages in this folder');
-			empty.colSpan = 5;
+			empty.colSpan = 6;
 			rows.appendChild(row);
 			return;
 		}
 
-		items.forEach(item =>
+		items.forEach((item, index) =>
 		{
 			const row = document.createElement('tr');
+			const selectionCell = document.createElement('td');
+			const selectionInput = document.createElement('input');
+			selectionInput.type = 'checkbox';
+			selectionInput.dataset.messageSelect = String(index);
+			selectionInput.disabled = !item.sourceFolder;
+			selectionInput.setAttribute('aria-label', 'Select ' + (item.subject || '(no subject)'));
+			selectionInput.addEventListener('change', () =>
+			{
+				if (selectionInput.checked) selected.set(String(index), item);
+				else selected.delete(String(index));
+				updateSelection();
+			});
+			selectionCell.appendChild(selectionInput);
+			row.appendChild(selectionCell);
 			row.draggable = Boolean(item.sourceFolder);
 			row.classList.add('email-inbox-draggable');
 			row.addEventListener('dragstart', event =>
@@ -232,6 +399,7 @@
 				}
 				seenPending = true;
 				read.disabled = true;
+				updateSelection();
 				error.hidden = true;
 				root.setAttribute('aria-busy', 'true');
 				try
@@ -252,6 +420,7 @@
 				{
 					seenPending = false;
 					read.disabled = false;
+					updateSelection();
 					root.setAttribute('aria-busy', 'false');
 					labelReadControl();
 				}
@@ -303,6 +472,9 @@
 			const response = await fetch(url, { headers: { Accept: 'application/json' } });
 			const result = await response.json();
 			if (!response.ok) throw new Error(result.error || 'Unable to load messages');
+			currentSort = String(result.sort ?? currentSort);
+			currentOrder = String(result.order ?? currentOrder);
+			updateSortIndicators();
 
 			error.hidden = true;
 			status.textContent = [result.folder, result.unseen + ' unread', result.total + ' messages'].filter(Boolean).join(' · ');

@@ -1,3 +1,13 @@
+@media print
+{
+	body * { visibility: hidden; }
+	#email-message, #email-message * { visibility: visible; }
+	#email-message { position: absolute; inset: 0; max-width: none; padding: 0; }
+	#email-message .email-message-toolbar,
+	#email-message .email-message-status,
+	#email-message .email-message-error { display: none; }
+	#email-message .email-message-body { overflow: visible; }
+}
 .email-message { --mail-ink: #1d292f; --mail-muted: #53636b; --mail-line: #cbd4d8; color: var(--mail-ink); max-width: 1040px; margin: 0 auto; padding: 1.25rem; }
 .email-message-toolbar { display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: 1rem; }
 .email-message-read-control { display: inline-flex; align-items: center; gap: .4rem; padding: .4rem .7rem; cursor: pointer; }

@@ -80,6 +80,7 @@ class EmailComposeViewController
 		$html = $this->twig->render('@views/compose.twig', [
 			'layout' => '@views/_bare.twig',
 			'api_url' => \phpgw::link('/email/api/send', [], true),
+			'draft_url' => \phpgw::link('/email/api/drafts', [], true),
 			'attachments_api_url' => \phpgw::link('/email/api/attachments', [], true),
 			'attachment_upload_url' => \phpgw::link('/email/api/attachments', [], true),
 			'attachment_delete_url' => \phpgw::link('/email/api/attachments/delete', [], true),

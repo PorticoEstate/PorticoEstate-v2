@@ -9,6 +9,7 @@
 {% block content %}
 <main class="email-compose" id="email-compose"
 	data-api-url="{{ api_url|e('html_attr') }}"
+	data-draft-url="{{ draft_url|e('html_attr') }}"
 	data-attachments-api-url="{{ attachments_api_url|e('html_attr') }}"
 	data-attachment-upload-url="{{ attachment_upload_url|e('html_attr') }}"
 	data-attachment-delete-url="{{ attachment_delete_url|e('html_attr') }}"
@@ -32,8 +33,8 @@
 			<label>{{ lang('Cc') }}<input name="cc" type="text" value="{{ cc }}"><button class="email-compose-button" type="button" data-address-target="cc">{{ lang('Address book') }}</button></label>
 			<label>{{ lang('Bcc') }}<input name="bcc" type="text" value="{{ bcc }}"><button class="email-compose-button" type="button" data-address-target="bcc">{{ lang('Address book') }}</button></label>
 		</div>
-		<label>{{ lang('Subject') }}<input name="subject" type="text" value="{{ subject }}"></label>
-		<label>{{ lang('Message') }}<textarea name="body" rows="18">{{ body }}</textarea></label>
+		<label>{{ lang('Subject') }}<input name="subject" type="text" spellcheck="true" value="{{ subject }}"></label>
+		<label>{{ lang('Message') }}<textarea name="body" rows="18" spellcheck="true">{{ body }}</textarea></label>
 		<section class="email-compose-attachments" aria-labelledby="email-compose-attachments-heading">
 			<h2 id="email-compose-attachments-heading">{{ lang('Attachments') }}</h2>
 			<div class="email-compose-attachment-upload">
@@ -50,6 +51,7 @@
 		</div>
 		<div class="email-compose-actions">
 			<button class="email-compose-button email-compose-button--primary" type="submit">{{ lang('Send') }}</button>
+			<button class="email-compose-button" type="submit" name="intent" value="draft" formnovalidate>{{ lang('Save draft') }}</button>
 			<a class="email-compose-button" href="{{ return_url|e }}">{{ lang('Cancel') }}</a>
 		</div>
 	</form>

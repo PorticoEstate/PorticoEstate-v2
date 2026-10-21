@@ -166,6 +166,7 @@
 	form.addEventListener('submit', async event =>
 	{
 		event.preventDefault();
+		const draft = event.submitter?.value === 'draft';
 		error.hidden = true;
 		status.hidden = true;
 		const data = new FormData(form);
@@ -184,26 +185,26 @@
 			if (context[key] !== undefined) payload[key] = context[key];
 		});
 
-		const sendButton = form.querySelector('[type="submit"]');
-		sendButton.disabled = true;
+		const submitButtons = form.querySelectorAll('[type="submit"]');
+		submitButtons.forEach(button => { button.disabled = true; });
 		try
 		{
-			const response = await fetch(root.dataset.apiUrl, {
+			const response = await fetch(draft ? root.dataset.draftUrl : root.dataset.apiUrl, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json', Accept: 'application/json', ...csrfHeaders },
 				body: JSON.stringify(payload)
 			});
 			const result = await response.json();
-			if (!response.ok) throw new Error(result.error || 'Unable to send message');
-			status.textContent = 'Message sent';
+			if (!response.ok || (draft && !result.saved)) throw new Error(result.error || (draft ? 'Unable to save draft' : 'Unable to send message'));
+			status.textContent = draft ? 'Draft saved' : 'Message sent';
 			status.hidden = false;
-			window.location.assign(root.dataset.returnUrl);
+			if (!draft) window.location.assign(root.dataset.returnUrl);
 		} catch (exception)
 		{
 			showError(exception.message);
 		} finally
 		{
-			sendButton.disabled = false;
+			submitButtons.forEach(button => { button.disabled = false; });
 		}
 	});
 

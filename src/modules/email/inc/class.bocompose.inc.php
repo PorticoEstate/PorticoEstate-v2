@@ -438,7 +438,6 @@
 				elseif (\App\modules\email\services\MailMessage::getInstance()->get_arg_value('action') == 'edit')
 				{
 					
-					//FIXME: Doesn't handle attachments atm - will fix that soon :)
 					$to = $cc = $bcc = '';
 					if($msg_headers->to)
 					{
@@ -452,12 +451,21 @@
 
 					if($msg_headers->cc)
 					{
-						$tolist = array();
+						$cclist = array();
 						foreach($msg_headers->cc as $recip)
 						{
 							$cclist[] = \App\modules\email\services\MailMessage::getInstance()->make_rfc2822_address($recip);
 						}
 						$cc = implode(',', $cclist);
+					}
+					if (!empty($msg_headers->bcc))
+					{
+						$bccRecipients = array();
+						foreach ($msg_headers->bcc as $recipient)
+						{
+							$bccRecipients[] = \App\modules\email\services\MailMessage::getInstance()->make_rfc2822_address($recipient);
+						}
+						$bcc_box_value = \App\modules\email\services\MailMessage::getInstance()->htmlspecialchars_encode(implode(',', $bccRecipients));
 					}
 					
 					$subject = \App\modules\email\services\MailMessage::getInstance()->get_subject($msg_headers, '');
@@ -515,6 +523,10 @@
 							if($part->encoding == 3)//base64
 							{
 								$part_string = base64_decode($part_string);
+							}
+							elseif ($part->encoding == 4)
+							{
+								$part_string = quoted_printable_decode($part_string);
 							}
 							
 							$attachmentPath = \App\modules\email\services\MailMessage::getInstance()->att_files_dir . '/' . $newfilename;

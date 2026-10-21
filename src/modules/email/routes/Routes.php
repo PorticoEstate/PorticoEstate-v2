@@ -55,10 +55,12 @@ $app->group('/email', function (RouteCollectorProxy $group) use ($emailCsrf)
 	$group->get('/api/message', EmailInboxController::class . ':message');
 	$group->post('/api/messages/move', EmailInboxController::class . ':move')->add($emailCsrf);
 	$group->post('/api/messages/seen', EmailInboxController::class . ':seen')->add($emailCsrf);
+	$group->post('/api/messages/action', EmailInboxController::class . ':action')->add($emailCsrf);
 	$group->get('/api/attachment', EmailInboxController::class . ':attachment');
 	$group->get('/api/folders', EmailInboxController::class . ':folders');
 	$group->post('/api/folders/action', EmailInboxController::class . ':folderAction')->add($emailCsrf);
 	$group->post('/api/send', EmailComposeController::class . ':send')->add($emailCsrf);
+	$group->post('/api/drafts', EmailComposeController::class . ':draft')->add($emailCsrf);
 	$group->get('/api/attachments', EmailAttachmentController::class . ':index');
 	$group->get('/api/addressbook', EmailAddressBookController::class . ':search');
 	$group->post('/api/attachments', EmailAttachmentController::class . ':upload')->add($emailCsrf);

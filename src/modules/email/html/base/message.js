@@ -8,12 +8,48 @@
 	const content = document.getElementById('email-message-content');
 	const read = document.getElementById('email-message-seen');
 	let currentMessage = null;
+	const deleteButton = document.getElementById('email-message-delete');
+	const moveButton = document.getElementById('email-message-move');
+	const targetFolder = document.getElementById('email-message-target');
+	const printButton = document.getElementById('email-message-print');
+	let actionPending = false;
+
+	printButton.addEventListener('click', () => window.print());
+	deleteButton.addEventListener('click', () => runAction('delete'));
+	moveButton.addEventListener('click', () => runAction('move'));
+	async function runAction(action)
+	{
+		if (!currentMessage || read.disabled || actionPending || (action === 'move' && !targetFolder.value)) return;
+		if (action === 'delete' && !window.confirm('Delete this message? Messages in Trash, or accounts without Trash, are permanently deleted.')) return;
+		actionPending = true;
+		read.disabled = deleteButton.disabled = moveButton.disabled = targetFolder.disabled = true;
+		error.hidden = true;
+		try
+		{
+			const payload = { action, account: currentMessage.account, confirmed: action === 'delete', messages: [{ acctnum: currentMessage.account, folder: currentMessage.sourceFolder, msgnum: currentMessage.messageNumber }] };
+			if (action === 'move') payload.target_fldball = { acctnum: currentMessage.account, folder: targetFolder.value };
+			const result = await window.emailMessageAction(root, payload);
+			if (result.failed.length || !result.completed.length) throw new Error(result.failed[0]?.error || 'Unable to update message');
+			window.location.assign(root.dataset.backUrl);
+		} catch (exception)
+		{
+			error.textContent = exception.message;
+			error.hidden = false;
+		} finally
+		{
+			actionPending = false;
+			read.disabled = deleteButton.disabled = false;
+			targetFolder.disabled = !targetFolder.options.length;
+			moveButton.disabled = !targetFolder.value;
+		}
+	}
 
 	read.addEventListener('change', async () =>
 	{
 		if (!currentMessage) return;
 		const previous = currentMessage.seen;
 		read.disabled = true;
+		deleteButton.disabled = moveButton.disabled = true;
 		error.hidden = true;
 		try
 		{
@@ -29,6 +65,8 @@
 		} finally
 		{
 			read.disabled = false;
+			deleteButton.disabled = false;
+			moveButton.disabled = !targetFolder.value;
 		}
 	});
 
@@ -52,6 +90,15 @@
 		currentMessage = item;
 		read.checked = item.seen === true;
 		read.disabled = !item.sourceFolder;
+		deleteButton.disabled = !item.sourceFolder;
+		printButton.disabled = false;
+		document.getElementById('email-message-edit').hidden = item.isDraft !== true;
+		['previous', 'next'].forEach(direction =>
+		{
+			const link = document.getElementById('email-message-' + direction);
+			link.hidden = !item[direction + 'Url'];
+			if (!link.hidden) link.href = item[direction + 'Url'];
+		});
 		document.getElementById('email-message-subject').textContent = item.subject || '(no subject)';
 		document.getElementById('email-message-date').textContent = item.date || '';
 		renderAddresses(document.getElementById('email-message-from'), item.from);
@@ -95,6 +142,7 @@
 
 		status.hidden = true;
 		content.hidden = false;
+		if (new URL(window.location.href).searchParams.get('print') === '1') window.requestAnimationFrame(() => window.print());
 	}
 
 	async function load()
@@ -105,6 +153,22 @@
 			const result = await response.json();
 			if (!response.ok) throw new Error(result.error || 'Unable to load message');
 			render(result.item || {});
+			try
+			{
+				const foldersResponse = await fetch(root.dataset.foldersUrl, { headers: { Accept: 'application/json' } });
+				const folders = await foldersResponse.json();
+				if (!foldersResponse.ok) throw new Error(folders.error || 'Unable to load destination folders');
+				window.emailFolderHierarchy(folders.items || [], folders.delimiter || '').forEach(folder =>
+				{
+					if (folder.longName !== currentMessage.sourceFolder) targetFolder.add(new Option('\u00a0\u00a0'.repeat(folder.depth) + folder.label, folder.longName));
+				});
+				targetFolder.disabled = !targetFolder.options.length;
+				moveButton.disabled = !targetFolder.value || read.disabled;
+			} catch (exception)
+			{
+				error.textContent = exception.message;
+				error.hidden = false;
+			}
 		} catch (exception)
 		{
 			status.hidden = true;

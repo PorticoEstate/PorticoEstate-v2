@@ -64,6 +64,7 @@ class EmailInboxViewController
 			'folders_api_url' => \phpgw::link('/email/api/folders', [], true),
 			'move_url' => \phpgw::link('/email/api/messages/move', [], true),
 			'seen_url' => \phpgw::link('/email/api/messages/seen', [], true),
+			'action_url' => \phpgw::link('/email/api/messages/action', [], true),
 			'csrf' => $this->csrf($request),
 			'compose_url' => \phpgw::link('/email/view/compose', [], true),
 			'folders_url' => \phpgw::link('/email/view/folders', array_filter([
@@ -118,13 +119,12 @@ class EmailInboxViewController
 		Settings::getInstance()->update('flags', ['app_header' => lang('E-Mail') . ': ' . lang('Message')]);
 		$html = $this->twig->render('@views/message.twig', [
 			'layout' => '@views/_bare.twig',
+			'action_url' => \phpgw::link('/email/api/messages/action', [], true),
+			'folders_url' => \phpgw::link('/email/api/folders', ['fldball[acctnum]' => (int) $account], true),
+			'edit_url' => \phpgw::link('/email/view/compose', ['action' => 'edit'] + $composeParameters, true),
 			'seen_url' => \phpgw::link('/email/api/messages/seen', [], true),
 			'csrf' => $this->csrf($request),
-			'api_url' => \phpgw::link('/email/api/message', [
-				'msgball[acctnum]' => (int) $account,
-				'msgball[folder]' => $folder,
-				'msgball[msgnum]' => (int) $messageNumber,
-			], true),
+			'api_url' => \phpgw::link('/email/api/message', $composeParameters, true),
 			'back_url' => \phpgw::link('/email/view/inbox', $backParameters, true),
 			'reply_url' => \phpgw::link('/email/view/compose', ['action' => 'reply'] + $composeParameters, true),
 			'reply_all_url' => \phpgw::link('/email/view/compose', ['action' => 'replyall'] + $composeParameters, true),

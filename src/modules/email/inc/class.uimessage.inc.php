@@ -456,6 +456,13 @@
 		*/
 		function printable()
 		{
+			$query = $_GET;
+			unset($query['menuaction'], $query['click_history']);
+			$query['print'] = 1;
+			if (isset($_GET['click_history'])) $query['click_history'] = $_GET['click_history'];
+			phpgw::redirect_link('/email/view/message', $query);
+			return;
+
 			// get the data we need to fill the template
 			$this->bo = CreateObject("email.bomessage");
 			$this->bo->message_data();

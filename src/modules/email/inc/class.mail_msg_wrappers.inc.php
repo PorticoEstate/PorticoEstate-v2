@@ -2694,9 +2694,15 @@ Array
 			$this->set_arg_value('verified_trash_folder_long', '', $acctnum);
 			return '';
 		}
+		$trash_folder_name = trim((string) $this->get_pref_value('trash_folder_name', $acctnum));
+		if ($trash_folder_name === '')
+		{
+			$this->set_arg_value('verified_trash_folder_long', '', $acctnum);
+			return '';
+		}
 
 		// does the trash folder actually exist ?
-		$verified_trash_folder_long = $this->folder_lookup('', $this->get_pref_value('trash_folder_name', $acctnum));
+		$verified_trash_folder_long = $this->folder_lookup('', $trash_folder_name);
 		if ((isset($verified_trash_folder_long))
 			&& ($verified_trash_folder_long != '')
 		)
@@ -2715,7 +2721,7 @@ Array
 			//$mailsvr_callstr = $this->get_arg_value('mailsvr_callstr', $acctnum);
 			$namespace = $this->get_arg_value('mailsvr_namespace', $acctnum);
 			$delimiter = $this->get_arg_value('mailsvr_delimiter', $acctnum);
-			$make_this_folder_clean = $namespace . $delimiter . $this->get_pref_value('trash_folder_name', $acctnum);
+			$make_this_folder_clean = $namespace . $delimiter . $trash_folder_name;
 			$make_this_folder_encoded = $this->prep_folder_out($make_this_folder_clean);
 			//$this->createmailbox($mailsvr_stream,$server_str .$trash_folder_long);	
 			//$this->phpgw_createmailbox("$server_str"."$trash_folder_long");
@@ -2730,7 +2736,7 @@ Array
 			}
 
 			// try again to get the real long folder name of the just created trash folder
-			$verified_trash_folder_long = $this->folder_lookup('', $this->get_pref_value('trash_folder_name', $acctnum));
+			$verified_trash_folder_long = $this->folder_lookup('', $trash_folder_name);
 			// did the folder get created and do we now have the official full name of that folder?
 			if ($verified_trash_folder_long != '')
 			{

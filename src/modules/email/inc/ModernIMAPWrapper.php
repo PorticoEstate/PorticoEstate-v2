@@ -214,6 +214,60 @@ class ModernIMAPWrapper
         }
     }
 
+    public static function imap_append($stream, $folder, $message, $flags = '')
+    {
+        if (!isset(self::$connections[$stream]['client'])) return false;
+        try {
+            $path = preg_replace('/^\{[^}]*\}/', '', $folder);
+            $messageFlags = preg_split('/\s+/', trim((string) $flags), -1, PREG_SPLIT_NO_EMPTY);
+            self::$connections[$stream]['client']->getConnection()->appendMessage($path, $message, $messageFlags)->validatedData();
+            return true;
+        } catch (Exception $exception) {
+            self::$lastError = $exception->getMessage();
+            return false;
+        }
+    }
+
+    public static function imap_mail_copy($stream, $msgList, $mailbox, $flags = 0)
+    {
+        if (!isset(self::$connections[$stream]['folder'])) return false;
+        try {
+            $connection = self::$connections[$stream];
+            $client = $connection['client'];
+            $client->openFolder($connection['folder']->path);
+            $path = preg_replace('/^\{[^}]*\}/', '', $mailbox);
+            $mode = ($flags & 1) ? \Webklex\PHPIMAP\IMAP::ST_UID : \Webklex\PHPIMAP\IMAP::ST_MSGN;
+            $client->getConnection()->copyMessage($path, $msgList, null, $mode)->validatedData();
+            return true;
+        } catch (Exception $exception) {
+            self::$lastError = $exception->getMessage();
+            return false;
+        }
+    }
+
+    public static function imap_renamemailbox($stream, $oldName, $newName)
+    {
+        if (!isset(self::$connections[$stream]['client'])) return false;
+        try {
+            $client = self::$connections[$stream]['client'];
+            $oldPath = preg_replace('/^\{[^}]*\}/', '', $oldName);
+            $newPath = preg_replace('/^\{[^}]*\}/', '', $newName);
+            $client->getConnection()->renameFolder($oldPath, $newPath)->validatedData();
+            $client->setActiveFolder(null);
+            $current = self::$connections[$stream]['folder'];
+            if ($current && ($current->path === $oldPath
+                || ($current->delimiter && str_starts_with($current->path, $oldPath . $current->delimiter)))) {
+                $path = $newPath . substr($current->path, strlen($oldPath));
+                self::$connections[$stream]['folder'] = $client->getFolderByPath($path, true);
+                self::$connections[$stream]['currentFolder'] = $path;
+            }
+            return true;
+        } catch (Exception $exception) {
+            self::$lastError = $exception->getMessage();
+            return false;
+        }
+    }
+
     public static function imap_deletemailbox($stream, $mailbox)
     {
         if (!isset(self::$connections[$stream]['client'])) {
@@ -392,6 +446,18 @@ class ModernIMAPWrapper
     /**
      * Modern replacement for imap_fetchbody()
      */
+    public static function imap_body($stream, $msgNum, $flags = 0)
+    {
+        if (!isset(self::$connections[$stream]['folder'])) return false;
+        try {
+            $message = self::getMessage($stream, $msgNum, $flags);
+            return $message ? $message->getRawBody() : false;
+        } catch (Exception $exception) {
+            self::$lastError = $exception->getMessage();
+            return false;
+        }
+    }
+
     public static function imap_fetchbody($stream, $msgNum, $section, $flags = 0)
     {
         if (!isset(self::$connections[$stream]['folder'])) {
@@ -548,8 +614,9 @@ class ModernIMAPWrapper
         }
         
         try {
-            $folder = self::$connections[$stream]['folder'];
-            $folder->expunge();
+            $connection = self::$connections[$stream];
+            $connection['client']->openFolder($connection['folder']->path);
+            $connection['client']->getConnection()->expunge()->validatedData();
             return true;
             
         } catch (Exception $e) {

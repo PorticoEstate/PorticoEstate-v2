@@ -8,7 +8,7 @@ final class EmailComposeSerializer
 	private const MSGBALL_FIELDS = ['acctnum', 'folder', 'msgnum', 'part_no'];
 	private const FLDBALL_FIELDS = ['acctnum', 'folder'];
 
-	public static function normalize(array $input): ?array
+	public static function normalize(array $input, bool $requireRecipients = true): ?array
 	{
 		$payload = [];
 		foreach (self::STRING_FIELDS as $field)
@@ -18,7 +18,7 @@ final class EmailComposeSerializer
 			$payload[$field] = trim((string) $value);
 		}
 		$payload['subject'] = preg_replace('/[\r\n]+/', ' ', $payload['subject']) ?? $payload['subject'];
-		if ($payload['to'] === '' && $payload['cc'] === '' && $payload['bcc'] === '') return null;
+		if ($requireRecipients && $payload['to'] === '' && $payload['cc'] === '' && $payload['bcc'] === '') return null;
 		foreach (['sort', 'order', 'start', 'orig_action'] as $field)
 		{
 			if (isset($input[$field]) && is_scalar($input[$field])) $payload[$field] = (string) $input[$field];

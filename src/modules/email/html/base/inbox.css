@@ -1,3 +1,15 @@
+.email-inbox th [data-email-sort]
+{
+	background: none;
+	border: 0;
+	color: inherit;
+	cursor: pointer;
+	font: inherit;
+	padding: 0;
+	text-align: left;
+}
+.email-inbox th[aria-sort="ascending"] [data-email-sort]::after { content: ' \2191'; }
+.email-inbox th[aria-sort="descending"] [data-email-sort]::after { content: ' \2193'; }
 .email-inbox {
 	--mail-ink: #1d292f;
 	--mail-muted: #53636b;
@@ -35,6 +47,11 @@
 .email-inbox-folder-name { min-width: 0; overflow-wrap: anywhere; }
 .email-inbox-folder-count { flex: 0 0 auto; min-width: 2.5ch; padding: .1rem .35rem; border-radius: 3px; background: var(--mail-surface); color: var(--mail-muted); font-size: .8rem; font-variant-numeric: tabular-nums; text-align: center; }
 .email-inbox-messages { min-width: 0; }
+.email-inbox-bulk { display: flex; flex-wrap: wrap; align-items: end; gap: .5rem; padding-block: .65rem; border-block: 1px solid var(--mail-line); }
+.email-inbox-bulk label { display: grid; gap: .25rem; font-size: .8rem; color: var(--mail-muted); max-width: 15rem; }
+.email-inbox-bulk select, .email-inbox-bulk button { min-height: 2rem; border: 1px solid var(--mail-line); background: #fff; border-radius: 3px; color: var(--mail-ink); padding: .3rem .5rem; }
+.email-inbox-bulk button { cursor: pointer; }
+.email-inbox-bulk button:disabled { opacity: .5; cursor: default; }
 .email-inbox-table { width: 100%; border-collapse: collapse; }
 .email-inbox-table th, .email-inbox-table td { padding: .65rem .75rem; border-bottom: 1px solid var(--mail-line); text-align: left; }
 .email-inbox-table th { background: var(--mail-surface); font-weight: 650; }

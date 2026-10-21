@@ -40,6 +40,8 @@ class EmailInboxController
 			$result = InboxSerializer::serialize($data);
 			$user = (array) Settings::getInstance()->get('user');
 			$result['pageSize'] = max(1, (int) ($user['preferences']['common']['maxmatchs'] ?? 25));
+			$result['sort'] = (int) $mail->get_arg_value('sort');
+			$result['order'] = (int) $mail->get_arg_value('order');
 			$query = $request->getQueryParams();
 			foreach ($result['items'] as $index => $item)
 			{
@@ -66,6 +68,40 @@ class EmailInboxController
 		{
 			error_log('[email] EmailInboxController::index failed (' . get_class($exception) . ')');
 			return $this->json($response, ['error' => lang('Unable to load messages')], 500);
+		}
+	}
+
+	public function action(Request $request, Response $response): Response
+	{
+		$input = $request->getParsedBody();
+		if (!is_array($input)) $input = json_decode((string) $request->getBody(), true);
+		$payload = \App\modules\email\services\EmailMessageActions::normalize(is_array($input) ? $input : []);
+		if ($payload === null) return $this->json($response, ['error' => lang('Invalid message action')], 400);
+		$originalPost = $_POST;
+		$_POST = ['fldball' => ['acctnum' => $payload['account'], 'folder' => $payload['messages'][0]['folder'] ?? 'INBOX']];
+		$mail = null;
+		try
+		{
+			$bootstrap = \CreateObject('email.msg_bootstrap');
+			$bootstrap->ensure_mail_msg_exists('email.api.messageAction');
+			$mail = \App\modules\email\services\MailMessage::getInstance();
+			$result = (new \App\modules\email\services\EmailMessageActions())->execute($mail, $payload);
+			return $this->json($response, $result);
+		}
+		catch (\InvalidArgumentException | \App\modules\email\services\EmailMailConfigurationException $exception)
+		{
+			return $this->json($response, ['error' => $exception->getMessage()], 422);
+		}
+		catch (\Throwable $exception)
+		{
+			error_log('[email] EmailInboxController::action failed (' . get_class($exception) . ')');
+			return $this->json($response, ['error' => lang('Unable to complete message action')], 500);
+		}
+		finally
+		{
+			if (is_object($mail)) $mail->end_request();
+			if (\App\modules\email\services\MailMessage::hasInstance()) \App\modules\email\services\MailMessage::releaseInstance();
+			$_POST = $originalPost;
 		}
 	}
 
@@ -294,6 +330,20 @@ class EmailInboxController
 			$mail->expire_session_cache_item('folder_status_info', $activeMsgball['acctnum'], $activeMsgball['folder']);
 			$item['sourceFolder'] = (string) $mail->prep_folder_in($activeMsgball['folder'], $activeMsgball['acctnum']);
 			$item['seen'] = true;
+			$item['isDraft'] = trim((string) ($headers->Draft ?? '')) !== '';
+			$navigation = $mail->prev_next_navigation();
+			foreach (['previous' => 'prev_msg', 'next' => 'next_msg'] as $direction => $key)
+			{
+				$reference = $navigation[$key]['msgball']['uri'] ?? null;
+				$item[$direction . 'Url'] = null;
+				if (!is_array($reference)) continue;
+				foreach (['sort', 'order', 'start', 'click_history'] as $parameter)
+				{
+					$value = $mail->get_arg_value($parameter);
+					if ($value !== null && $value !== '') $reference[$parameter] = $value;
+				}
+				$item[$direction . 'Url'] = \phpgw::link('/email/view/message', $reference, true);
+			}
 			return $this->json($response, ['item' => $item]);
 		}
 		catch (\App\modules\email\services\EmailMailConfigurationException $exception)
@@ -326,9 +376,20 @@ class EmailInboxController
 			$businessObject = \CreateObject('email.bofolder');
 			$businessObject->folder_data();
 			$folders = (array) ($businessObject->xi['folder_list_display'] ?? []);
+			$accounts = [];
+			foreach ((array) $mail->extra_and_default_acounts as $item)
+			{
+				if (($item['status'] ?? '') !== 'enabled') continue;
+				$number = (int) $item['acctnum'];
+				$accounts[] = ['id' => $number, 'name' => (string) $mail->get_pref_value('fullname', $number) ?: lang('Account') . ' ' . $number];
+			}
+			$trash = $mail->get_pref_value('use_trash_folder', $account)
+				? $mail->folder_lookup('', (string) $mail->get_pref_value('trash_folder_name', $account), $account) : '';
 			return $this->json($response, [
 				'items' => EmailFolderSerializer::serialize($folders),
 				'delimiter' => (string) $mail->get_arg_value('mailsvr_delimiter', $account),
+				'accounts' => $accounts,
+				'trashFolder' => (string) $trash,
 			]);
 		}
 		catch (\App\modules\email\services\EmailMailConfigurationException $exception)

@@ -12,6 +12,7 @@
 	data-folders-api-url="{{ folders_api_url|e('html_attr') }}"
 	data-move-url="{{ move_url|e('html_attr') }}"
 	data-seen-url="{{ seen_url|e('html_attr') }}"
+	data-action-url="{{ action_url|e('html_attr') }}"
 	data-csrf-name="{{ csrf.name|e('html_attr') }}"
 	data-csrf-value="{{ csrf.value|e('html_attr') }}"
 	data-has-preferences="{{ has_preferences ? '1' : '0' }}">
@@ -48,15 +49,24 @@
 		<div class="email-inbox-status" id="email-inbox-status" role="status" aria-live="polite">{{ lang('Loading messages') }}</div>
 		<div class="email-inbox-error" id="email-inbox-error" role="alert" hidden></div>
 		<div class="email-inbox-move-status" id="email-inbox-move-status" role="status" aria-live="polite"></div>
+		<div class="email-inbox-bulk" id="email-inbox-bulk">
+			<span id="email-inbox-selected" role="status">0 {{ lang('selected') }}</span>
+			<label>{{ lang('Destination account') }}<select id="email-inbox-target-account"></select></label>
+			<label>{{ lang('Destination folder') }}<select id="email-inbox-target-folder"></select></label>
+			<button type="button" id="email-inbox-move-selected" disabled>{{ lang('Move selected') }}</button>
+			<button type="button" id="email-inbox-delete-selected" disabled>{{ lang('Delete selected') }}</button>
+			<button type="button" id="email-inbox-empty-trash" disabled>{{ lang('Empty Trash') }}</button>
+		</div>
 		<div class="email-inbox-table-wrap">
 			<table class="email-inbox-table">
 				<thead>
 					<tr>
+						<th scope="col"><input type="checkbox" id="email-inbox-select-all" aria-label="{{ lang('Select all messages on this page') }}"></th>
 						<th scope="col">{{ lang('Read') }}</th>
-						<th scope="col">{{ lang('From') }}</th>
-						<th scope="col">{{ lang('Subject') }}</th>
-						<th scope="col">{{ lang('Date') }}</th>
-						<th scope="col">{{ lang('Size') }}</th>
+						<th scope="col"><button type="button" data-email-sort="2">{{ lang('From') }}</button></th>
+						<th scope="col"><button type="button" data-email-sort="3">{{ lang('Subject') }}</button></th>
+						<th scope="col"><button type="button" data-email-sort="1">{{ lang('Date') }}</button></th>
+						<th scope="col"><button type="button" data-email-sort="6">{{ lang('Size') }}</button></th>
 					</tr>
 				</thead>
 				<tbody id="email-inbox-rows"></tbody>
@@ -77,6 +87,7 @@
 {% if has_preferences %}
 <script>{{ source('@views/folder-hierarchy.js') }}</script>
 <script>{{ source('@views/message-seen.js') }}</script>
+<script>{{ source('@views/message-actions.js') }}</script>
 <script>{{ source('@views/inbox.js') }}</script>
 {% endif %}
 {% endblock %}

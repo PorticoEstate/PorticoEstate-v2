@@ -62,10 +62,14 @@
 		const result = await response.json();
 		if (!response.ok) throw new Error(result.error || 'Unable to load folders');
 		const preferred = root.dataset.preferredFolder;
-		(result.items || []).forEach(folder =>
+		const orderedFolders = window.emailFolderHierarchy(result.items || [], result.delimiter || '');
+		const hasPreferredPath = orderedFolders.some(folder => folder.longName === preferred);
+		folders.replaceChildren();
+		orderedFolders.forEach(folder =>
 		{
-			const option = new Option(folder.name || folder.longName, folder.name || folder.longName);
-			option.selected = option.value === preferred || folder.longName === preferred;
+			const option = new Option('\u00a0\u00a0'.repeat(folder.depth) + folder.label, folder.longName);
+			option.title = folder.longName;
+			option.selected = hasPreferredPath ? folder.longName === preferred : folder.name === preferred;
 			folders.add(option);
 		});
 	}

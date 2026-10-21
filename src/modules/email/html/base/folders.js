@@ -74,6 +74,9 @@
 					const inboxUrl = new URL(root.dataset.inboxUrl, window.location.href);
 					inboxUrl.searchParams.set('fldball[acctnum]', String(folder.account));
 					inboxUrl.searchParams.set('fldball[folder]', folder.longName);
+					const clickHistory = inboxUrl.searchParams.getAll('click_history');
+					inboxUrl.searchParams.delete('click_history');
+					clickHistory.forEach(value => inboxUrl.searchParams.append('click_history', value));
 					link.href = inboxUrl;
 					link.textContent = folder.label;
 					link.title = folder.longName;

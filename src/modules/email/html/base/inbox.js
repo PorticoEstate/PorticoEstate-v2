@@ -100,6 +100,9 @@
 				destination.searchParams.set('fldball[folder]', folder.longName);
 				destination.searchParams.delete('start');
 				destination.searchParams.delete('fldball_fake_uri');
+				const clickHistory = destination.searchParams.getAll('click_history');
+				destination.searchParams.delete('click_history');
+				clickHistory.forEach(value => destination.searchParams.append('click_history', value));
 				link.href = destination;
 				link.addEventListener('dragover', event =>
 				{

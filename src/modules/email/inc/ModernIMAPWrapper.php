@@ -119,6 +119,30 @@ class ModernIMAPWrapper
         }
     }
     
+    public static function imap_reopen($stream, $mailbox, $flags = 0)
+    {
+        if (!isset(self::$connections[$stream]['client'])) {
+            return false;
+        }
+
+        $client = self::$connections[$stream]['client'];
+        try {
+            $path = preg_replace('/^\{[^}]*\}/', '', $mailbox);
+            $folder = $client->getFolderByPath($path !== '' ? $path : 'INBOX', true);
+            if (!$folder) {
+                throw new RuntimeException('Mailbox does not exist');
+            }
+            $client->openFolder($folder->path, true);
+            self::$connections[$stream]['folder'] = $folder;
+            self::$connections[$stream]['currentFolder'] = $folder->path;
+            return true;
+        } catch (Exception $exception) {
+            $client->setActiveFolder(null);
+            self::$lastError = $exception->getMessage();
+            return false;
+        }
+    }
+
     /**
      * Modern replacement for imap_search()
      */

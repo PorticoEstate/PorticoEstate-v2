@@ -163,10 +163,11 @@ class ModernIMAPWrapper
             }
             
             // Basic criteria parsing (extend as needed)
-            if (strpos($criteria, 'UNSEEN') !== false) {
+            $flagCriteria = preg_replace('/"(?:[^"\\\\]|\\\\.)*"/', '', $criteria);
+            if (preg_match('/\bUNSEEN\b/i', $flagCriteria)) {
                 $query->unseen();
             }
-            if (strpos($criteria, 'SEEN') !== false) {
+            if (preg_match('/\bSEEN\b/i', $flagCriteria)) {
                 $query->seen();
             }
             if (preg_match('/FROM "([^"]+)"/', $criteria, $matches)) {

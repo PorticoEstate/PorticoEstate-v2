@@ -17,6 +17,7 @@
 .email-search-table { width: 100%; border-collapse: collapse; }
 .email-search-table th, .email-search-table td { padding: .6rem .7rem; border-bottom: 1px solid var(--mail-line); text-align: left; }
 .email-search-table th { background: var(--mail-surface); }
+.email-search-table tr.is-unseen { font-weight: 700; }
 .email-search-table a { color: var(--mail-ink); }
 .email-search-pagination { display: flex; align-items: center; justify-content: center; gap: .8rem; padding: 1rem; }
 .email-search-pagination button:disabled { opacity: .5; cursor: default; }

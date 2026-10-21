@@ -47,6 +47,48 @@ namespace Tests\Controllers
 			$this->assertSame('ALL', EmailSearchCriteria::build($criteria));
 		}
 
+		public function testModernSearchMatchesReadFlagsOutsideQuotedTextOnly(): void
+		{
+			require_once __DIR__ . '/../../src/modules/email/inc/ModernIMAPWrapper.php';
+			$query = new class
+			{
+				public array $flags = [];
+				public function unseen() { $this->flags[] = 'UNSEEN'; return $this; }
+				public function seen() { $this->flags[] = 'SEEN'; return $this; }
+				public function subject($subject) { return $this; }
+				public function get() { return []; }
+			};
+			$folder = new class($query)
+			{
+				public function __construct(private object $searchQuery) {}
+				public function query() { return $this->searchQuery; }
+			};
+			$connections = new \ReflectionProperty(\ModernIMAPWrapper::class, 'connections');
+			$connections->setAccessible(true);
+			$original = $connections->getValue();
+			$connections->setValue(null, ['test-search' => ['folder' => $folder]]);
+			try
+			{
+				foreach ([
+					['UNSEEN', ['UNSEEN']],
+					['SEEN', ['SEEN']],
+					['unseen', ['UNSEEN']],
+					['SUBJECT "marker SEEN word"', []],
+					['SUBJECT "marker UNSEEN word" SEEN', ['SEEN']],
+					['SEEN UNSEEN', ['UNSEEN', 'SEEN']],
+				] as [$criteria, $expected])
+				{
+					$query->flags = [];
+					$this->assertSame([], \ModernIMAPWrapper::imap_search('test-search', $criteria));
+					$this->assertSame($expected, $query->flags, $criteria);
+				}
+			}
+			finally
+			{
+				$connections->setValue(null, $original);
+			}
+		}
+
 		public function testRejectsMissingFoldersAndInvalidDates(): void
 		{
 			$this->assertNull(EmailSearchCriteria::normalize(['fldball' => ['acctnum' => 0], 'folder_list' => []]));

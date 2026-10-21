@@ -42,6 +42,7 @@
 		items.forEach(item =>
 		{
 			const row = document.createElement('tr');
+			if (item.unseen) row.classList.add('is-unseen');
 			cell(row, item.folderName);
 			cell(row, item.from);
 			const subject = document.createElement('td');

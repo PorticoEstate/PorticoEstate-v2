@@ -73,6 +73,7 @@ class EmailSearchController
 						'folder' => $folderLong,
 						'folderName' => $folderShort,
 						'messageNumber' => (int) $messageNumber,
+						'unseen' => stripos($mail->make_flags_str($headers), 'Seen') === false,
 						'from' => (string) ($headers->fromaddress ?? ''),
 						'subject' => (string) $mail->get_subject($headers, ''),
 						'date' => isset($headers->udate) ? date('Y-m-d H:i', (int) $headers->udate) : '',

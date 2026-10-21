@@ -171,6 +171,10 @@ class EmailInboxController
 			$mail = \App\modules\email\services\MailMessage::getInstance();
 			$activeMsgball = (array) $mail->get_arg_value('msgball');
 			$headers = $mail->phpgw_header($activeMsgball);
+			if (!$headers)
+			{
+				return $this->json($response, ['error' => lang('Message no longer exists')], 404);
+			}
 			$parts = (array) $businessObject->part_nice;
 			foreach ($parts as $index => $part)
 			{
@@ -215,6 +219,12 @@ class EmailInboxController
 					'msgball[part_no]' => $attachment['partNumber'],
 				], true);
 			}
+			if (!$mail->phpgw_set_flag($activeMsgball, '\\Seen', false))
+			{
+				return $this->json($response, ['error' => lang('Unable to mark message as read')], 422);
+			}
+			$mail->expire_session_cache_item('phpgw_header', $activeMsgball['acctnum'], $activeMsgball['folder'], $activeMsgball['msgnum']);
+			$mail->expire_session_cache_item('folder_status_info', $activeMsgball['acctnum'], $activeMsgball['folder']);
 			return $this->json($response, ['item' => $item]);
 		}
 		catch (\App\modules\email\services\EmailMailConfigurationException $exception)

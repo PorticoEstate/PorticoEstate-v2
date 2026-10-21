@@ -254,6 +254,32 @@ class ModernIMAPWrapper
         }
     }
 
+    public static function imap_setflag_full($stream, $msgNums, $flag, $options = 0)
+    {
+        if (!isset(self::$connections[$stream]['folder'])) {
+            return false;
+        }
+
+        try {
+            if (!preg_match('/^[1-9][0-9]*(?::[1-9][0-9]*)?(?:,[1-9][0-9]*(?::[1-9][0-9]*)?)*$/', (string) $msgNums)) {
+                throw new InvalidArgumentException('Invalid message set');
+            }
+            $connection = self::$connections[$stream];
+            $client = $connection['client'];
+            $client->openFolder($connection['folder']->path);
+            $mode = ($options & 1) ? \Webklex\PHPIMAP\IMAP::ST_UID : \Webklex\PHPIMAP\IMAP::ST_MSGN;
+            $flags = preg_split('/\s+/', trim($flag), -1, PREG_SPLIT_NO_EMPTY);
+            foreach (explode(',', (string) $msgNums) as $range) {
+                $bounds = explode(':', $range);
+                $client->getConnection()->store($flags, (int) $bounds[0], isset($bounds[1]) ? (int) $bounds[1] : null, null, true, $mode)->validatedData();
+            }
+            return true;
+        } catch (Exception $exception) {
+            self::$lastError = $exception->getMessage();
+            return false;
+        }
+    }
+
     public static function imap_sort($stream, $criteria, $reverse, $options = 0)
     {
         if (!isset(self::$connections[$stream]['folder'])) {

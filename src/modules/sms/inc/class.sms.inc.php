@@ -214,12 +214,23 @@ class sms_sms__
 		return $rcpt;
 	}
 
+	/**
+	 * The text as the sender typed it. Text read with Sanitizer 'string' arrives HTML-encoded, and ; ( ) = -- are encoded
+	 * twice (numeric entity first, then htmlspecialchars), so a single html_entity_decode leaves them as &#40; and so on.
+	 * strtr works in one pass: a sequential str_replace would decode an entity that was itself typed.
+	 */
+	private function sms_text_as_typed($message)
+	{
+		return strtr(html_entity_decode($message), array('&#59;' => ';', '&#40;' => '(', '&#41;' => ')', '&#61;' => '=', '&#8722;&#8722;' => '--'));
+	}
+
 	function websend2pv($username, $sms_to, $message, $sms_type = "text", $unicode = "0")
 	{
 		$datetime_now = $this->datetime_now();
 		$gateway_module_send = $this->gateway_module_send;
 		$uid = (int)$this->account;
 
+		$message = $this->sms_text_as_typed($message);
 		$mobile_sender = $this->username2mobile($username);
 		$max_length = 804;
 		if ($sms_sender = $this->username2sender($username))
@@ -231,7 +242,7 @@ class sms_sms__
 			$message = substr($message, 0, $max_length - 1);
 		}
 		//			$sms_msg = str_replace(array("\r","\n", "\""), array("", "", " "), html_entity_decode($message));
-		$sms_msg = str_replace(array("\r", "\""), array("", " "), html_entity_decode($message));
+		$sms_msg = str_replace(array("\r", "\""), array("", " "), $message);
 		$mobile_sender = str_replace(array("\'", "\""), array("", ""), $mobile_sender);
 		$sms_sender = str_replace(array("\'", "\""), array("", ""), $sms_sender);
 		if (is_array($sms_to))

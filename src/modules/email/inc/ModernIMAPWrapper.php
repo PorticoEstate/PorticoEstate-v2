@@ -83,7 +83,7 @@ class ModernIMAPWrapper
             
             // Open the specified folder
             if ($folder) {
-                $folderObj = $client->getFolder($folder);
+                $folderObj = $client->getFolderByPath($folder, true);
                 if ($folderObj) {
                     self::$connections[$connectionId]['folder'] = $folderObj;
                 }
@@ -465,22 +465,16 @@ class ModernIMAPWrapper
         }
         
         try {
-            $message = self::getMessage($stream, $msgNum, $flags);
-            
-            if ($message) {
-                if ($section === '1') {
-                    // Get text body
-                    return $message->getTextBody();
-                } elseif ($section === '2') {
-                    // Get HTML body
-                    return $message->getHTMLBody();
-                } else {
-                    // Get raw body for specific section
-                    return $message->getRawBody();
-                }
+            if (!preg_match('/^[1-9][0-9]*(?:\.[1-9][0-9]*)*$/', (string) $section)) {
+                throw new InvalidArgumentException('Invalid MIME section');
             }
-            
-            return false;
+            $connection = self::$connections[$stream];
+            $client = $connection['client'];
+            $client->openFolder($connection['folder']->path);
+            $mode = ($flags & 1) ? \Webklex\PHPIMAP\IMAP::ST_UID : \Webklex\PHPIMAP\IMAP::ST_MSGN;
+            $data = $client->getConnection()->fetch(['BODY.PEEK[' . $section . ']', 'UID'], [(int) $msgNum], null, $mode)->validatedData();
+            $message = $data ? reset($data) : [];
+            return $message['BODY[' . $section . ']'] ?? false;
             
         } catch (Exception $e) {
             self::$lastError = $e->getMessage();
@@ -499,19 +493,10 @@ class ModernIMAPWrapper
         
         try {
             $message = self::getMessage($stream, $msgNum, $flags);
-            
-            if ($message) {
-                // Create a simplified structure object
-                $structure = new stdClass();
-                $structure->type = $message->hasHTMLBody() ? 1 : 0; // 0=text, 1=multipart
-                $structure->encoding = 0; // 0=7bit, 1=8bit, 2=binary, 3=base64, 4=quoted-printable
-                $structure->subtype = $message->hasHTMLBody() ? 'HTML' : 'PLAIN';
-                $structure->bytes = strlen($message->getRawBody());
-                
-                return $structure;
-            }
-            
-            return false;
+            if (!$message) return false;
+            $parser = new \ZBateson\MailMimeParser\MailMimeParser();
+            $parsed = $parser->parse($message->getHeader()->raw . "\r\n\r\n" . $message->getRawBody(), false);
+            return self::convertMimeStructure($parsed);
             
         } catch (Exception $e) {
             self::$lastError = $e->getMessage();
@@ -519,6 +504,35 @@ class ModernIMAPWrapper
         }
     }
     
+    private static function convertMimeStructure(\ZBateson\MailMimeParser\Message\IMimePart $part): stdClass
+    {
+        $structure = new stdClass();
+        [$type, $subtype] = explode('/', strtoupper($part->getContentType()), 2);
+        $structure->type = ['TEXT' => 0, 'MULTIPART' => 1, 'MESSAGE' => 2, 'APPLICATION' => 3, 'AUDIO' => 4, 'IMAGE' => 5, 'VIDEO' => 6][$type] ?? 7;
+        $structure->subtype = $subtype;
+        $structure->ifsubtype = 1;
+        $structure->encoding = ['7BIT' => 0, '8BIT' => 1, 'BINARY' => 2, 'BASE64' => 3, 'QUOTED-PRINTABLE' => 4][strtoupper($part->getContentTransferEncoding())] ?? 5;
+        $structure->bytes = strlen($part->getBinaryContentStream()?->getContents() ?? '');
+        $structure->id = $part->getContentId() ?? '';
+        $structure->ifid = $structure->id !== '' ? 1 : 0;
+        $structure->description = $part->getHeaderValue('Content-Description', '');
+        $structure->ifdescription = $structure->description !== '' ? 1 : 0;
+        $structure->parameters = [];
+        foreach (['charset', 'name', 'boundary'] as $attribute) {
+            $value = $part->getHeaderParameter('Content-Type', $attribute);
+            if ($value !== null) $structure->parameters[] = (object) ['attribute' => strtoupper($attribute), 'value' => $value];
+        }
+        $structure->ifparameters = $structure->parameters ? 1 : 0;
+        $structure->disposition = strtoupper($part->getContentDisposition(''));
+        $structure->ifdisposition = $structure->disposition !== '' ? 1 : 0;
+        $filename = $part->getFilename();
+        $structure->dparameters = $filename === null ? [] : [(object) ['attribute' => 'FILENAME', 'value' => $filename]];
+        $structure->ifdparameters = $structure->dparameters ? 1 : 0;
+        $children = $part->getChildParts();
+        if ($children) $structure->parts = array_map([self::class, 'convertMimeStructure'], $children);
+        return $structure;
+    }
+
     /**
      * Modern replacement for imap_header() / imap_headerinfo()
      */

@@ -8,6 +8,7 @@ require_once __DIR__ . '/../../src/modules/phpgwapi/inc/class.ofphpgwapi.inc.php
 
 use App\modules\email\services\EmailAttachmentStorage;
 use App\modules\email\services\EmailOutgoingMessage;
+use App\modules\phpgwapi\services\MailerSmtp;
 use App\modules\phpgwapi\services\Settings;
 use PHPUnit\Framework\TestCase;
 use PHPMailer\PHPMailer\PHPMailer;
@@ -110,6 +111,30 @@ class EmailOutgoingMessageTest extends TestCase
 		$mailer = \phpgwapi_ofphpgwapi::createObject('phpgwapi.mailer_smtp');
 		$this->assertInstanceOf(\App\modules\phpgwapi\services\MailerSmtp::class, $mailer);
 		$this->assertSame('server-smtp.test', $mailer->Host);
+	}
+
+	public function testLegacyDraftMailerIsCapturedWithoutNetworkDelivery(): void
+	{
+		putenv('MAIL_TO_DISK=1');
+		putenv('MAIL_DISK_PATH=' . $this->directory);
+		$mailer = new MailerSmtp();
+		$mailer->setFrom('from@example.test', 'From Person');
+		$mailer->addAddress('to@example.test', 'To Person');
+		$mailer->addCC('cc@example.test');
+		$mailer->addBCC('bcc@example.test');
+		$mailer->Subject = 'Legacy draft';
+		$mailer->Body = 'Draft body';
+		$mailer->Mailer = 'draft-dodger';
+
+		$this->assertTrue($mailer->send());
+		$this->assertStringContainsString('Legacy draft', $mailer->getSentMIMEMessage());
+		$captures = glob($this->directory . '/*.html') ?: [];
+		$this->assertCount(1, $captures);
+		$capture = file_get_contents($captures[0]);
+		$this->assertStringContainsString('to@example.test', $capture);
+		$this->assertStringContainsString('cc@example.test', $capture);
+		$this->assertStringContainsString('bcc@example.test', $capture);
+		$this->assertStringContainsString('Draft body', $capture);
 	}
 
 	public function testRejectsInvalidRecipientAddress(): void

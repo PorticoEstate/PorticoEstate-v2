@@ -123,16 +123,9 @@ class EmailPreferencesController
 	{
 		try
 		{
-			$businessObject = \CreateObject('email.bopreferences');
-			$accounts = [];
-			foreach ((array) $businessObject->ex_accounts_list() as $account)
-			{
-				$accounts[] = [
-					'id' => (int) ($account['acctnum'] ?? 0),
-					'name' => html_entity_decode(strip_tags((string) ($account['display_string'] ?? '')), ENT_QUOTES | ENT_HTML5, 'UTF-8'),
-					'status' => (string) ($account['status'] ?? ''),
-				];
-			}
+			$userSettings = Settings::getInstance()->get('user');
+			$stored = (array) ($userSettings['preferences']['email']['ex_accounts'] ?? []);
+			$accounts = \App\modules\email\services\EmailAccountsSerializer::serialize($stored);
 			return $this->json($response, ['items' => $accounts]);
 		}
 		catch (\Throwable $exception)
@@ -145,10 +138,7 @@ class EmailPreferencesController
 		}
 		finally
 		{
-			if (\App\modules\email\services\MailMessage::hasInstance())
-			{
-				\App\modules\email\services\MailMessage::releaseInstance();
-			}
+			if (\App\modules\email\services\MailMessage::hasInstance()) \App\modules\email\services\MailMessage::releaseInstance();
 		}
 	}
 
@@ -282,14 +272,15 @@ class EmailPreferencesController
 		if ($account === false || $account < 1) return $this->json($response, ['error' => lang('Invalid email account')], 422);
 		try
 		{
-			$businessObject = \CreateObject('email.bopreferences');
 			$userSettings = Settings::getInstance()->get('user');
 			$emailPreferences = (array) ($userSettings['preferences']['email'] ?? []);
 			if (!array_key_exists($account, (array) ($emailPreferences['ex_accounts'] ?? [])))
 			{
 				return $this->json($response, ['error' => lang('Email account not found')], 404);
 			}
-			if (!$businessObject->ex_accounts_delete($account, true)) return $this->json($response, ['error' => lang('Unable to delete email account')], 422);
+			$preferences = Preferences::getInstance();
+			$preferences->delete_struct('email', '["ex_accounts"][' . $account . ']');
+			$preferences->save_repository();
 			return $this->json($response, ['deleted' => true]);
 		}
 		catch (\Throwable $exception)

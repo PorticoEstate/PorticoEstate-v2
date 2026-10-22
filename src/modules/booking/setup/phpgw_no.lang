@@ -1339,3 +1339,8 @@ change_request_stale_allocation	booking	no	Tildelingen er endret etter forespør
 change_request_element_inactive_allocation	booking	no	Tildelingen er ikke aktiv
 change_applied_allocation	booking	no	Endringen er lagret. Søknadens datoer og prisen er uendret.
 change_request_booking_outside_allocation	booking	no	Endringen kan ikke godtas: booking #%1 i tildelingen ville havnet utenfor den nye tiden.
+
+reactivate	booking	no	Aktiver igjen
+sms_no_participants	booking	no	Ingen deltakere med telefonnummer er registrert – SMS ble ikke sendt.
+sms_not_configured	booking	no	SMS er ikke satt opp – kontakt systemadministrator.
+sms_no_recipients	booking	no	Ingen deltakere eller søker med telefonnummer er registrert – SMS ble ikke sendt.

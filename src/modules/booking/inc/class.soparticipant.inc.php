@@ -143,6 +143,129 @@
 			return (int)$this->db->f('cnt');
 		}
 		
+		/**
+		 * The phone numbers an SMS sent from a reservation's page reaches: the people who registered
+		 * as participants and, for an allocation that comes from an application, the applicant.
+		 * Only resolves the numbers; nothing is sent.
+		 *
+		 * The participants are exactly the numbers the page has always used. The applicant's number
+		 * is added when it is not already one of them: same digits, with or without the country code.
+		 *
+		 * @param string $reservation_type
+		 * @param int $reservation_id
+		 * @return array list of array('phone' => string, 'source' => 'participant'|'application'|'account')
+		 */
+		public function get_sms_recipients( $reservation_type, $reservation_id )
+		{
+			$participants = $this->read(array(
+				'results' => -1,
+				'filters' => array(
+					'reservation_id' => $reservation_id,
+					'reservation_type' => $reservation_type
+				)
+			));
+
+			$participant_phones = array();
+			foreach ((array)$participants['results'] as $participant)
+			{
+				$participant_phones[] = $participant['phone'];
+			}
+
+			$recipients = array();
+			$known = array();
+			foreach (array_unique($participant_phones) as $phone)
+			{
+				$recipients[] = array('phone' => $phone, 'source' => 'participant');
+				$known[] = self::phone_key($phone);
+			}
+
+			if ($reservation_type == 'allocation')
+			{
+				$applicant = $this->get_applicant_phone($reservation_id);
+				if ($applicant && !in_array(self::phone_key($applicant['phone']), $known, true))
+				{
+					$recipients[] = $applicant;
+				}
+			}
+
+			return $recipients;
+		}
+
+		/**
+		 * The applicant's phone for an allocation that comes from an application: the number entered
+		 * on the application, else the one on the applicant's account (bb_user, found by customer_ssn).
+		 * A value that is not a usable phone number (see usable_phone_sql) counts as empty.
+		 *
+		 * @param int $allocation_id
+		 * @return array|null array('phone' => string, 'source' => 'application'|'account'), or null
+		 *	when the allocation has no application or neither source has a number
+		 */
+		protected function get_applicant_phone( $allocation_id )
+		{
+			$application_usable = self::usable_phone_sql('a.contact_phone');
+			$account_usable = self::usable_phone_sql('u.phone');
+			$sql = "SELECT CASE WHEN {$application_usable} THEN btrim(a.contact_phone) END AS application_phone,"
+				. " (SELECT btrim(u.phone) FROM bb_user u"
+				. " WHERE a.customer_ssn <> '' AND u.customer_ssn = a.customer_ssn AND {$account_usable}"
+				. " ORDER BY u.id LIMIT 1) AS account_phone"
+				. " FROM bb_allocation al JOIN bb_application a ON a.id = al.application_id"
+				. " WHERE al.id = " . (int) $allocation_id;
+			$this->db->query($sql, __LINE__, __FILE__);
+			if (!$this->db->next_record())
+			{
+				return null;
+			}
+
+			$application_phone = (string) $this->db->f('application_phone');
+			$account_phone = (string) $this->db->f('account_phone');
+
+			if ($application_phone !== '')
+			{
+				return array('phone' => $application_phone, 'source' => 'application');
+			}
+			if ($account_phone !== '')
+			{
+				return array('phone' => $account_phone, 'source' => 'account');
+			}
+
+			return null;
+		}
+
+		/**
+		 * SQL condition for "this column holds a phone number we may send to". The applicant's number is
+		 * free text from the citizen, so only 0-9, space, + - / ( ) with at least one digit other than 0
+		 * passes: anything else (a quote, letters, ';') and an all-zero placeholder count as no number.
+		 *
+		 * @param string $column a column of our own SQL, never user input
+		 * @return string
+		 */
+		protected static function usable_phone_sql( $column )
+		{
+			return "({$column} ~ '^[0-9 +/()-]+$' AND {$column} ~ '[1-9]')";
+		}
+
+		/**
+		 * What makes two phone numbers the same number: the digits, without a leading 00 or the
+		 * Norwegian country code (+47 91234567, 0047 91234567 and 91234567 are one number).
+		 *
+		 * @param string $phone
+		 * @return string
+		 */
+		protected static function phone_key( $phone )
+		{
+			$digits = preg_replace('/\D+/', '', $phone);
+			if (strpos($digits, '00') === 0)
+			{
+				$digits = substr($digits, 2);
+			}
+			if (strlen($digits) == 10 && strpos($digits, '47') === 0)
+			{
+				$digits = substr($digits, 2);
+			}
+
+			return $digits;
+		}
+
 		function delete_from_completed($reservation_type, $age_days)
 		{
 			$interval = (int) $age_days;

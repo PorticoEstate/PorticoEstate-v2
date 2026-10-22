@@ -1175,3 +1175,4 @@ occurrence_allocated	bookingfrontend	en	Allocated
 occurrence_withdrawn	bookingfrontend	en	Withdrawn
 occurrence_not_allocated	bookingfrontend	en	Not allocated
 occurrence_outside_series	bookingfrontend	en	Outside the series
+application_not_found	bookingfrontend	en	The application was not found. You may not have access to it.

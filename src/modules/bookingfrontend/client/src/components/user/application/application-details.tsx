@@ -1056,7 +1056,7 @@ const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
         return (
             <ErrorWrapper>
                 <Heading level={2} data-size="sm">{t('common.error')}</Heading>
-                <Paragraph>{t('common.application not found')}</Paragraph>
+                <Paragraph>{t('bookingfrontend.application_not_found')}</Paragraph>
             </ErrorWrapper>
         );
     }

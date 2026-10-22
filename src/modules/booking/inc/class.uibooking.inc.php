@@ -1239,7 +1239,14 @@ class booking_uibooking extends booking_uicommon
 			$participants = $soparticipant->read($params);
 			if (!$participants['results'])
 			{
-				Cache::message_set(lang('no records found.'), 'error');
+				Cache::message_set(lang('sms_no_participants'), 'error');
+				self::redirect(array('menuaction' => "booking.ui{$type}.show", 'id' => $id));
+			}
+
+			if (!$this->sms_is_configured())
+			{
+				Cache::message_set(lang('sms_not_configured'), 'error');
+				self::redirect(array('menuaction' => "booking.ui{$type}.show", 'id' => $id));
 			}
 
 			$sms_service = CreateObject('sms.sms');

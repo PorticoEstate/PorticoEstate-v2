@@ -795,7 +795,7 @@ class ApplicationService
 		);
 
 		$items = [];
-		$counts = ['total' => 0, 'existing' => 0, 'conflict' => 0, 'creatable' => 0];
+		$counts = ['total' => 0, 'existing' => 0, 'conflict' => 0, 'inactive' => 0, 'creatable' => 0];
 
 		foreach ($occurrences as $index => $occurrence) {
 			$itemFrom = $occurrence['from_'];
@@ -812,6 +812,7 @@ class ApplicationService
 				'time_display'     => date('H:i', $itemFromTs) . ' - ' . date('H:i', $itemToTs),
 				'resource_display' => $resourceDisplay,
 				'exists'           => false,
+				'inactive_only'    => false,
 				'allocation_id'    => null,
 				'has_conflict'     => false,
 				'conflict_details' => [],
@@ -849,6 +850,14 @@ class ApplicationService
 						$resourceIds, $itemFrom, $itemTo
 					);
 					$counts['conflict']++;
+				} elseif (!empty($elements)) {
+					// Elements of its own, and none active (an active one is `exists`).
+					// Not creatable: accept reactivates every element of the
+					// application, so a new allocation would sit active beside the old
+					// one on the same slot. `exists` stays active-only on purpose - the
+					// applicant's Min side reads it (bookingfrontend RecurringSeriesService).
+					$item['inactive_only'] = true;
+					$counts['inactive']++;
 				} else {
 					$counts['creatable']++;
 				}
@@ -1090,7 +1099,8 @@ class ApplicationService
 	// ── Create recurring allocations ───────────────────────────────────
 
 	/**
-	 * Create allocations for non-conflicting, non-existing recurring dates.
+	 * Create allocations for non-conflicting recurring dates that hold no element
+	 * of their own, active or inactive.
 	 *
 	 * @throws RuntimeException if the application is not found or not recurring.
 	 */
@@ -1146,6 +1156,12 @@ class ApplicationService
 					'reason' => 'conflict',
 				];
 				$totalAttempted++;
+				continue;
+			}
+			// Same flag as the preview's counts, so the button and this loop agree:
+			// accept reactivates the occurrence's inactive elements, and another
+			// allocation here would double the slot.
+			if ($item['inactive_only']) {
 				continue;
 			}
 

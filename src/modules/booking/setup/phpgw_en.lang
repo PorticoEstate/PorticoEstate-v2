@@ -1338,3 +1338,8 @@ change_request_stale_allocation	booking	en	The allocation has changed since the 
 change_request_element_inactive_allocation	booking	en	The allocation is not active
 change_applied_allocation	booking	en	The change has been saved. The application's dates and the price are unchanged.
 change_request_booking_outside_allocation	booking	en	The change cannot be accepted: booking #%1 in the allocation would end up outside the new time.
+
+reactivate	booking	en	Reactivate
+sms_no_participants	booking	en	No participants with a phone number are registered – no SMS was sent.
+sms_not_configured	booking	en	SMS is not set up – contact the system administrator.
+sms_no_recipients	booking	en	No participants or applicant with a phone number are registered – no SMS was sent.

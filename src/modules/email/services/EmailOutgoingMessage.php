@@ -4,7 +4,7 @@ namespace App\modules\email\services;
 
 use PHPMailer\PHPMailer\PHPMailer;
 use App\modules\phpgwapi\services\MailDiskWriter;
-use App\modules\phpgwapi\services\PHPMailerSmtpConfigurator;
+use App\modules\phpgwapi\services\MailerSmtp;
 use App\modules\phpgwapi\services\Settings;
 
 final class EmailOutgoingMessage
@@ -18,10 +18,9 @@ final class EmailOutgoingMessage
 
 	public function prepare(array $payload, object $mail): PHPMailer
 	{
-		$mailer = $this->mailerFactory ? ($this->mailerFactory)() : new PHPMailer(true);
+		$mailer = $this->mailerFactory ? ($this->mailerFactory)() : new MailerSmtp();
 		if (!$mailer instanceof PHPMailer) throw new \RuntimeException('Invalid PHPMailer factory');
-		if (!$this->mailerFactory) PHPMailerSmtpConfigurator::configure($mailer);
-		else $mailer->isSMTP();
+		if ($this->mailerFactory) $mailer->isSMTP();
 		$mailer->CharSet = 'UTF-8';
 		$mailer->WordWrap = 76;
 

@@ -31,6 +31,7 @@
 
 use App\modules\phpgwapi\services\Settings;
 use App\modules\phpgwapi\services\Cache;
+use App\modules\phpgwapi\services\MailerSmtp;
 use App\modules\phpgwapi\controllers\Accounts\Accounts;
 
 
@@ -2768,7 +2769,7 @@ HTML;
 		);
 
 		//test
-		$mail = createObject('phpgwapi.mailer_smtp');
+		$mail = new MailerSmtp();
 		$mail->Subject = $subject;
 		$mail->Body = <<<HTML
 			<html>

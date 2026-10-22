@@ -14,6 +14,9 @@ class EmailPreferencesController
 	{
 		try
 		{
+			$bootstrap = \CreateObject('email.msg_bootstrap');
+			$bootstrap->set_do_login(false);
+			$bootstrap->ensure_mail_msg_exists('email.api.preferences.save');
 			$businessObject = \CreateObject('email.bopreferences');
 			$businessObject->init_available_prefs();
 			$userSettings = Settings::getInstance()->get('user');
@@ -79,7 +82,7 @@ class EmailPreferencesController
 			$businessObject = \CreateObject('email.bopreferences');
 			$businessObject->init_available_prefs();
 			$schema = array_merge((array) $businessObject->std_prefs, (array) $businessObject->cust_prefs);
-			$legacyPost = [$businessObject->submit_token => '1'];
+			$normalizedValues = [];
 			foreach ($schema as $field)
 			{
 				$field = (array) $field;
@@ -87,7 +90,7 @@ class EmailPreferencesController
 				if ($id === '' || stripos((string) ($field['accts_usage'] ?? ''), 'default') === false || stripos((string) ($field['type'] ?? ''), 'INACTIVE') !== false) continue;
 				if (($field['widget'] ?? '') === 'checkbox')
 				{
-					if (filter_var($values[$id] ?? false, FILTER_VALIDATE_BOOLEAN)) $legacyPost[$id] = 'True';
+					$normalizedValues[$id] = filter_var($values[$id] ?? false, FILTER_VALIDATE_BOOLEAN);
 					continue;
 				}
 				if (!array_key_exists($id, $values)) continue;
@@ -98,10 +101,20 @@ class EmailPreferencesController
 				{
 					return $this->json($response, ['error' => lang('Invalid preference value')], 422);
 				}
-				$legacyPost[$id] = $value;
+				$normalizedValues[$id] = $value;
 			}
-			$_POST = array_replace($originalPost, $legacyPost);
-			if (!$businessObject->preferences(true)) return $this->json($response, ['error' => lang('Unable to save email preferences')], 422);
+			$mail = \App\modules\email\services\MailMessage::getInstance();
+			(new \App\modules\email\services\EmailPreferencesWriter())->saveDefault(
+				(array) $businessObject->std_prefs,
+				(array) $businessObject->cust_prefs,
+				$normalizedValues,
+				Preferences::getInstance(),
+				$mail
+			);
+			foreach (['mailsvr_callstr', 'mailsvr_namespace', 'mailsvr_delimiter', 'folder_list'] as $key)
+			{
+				$mail->expire_session_cache_item($key, 0);
+			}
 			return $this->json($response, ['saved' => true]);
 		}
 		catch (\Throwable $exception)
@@ -157,7 +170,9 @@ class EmailPreferencesController
 			$mail = \App\modules\email\services\MailMessage::getInstance();
 			$userSettings = Settings::getInstance()->get('user');
 			$storedAccounts = (array) ($userSettings['preferences']['email']['ex_accounts'] ?? []);
-			$account = $accountValue === 'add_new' ? (int) $businessObject->get_first_empty_ex_acctnum() : (int) $accountValue;
+			$account = $accountValue === 'add_new'
+				? \App\modules\email\services\EmailPreferencesWriter::nextAccountNumber($storedAccounts)
+				: (int) $accountValue;
 			if ($accountValue !== 'add_new' && !array_key_exists($account, $storedAccounts))
 			{
 				return $this->json($response, ['error' => lang('Email account not found')], 404);
@@ -218,12 +233,13 @@ class EmailPreferencesController
 			$businessObject->init_available_prefs();
 			$userSettings = Settings::getInstance()->get('user');
 			$storedAccounts = (array) ($userSettings['preferences']['email']['ex_accounts'] ?? []);
-			if (!array_key_exists($account, $storedAccounts) && $account !== (int) $businessObject->get_first_empty_ex_acctnum())
+			if (!array_key_exists($account, $storedAccounts)
+				&& $account !== \App\modules\email\services\EmailPreferencesWriter::nextAccountNumber($storedAccounts))
 			{
 				return $this->json($response, ['error' => lang('Invalid email account')], 422);
 			}
 			$fields = array_merge((array) $businessObject->std_prefs, (array) $businessObject->cust_prefs);
-			$legacyValues = [];
+			$normalizedValues = [];
 			foreach ($fields as $field)
 			{
 				$field = (array) $field;
@@ -231,7 +247,7 @@ class EmailPreferencesController
 				if ($id === '' || stripos((string) ($field['accts_usage'] ?? ''), 'extra_accounts') === false || stripos((string) ($field['type'] ?? ''), 'INACTIVE') !== false) continue;
 				if (($field['widget'] ?? '') === 'checkbox')
 				{
-					if (filter_var($values[$id] ?? false, FILTER_VALIDATE_BOOLEAN)) $legacyValues[$id] = 'True';
+					$normalizedValues[$id] = filter_var($values[$id] ?? false, FILTER_VALIDATE_BOOLEAN);
 					continue;
 				}
 				if (!array_key_exists($id, $values)) continue;
@@ -239,14 +255,18 @@ class EmailPreferencesController
 				$value = (string) $values[$id];
 				if (strlen($value) > 8192) return $this->json($response, ['error' => lang('Preference value is too long')], 422);
 				if (($field['widget'] ?? '') === 'combobox' && !array_key_exists($value, (array) ($field['values'] ?? []))) return $this->json($response, ['error' => lang('Invalid preference value')], 422);
-				$legacyValues[$id] = $value;
+				$normalizedValues[$id] = $value;
 			}
-			$_POST = array_replace($originalPost, [
-				$businessObject->submit_token_extra_accounts => '1',
-				'ex_acctnum' => $account,
-				$account => $legacyValues,
-			]);
-			if (!$businessObject->ex_accounts_edit($account, true)) return $this->json($response, ['error' => lang('Unable to save email account')], 422);
+			$mail = \App\modules\email\services\MailMessage::getInstance();
+			(new \App\modules\email\services\EmailPreferencesWriter())->saveExtraAccount(
+				$account,
+				(array) $businessObject->std_prefs,
+				(array) $businessObject->cust_prefs,
+				$normalizedValues,
+				Preferences::getInstance(),
+				$mail
+			);
+			foreach (['mailsvr_callstr', 'mailsvr_namespace', 'mailsvr_delimiter', 'folder_list'] as $key) $mail->expire_session_cache_item($key, $account);
 			return $this->json($response, ['saved' => true, 'id' => $account]);
 		}
 		catch (\Throwable $exception)
@@ -260,7 +280,11 @@ class EmailPreferencesController
 		finally
 		{
 			$_POST = $originalPost;
-			if (\App\modules\email\services\MailMessage::hasInstance()) \App\modules\email\services\MailMessage::releaseInstance();
+			if (\App\modules\email\services\MailMessage::hasInstance())
+			{
+				\App\modules\email\services\MailMessage::getInstance()->end_request();
+				\App\modules\email\services\MailMessage::releaseInstance();
+			}
 		}
 	}
 

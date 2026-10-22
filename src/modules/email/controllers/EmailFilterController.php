@@ -17,15 +17,17 @@ class EmailFilterController
 			return $this->json($response, ['error' => lang('Invalid filter number')], 400);
 		}
 
-		$originalGet = $_GET;
-		$_GET['filter_num'] = $filterNum;
 		try
 		{
-			$businessObject = \CreateObject('email.bofilters');
-			$allFilters = (array) ($businessObject->all_filters ?? []);
-			$filterExists = $filterNum !== 'add_new' && $businessObject->filter_exists((int) $filterNum);
-			$filter = $filterExists ? (array) $allFilters[(int) $filterNum] : [];
+			$bootstrap = \CreateObject('email.msg_bootstrap');
+			$bootstrap->set_do_login(false);
+			$bootstrap->ensure_mail_msg_exists('email.api.filter.editor');
 			$mail = \App\modules\email\services\MailMessage::getInstance();
+			$filter = (new \App\modules\email\services\EmailFilterStore())->editor($mail, $filterNum);
+			$filter ??= [
+				'id' => 'add_new', 'name' => 'My Mail Filter', 'sourceAccounts' => [0], 'matches' => [],
+				'action' => ['judgement' => 'fileinto', 'account' => 0, 'folder' => '', 'actiontext' => '', 'stopFiltering' => false],
+			];
 			$accounts = [];
 			foreach ((array) $mail->extra_and_default_acounts as $account)
 			{
@@ -38,24 +40,13 @@ class EmailFilterController
 				];
 			}
 
-			$destination = [];
-			$action = (array) ($filter['actions'][0] ?? []);
-			parse_str((string) ($action['folder'] ?? ''), $destination);
-			$filterData = [
-				'id' => $filterNum,
-				'name' => (string) ($filter['filtername'] ?? 'My Mail Filter'),
-				'sourceAccounts' => array_map(static fn(array $source): int => (int) ($source['acctnum'] ?? 0), (array) ($filter['source_accounts'] ?? [['acctnum' => 0]])),
-				'matches' => array_values((array) ($filter['matches'] ?? [])),
-				'action' => [
-					'judgement' => (string) ($action['judgement'] ?? 'fileinto'),
-					'account' => (int) ($destination['acctnum'] ?? 0),
-					'folder' => (string) ($destination['folder'] ?? ''),
-					'actiontext' => (string) ($action['actiontext'] ?? ''),
-					'stopFiltering' => !empty($action['stop_filtering']),
-				],
-			];
+			$filterData = $filter;
 			while (count($filterData['matches']) < 3) $filterData['matches'][] = [];
 			return $this->json($response, ['filter' => $filterData, 'accounts' => $accounts]);
+		}
+		catch (\OutOfBoundsException $exception)
+		{
+			return $this->json($response, ['error' => lang('Filter not found')], 404);
 		}
 		catch (\Throwable $exception)
 		{
@@ -67,8 +58,11 @@ class EmailFilterController
 		}
 		finally
 		{
-			$_GET = $originalGet;
-			if (\App\modules\email\services\MailMessage::hasInstance()) \App\modules\email\services\MailMessage::releaseInstance();
+			if (\App\modules\email\services\MailMessage::hasInstance())
+			{
+				\App\modules\email\services\MailMessage::getInstance()->end_request();
+				\App\modules\email\services\MailMessage::releaseInstance();
+			}
 		}
 	}
 
@@ -95,11 +89,7 @@ class EmailFilterController
 
 		$allowedExamine = ['from', 'to', 'cc', 'recipient', 'sender', 'subject', 'received'];
 		$allowedComparator = ['contains', 'notcontains'];
-		$legacyPost = [
-			'filter_num' => $filterNum,
-			'filtername' => $name,
-			'source_accounts' => [],
-		];
+		$normalizedSources = [];
 		foreach ($sources as $sourceAccount)
 		{
 			$sourceAccount = filter_var($sourceAccount, FILTER_VALIDATE_INT);
@@ -107,8 +97,9 @@ class EmailFilterController
 			{
 				return $this->json($response, ['error' => lang('Invalid source account')], 422);
 			}
-			$legacyPost['source_accounts'][] = http_build_query(['folder' => 'INBOX', 'acctnum' => $sourceAccount]);
+			$normalizedSources[] = (int) $sourceAccount;
 		}
+		$normalizedMatches = [];
 		foreach (array_values($matches) as $index => $match)
 		{
 			$match = (array) $match;
@@ -119,25 +110,18 @@ class EmailFilterController
 			{
 				return $this->json($response, ['error' => lang('Invalid filter condition')], 422);
 			}
-			$legacyPost['match_' . $index] = [
+			$normalizedMatches[] = [
 				'examine' => $examine,
 				'comparator' => $comparator,
 				'matchthis' => trim((string) ($match['matchthis'] ?? '')),
+				'andor' => $index === 0 ? '' : $andor,
 			];
-			if ($index > 0) $legacyPost['match_' . $index]['andor'] = $andor;
 		}
-		$legacyPost['action_0'] = [
-			'judgement' => 'fileinto',
-			'folder' => http_build_query(['folder' => (string) $action['folder'], 'acctnum' => (int) $action['account']]),
-			'actiontext' => trim((string) ($action['actiontext'] ?? '')),
-		];
-		if (!empty($action['stopFiltering'])) $legacyPost['action_0']['stop_filtering'] = 'True';
-
-		$originalPost = $_POST;
-		$_POST = array_replace($originalPost, $legacyPost);
 		try
 		{
-			$businessObject = \CreateObject('email.bofilters');
+			$bootstrap = \CreateObject('email.msg_bootstrap');
+			$bootstrap->set_do_login(false);
+			$bootstrap->ensure_mail_msg_exists('email.api.filters.save');
 			$mail = \App\modules\email\services\MailMessage::getInstance();
 			$enabledAccounts = [];
 			foreach ((array) $mail->extra_and_default_acounts as $account)
@@ -145,26 +129,34 @@ class EmailFilterController
 				$account = (array) $account;
 				if (($account['status'] ?? '') === 'enabled') $enabledAccounts[] = (int) ($account['acctnum'] ?? 0);
 			}
-			parse_str($legacyPost['action_0']['folder'], $destination);
-			$destinationAccount = (int) ($destination['acctnum'] ?? -1);
+			$destinationAccount = (int) $action['account'];
 			if (!in_array($destinationAccount, $enabledAccounts, true))
 			{
 				return $this->json($response, ['error' => lang('Invalid destination account')], 422);
 			}
-			foreach ($legacyPost['source_accounts'] as $sourceAccount)
+			foreach ($normalizedSources as $sourceAccount)
 			{
-				parse_str($sourceAccount, $sourceData);
-				if (!in_array((int) ($sourceData['acctnum'] ?? -1), $enabledAccounts, true))
+				if (!in_array($sourceAccount, $enabledAccounts, true))
 				{
 					return $this->json($response, ['error' => lang('Invalid source account')], 422);
 				}
 			}
-			$savedFilterNum = $businessObject->obtain_filer_num();
-			if (!$businessObject->process_submitted_data(true))
-			{
-				return $this->json($response, ['error' => lang('Unable to save filter')], 422);
-			}
+			$savedFilterNum = (new \App\modules\email\services\EmailFilterStore())->save($mail, [
+				'name' => $name,
+				'sourceAccounts' => $normalizedSources,
+				'matches' => $normalizedMatches,
+				'action' => [
+					'account' => $destinationAccount,
+					'folder' => trim((string) $action['folder']),
+					'actiontext' => trim((string) ($action['actiontext'] ?? '')),
+					'stopFiltering' => filter_var($action['stopFiltering'] ?? false, FILTER_VALIDATE_BOOLEAN),
+				],
+			], $filterNum);
 			return $this->json($response, ['saved' => true, 'id' => $savedFilterNum]);
+		}
+		catch (\OutOfBoundsException $exception)
+		{
+			return $this->json($response, ['error' => lang('Filter not found')], 404);
 		}
 		catch (\Throwable $exception)
 		{
@@ -176,8 +168,11 @@ class EmailFilterController
 		}
 		finally
 		{
-			$_POST = $originalPost;
-			if (\App\modules\email\services\MailMessage::hasInstance()) \App\modules\email\services\MailMessage::releaseInstance();
+			if (\App\modules\email\services\MailMessage::hasInstance())
+			{
+				\App\modules\email\services\MailMessage::getInstance()->end_request();
+				\App\modules\email\services\MailMessage::releaseInstance();
+			}
 		}
 	}
 
@@ -185,8 +180,11 @@ class EmailFilterController
 	{
 		try
 		{
-			$businessObject = \CreateObject('email.bofilters');
-			$filters = EmailFilterSerializer::serialize((array) ($businessObject->all_filters ?? []));
+			$bootstrap = \CreateObject('email.msg_bootstrap');
+			$bootstrap->set_do_login(false);
+			$bootstrap->ensure_mail_msg_exists('email.api.filters');
+			$mail = \App\modules\email\services\MailMessage::getInstance();
+			$filters = EmailFilterSerializer::serialize((new \App\modules\email\services\EmailFilterStore())->raw($mail));
 			foreach ($filters as $index => $filter)
 			{
 				$id = $filter['id'];
@@ -201,6 +199,14 @@ class EmailFilterController
 				'error' => lang('Unable to load filters'),
 				'reason' => $exception->getMessage(),
 			], 500);
+		}
+		finally
+		{
+			if (\App\modules\email\services\MailMessage::hasInstance())
+			{
+				\App\modules\email\services\MailMessage::getInstance()->end_request();
+				\App\modules\email\services\MailMessage::releaseInstance();
+			}
 		}
 	}
 
@@ -218,17 +224,13 @@ class EmailFilterController
 			return $this->json($response, ['error' => lang('Invalid filter action')], 400);
 		}
 
-		$originalPost = $_POST;
-		$_POST['filter_num'] = $filterNum;
 		try
 		{
-			$businessObject = \CreateObject('email.bofilters');
-			$updated = match ($action)
-			{
-				'delete' => $businessObject->delete_filter(true),
-				'move-up' => $businessObject->move_up(true),
-				'move-down' => $businessObject->move_down(true),
-			};
+			$bootstrap = \CreateObject('email.msg_bootstrap');
+			$bootstrap->set_do_login(false);
+			$bootstrap->ensure_mail_msg_exists('email.api.filters.action');
+			$mail = \App\modules\email\services\MailMessage::getInstance();
+			$updated = (new \App\modules\email\services\EmailFilterStore())->action($mail, $action, $filterNum);
 			if (!$updated)
 			{
 				return $this->json($response, ['error' => lang('Filter action could not be completed')], 422);
@@ -245,9 +247,9 @@ class EmailFilterController
 		}
 		finally
 		{
-			$_POST = $originalPost;
 			if (\App\modules\email\services\MailMessage::hasInstance())
 			{
+				\App\modules\email\services\MailMessage::getInstance()->end_request();
 				\App\modules\email\services\MailMessage::releaseInstance();
 			}
 		}

@@ -23,6 +23,7 @@
 .email-message-header dd { margin: 0; overflow-wrap: anywhere; }
 .email-message-body { padding: 1.25rem 0; overflow-wrap: anywhere; }
 .email-message-body-part { margin-bottom: 1.25rem; }
+.email-message-source { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; }
 .email-message-body-part img { max-width: 100%; height: auto; }
 .email-message-body-part table { max-width: 100%; }
 .email-message-attachments { border-top: 1px solid var(--mail-line); padding-top: .75rem; }

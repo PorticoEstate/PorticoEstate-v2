@@ -36,9 +36,12 @@ final class EmailMessageContent
 			if (stripos((string) ($part['subtype'] ?? ''), 'html') !== false)
 			{
 				foreach ($imageUrls as $contentId => $url) $body = str_ireplace($contentId, htmlspecialchars($url, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'), $body);
+				$parts[$index]['source_text'] = $body;
+				$parts[$index]['requires_html_confirmation'] = (bool) preg_match('/<style\b[^>]*>.*?\bbody\b.*?\{.*?\}|<script\b|<iframe\b/is', $body);
 			} else
 			{
 				$body = htmlspecialchars_decode($body, ENT_QUOTES | ENT_HTML5);
+				$parts[$index]['unformatted_text'] = $mail->normalize_crlf($body);
 				$body = htmlspecialchars($body, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 				$body = $mail->make_clickable($body, $msgball['folder'] ?? '');
 				$body = nl2br($mail->normalize_crlf($body), true) . '<br /><br />';

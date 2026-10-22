@@ -16,6 +16,9 @@ final class EmailMessageSerializer
 				$bodyParts[] = [
 					'html' => \Sanitizer::clean_html((string) $part['message_body']),
 					'mimeType' => trim((string) ($part['type'] ?? '') . '/' . (string) ($part['subtype'] ?? ''), '/'),
+					'text' => null,
+					'source' => null,
+					'requiresConfirmation' => false,
 				];
 			}
 			if (!empty($part['ex_attachment']))
@@ -37,6 +40,9 @@ final class EmailMessageSerializer
 			$bodyParts[] = [
 				'html' => \Sanitizer::clean_html($body),
 				'mimeType' => trim((string) ($part['type'] ?? '') . '/' . (string) ($part['subtype'] ?? ''), '/'),
+				'text' => isset($part['unformatted_text']) ? (string) $part['unformatted_text'] : null,
+				'source' => !empty($part['requires_html_confirmation']) ? (string) ($part['source_text'] ?? '') : null,
+				'requiresConfirmation' => !empty($part['requires_html_confirmation']),
 			];
 		}
 

@@ -46,7 +46,7 @@ class EmailMessageContentTest extends TestCase
 			public function __construct(public array $parts) {}
 			public function phpgw_fetchstructure($msgball, $display) { return (object) []; }
 			public function get_flat_pgw_struct($structure) { return $this->parts; }
-			public function phpgw_fetchbody($msgball) { return match ($msgball['part_no']) { '1' => 'Plain &amp; readable', '2' => '<p>HTML body<img src="cid:hero-image"></p>', '3' => base64_encode('PNG!'), '4' => base64_encode('PDF data') }; }
+			public function phpgw_fetchbody($msgball) { return match ($msgball['part_no']) { '1' => 'Plain &amp; readable', '2' => '<p>HTML body<img src="cid:hero-image"></p><script>bad()</script>', '3' => base64_encode('PNG!'), '4' => base64_encode('PDF data') }; }
 			public function qprint($body) { return quoted_printable_decode($body); }
 			public function de_base64($body) { return base64_decode($body); }
 			public function normalize_crlf($body) { return str_replace(["\r\n", "\r", "\n"], "\r\n", $body); }
@@ -62,12 +62,17 @@ class EmailMessageContentTest extends TestCase
 		$this->assertSame('Nov 14, 2023', $content['data']['message_date']);
 		$this->assertSame('show', $content['parts'][0]['d_instructions']);
 		$this->assertStringContainsString('Plain &amp; readable', $content['parts'][0]['message_body']);
+		$this->assertSame('Plain & readable', $content['parts'][0]['unformatted_text']);
 		$this->assertStringContainsString('/email/api/attachment?part=3&amp;inline=1', $content['parts'][1]['message_body']);
 		$this->assertSame('image_href', $content['parts'][2]['d_processed_as']);
 		$item = EmailMessageSerializer::serialize($content['data'], $content['parts']);
 		$this->assertCount(3, $item['bodyParts']);
 		$this->assertCount(2, $item['attachments']);
 		$this->assertStringContainsString('/email/api/attachment?part=3&amp;inline=1', $item['bodyParts'][1]['html']);
+		$this->assertTrue($item['bodyParts'][1]['requiresConfirmation']);
+		$this->assertStringContainsString('<script>bad()</script>', $item['bodyParts'][1]['source']);
+		$this->assertStringNotContainsString('<script>', $item['bodyParts'][1]['html']);
+		$this->assertSame('Plain & readable', $item['bodyParts'][0]['text']);
 	}
 
 	public function testHidesAlternativePartsMarkedAltHide(): void

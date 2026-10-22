@@ -12,9 +12,26 @@
 	const moveButton = document.getElementById('email-message-move');
 	const targetFolder = document.getElementById('email-message-target');
 	const printButton = document.getElementById('email-message-print');
+	const formatButton = document.getElementById('email-message-format');
+	const htmlButton = document.getElementById('email-message-html');
 	let actionPending = false;
+	let formatted = true;
+	let allowSanitizedHtml = false;
+	let renderedParts = [];
 
 	printButton.addEventListener('click', () => window.print());
+	formatButton.addEventListener('click', () =>
+	{
+		formatted = !formatted;
+		formatButton.textContent = formatted ? 'View unformatted' : 'View formatted';
+		renderBody();
+	});
+	htmlButton.addEventListener('click', () =>
+	{
+		allowSanitizedHtml = !allowSanitizedHtml;
+		htmlButton.textContent = allowSanitizedHtml ? 'Hide HTML' : 'View sanitized HTML';
+		renderBody();
+	});
 	deleteButton.addEventListener('click', () => runAction('delete'));
 	moveButton.addEventListener('click', () => runAction('move'));
 	async function runAction(action)
@@ -85,6 +102,34 @@
 		});
 	}
 
+	function renderBody()
+	{
+		const body = document.getElementById('email-message-body');
+		body.replaceChildren();
+		renderedParts.forEach(part =>
+		{
+			const container = document.createElement('div');
+			container.className = 'email-message-body-part';
+			if (part.requiresConfirmation && !allowSanitizedHtml)
+			{
+				const source = document.createElement('pre');
+				source.className = 'email-message-source';
+				source.textContent = part.source || '';
+				container.appendChild(source);
+			} else if (!formatted && typeof part.text === 'string')
+			{
+				const plain = document.createElement('pre');
+				plain.className = 'email-message-source';
+				plain.textContent = part.text;
+				container.appendChild(plain);
+			} else
+			{
+				container.innerHTML = part.html || '';
+			}
+			body.appendChild(container);
+		});
+	}
+
 	function render(item)
 	{
 		currentMessage = item;
@@ -92,6 +137,13 @@
 		read.disabled = !item.sourceFolder;
 		deleteButton.disabled = !item.sourceFolder;
 		printButton.disabled = false;
+		renderedParts = item.bodyParts || [];
+		formatted = true;
+		allowSanitizedHtml = false;
+		formatButton.hidden = !renderedParts.some(part => typeof part.text === 'string');
+		formatButton.textContent = 'View unformatted';
+		htmlButton.hidden = !renderedParts.some(part => part.requiresConfirmation === true);
+		htmlButton.textContent = 'View sanitized HTML';
 		document.getElementById('email-message-edit').hidden = item.isDraft !== true;
 		['previous', 'next'].forEach(direction =>
 		{
@@ -107,15 +159,7 @@
 		ccRow.hidden = !item.cc || item.cc.length === 0;
 		if (!ccRow.hidden) renderAddresses(document.getElementById('email-message-cc'), item.cc);
 
-		const body = document.getElementById('email-message-body');
-		body.replaceChildren();
-		(item.bodyParts || []).forEach(part =>
-		{
-			const container = document.createElement('div');
-			container.className = 'email-message-body-part';
-			container.innerHTML = part.html || '';
-			body.appendChild(container);
-		});
+		renderBody();
 
 		const attachments = item.attachments || [];
 		const attachmentSection = document.getElementById('email-message-attachments');

@@ -1,5 +1,7 @@
 <?php
 
+use App\modules\phpgwapi\services\MailerSmtp;
+
 /**
  * EMail - Send non-SMTP functions
  * 
@@ -285,7 +287,7 @@ class bosend
 	function send()
 	{
 
-		$this->smtp = createObject('phpgwapi.mailer_smtp');
+		$this->smtp = new MailerSmtp();
 
 		$this->prepare_message();
 
@@ -304,7 +306,7 @@ class bosend
 
 		if ($returnccode && \App\modules\email\services\MailMessage::getInstance()->get_isset_pref('use_sent_folder'))
 		{
-			$success = $this->copy_to_sent_folder($this->smtp->getHeader() . "\n" . $this->smtp->getBody());
+			$success = $this->copy_to_sent_folder($this->smtp->getSentMIMEMessage());
 		}
 
 		$msgball = (array) \App\modules\email\services\MailMessage::getInstance()->get_arg_value('msgball');
@@ -796,7 +798,7 @@ class bosend
 		$this->smtp->Mailer = 'draft-dodger'; //a needed hack - skwashd
 		$this->smtp->Send();
 		$this->save_message(
-			$this->smtp->getHeader() . "\n" . $this->smtp->getBody() . "\r\n",
+			$this->smtp->getSentMIMEMessage(),
 			'INBOX.Drafts',
 			"\\Draft"
 		);

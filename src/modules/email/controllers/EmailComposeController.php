@@ -29,7 +29,7 @@ class EmailComposeController
 			$bootstrap->ensure_mail_msg_exists('email.api.compose');
 			$mail = \App\modules\email\services\MailMessage::getInstance();
 			$prefill = (new \App\modules\email\services\EmailComposePrefill($mail))->build($query);
-			$prefill['spellcheck_available'] = \App\modules\email\services\EmailSpellcheckService::available();
+			$prefill['spellcheck_available'] = \App\modules\email\services\EmailSpellcheckService::available($this->spellcheckLanguage());
 			return $this->json($response, $prefill);
 		}
 		catch (\InvalidArgumentException $exception)
@@ -62,15 +62,19 @@ class EmailComposeController
 		if (!is_string($body) || strlen($body) > 200000) return $this->json($response, ['error' => lang('Invalid spellcheck text')], 400);
 		try
 		{
-			$user = (array) \App\modules\phpgwapi\services\Settings::getInstance()->get('user');
-			$language = (string) ($user['preferences']['common']['lang'] ?? 'en');
-			return $this->json($response, (new \App\modules\email\services\EmailSpellcheckService())->check($body, $language));
+			return $this->json($response, (new \App\modules\email\services\EmailSpellcheckService())->check($body, $this->spellcheckLanguage()));
 		}
 		catch (\Throwable $exception)
 		{
 			error_log('[email] EmailComposeController::spellcheck failed (' . get_class($exception) . ')');
 			return $this->json($response, ['error' => lang('Unable to check spelling')], 500);
 		}
+	}
+
+	private function spellcheckLanguage(): string
+	{
+		$user = (array) \App\modules\phpgwapi\services\Settings::getInstance()->get('user');
+		return (string) ($user['preferences']['common']['lang'] ?? 'en');
 	}
 
 	public function draft(Request $request, Response $response): Response

@@ -16,4 +16,14 @@ class EmailSpellcheckServiceTest extends TestCase
 		$this->assertIsArray($result['issues']);
 		if (!$result['available']) $this->assertSame([], $result['issues']);
 	}
+
+	public function testSuggestsCorrectionsAndSkipsQuotedLinesWhenDictionaryExists(): void
+	{
+		if (!EmailSpellcheckService::available('en')) $this->markTestSkipped('English pspell dictionary is unavailable');
+		$result = (new EmailSpellcheckService())->check("This has a mispeling.\n> Quoted mispeling", 'en');
+		$this->assertTrue($result['available']);
+		$this->assertCount(1, $result['issues']);
+		$this->assertSame('mispeling', $result['issues'][0]['word']);
+		$this->assertContains('misspelling', $result['issues'][0]['suggestions']);
+	}
 }

@@ -4,15 +4,14 @@ namespace App\modules\email\services;
 
 final class EmailSpellcheckService
 {
-	public static function available(): bool
+	public static function available(string $language = 'en'): bool
 	{
-		return function_exists('pspell_new') && function_exists('pspell_check') && function_exists('pspell_suggest');
+		return self::openDictionary($language) !== false;
 	}
 
 	public function check(string $text, string $language): array
 	{
-		if (!self::available()) return ['available' => false, 'issues' => []];
-		$link = @pspell_new($language !== '' ? $language : 'en', '', '', '', defined('PSPELL_FAST') ? PSPELL_FAST : 0);
+		$link = self::openDictionary($language);
 		if (!$link) return ['available' => false, 'issues' => []];
 		$issues = [];
 		$seen = [];
@@ -22,6 +21,7 @@ final class EmailSpellcheckService
 			preg_match_all('/\S+/u', $line, $matches);
 			foreach ($matches[0] as $token)
 			{
+				if (!$this->shouldCheck($token)) continue;
 				$word = str_replace(['.', ',', '?', ':', ';', '!', '"', '(', ')', '*', '[', ']'], '', $token);
 				if (!$this->shouldCheck($word) || pspell_check($link, $word)) continue;
 				$key = function_exists('mb_strtolower') ? mb_strtolower($word, 'UTF-8') : strtolower($word);
@@ -35,9 +35,17 @@ final class EmailSpellcheckService
 		return ['available' => true, 'issues' => $issues];
 	}
 
+	private static function openDictionary(string $language): mixed
+	{
+		if (!function_exists('pspell_new') || !function_exists('pspell_check') || !function_exists('pspell_suggest')) return false;
+		$language = trim($language) !== '' ? $language : 'en';
+		return @pspell_new($language, '', '', '', defined('PSPELL_FAST') ? PSPELL_FAST : 0);
+	}
+
 	private function shouldCheck(string $word): bool
 	{
 		if (strlen(trim($word)) < 2 || preg_match('/[0-9_=@<>]/u', $word)) return false;
+		if (preg_match('#(?:https?://|www\.)#i', $word)) return false;
 		if (preg_match('/[a-z0-9-]+\.(?:[a-z]{2,}|local)\b/i', $word)) return false;
 		return (bool) preg_match('/[\p{L}\p{M}]/u', $word);
 	}

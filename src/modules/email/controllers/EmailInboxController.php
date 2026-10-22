@@ -360,10 +360,23 @@ class EmailInboxController
 			$bootstrap = \CreateObject('email.msg_bootstrap');
 			$bootstrap->ensure_mail_msg_exists('email.api.folders', $account);
 			$mail = \App\modules\email\services\MailMessage::getInstance();
-			$mail->get_folder_list($account, true);
-			$businessObject = \CreateObject('email.bofolder');
-			$businessObject->folder_data();
-			$folders = (array) ($businessObject->xi['folder_list_display'] ?? []);
+			$folders = [];
+			foreach ((array) $mail->get_folder_list($account, true) as $folder)
+			{
+				$longName = (string) ($folder['folder_long'] ?? '');
+				$status = (array) $mail->get_folder_status_info([
+					'acctnum' => $account,
+					'folder' => $mail->prep_folder_out($longName),
+				]);
+				$folders[] = [
+					'folder_long' => $longName,
+					'folder_short' => (string) ($folder['folder_short'] ?? $mail->get_folder_short($longName, $account)),
+					'folder_param' => $mail->prep_folder_out($longName),
+					'acctnum' => $account,
+					'unseen_count' => (int) ($status['number_new'] ?? 0),
+					'total_count' => (int) ($status['number_all'] ?? 0),
+				];
+			}
 			$accounts = [];
 			foreach ((array) $mail->extra_and_default_acounts as $item)
 			{
@@ -390,6 +403,14 @@ class EmailInboxController
 			error_log('[email] EmailInboxController::folders failed (' . get_class($exception) . ')');
 			return $this->json($response, ['error' => lang('Unable to load folders')], 500);
 		}
+		finally
+		{
+			if (\App\modules\email\services\MailMessage::hasInstance())
+			{
+				\App\modules\email\services\MailMessage::getInstance()->end_request();
+				\App\modules\email\services\MailMessage::releaseInstance();
+			}
+		}
 	}
 
 	public function folderAction(Request $request, Response $response): Response
@@ -414,50 +435,27 @@ class EmailInboxController
 		}
 
 		$originalPost = $_POST;
-		$_POST = array_replace($originalPost, $input);
+		$_POST = array_replace($originalPost, ['fldball' => ['acctnum' => $account, 'folder' => 'INBOX']]);
 		try
 		{
 			$bootstrap = \CreateObject('email.msg_bootstrap');
 			$bootstrap->ensure_mail_msg_exists('email.api.folders.action', $account);
-			if ($action === 'create' && $parentFolder !== '')
-			{
-				$mail = \App\modules\email\services\MailMessage::getInstance();
-				$delimiter = (string) $mail->get_arg_value('mailsvr_delimiter', $account);
-				$availableFolders = (array) $mail->get_arg_value('folder_list', $account);
-				if ($delimiter === '' || !in_array($parentFolder, array_column($availableFolders, 'folder_long'), true))
-				{
-					return $this->json($response, ['error' => lang('Select a valid parent folder')], 422);
-				}
-				if (str_contains($targetFolder, $delimiter))
-				{
-					return $this->json($response, ['error' => lang('Enter a single folder name when selecting a parent')], 422);
-				}
-				$target['folder'] = $parentFolder . $delimiter . trim($targetFolder);
-			}
-			if ($action === 'create' && array_key_exists('parent_folder', $input))
-			{
-				$mail = \App\modules\email\services\MailMessage::getInstance();
-				$target['folder'] = trim($target['folder']);
-				$mail->set_arg_value('target_fldball', $target, $account);
-				$mail->set_arg_value('action', 'create_expert', $account);
-			}
-			$businessObject = \CreateObject('email.bofolder');
-			$success = $businessObject->folder_action();
-			$report = (string) ($businessObject->xi['action_report'] ?? '');
-			$reason = trim(html_entity_decode(strip_tags(str_ireplace(['<br />', '<br>'], ' ', $report)), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
-			if (!$success)
-			{
-				return $this->json($response, [
-					'error' => lang('Unable to update folder'),
-					'reason' => $reason !== '' ? $reason : lang('Folder action failed'),
-				], 422);
-			}
-			return $this->json($response, ['updated' => true, 'message' => $reason]);
+			$mail = \App\modules\email\services\MailMessage::getInstance();
+			$result = (new \App\modules\email\services\EmailFolderActions())->execute($mail, $input);
+			return $this->json($response, $result + ['message' => lang('Folder updated')]);
+		}
+		catch (\InvalidArgumentException $exception)
+		{
+			return $this->json($response, ['error' => $exception->getMessage()], 422);
 		}
 		catch (\App\modules\email\services\EmailMailConfigurationException $exception)
 		{
 			$message = $exception->getMessage();
 			return $this->json($response, ['error' => $message, 'reason' => $message], 422);
+		}
+		catch (\RuntimeException $exception)
+		{
+			return $this->json($response, ['error' => lang('Unable to update folder'), 'reason' => $exception->getMessage()], 422);
 		}
 		catch (\Throwable $exception)
 		{
@@ -472,6 +470,7 @@ class EmailInboxController
 			$_POST = $originalPost;
 			if (\App\modules\email\services\MailMessage::hasInstance())
 			{
+				\App\modules\email\services\MailMessage::getInstance()->end_request();
 				\App\modules\email\services\MailMessage::releaseInstance();
 			}
 		}

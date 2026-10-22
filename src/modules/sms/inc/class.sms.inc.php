@@ -243,14 +243,22 @@ class sms_sms__
 			$array_sms_to[0] = $sms_to;
 		}
 
+		// the log row gets escaped copies; the gateway below is handed the values as they are
+		$db_gateway_module_send = $this->db->db_addslashes($gateway_module_send);
+		$db_mobile_sender = $this->db->db_addslashes($mobile_sender);
+		$db_sms_sender = $this->db->db_addslashes($sms_sender);
+		$db_message = $this->db->db_addslashes($message);
+		$db_sms_type = $this->db->db_addslashes($sms_type);
+		$db_unicode = $this->db->db_addslashes($unicode);
+
 		for ($i = 0; $i < count($array_sms_to); $i++)
 		{
 			$c_sms_to = str_replace(array("\'", "\"", " "), array("", "", ""), $array_sms_to[$i]);
-			$message = $this->db->db_addslashes($message);
+			$db_sms_to = $this->db->db_addslashes($c_sms_to);
 
 			$db_query = "INSERT INTO phpgw_sms_tblsmsoutgoing
 					(uid,p_gateway,p_src,p_dst,p_footer,p_msg,p_datetime,p_sms_type,unicode)
-					VALUES ('$uid','$gateway_module_send','$mobile_sender','$c_sms_to','$sms_sender','$message','$datetime_now','$sms_type','$unicode')";
+					VALUES ('$uid','$db_gateway_module_send','$db_mobile_sender','$db_sms_to','$db_sms_sender','$db_message','$datetime_now','$db_sms_type','$db_unicode')";
 
 			if ($this->db->get_transaction())
 			{

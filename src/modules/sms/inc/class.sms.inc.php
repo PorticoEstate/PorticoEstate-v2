@@ -239,7 +239,7 @@ class sms_sms__
 		}
 		if (strlen($message) > $max_length)
 		{
-			$message = substr($message, 0, $max_length - 1);
+			$message = mb_strcut($message, 0, $max_length - 1, 'UTF-8');
 		}
 		//			$sms_msg = str_replace(array("\r","\n", "\""), array("", "", " "), html_entity_decode($message));
 		$sms_msg = str_replace(array("\r", "\""), array("", " "), $message);

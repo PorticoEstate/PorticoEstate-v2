@@ -25,14 +25,9 @@ use App\modules\phpgwapi\services\MailerSmtp;
 class bosend
 {
 	var $public_functions = array(
-		'sendorspell'	=> True,
-		'spellcheck'	=> True,
 		'send'		=> True,
-		'save_draft'	=> True,
 	);
-	var $mail_spell;
 	var $msg_bootstrap;
-	var $nextmatchs;
 	var $not_set = '-1';
 	var $mail_out = array();
 	var $smtp;
@@ -147,13 +142,8 @@ class bosend
 	{
 		if (! ($msg && $folder))
 		{
-			return False; //invalid args
+			return false;
 		}
-
-		/*
-			NOTES:	"append" will CHECK  to make sure this folder exists, and try to create it if it does not
-				make sure there is a \r\n CRLF empty last line sequence so Cyrus will be happy
-			*/
 		return \App\modules\email\services\MailMessage::getInstance()->phpgw_append(
 			$folder,
 			$msg . "\r\n",
@@ -161,121 +151,23 @@ class bosend
 		);
 	}
 
-	/**
-	 * Marks a message as being replied to - like most other MUAs do
-	 *
-	 * @param array $msgball the message info
-	 */
 	function mark_as_replied($msgball)
 	{
 		\App\modules\email\services\MailMessage::getInstance()->phpgw_set_flag($msgball, "\\Answered");
 	}
 
-	/**
-	 * This is called just before leaving this page, to clear / unset variables / objects
-	 */
 	function send_message_cleanup()
 	{
-		//echo 'send_message cleanup';
 		\App\modules\email\services\MailMessage::getInstance()->end_request();
-
-		$upload_dir = \App\modules\email\services\MailMessage::getInstance()->att_files_dir;
-		if (file_exists($upload_dir))
+		$uploadDirectory = \App\modules\email\services\MailMessage::getInstance()->att_files_dir;
+		if (!is_dir($uploadDirectory)) return;
+		foreach (scandir($uploadDirectory) ?: [] as $file)
 		{
-			$dh = dir($upload_dir);
-			while (($file = $dh->read()) !== false)
-			{
-				if ($file == '.' || $file == '..')
-				{
-					continue;
-				}
-				unlink("{$upload_dir}/{$file}");
-			}
-			$dh->close();
-			rmdir($upload_dir);
+			if ($file === '.' || $file === '..') continue;
+			$path = $uploadDirectory . '/' . $file;
+			if (is_file($path) && !is_link($path)) unlink($path);
 		}
-	}
-
-	/**
-	 * Detects whether the compose page was submitted as a send or spellcheck, and acts accordingly
-	 * 
-	 * Compose form submit action target is bosend, naturally, however the spell check button submit is identical
-	 * EXCEPT "btn_spellcheck" POST var will be set, which requires we handoff the handling to the spell class.
-	 * @author Angles
-	 */
-	function sendorspell()
-	{
-
-		if ((isset(\App\modules\email\services\MailMessage::getInstance()->ref_POST['draft']))
-			&& (\App\modules\email\services\MailMessage::getInstance()->ref_POST['draft'] == 'save')
-		)
-		{
-			$this->save_draft();
-		}
-
-		if ((isset(\App\modules\email\services\MailMessage::getInstance()->ref_POST['btn_spellcheck']))
-			&& (\App\modules\email\services\MailMessage::getInstance()->ref_POST['btn_spellcheck'] != '')
-		)
-		{
-			$this->spellcheck();
-		}
-		elseif ((isset(\App\modules\email\services\MailMessage::getInstance()->ref_POST['btn_send']))
-			&& (\App\modules\email\services\MailMessage::getInstance()->ref_POST['btn_send'] != '')
-		)
-		{
-			$this->send();
-		}
-		else
-		{
-			$this->send();
-		}
-	}
-
-	/*!
-		@function spellcheck
-		@abstract if the compose page was submitted as a pellcheck, this function is called, it then calls the emai.spell class
-		@params none, uses GET and POST vars
-		@discussion If needed, put the body through stripslashes_gpc() before handing it off to the mail_spell object.
-		This function simply gathers the required information and hands it off to the mail_spell class,
-		*/
-	function spellcheck()
-	{
-
-		// we may strip slashes, but that is all we should do before handing the body to the spell class
-		//$my_body = $GLOBALS['phpgw']->msg->stripslashes_gpc(trim($GLOBALS['phpgw']->msg->get_arg_value('body')));
-		//$this->mail_spell->set_body_orig($my_body);
-
-		$this->mail_spell = CreateObject("email.spell");
-		// preserve these vars
-		$this->mail_spell->set_preserve_var('action', \App\modules\email\services\MailMessage::getInstance()->get_arg_value('action'));
-		// experimental, should this go here? is not this already in the URI or something?
-		//$this->mail_spell->set_preserve_var('orig_action', $GLOBALS['phpgw']->msg->recall_desired_action());
-		$this->mail_spell->set_preserve_var('from', \App\modules\email\services\MailMessage::getInstance()->get_arg_value('from'));
-		$this->mail_spell->set_preserve_var('sender', \App\modules\email\services\MailMessage::getInstance()->get_arg_value('sender'));
-		$this->mail_spell->set_preserve_var('to', \App\modules\email\services\MailMessage::getInstance()->stripslashes_gpc(\App\modules\email\services\MailMessage::getInstance()->get_arg_value('to')));
-		$this->mail_spell->set_preserve_var('cc', \App\modules\email\services\MailMessage::getInstance()->stripslashes_gpc(\App\modules\email\services\MailMessage::getInstance()->get_arg_value('cc')));
-		$this->mail_spell->set_preserve_var('bcc', \App\modules\email\services\MailMessage::getInstance()->stripslashes_gpc(\App\modules\email\services\MailMessage::getInstance()->get_arg_value('bcc')));
-		$this->mail_spell->set_preserve_var('msgtype', \App\modules\email\services\MailMessage::getInstance()->get_arg_value('msgtype'));
-
-		$this->mail_spell->set_subject(\App\modules\email\services\MailMessage::getInstance()->stripslashes_gpc(\App\modules\email\services\MailMessage::getInstance()->get_arg_value('subject')));
-		$this->mail_spell->set_body_orig(\App\modules\email\services\MailMessage::getInstance()->stripslashes_gpc(trim(\App\modules\email\services\MailMessage::getInstance()->get_arg_value('body'))));
-
-		// oops, do not forget about these, "attach_sig" and "req_notify"
-		if ((\App\modules\email\services\MailMessage::getInstance()->get_isset_arg('attach_sig'))
-			&& (\App\modules\email\services\MailMessage::getInstance()->get_arg_value('attach_sig') != '')
-		)
-		{
-			$this->mail_spell->set_preserve_var('attach_sig', \App\modules\email\services\MailMessage::getInstance()->get_arg_value('attach_sig'));
-		}
-		if ((\App\modules\email\services\MailMessage::getInstance()->get_isset_arg('req_notify'))
-			&& (\App\modules\email\services\MailMessage::getInstance()->get_arg_value('req_notify') != '')
-		)
-		{
-			$this->mail_spell->set_preserve_var('req_notify', \App\modules\email\services\MailMessage::getInstance()->get_arg_value('req_notify'));
-		}
-
-		//$this->mail_spell->basic_spcheck();
-		$this->mail_spell->spell_review();
+		rmdir($uploadDirectory);
 	}
 
 	/**
@@ -286,49 +178,26 @@ class bosend
 	 */
 	function send()
 	{
-
 		$this->smtp = new MailerSmtp();
-
 		$this->prepare_message();
-
 		$returnccode = $this->smtp->Send();
 		$returncode = (bool) $returnccode;
-
-		/*
-			// ===== DEBUG =====	
-			echo '<br />';
-			echo 'retain_copy: '.serialize($GLOBALS['phpgw']->mail_send->retain_copy);
-			echo '<br />=== POST SEND ===<br />';
-			echo '<pre>'.$GLOBALS['phpgw']->msg->htmlspecialchars_encode($GLOBALS['phpgw']->mail_send->assembled_copy).'</pre>';
-			echo '<br />';
-			// ===== DEBUG ===== 
-			*/
-
 		if ($returnccode && \App\modules\email\services\MailMessage::getInstance()->get_isset_pref('use_sent_folder'))
 		{
-			$success = $this->copy_to_sent_folder($this->smtp->getSentMIMEMessage());
+			$this->copy_to_sent_folder($this->smtp->getSentMIMEMessage());
 		}
-
 		$msgball = (array) \App\modules\email\services\MailMessage::getInstance()->get_arg_value('msgball');
-		$is_reply = in_array(\App\modules\email\services\MailMessage::getInstance()->recall_desired_action(), ['reply', 'replyall'], true);
-		if ($is_reply && $returncode)
-		{
-			$this->mark_as_replied($msgball);
-		}
-
+		$isReply = in_array(\App\modules\email\services\MailMessage::getInstance()->recall_desired_action(), ['reply', 'replyall'], true);
+		if ($isReply && $returncode) $this->mark_as_replied($msgball);
 		$return_to_folder_href = $this->get_return_to();
 		if ($this->api_mode)
 		{
 			$sent = (bool) $returnccode;
 			$error = $sent ? '' : (string) ($this->smtp->ErrorInfo ?? '');
 			$this->send_message_cleanup();
-			if (\App\modules\email\services\MailMessage::hasInstance())
-			{
-				\App\modules\email\services\MailMessage::releaseInstance();
-			}
+			if (\App\modules\email\services\MailMessage::hasInstance()) \App\modules\email\services\MailMessage::releaseInstance();
 			return ['sent' => $sent, 'error' => $error];
 		}
-
 		if ($returnccode)
 		{
 			// Success
@@ -365,18 +234,14 @@ class bosend
 				// shut down this transaction
 				(new \phpgwapi_common())->phpgw_exit(False);
 			}
-		}
-		else
+		} else
 		{
-			// ERROR - mail NOT sent
 			$return_to_folder_url = phpgw::link('/index.php', $return_to_folder_href);
 			echo '<html><body>' . "\r\n";
 			echo '<h2>Your message could <b>not</b> be sent!</h2>' . "\r\n";
 			echo '<h3>The mail server returned:</h3>' . "\r\n";
-			echo '<pre>';
-			$this->smtp->ErrorInfo;
-			echo '</pre>' . "\r\n";
-			echo '<p>To go back to the msg list, click <a href="' . $return_to_folder_url . '">here</a> </p>' . "\r\n";
+			echo '<pre>' . htmlspecialchars((string) ($this->smtp->ErrorInfo ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</pre>' . "\r\n";
+			echo '<p>To go back to the mail list, click <a href="' . htmlspecialchars($return_to_folder_url, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '">here</a></p>' . "\r\n";
 			echo '</body></html>';
 			$this->send_message_cleanup();
 		}
@@ -391,42 +256,22 @@ class bosend
 	 */
 	function prepare_message()
 	{
-
-		if ($this->debug_send > 2)
-		{
-
-			return;
-		}
-
-		// ---- BEGIN BO SEND LOGIC
+		if ($this->debug_send > 2) return;
 
 		$not_set = \App\modules\email\services\MailMessage::getInstance()->not_set;
 		$msgball = \App\modules\email\services\MailMessage::getInstance()->get_arg_value('msgball');
-
-		//  -------  Init Array Structure For Outgoing Mail  -----------
-		$this->mail_out = array();
-		$this->mail_out['whitespace'] = chr(9);
-		$this->mail_out['is_forward'] = False;
-		$this->mail_out['fwd_proc'] = '';
-
-		$is_reply = False;
-
-		$this->smtp->CharSet = (lang('charset') != 'charset*') ? lang('charset') : 'US-ASCII';
-
-		$this->smtp->Sender = (\App\modules\email\services\MailMessage::getInstance()->get_isset_arg('sender')
-			? \App\modules\email\services\MailMessage::getInstance()->get_arg_value('sender')
-			: '');
-
+		$this->mail_out = ['whitespace' => chr(9), 'is_forward' => false, 'fwd_proc' => ''];
+		$is_reply = false;
+		$this->smtp->CharSet = lang('charset') !== 'charset*' ? lang('charset') : 'US-ASCII';
+		$this->smtp->Sender = \App\modules\email\services\MailMessage::getInstance()->get_isset_arg('sender')
+			? \App\modules\email\services\MailMessage::getInstance()->get_arg_value('sender') : '';
 		$this->smtp->FromName = \App\modules\email\services\MailMessage::getInstance()->get_pref_value('fullname');
-
 		$this->smtp->From = \App\modules\email\services\MailMessage::getInstance()->get_pref_value('address');
-
-		$this->smtp->Subject = \App\modules\email\services\MailMessage::getInstance()->stripslashes_gpc(\App\modules\email\services\MailMessage::getInstance()->get_arg_value('subject'));
-
-		$this->smtp->Helo = trim($GLOBALS['phpgw_info']['server']['hostname']);
-
-		$this->smtp->Body = \App\modules\email\services\MailMessage::getInstance()->stripslashes_gpc(trim(\App\modules\email\services\MailMessage::getInstance()->get_arg_value('body')));
-
+		$this->smtp->Subject = \App\modules\email\services\MailMessage::getInstance()->stripslashes_gpc(
+			\App\modules\email\services\MailMessage::getInstance()->get_arg_value('subject'));
+		$this->smtp->Helo = trim((string) ($GLOBALS['phpgw_info']['server']['hostname'] ?? ''));
+		$this->smtp->Body = \App\modules\email\services\MailMessage::getInstance()->stripslashes_gpc(
+			trim((string) \App\modules\email\services\MailMessage::getInstance()->get_arg_value('body')));
 		$this->smtp->AddCustomHeader('X-Originating-IP: ' . $this->get_originating_ip());
 
 		// ----  Forwarding Detection  -----
@@ -490,110 +335,47 @@ class bosend
 			$this->smtp->Body = $this->smtp->Body . $this->company_disclaimer;
 		}
 
-		/*
-			LINE LENGTH for "new" and our text of a forwarded text are 78 chars, 
-			which is SHORTER than for reply quoted bodies that have ">" chars 
-			this is only for text WE have written, not any other part of the body
-			html textbox no longer adds hard wrap on submit, so we handle it here now
-			NOTE reply bodies have already been handled as to length when we quoted the text
-			*/
-		if ((\App\modules\email\services\MailMessage::getInstance()->recall_desired_action() == 'new')
-			|| (\App\modules\email\services\MailMessage::getInstance()->recall_desired_action() == 'forward')
-		)
+		$action = \App\modules\email\services\MailMessage::getInstance()->recall_desired_action();
+		if (in_array($action, ['new', 'forward'], true))
 		{
-			// WRAP BODY to lines of 78 chars then CRLF
-			// IS THIS TOO SHORT? what about code snippets and stuff?or long URLs
 			$this->smtp->Body = \App\modules\email\services\MailMessage::getInstance()->body_hard_wrap($this->smtp->Body, 78);
 		}
-		elseif ((\App\modules\email\services\MailMessage::getInstance()->recall_desired_action() == 'reply')
-			|| (\App\modules\email\services\MailMessage::getInstance()->recall_desired_action() == 'replyall')
-		)
+		elseif (in_array($action, ['reply', 'replyall'], true))
 		{
-			$is_reply = True;
-			//echo 'entering recall_desired_action == reply line length handling'."\r\n";
-			// ok we have already quoted the text of the message we are replying to
-			// BUT we have yet to standardize line length for the text WE just typed
-			// in this message, our own text, 
-			// BUT we really should skip doing linebreaking it _again_ for the quoted text, though
-			$body_array = array();
+			$is_reply = true;
 			$body_array = explode("\r\n", $this->smtp->Body);
-			// we do not use this again till we put $new_body into it, so clear the memory
-			$this->smtp->Body = '';
-			// process only our unquoted text
 			$body_array_count = count($body_array);
-			$in_unquoted_block = False;
+			$in_unquoted_block = false;
 			$unquoted_text = '';
 			$new_body = '';
 			for ($bodyidx = 0; $bodyidx < $body_array_count; ++$bodyidx)
 			{
-				// skip text that starts with the ">" so called "quoting" char to the original body text
-				// because it has already been line length normalized in bocompose
 				$this_line = $body_array[$bodyidx];
-				if ((strlen($this_line) > 1)
-					&& ($this_line[0] == \App\modules\email\services\MailMessage::getInstance()->reply_prefix[0])
-				)
+				$is_quoted_line = strlen($this_line) > 1
+					&& $this_line[0] == \App\modules\email\services\MailMessage::getInstance()->reply_prefix[0];
+				if ($is_quoted_line)
 				{
-					// ... this line starts with the quoting char
-					if ($in_unquoted_block == True)
+					if ($in_unquoted_block)
 					{
-						//echo 'line ength handling: processing MY text block'."\r\n";
-						// TOGGLE - we are exiting block of our text
-						// process the preceeding block of unquoted text, if any
-						$unquoted_text = \App\modules\email\services\MailMessage::getInstance()->body_hard_wrap($unquoted_text, 78);
-						// now pass it into the new body var
-						$new_body .= $unquoted_text;
-						// clear this var
+						$new_body .= \App\modules\email\services\MailMessage::getInstance()->body_hard_wrap($unquoted_text, 78);
 						$unquoted_text = '';
-						// toggle this flag
-						$in_unquoted_block = False;
-						// for THIS line, it is the first in a quoted block, so pass straight to new body var
-						//   I _think_ the CRLF is needed before this line because hard_wrap may not 
-						//   put one at the end of the last line of the unquoted text block ?
-						//$new_body .=  "\r\n" . $this_line . "\r\n";	
-						$new_body .= $this_line . "\r\n";
 					}
-					else
-					{
-						// we are in a block of QUOTED text, simply pass it into the new body var
-						$new_body .= $this_line . "\r\n";
-					}
+					$new_body .= $this_line . "\r\n";
+					$in_unquoted_block = false;
 				}
 				elseif (($body_array_count - $bodyidx) == 1)
 				{
-					// this is the last line, and it is NOT quoted, so if we were in an unquoted block (of our text) process it now
-					// even if this is the only single line of unquoted text in the message, process it now
-					// otherwise we may leave off the end of the message, if it is our text
 					$unquoted_text .= $this_line;
-					$unquoted_text = \App\modules\email\services\MailMessage::getInstance()->body_hard_wrap($unquoted_text, 78);
-					$new_body .= $unquoted_text;
+					$new_body .= \App\modules\email\services\MailMessage::getInstance()->body_hard_wrap($unquoted_text, 78);
 					$unquoted_text = '';
-					// this really is not needed, but so it anyway
-					$in_unquoted_block = False;
 				}
 				else
 				{
-					// ... this line does NOT start with the quoting char, i.e. it is text we typed in
-					// make sure flag is correct
-					if ($in_unquoted_block == False)
-					{
-						// toggle this flag
-						$in_unquoted_block = True;
-						// there is just no real special action of a change into this block of our text, 
-						// the real action is when switching out of a block or our (unqouted) text 
-					}
-					// compile this block of unquoted text, our text, in a var for later processing
+					$in_unquoted_block = true;
 					$unquoted_text .= $this_line . "\r\n";
 				}
 			}
-
-			//My new body :)
 			$this->smtp->Body = $new_body;
-
-			// cleanup
-			$body_array = array();
-			$new_body = '';
-			$unquoted_text = '';
-			// end reply body line length landling block
 		}
 
 		// Step One Addition - fixed by skwashd :P
@@ -638,7 +420,7 @@ class bosend
 			{
 				foreach ($bcc_array as $recip)
 				{
-					$this->smtp->AddCC($recip['plain'], $recip['personal']);
+					$this->smtp->AddBCC($recip['plain'], $recip['personal']);
 				}
 			}
 			unset($bcc_array);
@@ -790,19 +572,5 @@ class bosend
 			'order' => \App\modules\email\services\MailMessage::getInstance()->get_arg_value('order'),
 			'start' => \App\modules\email\services\MailMessage::getInstance()->get_arg_value('start')
 		);
-	}
-
-	function save_draft()
-	{
-		$this->prepare_message();
-		$this->smtp->Mailer = 'draft-dodger'; //a needed hack - skwashd
-		$this->smtp->Send();
-		$this->save_message(
-			$this->smtp->getSentMIMEMessage(),
-			'INBOX.Drafts',
-			"\\Draft"
-		);
-
-		phpgw::redirect_link('/index.php', array('menuaction' => 'email.uiindex.index'));
 	}
 }

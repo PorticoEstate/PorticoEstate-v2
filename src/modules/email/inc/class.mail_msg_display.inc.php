@@ -2329,46 +2329,12 @@ class mail_msg extends mail_msg_wrappers
 
 		$part_name = $part_nice['ex_part_name'];
 
-		// make a URL to directly access this part
-		if ($part_nice['type'] != $not_set)
-		{
-			$url_part_type = $part_nice['type'];
-		}
-		else
-		{
-			$url_part_type = 'unknown';
-		}
-		if ($part_nice['subtype'] != $not_set)
-		{
-			$url_part_subtype = $part_nice['subtype'];
-		}
-		else
-		{
-			$url_part_subtype = 'unknown';
-		}
-		if ($part_nice['encoding'] != $not_set)
-		{
-			$url_part_encoding = $part_nice['encoding'];
-		}
-		else
-		{
-			$url_part_encoding = 'other';
-		}
-		// make a URL to directly access this part
-		$url_part_name = urlencode($part_name);
-		// ex_part_href
-		$ex_part_href = phpgw::link(
-			'/index.php',
-			array(
-				'menuaction' => 'email.boaction.get_attach',
-				'msgball[part_no]' => $m_part_num_mime,
-				'type' => $url_part_type,
-				'subtype' => $url_part_subtype,
-				'name' => $url_part_name,
-				'encoding' => $url_part_encoding
-			)
-				+ $msgball['uri']
-		);
+		$ex_part_href = phpgw::link('/email/api/attachment', [
+			'msgball[acctnum]' => $msgball['acctnum'] ?? 0,
+			'msgball[folder]' => $msgball['folder'] ?? $this->get_arg_value('folder'),
+			'msgball[msgnum]' => $msgball['msgnum'] ?? 0,
+			'msgball[part_no]' => $m_part_num_mime,
+	], true);
 		// Make CLICKABLE link directly to this attachment or part
 		$href_part_name = $this->decode_header_string($part_name);
 		// escape certain undesirable chars before HTML display

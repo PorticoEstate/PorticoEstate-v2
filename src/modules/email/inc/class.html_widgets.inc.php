@@ -69,8 +69,6 @@ class html_widgets
 		\**************************************************************************/
 	var $debug = 0;
 
-	// if calling from home page it is optional to force currentapp as a constructor param
-	var $my_currentapp = '';
 	// bootstraper for the msg class
 	var $msg_bootstrap;
 	// private template to var names do not collide
@@ -116,29 +114,6 @@ class html_widgets
 	var $F_error_report_text = '';
 	var $F_go_somewhere_link = '';
 	var $F_go_home_link = '';
-
-	/**************************************************************************\
-	 *	CONSTRUCTOR
-		\**************************************************************************/
-	function __construct()
-	{
-		/*!
-			@class requires including spell_struct header file
-			@discussion  class html_widgets needs the special C-Style Include .h like file, 
-			class.spell_struct which holds data structure class correction_info used here for integration 
-			with the mail.spell  spellchecking class.
-			*/
-		$required_class = 'spell_struct';
-
-		// if calling this class from the home page, then the currentapp will be 
-		//set to "home" instead of "email", which messes up the include statement below, 
-		// so set a local var to "email" to force considering the currentapp to be "email".
-		$this->my_currentapp = 'email';
-		//require_once(PHPGW_INCLUDE_ROOT.'/'.$GLOBALS['phpgw_info']['flags']['currentapp'].'/inc/class.'.$required_class.'.inc.php');
-		require_once(PHPGW_INCLUDE_ROOT . '/' . $this->my_currentapp . '/inc/class.' . $required_class . '.inc.php');
-
-		return;
-	}
 
 	/**************************************************************************\
 	 *	HREF LINK WIDGET
@@ -400,28 +375,17 @@ class html_widgets
 			$this->cbox_onChange = $str;
 		}
 	}
-	/*!
-		@function get_cbox_onChange
-		@abstract ? 
-		*/
 	function get_cbox_onChange()
 	{
 		return $this->cbox_onChange;
 	}
 
-	/*!
-		@function set_cbox_item
-		@abstract ? 
-		*/
 	function set_cbox_item($value = '', $text = '', $selected = False)
 	{
-		// make sure $selected is boolean
 		if (!is_bool($selected))
 		{
-			// replace param with a default boolean value of False
 			$selected = False;
 		}
-		// I've actually seen bomboboxes with an item (usually the first) with no name
 		if (($value != '') || ($text != ''))
 		{
 			$item_idx = count($this->cbox_items);
@@ -429,75 +393,6 @@ class html_widgets
 			$this->cbox_items[$item_idx]->value = $value;
 			$this->cbox_items[$item_idx]->text = $text;
 			$this->cbox_items[$item_idx]->selected = $selected;
-		}
-	}
-	/*!
-		@function set_cbox_item_spellcheck
-		@abstract makes a special kind of combobox select item for use with spellcheck
-		@param $this_bad_word_element (class "correction_info" structued data from file class.spell_struct) 
-		@param $suggestion_num (int OR empty string) see discussion below.  
-		@author Angles
-		@discussion  This function makes use of structure "correction_info" which we expose 
-		by including file class.spell_struct in the constructor for this class. The combobox select item this 
-		function makes embeds array data in the items "value" by setting it to a string that 
-		resembles a URL get request, which we then can recover this array by applying php function 
-		parse_str to the value when the user submits the form. The idea is to provide enough data 
-		in the value that the spellcheck replacement code can accurately find and replace the desired 
-		word, or not change the word at all if special suggestion string "K_E_E_P" is present.
-		The first suggestion should be en empty string with special value "K_E_E_P" 
-		which means no change to the misspelled word, this is indicated by passing an empty string 
-		for param $suggestion_num. 
-		The value for the suggestion item is a URL type string that contains as much informaion 
-		as we can preserve from the $this_bad_word_element object param, but specifying the individual 
-		suggestion provieded by the $suggestion_num arg which is the index to this particular 
-		suggestion in the $this_bad_word_element->suggestions[] numbered array of suggestions. 
-		Upon submit, we can apply php function parse_str() to this uri to recover the desired array structure. 
-		Parse_str will even urldecode the items for us.
-		*/
-	function set_cbox_item_spellcheck($this_bad_word_element = '', $suggestion_num = '')
-	{
-		// we included the spell_struct file above, so this object knows what 
-		// correction_info struct is
-		if (is_object($this_bad_word_element))
-		{
-			if ((string)$suggestion_num != '')
-			{
-				$suggestion_txt = $this_bad_word_element->suggestions[(int)$suggestion_num];
-				$suggestion_value = $this_bad_word_element->suggestions[(int)$suggestion_num];
-			}
-			else
-			{
-				// the first suggestion should be en empty string with special value "K_E_E_P"
-				// which means no change to the misspelled word
-				// this is indicated by passing an empty string for $suggestion_num
-				$suggestion_txt = '';
-				$suggestion_value = 'K_E_E_P';
-			}
-			// the value for the suggestion item is a URL type string that contains as much informaion
-			// as we can preserve from the $this_bad_word_element object, but specifying the individual 
-			// suggection provieded by the $suggestion_num arg which is the index to this particular 
-			// suggestion in the $this_bad_word_element->suggestions[] numbered array of suggestions
-			// upon submit, we can apply php function parse_str() to this uri to recover the desired array structure.
-			// parse_str will even urldecode the items for us.
-			/*
-				$uri_value = 
-					  'cbox[orig_word]='.urlencode($this_bad_word_element->orig_word)
-					.'&cbox[orig_word_clean]='.urlencode($this_bad_word_element->orig_word_clean)
-					.'&cbox[line_num]='.urlencode($this_bad_word_element->line_num)
-					.'&cbox[word_num]='.urlencode($this_bad_word_element->word_num)
-					.'&cbox[suggestion_value]='.urlencode($suggestion_value);
-				*/
-			$uri_value =
-				'orig_word=' . urlencode($this_bad_word_element->orig_word)
-				. '&orig_word_clean=' . urlencode($this_bad_word_element->orig_word_clean)
-				. '&line_num=' . urlencode($this_bad_word_element->line_num)
-				. '&word_num=' . urlencode($this_bad_word_element->word_num)
-				. '&suggestion_value=' . urlencode($suggestion_value);
-
-			$item_idx = count($this->cbox_items);
-			$this->cbox_items[$item_idx] = new html_option;
-			$this->cbox_items[$item_idx]->value = $uri_value;
-			$this->cbox_items[$item_idx]->text = $suggestion_txt;
 		}
 	}
 	/*!
@@ -609,56 +504,29 @@ class html_widgets
 		$this->form = '';
 	}
 
-	/*!
-		@function set_form_name
-		@abstract ? 
-		*/
-	function set_form_name($str = '')
+	function set_form_name($name = '')
 	{
-		if ($str != '')
-		{
-			$this->form_name = $str;
-		}
+		if ($name !== '') $this->form_name = $name;
 	}
-	/*!
-		@function get_form_name
-		@abstract ? 
-		*/
+
 	function get_form_name()
 	{
 		return $this->form_name;
 	}
 
-	/*!
-		@function set_form_action
-		@abstract ? 
-		*/
-	function set_form_action($str = '')
+	function set_form_action($action = '')
 	{
-		if ($str != '')
-		{
-			$this->form_action = $str;
-		}
+		if ($action !== '') $this->form_action = $action;
 	}
-	/*!
-		@function 
-		@abstract ? get_form_action
-		*/
+
 	function get_form_action()
 	{
 		return $this->form_action;
 	}
 
-	/*!
-		@function set_form_method
-		@abstract ? 
-		*/
-	function set_form_method($str = '')
+	function set_form_method($method = '')
 	{
-		if ($str != '')
-		{
-			$this->form_method = $str;
-		}
+		if ($method !== '') $this->form_method = $method;
 	}
 	/*!
 		@function get_form_method

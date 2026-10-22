@@ -267,13 +267,15 @@ class EmailFilterController
 			return $this->json($response, ['error' => lang('Invalid filter number')], 400);
 		}
 
-		$originalPost = $_POST;
-		$_POST = array_replace($originalPost, ['filter_test' => $test ? '1' : '']);
-		if ($filterNum !== null) $_POST['filter_num'] = (int) $filterNum;
 		try
 		{
-			$businessObject = \CreateObject('email.bofilters');
-			$result = $businessObject->do_filter(true);
+			$bootstrap = \CreateObject('email.msg_bootstrap');
+			$bootstrap->set_do_login(false);
+			$bootstrap->ensure_mail_msg_exists('email.api.filters.run');
+			$mail = \App\modules\email\services\MailMessage::getInstance();
+			$filters = (new \App\modules\email\services\EmailFilterStore())->raw($mail);
+			$filterNumber = $filterNum === null ? null : (int) $filterNum;
+			$result = (new \App\modules\email\services\EmailFilterRunner())->run($mail, $filters, $test, $filterNumber);
 			if ($result === false)
 			{
 				return $this->json($response, ['error' => lang('No filters are available to run')], 422);
@@ -285,6 +287,10 @@ class EmailFilterController
 			$message = $exception->getMessage();
 			return $this->json($response, ['error' => $message, 'reason' => $message], 422);
 		}
+		catch (\InvalidArgumentException $exception)
+		{
+			return $this->json($response, ['error' => $exception->getMessage()], 422);
+		}
 		catch (\Throwable $exception)
 		{
 			error_log('[email] EmailFilterController::run failed (' . get_class($exception) . ')');
@@ -295,8 +301,11 @@ class EmailFilterController
 		}
 		finally
 		{
-			$_POST = $originalPost;
-			if (\App\modules\email\services\MailMessage::hasInstance()) \App\modules\email\services\MailMessage::releaseInstance();
+			if (\App\modules\email\services\MailMessage::hasInstance())
+			{
+				\App\modules\email\services\MailMessage::getInstance()->end_request();
+				\App\modules\email\services\MailMessage::releaseInstance();
+			}
 		}
 	}
 

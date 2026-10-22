@@ -142,17 +142,37 @@
 		});
 	}
 
+	let contactSearchTimer;
+	let contactSearchController;
+	let contactSearchVersion = 0;
+
+	function cancelContactSearch()
+	{
+		clearTimeout(contactSearchTimer);
+		contactSearchController?.abort();
+		contactSearchVersion++;
+	}
+
 	async function searchContacts()
 	{
-		addressBookStatus.textContent = 'Searching contacts';
+		cancelContactSearch();
+		const query = addressBookQuery.value.trim();
 		addressBookResults.replaceChildren();
-		const url = new URL(root.dataset.contactsApiUrl, window.location.href);
-		url.searchParams.set('q', addressBookQuery.value.trim());
-		url.searchParams.set('filter', addressBookFilter.value);
+		addressBookStatus.textContent = '';
+		if (query.length < 2) return;
+		const version = contactSearchVersion;
+		contactSearchController = new AbortController();
+		addressBookStatus.textContent = 'Searching contacts';
+		const url = window.emailLink(root.dataset.contactsApiUrl, {
+			q: query, filter: addressBookFilter.value
+		});
 		try
 		{
-			const response = await fetch(url, { headers: { Accept: 'application/json' } });
+			const response = await fetch(url, {
+				headers: { Accept: 'application/json' }, signal: contactSearchController.signal
+			});
 			const result = await response.json();
+			if (version !== contactSearchVersion) return;
 			if (!response.ok) throw new Error(result.reason || result.error || 'Unable to search contacts');
 			const contacts = result.items || [];
 			contacts.forEach(contact =>
@@ -164,7 +184,13 @@
 				select.addEventListener('click', () =>
 				{
 					if (!recipientTarget) return;
-					const address = contact.email;
+					const address = contact.email.trim();
+					const alreadySelected = recipientTarget.value.split(/[,;]/).some(recipient =>
+					{
+						const existingAddress = recipient.match(/<([^<>]+)>/)?.[1] || recipient;
+						return existingAddress.trim().toLowerCase() === address.toLowerCase();
+					});
+					if (alreadySelected) return;
 					recipientTarget.value = recipientTarget.value.trim()
 						? recipientTarget.value.trim() + ', ' + address
 						: address;
@@ -176,9 +202,19 @@
 			addressBookStatus.textContent = contacts.length + ' contacts';
 		} catch (exception)
 		{
-			addressBookStatus.textContent = exception.message;
+			if (version === contactSearchVersion && exception.name !== 'AbortError') addressBookStatus.textContent = exception.message;
 		}
 	}
+
+	addressBookQuery.addEventListener('input', () =>
+	{
+		cancelContactSearch();
+		addressBookResults.replaceChildren();
+		addressBookStatus.textContent = '';
+		if (addressBookQuery.value.trim().length >= 2) contactSearchTimer = setTimeout(searchContacts, 300);
+	});
+	addressBookFilter.addEventListener('change', searchContacts);
+	addressBook.addEventListener('close', cancelContactSearch);
 
 	root.querySelectorAll('[data-address-target]').forEach(button =>
 	{

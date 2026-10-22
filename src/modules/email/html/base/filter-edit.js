@@ -65,8 +65,7 @@
 	async function loadFolders(account, selectedFolder)
 	{
 		actionFolder.replaceChildren();
-		const url = new URL(root.dataset.foldersApiUrl, window.location.href);
-		url.searchParams.set('fldball[acctnum]', String(account));
+		const url = window.emailLink(root.dataset.foldersApiUrl, { 'fldball[acctnum]': account });
 		const response = await fetch(url, { headers: { Accept: 'application/json' } });
 		const result = await response.json();
 		if (!response.ok) throw new Error(result.reason || result.error || 'Unable to load folders');

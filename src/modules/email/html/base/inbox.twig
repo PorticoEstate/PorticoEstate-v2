@@ -84,6 +84,7 @@
 {% endblock %}
 
 {% block scripts %}
+<script>{{ source('@views/url.js') }}</script>
 {% if has_preferences %}
 <script>{{ source('@views/folder-hierarchy.js') }}</script>
 <script>{{ source('@views/message-seen.js') }}</script>

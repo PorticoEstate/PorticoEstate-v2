@@ -73,7 +73,6 @@
 					<option value="private">{{ lang('Private contacts') }}</option>
 				</select>
 			</label>
-			<button class="email-compose-button" type="submit">{{ lang('Search') }}</button>
 		</form>
 		<div id="email-addressbook-status" role="status" aria-live="polite"></div>
 		<ul id="email-addressbook-results"></ul>
@@ -82,5 +81,6 @@
 {% endblock %}
 
 {% block scripts %}
+<script>{{ source('@views/url.js') }}</script>
 <script>{{ source('@views/compose.js') }}</script>
 {% endblock %}

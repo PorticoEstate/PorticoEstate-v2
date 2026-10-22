@@ -39,14 +39,11 @@
 		button.addEventListener('click', () =>
 		{
 			if (movePending || seenPending) return;
-			const url = new URL(window.location.href);
-			const history = url.searchParams.get('click_history');
-			url.searchParams.delete('click_history');
-			url.searchParams.set('sort', button.dataset.emailSort);
-			url.searchParams.set('order', currentSort === button.dataset.emailSort && currentOrder !== '1' ? '1' : '0');
-			url.searchParams.delete('start');
-			if (history !== null) url.searchParams.set('click_history', history);
-			window.location.assign(url.href);
+			window.location.assign(window.emailLink(window.location.href, {
+				sort: button.dataset.emailSort,
+				order: currentSort === button.dataset.emailSort && currentOrder !== '1' ? '1' : '0',
+				start: null
+			}));
 		});
 	});
 	function updateSortIndicators()
@@ -92,8 +89,7 @@
 		const account = targetAccount.value;
 		try
 		{
-			const url = new URL(root.dataset.foldersApiUrl, window.location.origin);
-			url.searchParams.set('fldball[acctnum]', account);
+			const url = window.emailLink(root.dataset.foldersApiUrl, { 'fldball[acctnum]': account });
 			const response = await fetch(url, { headers: { Accept: 'application/json' } });
 			const result = await response.json();
 			if (!response.ok) throw new Error(result.error || 'Unable to load destination folders');
@@ -219,8 +215,7 @@
 	{
 		try
 		{
-			const url = new URL(root.dataset.foldersApiUrl, window.location.origin);
-			url.searchParams.set('fldball[acctnum]', String(activeAccount));
+			const url = window.emailLink(root.dataset.foldersApiUrl, { 'fldball[acctnum]': activeAccount });
 			const response = await fetch(url, { headers: { Accept: 'application/json' } });
 			const result = await response.json();
 			if (!response.ok) throw new Error(result.reason || result.error || 'Unable to load folders');
@@ -246,15 +241,10 @@
 				}
 				const item = document.createElement('li');
 				const link = document.createElement('a');
-				const destination = new URL(window.location.href);
-				destination.searchParams.set('fldball[acctnum]', String(folder.account));
-				destination.searchParams.set('fldball[folder]', folder.longName);
-				destination.searchParams.delete('start');
-				destination.searchParams.delete('fldball_fake_uri');
-				const clickHistory = destination.searchParams.getAll('click_history');
-				destination.searchParams.delete('click_history');
-				clickHistory.forEach(value => destination.searchParams.append('click_history', value));
-				link.href = destination;
+				link.href = window.emailLink(window.location.href, {
+					'fldball[acctnum]': folder.account, 'fldball[folder]': folder.longName,
+					start: null, fldball_fake_uri: null
+				});
 				link.addEventListener('dragover', event =>
 				{
 					if (!canDrop(folder)) return;
@@ -318,10 +308,7 @@
 
 	function setPage(start)
 	{
-		const url = new URL(window.location.href);
-		if (start > 0) url.searchParams.set('start', String(start));
-		else url.searchParams.delete('start');
-		window.location.assign(url);
+		window.location.assign(window.emailLink(window.location.href, { start: start > 0 ? start : null }));
 	}
 
 	function renderItems(items, errorText)
@@ -469,7 +456,7 @@
 		{
 			const url = new URL(root.dataset.apiUrl, window.location.origin);
 			url.search = window.location.search;
-			const response = await fetch(url, { headers: { Accept: 'application/json' } });
+			const response = await fetch(window.emailLink(url), { headers: { Accept: 'application/json' } });
 			const result = await response.json();
 			if (!response.ok) throw new Error(result.error || 'Unable to load messages');
 			currentSort = String(result.sort ?? currentSort);
@@ -490,9 +477,7 @@
 				const lastPage = total > 0 ? Math.floor((total - 1) / pageSize) * pageSize : 0;
 				if (Number(destination.searchParams.get('start') || 0) !== lastPage)
 				{
-					if (lastPage > 0) destination.searchParams.set('start', String(lastPage));
-					else destination.searchParams.delete('start');
-					window.history.replaceState(null, '', destination);
+					window.history.replaceState(null, '', window.emailLink(destination, { start: lastPage > 0 ? lastPage : null }));
 					return load();
 				}
 			}

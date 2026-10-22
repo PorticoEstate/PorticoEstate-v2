@@ -3,6 +3,7 @@
 use App\modules\phpgwapi\services\Settings;
 use App\modules\phpgwapi\services\Translation;
 use App\modules\phpgwapi\controllers\Locations;
+use App\modules\phpgwapi\services\Cache;
 
 phpgw::import_class('phpgwapi.uicommon_jquery');
 phpgw::import_class('phpgwapi.datetime');
@@ -277,6 +278,108 @@ abstract class booking_uicommon extends phpgwapi_uicommon_jquery
 		$common			 = $sms_config['common'] ?? array();
 
 		return !empty($common['gateway_module_send']) || !empty($common['gateway_module_get']);
+	}
+
+	/**
+	 * Sends the SMS typed in the "send SMS" box on a reservation's show page to the people the
+	 * reservation's SMS resolver finds, and tells the officer who was reached and who could not be
+	 * contacted (see sms_result_messages). Does nothing unless the box was ticked and filled in;
+	 * when it was, the officer is redirected back to the reservation.
+	 *
+	 * @param int $id the reservation
+	 * @param string $type 'allocation' or 'booking'
+	 */
+	protected function send_reservation_sms( $id, $type )
+	{
+		$send_sms = Sanitizer::get_var('send_sms', 'bool');
+		$sms_content = Sanitizer::get_var('sms_content', 'string');
+
+		if ($send_sms && $sms_content)
+		{
+			$resolved = createObject('booking.soparticipant')->get_sms_recipients($type, $id);
+			$recipients = $resolved['recipients'];
+			$reached = array();
+
+			if ($recipients)
+			{
+				if (!$this->sms_is_configured())
+				{
+					Cache::message_set(lang('sms_not_configured'), 'error');
+					self::redirect(array('menuaction' => "booking.ui{$type}.show", 'id' => $id));
+				}
+
+				$sms_service = CreateObject('sms.sms');
+				$account_id = $this->current_account_id();
+				foreach ($recipients as $index => $recipient)
+				{
+					try
+					{
+						$sms_res = $sms_service->websend2pv($account_id, $recipient['phone'], $sms_content);
+						$reached[$index] = !empty($sms_res[0][0]);
+					}
+					catch (Exception $ex)
+					{
+						$reached[$index] = false;
+					}
+				}
+			}
+
+			foreach (self::sms_result_messages($recipients, $reached, $resolved['applicant_skipped']) as $message)
+			{
+				Cache::message_set(lang($message['key'], $message['phone']), $message['type']);
+			}
+
+			self::redirect(array('menuaction' => "booking.ui{$type}.show", 'id' => $id));
+		}
+	}
+
+	/**
+	 * What the officer is told after an SMS from a reservation's page: one line per recipient, saying
+	 * whether it was sent to them or could not be, with their role, and a line when the applicant
+	 * could not be contacted at all. Gives lang keys, not texts, so the cases can be checked without
+	 * a translation installed.
+	 *
+	 * @param array $recipients as returned by booking_soparticipant::get_sms_recipients()
+	 * @param array $reached recipient index => whether the gateway accepted the message
+	 * @param string|null $applicant_skipped as returned by booking_soparticipant::get_sms_recipients()
+	 * @return array list of array('type' => 'message'|'error', 'key' => string, 'phone' => string)
+	 */
+	protected static function sms_result_messages( $recipients, $reached, $applicant_skipped )
+	{
+		$sent_keys = array(
+			'participant' => 'sms_sent_to_participant',
+			'applicant' => 'sms_sent_to_applicant'
+		);
+		$failed_keys = array(
+			'participant' => 'sms_failed_to_participant',
+			'applicant' => 'sms_failed_to_applicant'
+		);
+
+		$messages = array();
+		if (!$recipients)
+		{
+			$messages[] = array('type' => 'error', 'key' => 'sms_no_recipients', 'phone' => '');
+		}
+
+		foreach ($recipients as $index => $recipient)
+		{
+			$role = $recipient['source'] == 'participant' ? 'participant' : 'applicant';
+			if (!empty($reached[$index]))
+			{
+				$messages[] = array('type' => 'message', 'key' => $sent_keys[$role], 'phone' => $recipient['phone']);
+			}
+			else
+			{
+				$messages[] = array('type' => 'error', 'key' => $failed_keys[$role], 'phone' => $recipient['phone']);
+			}
+		}
+
+		if ($applicant_skipped)
+		{
+			$messages[] = array('type' => 'error', 'key' => 'sms_applicant_no_valid_phone', 'phone' => '');
+		}
+
+		return $messages;
 	}
 
 	/**

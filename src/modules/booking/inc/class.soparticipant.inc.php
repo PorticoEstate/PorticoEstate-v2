@@ -144,16 +144,33 @@
 		}
 		
 		/**
+		 * The reservations that can come from an application, and the table the link
+		 * (application_id) is read from. The table name is never user input.
+		 */
+		protected static $applicant_tables = array(
+			'allocation' => 'bb_allocation',
+			'booking' => 'bb_booking'
+		);
+
+		/**
 		 * The phone numbers an SMS sent from a reservation's page reaches: the people who registered
-		 * as participants and, for an allocation that comes from an application, the applicant.
+		 * as participants and, for an allocation or a booking that comes from an application, the applicant.
 		 * Only resolves the numbers; nothing is sent.
 		 *
 		 * The participants are exactly the numbers the page has always used. The applicant's number
 		 * is added when it is not already one of them: same digits, with or without the country code.
 		 *
+		 * When the reservation comes from an application but the applicant has no usable number,
+		 * applicant_skipped says why, so the caller can tell the officer who could not be contacted:
+		 * 'no_number' (nothing entered), 'not_phone_shaped' (see usable_phone_sql) or 'all_zeros'.
+		 * It is null when there is no application, and when the applicant is reached (also as a participant).
+		 *
 		 * @param string $reservation_type
 		 * @param int $reservation_id
-		 * @return array list of array('phone' => string, 'source' => 'participant'|'application'|'account')
+		 * @return array array(
+		 *	'recipients' => list of array('phone' => string, 'source' => 'participant'|'application'|'account'),
+		 *	'applicant_skipped' => null|'no_number'|'not_phone_shaped'|'all_zeros'
+		 * )
 		 */
 		public function get_sms_recipients( $reservation_type, $reservation_id )
 		{
@@ -179,37 +196,52 @@
 				$known[] = self::phone_key($phone);
 			}
 
-			if ($reservation_type == 'allocation')
+			$applicant_skipped = null;
+			if (isset(self::$applicant_tables[$reservation_type]))
 			{
-				$applicant = $this->get_applicant_phone($reservation_id);
-				if ($applicant && !in_array(self::phone_key($applicant['phone']), $known, true))
+				$applicant = $this->get_applicant_phone($reservation_type, $reservation_id);
+				if (isset($applicant['skipped']))
+				{
+					$applicant_skipped = $applicant['skipped'];
+				}
+				elseif ($applicant && !in_array(self::phone_key($applicant['phone']), $known, true))
 				{
 					$recipients[] = $applicant;
 				}
 			}
 
-			return $recipients;
+			return array('recipients' => $recipients, 'applicant_skipped' => $applicant_skipped);
 		}
 
 		/**
-		 * The applicant's phone for an allocation that comes from an application: the number entered
-		 * on the application, else the one on the applicant's account (bb_user, found by customer_ssn).
+		 * The applicant's phone for an allocation or booking that comes from an application: the number
+		 * entered on the application, else the one on the applicant's account (bb_user, found by customer_ssn).
 		 * A value that is not a usable phone number (see usable_phone_sql) counts as empty.
 		 *
-		 * @param int $allocation_id
-		 * @return array|null array('phone' => string, 'source' => 'application'|'account'), or null
-		 *	when the allocation has no application or neither source has a number
+		 * @param string $reservation_type a key of $applicant_tables
+		 * @param int $reservation_id
+		 * @return array|null array('phone' => string, 'source' => 'application'|'account'), or
+		 *	array('skipped' => 'no_number'|'not_phone_shaped'|'all_zeros') when the reservation has an
+		 *	application but neither source has a usable number, or null when it has no application
 		 */
-		protected function get_applicant_phone( $allocation_id )
+		protected function get_applicant_phone( $reservation_type, $reservation_id )
 		{
+			$table = self::$applicant_tables[$reservation_type];
 			$application_usable = self::usable_phone_sql('a.contact_phone');
 			$account_usable = self::usable_phone_sql('u.phone');
+			$account_entered = "u.customer_ssn = a.customer_ssn AND btrim(coalesce(u.phone, '')) <> ''";
+			// Why nothing is usable: the application's own entry if there is one, else the account's. Worked out
+			// here so the rejected text, which is free text from the citizen, never leaves the database.
+			$skipped = "CASE WHEN btrim(coalesce(a.contact_phone, '')) <> '' THEN " . self::skip_reason_sql('a.contact_phone')
+				. " ELSE (SELECT " . self::skip_reason_sql('u.phone') . " FROM bb_user u"
+				. " WHERE a.customer_ssn <> '' AND {$account_entered} ORDER BY u.id LIMIT 1) END";
 			$sql = "SELECT CASE WHEN {$application_usable} THEN btrim(a.contact_phone) END AS application_phone,"
 				. " (SELECT btrim(u.phone) FROM bb_user u"
 				. " WHERE a.customer_ssn <> '' AND u.customer_ssn = a.customer_ssn AND {$account_usable}"
-				. " ORDER BY u.id LIMIT 1) AS account_phone"
-				. " FROM bb_allocation al JOIN bb_application a ON a.id = al.application_id"
-				. " WHERE al.id = " . (int) $allocation_id;
+				. " ORDER BY u.id LIMIT 1) AS account_phone,"
+				. " {$skipped} AS skipped"
+				. " FROM {$table} r JOIN bb_application a ON a.id = r.application_id"
+				. " WHERE r.id = " . (int) $reservation_id;
 			$this->db->query($sql, __LINE__, __FILE__);
 			if (!$this->db->next_record())
 			{
@@ -228,7 +260,9 @@
 				return array('phone' => $account_phone, 'source' => 'account');
 			}
 
-			return null;
+			$reason = (string) $this->db->f('skipped');
+
+			return array('skipped' => $reason !== '' ? $reason : 'no_number');
 		}
 
 		/**
@@ -242,6 +276,17 @@
 		protected static function usable_phone_sql( $column )
 		{
 			return "({$column} ~ '^[0-9 +/()-]+$' AND {$column} ~ '[1-9]')";
+		}
+
+		/**
+		 * SQL expression: why a NON-BLANK value fails usable_phone_sql. Only meaningful for a value that does fail it.
+		 *
+		 * @param string $column a column of our own SQL, never user input
+		 * @return string
+		 */
+		protected static function skip_reason_sql( $column )
+		{
+			return "CASE WHEN {$column} !~ '^[0-9 +/()-]+$' THEN 'not_phone_shaped' ELSE 'all_zeros' END";
 		}
 
 		/**

@@ -127,7 +127,7 @@ test('contact search waits for two characters, debounces and ignores superseded 
 	assert.equal(context.addressBookStatus.textContent, '');
 	context.addressBookQuery.value = 'ab';
 	context.addressBookQuery.handlers.input();
-	context.addressBook.handlers.close();
+	context.addressBook.handlers.keydown({ key: 'Escape', preventDefault() {} });
 	assert.equal(timers.size, 0);
 	context.addressBookQuery.handlers.input();
 	const contactSearch = [...timers.values()][0]();

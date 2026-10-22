@@ -25,16 +25,17 @@
 .email-compose-spellcheck-results { display: flex; flex-wrap: wrap; gap: .4rem; margin: .35rem 0 .75rem; padding: 0; list-style: none; }
 .email-compose-spellcheck-results li { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; padding: .35rem .5rem; border: 1px solid var(--mail-line); border-radius: 3px; }
 .email-compose-spellcheck-results strong { margin-right: .2rem; }
-.email-addressbook { box-sizing: border-box; width: min(42rem, calc(100vw - 2rem)); max-height: min(80vh, 42rem); padding: 1rem; border: 1px solid var(--mail-line); border-radius: 4px; color: var(--mail-ink); }
-.email-addressbook::backdrop { background: rgb(14 28 34 / 45%); }
+.email-addressbook { box-sizing: border-box; width: 100%; min-width: 0; margin: 0 0 1rem; padding: 1rem; border-block: 1px solid var(--mail-line); background: #f3f7f8; color: var(--mail-ink); }
+.email-compose-recipients > label { scroll-margin-top: 1rem; }
 .email-addressbook header { display: flex; align-items: center; justify-content: space-between; gap: .75rem; }
 .email-addressbook h2 { margin: 0; font-size: 1.15rem; }
-.email-addressbook form { display: grid; grid-template-columns: 1fr minmax(8rem, .65fr) auto; gap: .6rem; align-items: end; margin: .8rem 0; }
-.email-addressbook form label { margin: 0; }
-.email-addressbook ul { max-height: 45vh; overflow: auto; margin: .5rem 0 0; padding: 0; list-style: none; }
+#email-addressbook-search { display: grid; grid-template-columns: minmax(0, 1fr) minmax(8rem, .65fr); gap: .6rem; align-items: end; margin: .8rem 0; }
+#email-addressbook-search label { min-width: 0; margin: 0; }
+.email-addressbook select { width: 100%; min-width: 0; }
+.email-addressbook ul { max-height: min(28vh, 18rem); overflow: auto; margin: .5rem 0 0; padding: 0; list-style: none; }
 .email-addressbook li { border-top: 1px solid var(--mail-line); }
-.email-addressbook li button { width: 100%; padding: .65rem .25rem; border: 0; background: transparent; color: var(--mail-ink); text-align: left; font: inherit; cursor: pointer; }
+.email-addressbook li button { width: 100%; padding: .65rem .25rem; border: 0; background: transparent; color: var(--mail-ink); text-align: left; overflow-wrap: anywhere; font: inherit; cursor: pointer; }
 #email-addressbook-status { min-height: 1.25rem; color: var(--mail-muted); font-size: .9rem; }
 .email-compose-error { margin: .75rem 0; padding: .75rem; border-left: 4px solid #a32c2c; background: #fff0f0; color: #681d1d; }
 .email-compose-status { margin: .75rem 0; padding: .75rem; border-left: 4px solid #36794a; background: #edf7ef; color: #245334; }
-@media (max-width: 700px) { .email-compose { padding: .75rem; } .email-compose-header { align-items: flex-start; } .email-compose textarea { min-height: 16rem; } .email-addressbook form { grid-template-columns: 1fr; } }
+@media (max-width: 700px) { .email-compose { padding: .75rem; } .email-compose-header { align-items: flex-start; } .email-compose textarea { min-height: 16rem; } #email-addressbook-search { grid-template-columns: 1fr; } }

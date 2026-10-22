@@ -195,6 +195,7 @@
 						? recipientTarget.value.trim() + ', ' + address
 						: address;
 					recipientTarget.dispatchEvent(new Event('input', { bubbles: true }));
+					recipientTarget.scrollLeft = recipientTarget.scrollWidth;
 				});
 				item.appendChild(select);
 				addressBookResults.appendChild(item);
@@ -214,24 +215,48 @@
 		if (addressBookQuery.value.trim().length >= 2) contactSearchTimer = setTimeout(searchContacts, 300);
 	});
 	addressBookFilter.addEventListener('change', searchContacts);
-	addressBook.addEventListener('close', cancelContactSearch);
+	let addressBookTrigger;
+	function closeAddressBook()
+	{
+		cancelContactSearch();
+		addressBook.hidden = true;
+		addressBookTrigger?.setAttribute('aria-expanded', 'false');
+		addressBookTrigger?.focus({ preventScroll: true });
+	}
+	addressBook.addEventListener('keydown', event =>
+	{
+		if (event.key === 'Escape')
+		{
+			event.preventDefault();
+			closeAddressBook();
+		}
+	});
 
 	root.querySelectorAll('[data-address-target]').forEach(button =>
 	{
+		button.setAttribute('aria-controls', addressBook.id);
+		button.setAttribute('aria-expanded', 'false');
 		button.addEventListener('click', () =>
 		{
+			addressBookTrigger?.setAttribute('aria-expanded', 'false');
+			addressBookTrigger = button;
+			button.setAttribute('aria-expanded', 'true');
 			recipientTarget = form.elements.namedItem(button.dataset.addressTarget);
-			if (typeof addressBook.showModal === 'function') addressBook.showModal();
-			else addressBook.setAttribute('open', '');
+			const recipientRow = recipientTarget.closest('label');
+			recipientRow.after(addressBook);
+			addressBook.hidden = false;
+			recipientRow.scrollIntoView({ block: 'start', behavior: 'instant' });
+			addressBookQuery.focus({ preventScroll: true });
 			searchContacts();
 		});
 	});
-	addressBookForm.addEventListener('submit', event =>
+	addressBookForm.addEventListener('keydown', event =>
 	{
+		if (event.key !== 'Enter' || event.target !== addressBookQuery) return;
 		event.preventDefault();
 		searchContacts();
 	});
-	document.getElementById('email-addressbook-close').addEventListener('click', () => addressBook.close());
+	document.getElementById('email-addressbook-close').addEventListener('click', closeAddressBook);
 
 	uploadButton.addEventListener('click', async () =>
 	{

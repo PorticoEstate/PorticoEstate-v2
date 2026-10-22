@@ -50,8 +50,10 @@ class EmailPreferencesWriterTest extends TestCase
 	public function testAllocatesTheFirstUnusedAccountNumber(): void
 	{
 		$this->assertSame(1, EmailPreferencesWriter::nextAccountNumber([]));
-		$this->assertSame(2, EmailPreferencesWriter::nextAccountNumber([1 => [], 3 => []]));
-		$this->assertSame(3, EmailPreferencesWriter::nextAccountNumber([1 => [], 2 => []]));
+		$complete = ['fullname' => 'Account', 'email_sig' => '', 'layout' => '2'];
+		$this->assertSame(2, EmailPreferencesWriter::nextAccountNumber([1 => $complete, 3 => $complete]));
+		$this->assertSame(2, EmailPreferencesWriter::nextAccountNumber([1 => $complete, 2 => ['fullname' => 'Incomplete']]));
+		$this->assertSame(3, EmailPreferencesWriter::nextAccountNumber([1 => $complete, 2 => $complete]));
 	}
 
 	public function testWritesExtraAccountValuesToNestedPreferencePaths(): void
@@ -75,7 +77,7 @@ class EmailPreferencesWriterTest extends TestCase
 			['id' => 'email_sig', 'type' => 'user_string', 'widget' => 'textarea', 'accts_usage' => 'extra_accounts', 'write_props' => 'empty_string_ok'],
 		];
 		$custom = [
-			['id' => 'use_custom_settings', 'type' => 'exists', 'widget' => 'checkbox', 'accts_usage' => 'extra_accounts', 'write_props' => ''],
+			['id' => 'use_custom_settings', 'type' => 'exists', 'widget' => 'checkbox', 'accts_usage' => 'default', 'write_props' => ''],
 			['id' => 'mail_server', 'type' => 'user_string', 'widget' => 'textbox', 'accts_usage' => 'extra_accounts', 'write_props' => ''],
 		];
 		(new EmailPreferencesWriter())->saveExtraAccount(2, $standard, $custom, [
@@ -84,7 +86,8 @@ class EmailPreferencesWriterTest extends TestCase
 		$this->assertContains(['add', 'email', '["ex_accounts"][2]["userid"]', 'encoded:user@example.test'], $preferences->writes);
 		$this->assertContains(['add', 'email', '["ex_accounts"][2]["password"]', 'encrypted:secret'], $preferences->writes);
 		$this->assertContains(['add', 'email', '["ex_accounts"][2]["email_sig"]', ''], $preferences->writes);
-		$this->assertContains(['add', 'email', '["ex_accounts"][2]["use_custom_settings"]', 'True'], $preferences->writes);
+		$this->assertContains(['delete', 'email', '["ex_accounts"][2]["use_custom_settings"]'], $preferences->writes);
+		$this->assertNotContains(['add', 'email', '["ex_accounts"][2]["use_custom_settings"]', 'True'], $preferences->writes);
 		$this->assertContains(['add', 'email', '["ex_accounts"][2]["mail_server"]', 'encoded:imap.example.test'], $preferences->writes);
 		$this->assertContains(['sort', 'email', '["ex_accounts"]'], $preferences->writes);
 		$this->assertSame(['save'], end($preferences->writes));

@@ -6,11 +6,15 @@ final class EmailPreferencesWriter
 {
 	public static function nextAccountNumber(array $accounts): int
 	{
-		$existing = array_fill_keys(array_map('intval', array_keys($accounts)), true);
-		for ($number = 1; isset($existing[$number]); $number++)
+		$position = 1;
+		foreach ($accounts as $key => $account)
 		{
+			$number = (int) ($account['acctnum'] ?? $key);
+			if (!isset($account['fullname'], $account['email_sig'], $account['layout'])) return $number;
+			if ($number !== $position) return $position;
+			$position++;
 		}
-		return $number;
+		return $position;
 	}
 
 	public function saveDefault(array $standardSchema, array $customSchema, array $values, object $preferences, object $mail): void
@@ -38,13 +42,11 @@ final class EmailPreferencesWriter
 	{
 		$basePath = '["ex_accounts"][' . $account . ']';
 		$preferences->delete_struct('email', $basePath . '["use_custom_settings"]');
-		$customEnabled = filter_var($values['use_custom_settings'] ?? false, FILTER_VALIDATE_BOOLEAN);
 		foreach (array_merge($standardSchema, $customSchema) as $field)
 		{
 			$field = (array) $field;
 			$id = (string) ($field['id'] ?? '');
-			if ($id === '' || stripos((string) ($field['accts_usage'] ?? ''), 'extra_accounts') === false) continue;
-			if ($id === 'use_custom_settings' && !$customEnabled) continue;
+			if ($id === '' || $id === 'use_custom_settings' || stripos((string) ($field['accts_usage'] ?? ''), 'extra_accounts') === false) continue;
 			$this->writeExtraField($account, $field, $values, $preferences, $mail);
 		}
 		$preferences->sort_struct('email', '["ex_accounts"]');

@@ -14,17 +14,13 @@ class EmailPreferencesController
 	{
 		try
 		{
-			$bootstrap = \CreateObject('email.msg_bootstrap');
-			$bootstrap->set_do_login(false);
-			$bootstrap->ensure_mail_msg_exists('email.api.preferences.save');
-			$businessObject = \CreateObject('email.bopreferences');
-			$businessObject->init_available_prefs();
+			$schema = (new \App\modules\email\services\EmailPreferenceSchema())->fields();
 			$userSettings = Settings::getInstance()->get('user');
 			$emailPreferences = (array) ($userSettings['preferences']['email'] ?? []);
 			$fields = [];
 			$groups = [
-				'normal' => ['label' => lang('Standard preferences'), 'fields' => (array) $businessObject->std_prefs],
-				'custom' => ['label' => lang('Custom settings'), 'fields' => (array) $businessObject->cust_prefs],
+				'normal' => ['label' => lang('Standard preferences'), 'fields' => $schema['standard']],
+				'custom' => ['label' => lang('Custom settings'), 'fields' => $schema['custom']],
 			];
 			foreach ($groups as $groupId => $group)
 			{
@@ -79,11 +75,13 @@ class EmailPreferencesController
 		$originalPost = $_POST;
 		try
 		{
-			$businessObject = \CreateObject('email.bopreferences');
-			$businessObject->init_available_prefs();
-			$schema = array_merge((array) $businessObject->std_prefs, (array) $businessObject->cust_prefs);
+			$bootstrap = \CreateObject('email.msg_bootstrap');
+			$bootstrap->set_do_login(false);
+			$bootstrap->ensure_mail_msg_exists('email.api.preferences.save');
+			$schema = (new \App\modules\email\services\EmailPreferenceSchema())->fields();
+			$allFields = array_merge($schema['standard'], $schema['custom']);
 			$normalizedValues = [];
-			foreach ($schema as $field)
+			foreach ($allFields as $field)
 			{
 				$field = (array) $field;
 				$id = (string) ($field['id'] ?? '');
@@ -105,8 +103,8 @@ class EmailPreferencesController
 			}
 			$mail = \App\modules\email\services\MailMessage::getInstance();
 			(new \App\modules\email\services\EmailPreferencesWriter())->saveDefault(
-				(array) $businessObject->std_prefs,
-				(array) $businessObject->cust_prefs,
+				$schema['standard'],
+				$schema['custom'],
 				$normalizedValues,
 				Preferences::getInstance(),
 				$mail
@@ -165,9 +163,7 @@ class EmailPreferencesController
 
 		try
 		{
-			$businessObject = \CreateObject('email.bopreferences');
-			$businessObject->init_available_prefs();
-			$mail = \App\modules\email\services\MailMessage::getInstance();
+			$schema = (new \App\modules\email\services\EmailPreferenceSchema())->fields();
 			$userSettings = Settings::getInstance()->get('user');
 			$storedAccounts = (array) ($userSettings['preferences']['email']['ex_accounts'] ?? []);
 			$account = $accountValue === 'add_new'
@@ -180,7 +176,7 @@ class EmailPreferencesController
 			$accountPreferences = (array) $userSettings['preferences']['email']['ex_accounts'][$account] ?? [];
 
 			$fields = [];
-			foreach (array_merge((array) $businessObject->std_prefs, (array) $businessObject->cust_prefs) as $field)
+			foreach (array_merge($schema['standard'], $schema['custom']) as $field)
 			{
 				$field = (array) $field;
 				if (stripos((string) ($field['accts_usage'] ?? ''), 'extra_accounts') === false || stripos((string) ($field['type'] ?? ''), 'INACTIVE') !== false) continue;
@@ -229,8 +225,10 @@ class EmailPreferencesController
 		$originalPost = $_POST;
 		try
 		{
-			$businessObject = \CreateObject('email.bopreferences');
-			$businessObject->init_available_prefs();
+			$bootstrap = \CreateObject('email.msg_bootstrap');
+			$bootstrap->set_do_login(false);
+			$bootstrap->ensure_mail_msg_exists('email.api.preferences.account.save');
+			$schema = (new \App\modules\email\services\EmailPreferenceSchema())->fields();
 			$userSettings = Settings::getInstance()->get('user');
 			$storedAccounts = (array) ($userSettings['preferences']['email']['ex_accounts'] ?? []);
 			if (!array_key_exists($account, $storedAccounts)
@@ -238,7 +236,7 @@ class EmailPreferencesController
 			{
 				return $this->json($response, ['error' => lang('Invalid email account')], 422);
 			}
-			$fields = array_merge((array) $businessObject->std_prefs, (array) $businessObject->cust_prefs);
+			$fields = array_merge($schema['standard'], $schema['custom']);
 			$normalizedValues = [];
 			foreach ($fields as $field)
 			{
@@ -260,8 +258,8 @@ class EmailPreferencesController
 			$mail = \App\modules\email\services\MailMessage::getInstance();
 			(new \App\modules\email\services\EmailPreferencesWriter())->saveExtraAccount(
 				$account,
-				(array) $businessObject->std_prefs,
-				(array) $businessObject->cust_prefs,
+				$schema['standard'],
+				$schema['custom'],
 				$normalizedValues,
 				Preferences::getInstance(),
 				$mail

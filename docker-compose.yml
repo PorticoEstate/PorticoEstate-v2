@@ -82,6 +82,21 @@ services:
         networks:
             - internal
 
+#docker compose --profile email-test up -d imap-test-seed
+    imap-test-seed:
+        image: python:3.12-alpine
+        profiles: [email-test]
+        restart: "no"
+        depends_on:
+            imap-test:
+                condition: service_started
+                restart: true
+        command: ["python3", "/fixtures/seed_mailbox.py", "--host", "imap-test", "--port", "3993", "--if-empty", "--wait-seconds", "60"]
+        volumes:
+            - ./tests/fixtures/imap:/fixtures:ro
+        networks:
+            - internal
+
     websocket:
         container_name: ${WEBSOCKET_HOST:-portico_websocket}
         hostname: ${WEBSOCKET_HOST:-portico_websocket}

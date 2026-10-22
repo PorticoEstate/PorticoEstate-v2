@@ -1826,6 +1826,24 @@ class mail_msg_base
 		@param $called_from (string) name of the function that you called this from, used to aid in debugging.
 		@discussion ?
 		*/
+	function connection_failure_reason($acctnum)
+	{
+		$error = (string) $this->mail_msg_wrappers->getTransport($acctnum)->server_last_error();
+		if (preg_match('/certificate|ssl|tls|crypto/i', $error))
+		{
+			return lang('Unable to establish a secure connection to the IMAP server. Check the TLS and certificate settings.');
+		}
+		if (preg_match('/connection refused|timed? out|timeout|unreachable|no route|network|resolve|name or service not known|getaddrinfo|php_network_getaddresses|could not connect|cannot connect|failed to connect|connection failed|connection setup failed/i', $error))
+		{
+			return lang('Unable to reach the IMAP server. Check the server address, port, and network connectivity.');
+		}
+		if (preg_match('/authenticat|login failed|invalid credentials|invalid password|password incorrect|access denied/i', $error))
+		{
+			return lang('The IMAP server rejected authentication. Check your credentials or sign in again.');
+		}
+		return lang('Unable to open the IMAP mailbox. Check the mail server availability and account settings.');
+	}
+
 	function login_error($called_from = '', $acctnum = '')
 	{
 		// usually acctnum is only supplied by "ensure_stream_and_folder" 
@@ -1835,6 +1853,11 @@ class mail_msg_base
 		)
 		{
 			$acctnum = $this->mail_msg_wrappers->get_acctnum();
+		}
+
+		if (preg_match('~/email/api(?:/|$)~', (string) ($_SERVER['REQUEST_URI'] ?? '')) === 1)
+		{
+			throw new \App\modules\email\services\EmailMailConfigurationException($this->connection_failure_reason($acctnum));
 		}
 
 		if ($called_from == '')

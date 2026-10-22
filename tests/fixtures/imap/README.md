@@ -7,11 +7,26 @@ This fixture uses an isolated GreenMail IMAP server and seeds its disposable `IN
 From the repository root, start the optional service:
 
 ```sh
-docker compose --profile email-test up -d imap-test
+docker compose --profile email-test up -d imap-test-seed
+```
+
+This starts GreenMail and a one-shot Python seeder. The seeder waits up to 60 seconds for IMAPS and appends 20 messages only when INBOX is empty. Existing messages and flags are preserved. Starting the whole stack with `docker compose --profile email-test up -d` also includes the seeder. Starting only `imap-test` does not start its dependent seeder; use the command above to include both.
+
+The seeder runs again on subsequent Compose starts and when Compose explicitly restarts its GreenMail dependency. A standalone `docker restart portico_imap_test` does not trigger it; rerun the startup command above after that. GreenMail has no persistent mailbox volume, so recreating its container loses its messages.
+
+The loader disables certificate verification only for this local test endpoint. Use IMAP login `outlook-test` with password `local-test-password`; the email address is `outlook-test@outlook.test`. Use these credentials only against this test service.
+
+To explicitly reset INBOX to the fixture, clearing its existing messages:
+
+```sh
 python3 tests/fixtures/imap/seed_mailbox.py
 ```
 
-The loader connects over IMAPS, clears only this local test mailbox, then appends the 20 messages. It disables certificate verification only for this local test endpoint. Re-running it resets the inbox to the same fixture. Use IMAP login `outlook-test` with password `local-test-password`; the email address is `outlook-test@outlook.test`. Use these credentials only against this test service.
+To seed an empty INBOX manually without clearing existing messages:
+
+```sh
+python3 tests/fixtures/imap/seed_mailbox.py --if-empty
+```
 
 To validate the message dataset without a running server:
 

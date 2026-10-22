@@ -428,6 +428,69 @@ namespace Tests\Controllers
 			}
 		}
 
+		/** @dataProvider imapConnectionFailures */
+		public function testApiReportsSafeImapConnectionFailure(string $transportError, string $expectedReason): void
+		{
+			$originalRequestUri = $_SERVER['REQUEST_URI'] ?? null;
+			$_SERVER['REQUEST_URI'] = '/portico/email/api/inbox';
+			$mail = $this->mailDouble();
+			$transport = $this->getMockBuilder(\stdClass::class)->addMethods(['server_last_error'])->getMock();
+			$transport->method('server_last_error')->willReturn($transportError);
+			$mail->setTransport(0, $transport);
+			MailMessageTestDouble::$failRequest = true;
+			try
+			{
+				$bootstrap = new \email_msg_bootstrap();
+				$bootstrap->ensure_mail_msg_exists('email.api.inbox');
+				$this->fail('The API bootstrap should report the connection failure');
+			}
+			catch (\App\modules\email\services\EmailMailConfigurationException $exception)
+			{
+				$this->assertStringContainsString($expectedReason, $exception->getMessage());
+				$this->assertStringNotContainsString('private-token', $exception->getMessage());
+				$this->assertStringNotContainsString('Configure your email account username', $exception->getMessage());
+			}
+			finally
+			{
+				if ($originalRequestUri === null) unset($_SERVER['REQUEST_URI']);
+				else $_SERVER['REQUEST_URI'] = $originalRequestUri;
+			}
+		}
+
+		public function imapConnectionFailures(): array
+		{
+			return [
+				'modern connection' => ['connection setup failed', 'Unable to reach the IMAP server'],
+				'refused' => ['Connection refused private-token', 'Unable to reach the IMAP server'],
+				'timeout' => ['Connection timed out private-token', 'Unable to reach the IMAP server'],
+				'dns' => ['php_network_getaddresses: getaddrinfo failed private-token', 'Unable to reach the IMAP server'],
+				'authentication' => ['AUTHENTICATIONFAILED private-token', 'rejected authentication'],
+				'tls' => ['SSL certificate verification failed private-token', 'secure connection'],
+				'unknown' => ['Unexpected failure private-token', 'Unable to open the IMAP mailbox'],
+			];
+		}
+
+		public function testApiLoginErrorBypassesLegacyRetryAndRendering(): void
+		{
+			$originalRequestUri = $_SERVER['REQUEST_URI'] ?? null;
+			$_SERVER['REQUEST_URI'] = '/email/api/message';
+			$mail = $this->mailDouble();
+			$transport = $this->getMockBuilder(\stdClass::class)->addMethods(['server_last_error'])->getMock();
+			$transport->method('server_last_error')->willReturn('Connection refused');
+			$mail->setTransport(0, $transport);
+			try
+			{
+				$this->expectException(\App\modules\email\services\EmailMailConfigurationException::class);
+				$this->expectExceptionMessage('Unable to reach the IMAP server');
+				$mail->login_error('test', 0);
+			}
+			finally
+			{
+				if ($originalRequestUri === null) unset($_SERVER['REQUEST_URI']);
+				else $_SERVER['REQUEST_URI'] = $originalRequestUri;
+			}
+		}
+
 		public function testBodyFetchUsesTheOwnedAccountTransport(): void
 		{
 			$mail = $this->getMockBuilder(\mail_msg::class)

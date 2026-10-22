@@ -6,6 +6,7 @@ import imaplib
 import os
 import ssl
 import sys
+import time
 from datetime import datetime, timedelta, timezone
 from email.message import EmailMessage
 from email.policy import SMTP
@@ -94,13 +95,32 @@ def clear_inbox(server: imaplib.IMAP4) -> None:
 		server.expunge()
 
 
-def load_mailbox(host: str, port: int, username: str, password: str) -> None:
-	server = imaplib.IMAP4_SSL(host, port, ssl_context=ssl._create_unverified_context())
+def load_mailbox(host: str, port: int, username: str, password: str, if_empty: bool = False, wait_seconds: int = 0) -> None:
+	deadline = time.monotonic() + wait_seconds
+	while True:
+		try:
+			server = imaplib.IMAP4_SSL(host, port, ssl_context=ssl._create_unverified_context(), timeout=5)
+			break
+		except (OSError, imaplib.IMAP4.error):
+			if time.monotonic() >= deadline:
+				raise
+			time.sleep(1)
 	try:
 		status, _ = server.login(username, password)
 		if status != "OK":
 			raise RuntimeError("IMAP login failed")
-		clear_inbox(server)
+		if if_empty:
+			status, _ = server.select("INBOX", readonly=True)
+			if status != "OK":
+				raise RuntimeError("Unable to inspect the test INBOX")
+			status, result = server.search(None, "ALL")
+			if status != "OK":
+				raise RuntimeError("Unable to list existing test messages")
+			if result and result[0].split():
+				print("INBOX already contains messages; skipping seed.")
+				return
+		else:
+			clear_inbox(server)
 		for index, (message, date) in enumerate(messages(), start=1):
 			flags = r"(\Seen)" if index % 2 == 0 else None
 			status, _ = server.append(
@@ -129,6 +149,8 @@ def main() -> int:
 	parser.add_argument("--user", default=os.getenv("IMAP_TEST_USER", DEFAULT_USER))
 	parser.add_argument("--password", default=os.getenv("IMAP_TEST_PASSWORD", DEFAULT_PASSWORD))
 	parser.add_argument("--dry-run", action="store_true", help="Build and summarize messages without connecting")
+	parser.add_argument("--if-empty", action="store_true", help="Seed only an empty INBOX; never clear existing messages")
+	parser.add_argument("--wait-seconds", type=int, default=0, help="Seconds to wait for the IMAP service to accept connections")
 	args = parser.parse_args()
 
 	if args.dry_run:
@@ -137,7 +159,7 @@ def main() -> int:
 		return 0
 
 	try:
-		load_mailbox(args.host, args.port, args.user, args.password)
+		load_mailbox(args.host, args.port, args.user, args.password, args.if_empty, args.wait_seconds)
 	except (OSError, imaplib.IMAP4.error, RuntimeError) as error:
 		print(f"Could not seed local IMAP mailbox: {error}", file=sys.stderr)
 		return 1

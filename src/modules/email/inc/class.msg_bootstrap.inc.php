@@ -208,7 +208,9 @@ class email_msg_bootstrap
 			if ($isApiRequest)
 			{
 				throw new \App\modules\email\services\EmailMailConfigurationException(
-					lang('Configure your email account username and password before using email.')
+					$mail->hasTransport($mail->get_acctnum())
+						? $mail->connection_failure_reason($mail->get_acctnum())
+						: lang('Configure your email account username and password before using email.')
 				);
 			}
 			$mail->login_error($_SERVER['PHP_SELF'] . ', msg_bootstrap: ensure_mail_msg_exists(), called_by: ' . $called_by);

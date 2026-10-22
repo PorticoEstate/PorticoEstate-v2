@@ -1318,3 +1318,8 @@ reactivate	booking	nn	Aktiver igjen
 sms_no_participants	booking	nn	Ingen deltakarar med telefonnummer er registrerte – SMS vart ikkje sendt.
 sms_not_configured	booking	nn	SMS er ikkje sett opp – kontakt systemadministrator.
 sms_no_recipients	booking	nn	Ingen deltakarar eller søkjar med telefonnummer er registrerte – SMS vart ikkje sendt.
+sms_sent_to_applicant	booking	nn	Sendt til søkjar %1
+sms_sent_to_participant	booking	nn	Sendt til deltakar %1
+sms_failed_to_applicant	booking	nn	Kunne ikkje sende til søkjar %1 (feila)
+sms_failed_to_participant	booking	nn	Kunne ikkje sende til deltakar %1 (feila)
+sms_applicant_no_valid_phone	booking	nn	Søkjar har ikkje gyldig telefonnummer – ikkje kontakta

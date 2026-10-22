@@ -1344,3 +1344,8 @@ reactivate	booking	no	Aktiver igjen
 sms_no_participants	booking	no	Ingen deltakere med telefonnummer er registrert – SMS ble ikke sendt.
 sms_not_configured	booking	no	SMS er ikke satt opp – kontakt systemadministrator.
 sms_no_recipients	booking	no	Ingen deltakere eller søker med telefonnummer er registrert – SMS ble ikke sendt.
+sms_sent_to_applicant	booking	no	Sendt til søker %1
+sms_sent_to_participant	booking	no	Sendt til deltaker %1
+sms_failed_to_applicant	booking	no	Kunne ikke sende til søker %1 (feilet)
+sms_failed_to_participant	booking	no	Kunne ikke sende til deltaker %1 (feilet)
+sms_applicant_no_valid_phone	booking	no	Søker har ikke gyldig telefonnummer – ikke kontaktet

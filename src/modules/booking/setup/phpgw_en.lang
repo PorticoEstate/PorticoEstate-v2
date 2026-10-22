@@ -1343,3 +1343,8 @@ reactivate	booking	en	Reactivate
 sms_no_participants	booking	en	No participants with a phone number are registered – no SMS was sent.
 sms_not_configured	booking	en	SMS is not set up – contact the system administrator.
 sms_no_recipients	booking	en	No participants or applicant with a phone number are registered – no SMS was sent.
+sms_sent_to_applicant	booking	en	Sent to applicant %1
+sms_sent_to_participant	booking	en	Sent to participant %1
+sms_failed_to_applicant	booking	en	Could not send to applicant %1 (failed)
+sms_failed_to_participant	booking	en	Could not send to participant %1 (failed)
+sms_applicant_no_valid_phone	booking	en	The applicant has no valid phone number – not contacted

@@ -3,6 +3,8 @@
 namespace Tests\Services;
 
 require_once __DIR__ . '/../../vendor/autoload.php';
+require_once __DIR__ . '/../../src/modules/phpgwapi/inc/class.object_factory.inc.php';
+require_once __DIR__ . '/../../src/modules/phpgwapi/inc/class.ofphpgwapi.inc.php';
 
 use App\modules\email\services\EmailAttachmentStorage;
 use App\modules\email\services\EmailOutgoingMessage;
@@ -101,6 +103,13 @@ class EmailOutgoingMessageTest extends TestCase
 		$this->assertSame('tls', $mailer->SMTPSecure);
 		$this->assertTrue($mailer->SMTPAuth);
 		$this->assertSame('environment-user', $mailer->Username);
+	}
+
+	public function testLegacyMailerFactoryResolvesToMailerSmtp(): void
+	{
+		$mailer = \phpgwapi_ofphpgwapi::createObject('phpgwapi.mailer_smtp');
+		$this->assertInstanceOf(\App\modules\phpgwapi\services\MailerSmtp::class, $mailer);
+		$this->assertSame('server-smtp.test', $mailer->Host);
 	}
 
 	public function testRejectsInvalidRecipientAddress(): void

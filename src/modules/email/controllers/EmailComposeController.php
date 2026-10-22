@@ -191,42 +191,85 @@ class EmailComposeController
 		}
 
 		$originalPost = $_POST;
-		$_POST = $payload;
+		$originalGet = $_GET;
+		$account = (int) ($payload['msgball']['acctnum'] ?? $payload['fldball']['acctnum'] ?? 0);
+		$_POST = array_replace($originalPost, ['fldball' => ['acctnum' => $account, 'folder' => 'INBOX']]);
+		$mail = null;
 		try
 		{
-			$businessObject = \CreateObject('email.bosend');
-			$businessObject->api_mode = true;
-			$result = $businessObject->send();
+			$bootstrap = \CreateObject('email.msg_bootstrap');
+			$bootstrap->ensure_mail_msg_exists('email.api.send', $account);
+			$mail = \App\modules\email\services\MailMessage::getInstance();
+			$enabledAccounts = array_map('intval', array_column(array_filter((array) $mail->extra_and_default_acounts,
+				static fn($item) => ($item['status'] ?? '') === 'enabled'), 'acctnum'));
+			if (!in_array($account, $enabledAccounts, true)) return $this->json($response, ['error' => lang('Select an enabled email account')], 422);
+			$mail->set_acctnum($account);
+			$sender = new \App\modules\email\services\EmailOutgoingMessage();
+			$mailer = $sender->prepare($payload, $mail);
+			$result = $sender->send($mailer);
 			if (empty($result['sent']))
 			{
-				error_log('[email] Message submission failed');
-				return $this->json($response, ['error' => lang('Unable to send message')], 502);
+				return $this->json($response, ['error' => lang('Unable to send message'), 'reason' => $result['error']], 502);
+			}
+			try
+			{
+				if ($mail->get_pref_value('use_sent_folder', $account)
+					&& !$mail->phpgw_append($mail->get_pref_value('sent_folder_name', $account), $result['mime'] . "\r\n", '\\Seen', false))
+				{
+					error_log('[email] EmailComposeController::send sent-copy append failed');
+				}
+			} catch (\Throwable $exception)
+			{
+				error_log('[email] EmailComposeController::send sent-copy append failed (' . get_class($exception) . ')');
+			}
+			if (in_array((string) ($payload['action'] ?? ''), ['reply', 'replyall'], true) && isset($payload['msgball']['acctnum'], $payload['msgball']['folder'], $payload['msgball']['msgnum']))
+			{
+				try
+				{
+					$source = $payload['msgball'];
+					$source['folder'] = $mail->prep_folder_out((string) $source['folder']);
+					$mail->phpgw_set_flag($source, '\\Answered', false);
+				} catch (\Throwable $exception)
+				{
+					error_log('[email] EmailComposeController::send reply flag update failed (' . get_class($exception) . ')');
+				}
 			}
 			return $this->json($response, ['sent' => true]);
 		}
+		catch (\InvalidArgumentException $exception)
+		{
+			return $this->json($response, ['error' => $exception->getMessage()], 422);
+		}
 		catch (\App\modules\email\services\EmailMailConfigurationException $exception)
 		{
-			if (\App\modules\email\services\MailMessage::hasInstance())
-			{
-				\App\modules\email\services\MailMessage::getInstance()->end_request();
-				\App\modules\email\services\MailMessage::releaseInstance();
-			}
 			$message = $exception->getMessage();
 			return $this->json($response, ['error' => $message, 'reason' => $message], 422);
 		}
 		catch (\Throwable $exception)
 		{
 			error_log('[email] EmailComposeController::send failed (' . get_class($exception) . ')');
-			if (\App\modules\email\services\MailMessage::hasInstance() && \App\modules\email\services\MailMessage::hasInstance())
-			{
-				\App\modules\email\services\MailMessage::getInstance()->end_request();
-				\App\modules\email\services\MailMessage::releaseInstance();
-			}
 			return $this->json($response, ['error' => lang('Unable to send message')], 500);
 		}
 		finally
 		{
+			if ($mail && is_dir((string) $mail->att_files_dir))
+			{
+				try
+				{
+					$storage = new \App\modules\email\services\EmailAttachmentStorage((string) $mail->att_files_dir);
+					$storage->delete(array_column($storage->list(), 'id'));
+				} catch (\Throwable $exception)
+				{
+					error_log('[email] EmailComposeController::send attachment cleanup failed (' . get_class($exception) . ')');
+				}
+			}
+			if (\App\modules\email\services\MailMessage::hasInstance())
+			{
+				\App\modules\email\services\MailMessage::getInstance()->end_request();
+				\App\modules\email\services\MailMessage::releaseInstance();
+			}
 			$_POST = $originalPost;
+			$_GET = $originalGet;
 		}
 	}
 }

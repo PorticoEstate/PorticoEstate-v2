@@ -284,7 +284,8 @@ abstract class booking_uicommon extends phpgwapi_uicommon_jquery
 	 * Sends the SMS typed in the "send SMS" box on a reservation's show page to the people the
 	 * reservation's SMS resolver finds, and tells the officer who was reached and who could not be
 	 * contacted (see sms_result_messages). Does nothing unless the box was ticked and filled in;
-	 * when it was, the officer is redirected back to the reservation.
+	 * when it was, the officer is redirected back to the reservation. A recipient whose send fails,
+	 * whether the gateway says so or throws, is reported as not reached and the others are still sent.
 	 *
 	 * @param int $id the reservation
 	 * @param string $type 'allocation' or 'booking'
@@ -317,8 +318,16 @@ abstract class booking_uicommon extends phpgwapi_uicommon_jquery
 						$sms_res = $sms_service->websend2pv($account_id, $recipient['phone'], $sms_content);
 						$reached[$index] = !empty($sms_res[0][0]);
 					}
-					catch (Exception $ex)
+					catch (Throwable $ex)
 					{
+						// A gateway Error (a PHP 8 TypeError) leaves websend2pv's transaction open, and while one is
+						// open the next recipient's send is never committed. Close it, so the failed recipient leaves
+						// no row, the ones before it stay, and the ones after it are sent as usual.
+						$db = \App\Database\Db::getInstance();
+						if ($db->get_transaction())
+						{
+							$db->transaction_abort();
+						}
 						$reached[$index] = false;
 					}
 				}

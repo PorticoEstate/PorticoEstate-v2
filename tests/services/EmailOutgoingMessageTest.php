@@ -5,6 +5,9 @@ namespace Tests\Services;
 require_once __DIR__ . '/../../vendor/autoload.php';
 require_once __DIR__ . '/../../src/modules/phpgwapi/inc/class.object_factory.inc.php';
 require_once __DIR__ . '/../../src/modules/phpgwapi/inc/class.ofphpgwapi.inc.php';
+if (!defined('PHPGW_INCLUDE_ROOT')) define('PHPGW_INCLUDE_ROOT', realpath(__DIR__ . '/../../src/modules'));
+require_once __DIR__ . '/../../src/modules/email/inc/class.mail_msg.inc.php';
+require_once __DIR__ . '/../../src/modules/email/inc/class.bosend.inc.php';
 
 use App\modules\email\services\EmailAttachmentStorage;
 use App\modules\email\services\EmailOutgoingMessage;
@@ -12,6 +15,30 @@ use App\modules\phpgwapi\services\MailerSmtp;
 use App\modules\phpgwapi\services\Settings;
 use PHPUnit\Framework\TestCase;
 use PHPMailer\PHPMailer\PHPMailer;
+
+class BosendMigrationMailMessageDouble extends \mail_msg
+{
+	public function initialize_mail_msg() {}
+	public function end_request($args_array = array()) {}
+	public function get_isset_pref($pref_name = '', $acctnum = '', $display_error = true): bool { return $pref_name === 'use_sent_folder'; }
+	public function get_arg_value($arg_name = '', $acctnum = '', $extra_keys = '', $display_error = true) { return $arg_name === 'msgball' ? [] : ''; }
+	public function recall_desired_action(): string { return 'new'; }
+}
+
+class BosendMigrationTestDouble extends \bosend
+{
+	public string $sentMime = '';
+	public function prepare_message(): void
+	{
+		$this->smtp->setFrom('from@example.test', 'From Person');
+		$this->smtp->addAddress('to@example.test', 'To Person');
+		$this->smtp->Subject = 'Bosend capture';
+		$this->smtp->Body = 'Legacy body';
+	}
+	public function copy_to_sent_folder($message): bool { $this->sentMime = $message; return true; }
+	public function get_return_to(): array { return []; }
+	public function send_message_cleanup(): void {}
+}
 
 class EmailOutgoingMessageTest extends TestCase
 {
@@ -135,6 +162,29 @@ class EmailOutgoingMessageTest extends TestCase
 		$this->assertStringContainsString('cc@example.test', $capture);
 		$this->assertStringContainsString('bcc@example.test', $capture);
 		$this->assertStringContainsString('Draft body', $capture);
+	}
+
+	public function testBosendSendFlowCapturesAndCopiesFullMimeWithoutSmtp(): void
+	{
+		putenv('MAIL_TO_DISK=1');
+		putenv('MAIL_DISK_PATH=' . $this->directory);
+		BosendMigrationMailMessageDouble::getInstance();
+		$sender = (new \ReflectionClass(BosendMigrationTestDouble::class))->newInstanceWithoutConstructor();
+		$sender->api_mode = true;
+
+		try
+		{
+			$result = $sender->send();
+			$this->assertTrue($result['sent']);
+			$this->assertStringContainsString('Subject: Bosend capture', $sender->sentMime);
+			$this->assertStringContainsString('Legacy body', $sender->sentMime);
+			$captures = glob($this->directory . '/*.html') ?: [];
+			$this->assertCount(1, $captures);
+			$this->assertStringContainsString('to@example.test', file_get_contents($captures[0]));
+		} finally
+		{
+			\App\modules\email\services\MailMessage::releaseInstance();
+		}
 	}
 
 	public function testRejectsInvalidRecipientAddress(): void

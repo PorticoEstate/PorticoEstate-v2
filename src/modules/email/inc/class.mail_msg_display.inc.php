@@ -2465,7 +2465,7 @@ class mail_msg extends mail_msg_wrappers
 		If the message arrived within one day, this will be the time of arrival with NO date.
 	@access private
 	*/
-	function get_msg_list_display($folder_info = '', $msgball_list = '')
+	function get_msg_list_display($folder_info = '', $msgball_list = '', $pre_paginated = False)
 	{
 		//$debug_msg_list_display = 3;
 		$debug_msg_list_display = $this->debug_index_page_display;
@@ -2474,7 +2474,7 @@ class mail_msg extends mail_msg_wrappers
 		{
 			$folder_info = array();
 		}
-		if (!$msgball_list)
+		if (!$msgball_list && !$pre_paginated)
 		{
 			$msgball_list = array();
 		}
@@ -2513,7 +2513,7 @@ class mail_msg extends mail_msg_wrappers
 		// we have messages to list, continue...
 		// if we were passed an array of message numbers to show, use that, if not then
 		// get a numbered array list of all message numbers in that folder, sorted and ordered
-		if (!$msgball_list)
+		if (!$msgball_list && !$pre_paginated)
 		{
 			// NOW WE USE FOLDER NAME ALSO IN THE DATA KEY FOR MSGBALL_LIST
 			$ex_folder = $folder_info['fldball']['folder'];
@@ -2543,26 +2543,34 @@ class mail_msg extends mail_msg_wrappers
 			}
 		}
 
-		if ($folder_info['number_all'] < $this->userSettings['preferences']['common']['maxmatchs'])
-		{
-			$totaltodisplay = $folder_info['number_all'];
-		}
-		elseif (($folder_info['number_all'] - $this->get_arg_value('start')) > $this->userSettings['preferences']['common']['maxmatchs'])
-		{
-			$totaltodisplay = $this->get_arg_value('start') + $this->userSettings['preferences']['common']['maxmatchs'];
-		}
-		else
-		{
-			$totaltodisplay = $folder_info['number_all'];
-		}
-
-		if ($this->get_isset_arg('start'))
-		{
-			$start = $this->get_arg_value('start');
-		}
-		else
+		if ($pre_paginated)
 		{
 			$start = 0;
+			$totaltodisplay = count($msgball_list);
+		}
+		else
+		{
+			if ($folder_info['number_all'] < $this->userSettings['preferences']['common']['maxmatchs'])
+			{
+				$totaltodisplay = $folder_info['number_all'];
+			}
+			elseif (($folder_info['number_all'] - $this->get_arg_value('start')) > $this->userSettings['preferences']['common']['maxmatchs'])
+			{
+				$totaltodisplay = $this->get_arg_value('start') + $this->userSettings['preferences']['common']['maxmatchs'];
+			}
+			else
+			{
+				$totaltodisplay = $folder_info['number_all'];
+			}
+
+			if ($this->get_isset_arg('start'))
+			{
+				$start = $this->get_arg_value('start');
+			}
+			else
+			{
+				$start = 0;
+			}
 		}
 		if (!empty($folder_info['is_imap']) && $totaltodisplay > $start)
 		{

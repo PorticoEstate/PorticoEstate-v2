@@ -133,6 +133,12 @@ class email_mail_dcom extends mail_dcom_base
 		return IMAPManager::imap_prefetch_message_metadata($stream, $message_numbers, $flags);
 	}
 
+	function fetch_sort_metadata($stream, array $message_numbers)
+	{
+		$flags = $this->force_msg_uids == True ? PE_IMAP_FT_UID : 0;
+		return IMAPManager::imap_fetch_sort_metadata($stream, $message_numbers, $flags);
+	}
+
 	function headers($stream)
 	{
 		return IMAPManager::imap_headers($stream);

@@ -26,10 +26,29 @@ class EmailInboxController
 			$bootstrap->ensure_mail_msg_exists('email.api.inbox');
 			$mail = \App\modules\email\services\MailMessage::getInstance();
 			$folderInfo = (array) $mail->get_folder_status_info();
+			$user = (array) Settings::getInstance()->get('user');
+			$pageSize = max(1, (int) ($user['preferences']['common']['maxmatchs'] ?? 25));
+			$start = max(0, (int) $mail->get_arg_value('start'));
+			if (!empty($folderInfo['is_imap']))
+			{
+				$msgballs = (new \App\modules\email\services\InboxMessageIndex())->page(
+					$mail,
+					$folderInfo,
+					$start,
+					$pageSize,
+					(int) $mail->get_arg_value('sort'),
+					(int) $mail->get_arg_value('order')
+				);
+				$msgListDisplay = $mail->get_msg_list_display($folderInfo, $msgballs, true);
+			}
+			else
+			{
+				$msgListDisplay = (array) $mail->get_msg_list_display($folderInfo);
+			}
 			$data = [
 				'folder_info' => $folderInfo,
-				'current_start' => max(0, (int) $mail->get_arg_value('start')),
-				'msg_list_dsp' => (array) $mail->get_msg_list_display($folderInfo),
+				'current_start' => $start,
+				'msg_list_dsp' => (array) $msgListDisplay,
 			];
 			if ((int) ($folderInfo['number_all'] ?? 0) === 0)
 			{
@@ -38,8 +57,7 @@ class EmailInboxController
 					: lang('Could not open this mailbox');
 			}
 			$result = InboxSerializer::serialize($data);
-			$user = (array) Settings::getInstance()->get('user');
-			$result['pageSize'] = max(1, (int) ($user['preferences']['common']['maxmatchs'] ?? 25));
+			$result['pageSize'] = $pageSize;
 			$result['sort'] = (int) $mail->get_arg_value('sort');
 			$result['order'] = (int) $mail->get_arg_value('order');
 			$query = $request->getQueryParams();

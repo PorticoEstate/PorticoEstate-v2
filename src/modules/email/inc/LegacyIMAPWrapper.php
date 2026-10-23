@@ -373,6 +373,54 @@ class LegacyIMAPWrapper
         
         $fn = 'imap_sort'; return @$fn($stream, $criteria, $reverse, $options);
     }
+
+    public static function imap_fetch_sort_metadata($stream, array $messageNumbers, $flags = 0)
+    {
+        if (!function_exists('imap_fetch_overview') || !defined('FT_UID')) {
+            return false;
+        }
+
+        $messageNumbers = array_values(array_unique(array_filter(array_map('intval', $messageNumbers), static fn($number) => $number > 0)));
+        if (!$messageNumbers) {
+            return [];
+        }
+
+        $fn = 'imap_fetch_overview';
+        $overview = @$fn($stream, implode(',', $messageNumbers), FT_UID);
+        if (!is_array($overview)) {
+            return false;
+        }
+
+        $mailbox = static function ($value): string {
+            if (function_exists('imap_rfc822_parse_adrlist')) {
+                $parse = 'imap_rfc822_parse_adrlist';
+                $addresses = @$parse((string) $value, '');
+                if (is_array($addresses) && isset($addresses[0]->mailbox)) {
+                    return strtolower((string) $addresses[0]->mailbox);
+                }
+            }
+            if (preg_match('/([^\s<>@,]+)@/', (string) $value, $matches)) {
+                return strtolower($matches[1]);
+            }
+            return '';
+        };
+
+        $result = [];
+        foreach ($overview as $item) {
+            $subject = strtolower(preg_replace('/^(?:(?:re|fw|fwd)\s*:\s*)+/i', '', trim((string) ($item->subject ?? ''))));
+            $result[] = [
+                'uid' => (int) ($item->uid ?? 0),
+                'date_sent' => strtotime((string) ($item->date ?? '')) ?: 0,
+                'date_received' => (int) ($item->udate ?? 0),
+                'from_sort' => $mailbox($item->from ?? ''),
+                'to_sort' => $mailbox($item->to ?? ''),
+                'cc_sort' => $mailbox($item->cc ?? ''),
+                'subject_sort' => $subject,
+                'message_size' => (int) ($item->size ?? 0),
+            ];
+        }
+        return $result;
+    }
     
     /**
      * Legacy imap_reopen() - direct passthrough to native function

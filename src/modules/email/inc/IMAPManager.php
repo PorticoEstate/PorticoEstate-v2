@@ -74,7 +74,7 @@ class IMAPManager
                     'imap_deletemailbox', 'imap_renamemailbox', 'imap_status',
                     'imap_mailboxmsginfo', 'imap_mail_copy', 'imap_mail_move',
                     'imap_setflag_full', 'imap_clearflag_full', 'imap_sort', 'imap_reopen', 'imap_msgno',
-                    'imap_getmailboxes', 'imap_subscribe', 'imap_unsubscribe', 'imap_headers',
+                    'imap_getmailboxes', 'imap_subscribe', 'imap_unsubscribe', 'imap_headers', 'imap_fetch_sort_metadata',
                 ];
 
                 if (in_array($function, $streamFunctions, true)) {
@@ -305,6 +305,11 @@ class IMAPManager
     public static function imap_sort($stream, $criteria, $reverse, $options = 0)
     {
         return self::executeWithFallback('imap_sort', [$stream, $criteria, $reverse, $options]);
+    }
+
+    public static function imap_fetch_sort_metadata($stream, array $messageNumbers, $flags = 0)
+    {
+        return self::executeWithFallback('imap_fetch_sort_metadata', [$stream, $messageNumbers, $flags]);
     }
     
     public static function imap_reopen($stream, $mailbox, $flags = 0)

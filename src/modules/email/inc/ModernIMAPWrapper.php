@@ -461,6 +461,56 @@ class ModernIMAPWrapper
         }
     }
 
+    public static function imap_fetch_sort_metadata($stream, array $messageNumbers, $flags = 0)
+    {
+        if (!isset(self::$connections[$stream]['folder'])) {
+            return false;
+        }
+
+        $messageNumbers = array_values(array_unique(array_filter(array_map('intval', $messageNumbers), static fn($number) => $number > 0)));
+        if (!$messageNumbers) {
+            return [];
+        }
+
+        try {
+            $connection = self::$connections[$stream];
+            $client = $connection['client'];
+            $client->openFolder($connection['folder']->path);
+            $mode = ($flags & 1) ? \Webklex\PHPIMAP\IMAP::ST_UID : \Webklex\PHPIMAP\IMAP::ST_MSGN;
+            $metadata = $client->getConnection()->fetch(
+                ['UID', 'INTERNALDATE', 'RFC822.SIZE', 'BODY.PEEK[HEADER]'],
+                $messageNumbers,
+                null,
+                $mode
+            )->validatedData();
+
+            $result = [];
+            foreach ($metadata as $sequence => $attributes) {
+                $uid = (int) ($attributes['UID'] ?? $sequence);
+                $header = new \Webklex\PHPIMAP\Header((string) ($attributes['BODY[HEADER]'] ?? ''), $client->getConfig());
+                $firstMailbox = static function ($field) use ($header): string {
+                    $address = $header->get($field)->first();
+                    return strtolower((string) ($address->mailbox ?? ''));
+                };
+                $subject = strtolower(preg_replace('/^(?:(?:re|fw|fwd)\s*:\s*)+/i', '', trim((string) $header->get('subject'))));
+                $result[] = [
+                    'uid' => $uid,
+                    'date_sent' => strtotime((string) $header->get('date')) ?: 0,
+                    'date_received' => strtotime((string) ($attributes['INTERNALDATE'] ?? '')) ?: 0,
+                    'from_sort' => $firstMailbox('from'),
+                    'to_sort' => $firstMailbox('to'),
+                    'cc_sort' => $firstMailbox('cc'),
+                    'subject_sort' => $subject,
+                    'message_size' => (int) ($attributes['RFC822.SIZE'] ?? 0),
+                ];
+            }
+            return $result;
+        } catch (Exception $exception) {
+            self::$lastError = $exception->getMessage();
+            return false;
+        }
+    }
+
     private static function convertFetchedHeader(array $attributes, int $messageNumber, $client): stdClass
     {
         $source = new \Webklex\PHPIMAP\Header((string) ($attributes['BODY[HEADER]'] ?? ''), $client->getConfig());

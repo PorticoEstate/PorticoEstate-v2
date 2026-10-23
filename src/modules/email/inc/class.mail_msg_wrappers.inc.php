@@ -1513,7 +1513,7 @@ class mail_msg_wrappers extends mail_msg_base
 		@discussion Debug with flag "debug_wrapper_dcom_calls" 
 		@access public
 		*/
-	function phpgw_append($folder = "Sent", $message, $flags = 0, $display_error = true)
+	function phpgw_append($folder, $message, $flags = 0, $display_error = true)
 	{
 
 		$server_str = $this->get_arg_value('mailsvr_callstr');
@@ -1609,7 +1609,7 @@ class mail_msg_wrappers extends mail_msg_base
 		@author Angles
 		@access public
 		*/
-	function interacct_mail_move($mov_msgball = '', $to_fldball = '', $display_error = true)
+	function interacct_mail_move($mov_msgball = array(), $to_fldball = array(), $display_error = true)
 	{
 		// this needs A LOT of work!!! do not rely on this yet
 
@@ -1671,7 +1671,7 @@ class mail_msg_wrappers extends mail_msg_base
 		@discussion ?
 		@access public
 		*/
-	function industrial_interacct_mail_move($mov_msgball = '', $to_fldball = '', $display_error = true)
+	function industrial_interacct_mail_move($mov_msgball = array(), $to_fldball = array(), $display_error = true)
 	{
 		// Note: Only call this function with ONE msgball at a time, i.e. NOT a list of msgballs
 		// then we buffer each command with this function
@@ -1692,7 +1692,7 @@ class mail_msg_wrappers extends mail_msg_base
 		@discussion ?
 		@access public
 		*/
-	function buffer_move_commands($mov_msgball = '', $to_fldball = '', $display_error = true)
+	function buffer_move_commands($mov_msgball = array(), $to_fldball = array(), $display_error = true)
 	{
 
 		// assemble the URI like string that will hold the command move request instructions
@@ -1713,12 +1713,6 @@ class mail_msg_wrappers extends mail_msg_base
 			'mov_msgball[msgnum]' => $mov_msgball['msgnum']
 		);
 
-		if ($this->debug_wrapper_dcom_calls > 2)
-		{
-			$this_move_balls = array();
-			parse_str($this_move_data, $this_move_balls);
-		}
-
 		// add this to the array
 		$this->buffered_move_commmands[$this->buffered_move_commmands_count] = $this_move_data;
 		// increase the count, avoids calling count() every trip thru this loop
@@ -1736,7 +1730,7 @@ class mail_msg_wrappers extends mail_msg_base
 		@discussion ?
 		@access public
 		*/
-	function buffer_delete_commands($mov_msgball = '', $to_fldball = '', $display_error = true)
+	function buffer_delete_commands($mov_msgball = array(), $to_fldball = array(), $display_error = true)
 	{
 
 		// assemble the URI like string that will hold the command move request instructions
@@ -1755,12 +1749,6 @@ class mail_msg_wrappers extends mail_msg_base
 			'to_fldball[folder]' => $to_fldball['folder'],
 			'mov_msgball[msgnum]' => $mov_msgball['msgnum']
 		);
-
-		if ($this->debug_wrapper_dcom_calls > 2)
-		{
-			$this_move_balls = array();
-			parse_str($this_move_data, $this_move_balls);
-		}
 
 		// add this to the array
 		$this->buffered_move_commmands[$this->buffered_move_commmands_count] = $this_move_data;

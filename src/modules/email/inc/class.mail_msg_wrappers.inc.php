@@ -1181,20 +1181,22 @@ class mail_msg_wrappers extends mail_msg_base
 	/*!
 		@function phpgw_search
 		@abstract ?
+		@param array $fldball
 		@author Angles
 		@discussion Debug with flag "debug_wrapper_dcom_calls" 
 		@access public
 		*/
-	function phpgw_search($fldball = '', $criteria = '', $flags = 0, $display_error = true)
+	function phpgw_search($fldball = array(), $criteria = '', $flags = 0, $display_error = true)
 	{
-		$acctnum = (int)$fldball['acctnum'];
-		if ((!isset($acctnum))
-			|| ((string)$acctnum == '')
-		)
+		if (isset($fldball['acctnum']) && (string)$fldball['acctnum'] !== '')
+		{
+			$acctnum = (int) $fldball['acctnum'];
+		}
+		else
 		{
 			$acctnum = $this->get_acctnum();
 		}
-		$folder = $fldball['folder'];
+		$folder = $fldball['folder'] ?? '';
 		// if folder is blank, we *should* assume INBOX because filters always search the INBOX
 		if ((!isset($folder))
 			|| ((string)$folder == '')

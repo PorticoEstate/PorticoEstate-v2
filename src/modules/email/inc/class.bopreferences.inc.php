@@ -1436,10 +1436,7 @@ class email_bopreferences
 		}
 		else
 		{
-			$take_me_to_url = phpgw::link(
-				'/index.php',
-				'menuaction=email.uipreferences.ex_accounts_list'
-			);
+			$take_me_to_url = phpgw::link('/email/view/accounts');
 
 			Header('Location: ' . $take_me_to_url);
 		}
@@ -1550,10 +1547,7 @@ class email_bopreferences
 		if ($api_mode) return $actually_did_something;
 
 		// redirect user back to main preferences page
-		$take_me_to_url = phpgw::link(
-			'/index.php',
-			'menuaction=email.uipreferences.ex_accounts_list'
-		);
+		$take_me_to_url = phpgw::link('/email/view/accounts');
 
 		if ($this->debug_set_prefs > 1)
 		{
@@ -1669,11 +1663,6 @@ class email_bopreferences
 				));
 				$return_list[$next_pos]['edit_href'] = '<a href="' . $return_list[$next_pos]['edit_url'] . '">' . lang('Edit') . '</a>';
 
-				$return_list[$next_pos]['delete_url'] = phpgw::link('/index.php', array(
-					'menuaction' => 'email.bopreferences.ex_accounts_delete',
-					'ex_acctnum' => $this_acctnum
-				));
-				$return_list[$next_pos]['delete_href'] = '<a href="' . $return_list[$next_pos]['delete_url'] . '">' . lang('Delete') . '</a>';
 			}
 		}
 

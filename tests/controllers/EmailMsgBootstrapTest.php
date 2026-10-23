@@ -536,6 +536,62 @@ namespace Tests\Controllers
 			}
 		}
 
+		public function testInitializationEnablesGroupedReadsForApiInboxRoute(): void
+		{
+			require_once __DIR__ . '/../../src/modules/email/inc/class.so_mail_msg.inc.php';
+			$mail = new \mail_msg();
+			$storage = $this->getMockBuilder(\so_mail_msg::class)
+				->disableOriginalConstructor()
+				->onlyMethods(['so_am_table_exists', 'so_prop_use_group_data'])
+				->getMock();
+			$storage->method('so_am_table_exists')->willReturn(false);
+			$storage->expects($this->once())->method('so_prop_use_group_data')->with(true);
+			$mail->so = $storage;
+			$originalGet = $_GET;
+			$originalRequestUri = $_SERVER['REQUEST_URI'] ?? null;
+			$_GET = [];
+			$_SERVER['REQUEST_URI'] = '/portico/email/api/inbox';
+			try
+			{
+				$mail->initialize_mail_msg();
+			}
+			finally
+			{
+				$_GET = $originalGet;
+				if ($originalRequestUri === null) unset($_SERVER['REQUEST_URI']);
+				else $_SERVER['REQUEST_URI'] = $originalRequestUri;
+			}
+		}
+
+		public function testInitializationDisablesCachedPreferencesForTwigRoute(): void
+		{
+			require_once __DIR__ . '/../../src/modules/email/inc/class.so_mail_msg.inc.php';
+			$mail = new \mail_msg();
+			$mail->use_cached_prefs = true;
+			$storage = $this->getMockBuilder(\so_mail_msg::class)
+				->disableOriginalConstructor()
+				->onlyMethods(['so_am_table_exists', 'so_prop_use_group_data'])
+				->getMock();
+			$storage->method('so_am_table_exists')->willReturn(false);
+			$storage->expects($this->once())->method('so_prop_use_group_data')->with(false);
+			$mail->so = $storage;
+			$originalGet = $_GET;
+			$originalRequestUri = $_SERVER['REQUEST_URI'] ?? null;
+			$_GET = [];
+			$_SERVER['REQUEST_URI'] = '/portico/email/view/preferences';
+			try
+			{
+				$mail->initialize_mail_msg();
+				$this->assertFalse($mail->use_cached_prefs);
+			}
+			finally
+			{
+				$_GET = $originalGet;
+				if ($originalRequestUri === null) unset($_SERVER['REQUEST_URI']);
+				else $_SERVER['REQUEST_URI'] = $originalRequestUri;
+			}
+		}
+
 		public function testMoveDoesNotEmitVerboseDebugOutput(): void
 		{
 			$mail = $this->getMockBuilder(\mail_msg::class)->onlyMethods(['buffer_move_commands', 'track_expungable_folders'])->getMock();

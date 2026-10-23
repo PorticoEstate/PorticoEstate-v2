@@ -384,24 +384,26 @@ class mail_msg_base
 			}
 		}
 
+		$requestPath = parse_url((string) ($this->ref_SERVER['REQUEST_URI'] ?? ''), PHP_URL_PATH);
+		$requestPath = is_string($requestPath) ? $requestPath : '';
+
 		// UNDER DEVELOPMENT when to use cached preferences
 		if ($this->use_cached_prefs == True)
 		{
-			// any preferences page menuaction is a NO NO to cached prefs
-			if (isset($this->ref_GET['menuaction']) && stristr($this->ref_GET['menuaction'], 'preferences.'))
+			$isPreferencesRequest = preg_match(
+				'~(?:^|/)email/(?:api/preferences(?:/|$)|view/(?:preferences|accounts?)(?:/|$))~',
+				$requestPath
+			) === 1;
+			if ($isPreferencesRequest)
 			{
 				$this->use_cached_prefs = False;
 			}
 		}
 
 		// UNDER DEVELOPMENT bulk data query from AngleMail DB
-		// only necessary to grab huge bulk data for INDEX page
-		// and some other menuactions too, but we will add more later
-		if (
-			isset($this->ref_GET['menuaction'])
-			&& (stristr($this->ref_GET['menuaction'], 'email.uiindex')
-				|| stristr($this->ref_GET['menuaction'], 'email.uimessage.message'))
-		)
+		// Use grouped reads for inbox and message API requests.
+		$isGroupedMessageRequest = preg_match('~(?:^|/)email/api/(?:inbox|message)(?:/|$)~', $requestPath) === 1;
+		if ($isGroupedMessageRequest)
 		{
 			//$this->so->use_group_data = True;
 			$this->so->so_prop_use_group_data(True);
@@ -1925,8 +1927,10 @@ class mail_msg_base
 			. "tried RH bug recovery?: [" . $this->mail_msg_wrappers->get_isset_arg('beenthere_loginerr_tryagain_buggy_cert', $acctnum) . "] <br>\n"
 			. "<br>\n"
 			. lang('if there is no obvious error, check your username and password first.') . "<br>\n</div>\n";
-		// HOW we were called determines HOW we display the error 
-		if (preg_match('/menuaction=email/', Sanitizer::get_var('REQUEST_URI', 'string', 'SERVER')))
+		// Render the email error page when this request came through an email route.
+		$requestPath = parse_url((string) ($_SERVER['REQUEST_URI'] ?? ''), PHP_URL_PATH);
+		$isEmailRoute = is_string($requestPath) && preg_match('~(?:^|/)email(?:/|$)~', $requestPath) === 1;
+		if ($isEmailRoute)
 		{
 			$this->mail_msg_wrappers->getCommon()->phpgw_header(true);
 			// we were called from within the email app itself

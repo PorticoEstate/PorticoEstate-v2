@@ -2888,14 +2888,14 @@ $hdr_envelope->udate = $new_time;
 			// NOTE: the acctnum MUST be matched to this individual message and folder
 			$msg_list_display[$x]['subject'] = $this->get_subject($hdr_envelope, '');
 			$msg_list_display[$x]['subject_link'] = phpgw::link(
-				'/index.php',
+				'/email/view/message',
 				array(
-					'menuaction' => 'email.uimessage.message',
 					'sort' => $this->get_arg_value('sort'),
 					'order' => $this->get_arg_value('order'),
 					'start' => $this->get_arg_value('start')
 				)
-					+ $this_loop_msgball['uri']
+					+ $this_loop_msgball['uri'],
+				true
 			);
 
 			// SIZE

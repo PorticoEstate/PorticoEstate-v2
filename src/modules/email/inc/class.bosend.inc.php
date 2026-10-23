@@ -212,7 +212,7 @@ class bosend
 					$this->smtp->ErrorInfo;
 					echo '</pre>'."\r\n";
 					echo '<p>&nbsp;<br /></p>'."\r\n";
-					echo '<p>To go back to the msg list, click <a href="'. phpgw::link('/index.php',$return_to_folder_href).'">here</a></p><br />';
+					echo '<p>To go back to the msg list, click <a href="'. phpgw::link('/email/view/inbox', $return_to_folder_href, true).'">here</a></p><br />';
 					echo '</body></html>';
 					$this->send_message_cleanup();
 				}
@@ -222,7 +222,7 @@ class bosend
 				$this->send_message_cleanup();
 				// redirect the browser to the index page for the appropriate folder
 				//header('Location: '.$return_to_folder_href);
-				phpgw::redirect_link('/index.php', $return_to_folder_href);
+				phpgw::redirect_link('/email/view/inbox', $return_to_folder_href);
 				// kill the rest of this script
 				if (\App\modules\email\services\MailMessage::hasInstance())
 				{
@@ -236,7 +236,7 @@ class bosend
 			}
 		} else
 		{
-			$return_to_folder_url = phpgw::link('/index.php', $return_to_folder_href);
+			$return_to_folder_url = phpgw::link('/email/view/inbox', $return_to_folder_href, true);
 			echo '<html><body>' . "\r\n";
 			echo '<h2>Your message could <b>not</b> be sent!</h2>' . "\r\n";
 			echo '<h3>The mail server returned:</h3>' . "\r\n";
@@ -565,7 +565,6 @@ class bosend
 
 */
 		return array(
-			'menuaction' => 'email.uiindex.index',
 			'fldball[folder]' => $fldball_candidate['folder'],
 			'fldball[acctnum]' => $fldball_candidate['acctnum'],
 			'sort' => \App\modules\email\services\MailMessage::getInstance()->get_arg_value('sort'),

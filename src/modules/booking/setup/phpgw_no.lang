@@ -1349,3 +1349,9 @@ sms_sent_to_participant	booking	no	Sendt til deltaker %1
 sms_failed_to_applicant	booking	no	Kunne ikke sende til søker %1 (feilet)
 sms_failed_to_participant	booking	no	Kunne ikke sende til deltaker %1 (feilet)
 sms_applicant_no_valid_phone	booking	no	Søker har ikke gyldig telefonnummer – ikke kontaktet
+sms_sent_to_creator	booking	no	Sendt til oppretter %1
+sms_failed_to_creator	booking	no	Kunne ikke sende til oppretter %1 (feilet)
+sms_sent_to_group_contact	booking	no	Sendt til lagkontakt %1
+sms_failed_to_group_contact	booking	no	Kunne ikke sende til lagkontakt %1 (feilet)
+sms_creator_no_valid_phone	booking	no	Oppretter har ikke gyldig telefonnummer – ikke kontaktet
+sms_no_recipients_booking	booking	no	Ingen deltakere, oppretter eller lagkontakter med telefonnummer er registrert – SMS ble ikke sendt.

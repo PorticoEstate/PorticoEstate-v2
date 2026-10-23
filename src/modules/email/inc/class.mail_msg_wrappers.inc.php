@@ -2162,7 +2162,7 @@ Array
 		Fills arg "expunge_folders" for any account that has folders needing to be expunged. 
 		@access public
 		*/
-	function single_interacct_mail_move($mov_msgball = '', $to_fldball = '', $display_error = true)
+	function single_interacct_mail_move($mov_msgball = array(), $to_fldball = array(), $display_error = true)
 	{
 		// Note: Only call this function with ONE msgball at a time, i.e. NOT a list of msgballs
 		// INTERACCOUNT -OR- SAME ACCOUNT ?
@@ -2295,7 +2295,7 @@ Array
 		call "expunge_expungable_folders" when all the moves or deletes are done. 
 		@access private
 		*/
-	function track_expungable_folders($fldball = '', $display_error = true)
+	function track_expungable_folders($fldball = array(), $display_error = true)
 	{
 		if (
 			!(isset($fldball['acctnum']))
@@ -2421,7 +2421,7 @@ Array
 		assuming the move or delete function you used calls "track_expungable_folders". 
 		@access public
 		*/
-	function phpgw_expunge($acctnum = '', $fldball = '', $display_error = true)
+	function phpgw_expunge($acctnum = '', $fldball = array(), $display_error = true)
 	{
 		if (
 			!(isset($acctnum))
@@ -2882,7 +2882,7 @@ Array
 		@author Angles
 		@access Public
 		*/
-	function ball_data_parse_str($uri_ball_data = '', $do_stripslashes = True, $display_error = true)
+	function ball_data_parse_str($uri_ball_data = array(), $do_stripslashes = True, $display_error = true)
 	{
 		$return_struct = array();
 		if (!$uri_ball_data)
@@ -3138,6 +3138,7 @@ Array
 			}
 		}
 
+		/** @var array<string, mixed> $got_args */
 		$got_args = array();
 		// insert *known* external args we find into $got_args[], then return that data
 		$loops = count($this->known_external_args);
@@ -3153,33 +3154,34 @@ Array
 				$got_args[$this_arg_name] = $this->ref_GET[$this_arg_name];
 
 				// STRIPSLASHES IF NEEDED
-				if (($this_arg_name == 'msgball')
-					|| ($this_arg_name == 'fldball')
+				if ((($this_arg_name == 'msgball')
+					|| ($this_arg_name == 'fldball'))
 				)
 				{
-					// php will automayically urldecode the folder, we don't like this
-					// AND PHP MIGHT ADD GPC SLASHES WE DO NOT WANT!!!!! depending on your ini settings
-					// use custom "stripslashes_gpc" function here because the slashes at this point would have been added ONLY by php itself
-					// i.e. we have not yet used "parse_str" yet, that always addes slashes, but not using it yet means any slashes are GPC slashes
-					$not_urlencoded_but_stripslashed_folder = $this->stripslashes_gpc($got_args[$this_arg_name]['folder']);
-					// now we have no unwanted slashes, so put this back in the input args
-					$got_args[$this_arg_name]['folder'] = $not_urlencoded_but_stripslashed_folder;
-					$not_urlencoded_but_stripslashed_folder = '';
-					unset($not_urlencoded_but_stripslashed_folder);
+					$ball = $got_args[$this_arg_name];
+					if (is_array($ball) && isset($ball['folder']))
+					{
+						$ball['folder'] = $this->stripslashes_gpc($ball['folder']);
+						$got_args[$this_arg_name] = $ball;
+					}
 				}
 				// ADD "uri" element to incoming "msgball" arg
 				// so forms may pass this "msgball" on to the next page view
 				if ($this_arg_name == 'msgball')
 				{
-					// php will automayically urldecode the folder, we don't like this
-					// we want the folder value to be URLENCODED, so we need to re-urlencode it
-					$re_urlencoded_folder = $this->prep_folder_out($got_args[$this_arg_name]['folder']);
-					$got_args[$this_arg_name]['folder'] = $re_urlencoded_folder;
-					$got_args[$this_arg_name]['uri'] = array(
-						'msgball[msgnum]' => $got_args[$this_arg_name]['msgnum'],
-						'msgball[folder]' => $got_args[$this_arg_name]['folder'],
-						'msgball[acctnum]' => $got_args[$this_arg_name]['acctnum']
-					);
+					$msgball = $got_args['msgball'];
+					if (is_array($msgball)
+						&& isset($msgball['folder'], $msgball['msgnum'], $msgball['acctnum'])
+					)
+					{
+						$msgball['folder'] = $this->prep_folder_out($msgball['folder']);
+						$msgball['uri'] = array(
+							'msgball[msgnum]' => $msgball['msgnum'],
+							'msgball[folder]' => $msgball['folder'],
+							'msgball[acctnum]' => $msgball['acctnum']
+						);
+						$got_args['msgball'] = $msgball;
+					}
 				}
 			}
 			else

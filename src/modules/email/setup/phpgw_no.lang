@@ -1,0 +1,372 @@
+ a scrips tag block of code, javascript or otherwise, is in an inline html message. not necessarily bad, but user may want to know. this is script ... code ... script blocks, not the "onmouseover"  stuff.	email	no	Det er en blokk med skriptkode (JavaScript eller annet) i en innebygd HTML-melding. Dette er ikke nødvendigvis skadelig, men det kan være nyttig å vite. Det dreier seg om <script> ... kode ... </script>-blokker, ikke «onmouseover» og lignende.
+%1 - %2 of %3 	email	no	%1–%2 av %3
+%1 messages have been deleted	email	no	%1 meldinger er slettet
+1 message has been deleted	email	no	1 melding er slettet
+1 message has been moved to	email	no	1 melding er flyttet til
+<b>*apply*</b> this filter	email	no	<b>*bruk*</b> dette filteret
+<b>apply all</b> filters	email	no	<b>bruk alle</b> filtre
+a scrips tag block of code, javascript or otherwise, is in an inline html message. not necessarily bad, but user may want to know. this is script ... code ... script blocks, not the "onmouseover"  stuff.	email	no	Det er en blokk med skriptkode (JavaScript eller annet) i en innebygd HTML-melding. Dette er ikke nødvendigvis skadelig, men det kan være nyttig å vite. Det dreier seg om <script> ... kode ... </script>-blokker, ikke «onmouseover» og lignende.
+account	email	no	Konto
+account name	email	no	Kontonavn
+account user name	email	no	Brukernavn for konto
+accounts	email	no	Kontoer
+accounts:	email	no	Kontoer:
+add to address book	email	no	Legg til i adresseboken
+add to addressbook	email	no	Legg til i adresseboken
+address book	email	no	Adressebok
+after	email	no	Etter
+all messages	email	no	Alle meldinger
+and	email	no	og
+and stop filtering	email	no	og stopp filtreringen
+answered	email	no	besvart
+apply	email	no	Bruk
+apply filters report:	email	no	Rapport for bruk av filtre:
+apr	email	no	apr.
+aqua fusion	email	no	Aqua Fusion
+arrival date	email	no	Mottaksdato
+as	email	no	som
+attach file	email	no	Legg ved fil
+attach signature	email	no	Legg ved signatur
+attachment	email	no	Vedlegg
+aug	email	no	aug.
+bcc	email	no	blindkopi
+bcc address	email	no	Blindkopiadresse
+before	email	no	Før
+big	email	no	Stor
+bigger	email	no	Større
+biggest	email	no	Størst
+body	email	no	Meldingstekst
+both	email	no	Begge
+button type	email	no	Knapptype
+cache server data whenever possible	email	no	Bufre serverdata når det er mulig
+cc	email	no	Kopi
+cc address	email	no	Kopiadresse
+change font size in your e-mail pages	email	no	Endre skriftstørrelsen på e-postsidene
+check flags for type of mails	email	no	Kontroller flagg for meldingstype
+choose for rename	email	no	Velg for å gi nytt navn
+choose to rename	email	no	Velg for å gi nytt navn
+click here for more info in a new window	email	no	Klikk her for mer informasjon i et nytt vindu
+click here to continue	email	no	Klikk her for å fortsette
+click here to edit the settings for this email account.	email	no	Klikk her for å endre innstillingene for denne e-postkontoen.
+click here to return to your home page.	email	no	Klikk her for å gå tilbake til startsiden.
+company	email	no	Firma
+compose	email	no	Skriv
+compose message	email	no	skriv melding
+compose new	common	no	Skriv ny
+contact your system administrator	email	no	Kontakt systemadministratoren
+contains	email	no	Inneholder
+could not open this mailbox	email	no	Kunne ikke åpne denne postkassen
+create (expert)	email	no	Opprett (avansert)
+create a folder	email	no	Opprett en mappe
+current attachments (%1)	email	no	Gjeldende vedlegg (%1)
+custom e-mail preferences	email	no	Tilpassede e-postinnstillinger
+custom e-mail settings	email	no	Tilpassede e-postinnstillinger
+debugging page	email	no	Feilsøkingsside
+dec	email	no	des.
+default sorting order	email	no	Standard sorteringsrekkefølge
+default:	common	no	standard:
+delete (expert)	email	no	Slett (avansert)
+delete a folder	email	no	Slett en mappe
+delete account	common	no	Slett konto
+deleted	email	no	slettet
+deleted messages (trash) folder	email	no	Mappe for slettede meldinger (papirkurv)
+deleted messages folder name	email	no	Navn på mappe for slettede meldinger
+deleted messages go to trash	email	no	Slettede meldinger flyttes til papirkurven
+deleted messages saved to folder:	email	no	Slettede meldinger lagret i mappen:
+discard	email	no	Forkast
+does not contain	email	no	Inneholder ikke
+draft	email	no	Utkast
+e-mail extra account	email	no	Ekstra e-postkonto
+e-mail extra accounts	email	no	Ekstra e-postkontoer
+e-mail extra accounts list	email	no	Liste over ekstra e-postkontoer
+e-mail filters	common	no	E-postfiltre
+e-mail folders	common	no	E-postmapper
+e-mail inbox filters list	email	no	Liste over filtre for innboksen
+e-mail preferences	common	no	E-postinnstillinger
+each user has a summary page which can display a variety of information. this option will show a small list of email messages in the inbox of the users default email account on the users summary home page.	email	no	Hver bruker har en oversiktsside som kan vise forskjellig informasjon. Dette alternativet viser en kort liste over e-postmeldinger fra innboksen til brukerens standardkonto på oversiktssiden.
+edit filters	email	no	Rediger filtre
+email account name	email	no	Navn på e-postkonto
+email address	email	no	E-postadresse
+email date	email	no	E-postdato
+email filters	email	no	E-postfiltre
+email password	email	no	E-postpassord
+email preferences	email	no	E-postinnstillinger
+email signature	email	no	E-postsignatur
+email type	common	no	E-posttype
+enable this email account	common	no	Aktiver denne e-postkontoen
+enable utf-7 encoded folder names	email	no	Tillat UTF-7-kodede mappenavn
+enter the search string in the text boxes	email	no	Skriv inn søketeksten i tekstfeltene
+enter your default mail domain ( from: user@domain )	admin	no	Skriv inn standard e-postdomene (fra: bruker@domene)
+enter your pop	admin	no	Skriv inn POP-serveren
+enter your smtp server hostname or ip address	admin	no	Skriv inn vertsnavnet eller IP-adressen til SMTP-serveren
+enter your smtp server port	admin	no	Skriv inn porten til SMTP-serveren
+error moving messages to	email	no	Feil ved flytting av meldinger til
+error text not provided	email	no	Feilmelding mangler
+error: unknown message data	email	no	Feil: Ukjente meldingsdata
+evolution style	email	no	Evolution-stil
+extra accounts	email	no	Ekstra kontoer
+extra e-mail account	common	no	Ekstra e-postkonto
+extra e-mail accounts	common	no	Ekstra e-postkontoer
+extra e-mail preferences number %1	email	no	Innstillinger for ekstra e-postkonto nummer %1
+feb	email	no	feb.
+fewer actions	email	no	Færre handlinger
+fewer choices	email	no	Færre valg
+file	email	no	Fil
+file attachment	email	no	Filvedlegg
+file into	email	no	Fil til
+fill in as much as you can	email	no	Fyll ut så mye du kan
+filter inbox for accounts	email	no	Filtrer innboksen for kontoer
+filter name	email	no	Filternavn
+filter name:	email	no	Filternavn:
+filter number	email	no	Filternummer
+filter [number] and name	email	no	Filter [nummer] og navn
+filters	email	no	Filtre
+filters list	email	no	Filterliste
+flag as important	email	no	Merk som viktig
+flagged	email	no	merket
+folder	email	no	Mappe
+folder maintenance	email	no	Mappebehandling
+folder name	email	no	Mappenavn
+folder size	email	no	Mappestørrelse
+folders	email	no	Mapper
+for the file to actually upload	email	no	for at laste opp filen
+for these items, fill only what is different from you default e-mail preferences	common	no	For disse feltene fyller du bare inn det som avviker fra standardinnstillingene for e-post.
+forward	email	no	Videresend
+from	email	no	Fra
+from address	email	no	Fra-adresse
+get size	email	no	Hent størrelse
+go	email	no	Gå
+go back	email	no	Gå tilbake
+go back to	email	no	Gå tilbake til
+header field	email	no	Topptekstfelt
+hidden	email	no	skjult
+hide help	email	no	Skjul hjelp
+html messages with the iframe  tag may be klez or other worm emails.	email	no	HTML-meldinger med IFRAME-elementet kan inneholde Klez eller andre e-postormer.
+icon size	email	no	Ikonstørrelse
+icon theme	email	no	Ikontema
+if &quot; deleted messages go to trash &quot; is checked, deleted message will be sent to the folder name you type in this box. if this folder does not exist, it will be created for you automatically. default name is &quot;trash&quot;. this will be your &quot;trash&quot; folder, but it does not have to actually be called &quot;trash&quot;, you can name it anything. only works with imap servers, pop servers do not have folders.	email	no	Når &quot;Slettede meldinger flyttes til papirkurven&quot; er valgt, flyttes slettede meldinger til mappen du angir her. Hvis mappen ikke finnes, opprettes den automatisk. Standardnavnet er &quot;Trash&quot;. Mappen trenger ikke hete &quot;Trash&quot;; du kan velge et hvilket som helst navn. Dette fungerer bare med IMAP-servere. POP-servere har ikke mapper.
+if &quot; sent messages folder &quot; is checked, a copy of your sent mail will be stored in the folder name you type in this box. if this folder does not exist, it will be created for you automatically. default name is &quot;sent&quot;. this will be your &quot;sent&quot; folder, but it does not have to actually be called &quot;sent&quot;, you can name it anything. only works with imap servers, pop servers do not have folders.	email	no	Når &quot;Mappe for sendte meldinger&quot; er valgt, lagres en kopi av sendt e-post i mappen du angir her. Hvis mappen ikke finnes, opprettes den automatisk. Standardnavnet er &quot;Sent&quot;. Mappen kan hete hva som helst. Dette fungerer bare med IMAP-servere. POP-servere har ikke mapper.
+if applicable	email	no	Hvis aktuelt
+if checked, a copy of your sent mail will be stored in the &quot;sent&quot; folder name which you specify in the box for &quot;sent messages folder &quot;. only works with imap servers, pop servers do not have folders.	email	no	Hvis valgt, lagres en kopi av sendt e-post i mappen &quot;Sent&quot; som du angir i feltet &quot;Mappe for sendte meldinger&quot;. Dette fungerer bare med IMAP-servere. POP-servere har ikke mapper.
+if checked, a copy of your sent mail will be stored in the &quot;sent&quot; folder name which you specify in the box for &quot;sent messages folder&quot;. only works with imap servers, pop servers do not have folders.	email	no	Hvis valgt, lagres en kopi av sendt e-post i mappen &quot;Sent&quot; som du angir i feltet &quot;Mappe for sendte meldinger&quot;. Dette fungerer bare med IMAP-servere. POP-servere har ikke mapper.
+if checked, deleted message will be sent to the &quot;trash&quot; folder name which you specify in the box for &quot; deleted messages (trash) folder &quot;. only works with imap servers, pop servers do not have folders.	email	no	Hvis valgt, flyttes slettede meldinger til mappen &quot;Trash&quot; som du angir i feltet &quot;Mappe for slettede meldinger (papirkurv)&quot;. Dette fungerer bare med IMAP-servere. POP-servere har ikke mapper.
+if fileto then select destination folder	email	no	Hvis du arkiverer, velg målmappen
+if messages match	email	no	Hvis meldingene samsvarer
+if there is no obvious error, check your username and password first.	email	no	Hvis ingen tydelig feil vises, bør du først kontrollere brukernavnet og passordet.
+if using an imap server, what kind is it, most often this option can safely be set to &quot;cyrus or courier&quot;. technically, this means the server uses a dot between the different parts of the folder names, such as &quot;inbox.sent&quot;. the other major kind of imap server is the university of washington &quot;uwash&quot; imap server. it uses slashes instead of the dots the other servers use, and although it has a folder called &quot;inbox&quot;, it is not considered the &quot;namespace&quot; for the other folder names. the &quot;uw-maildir&quot; is a rare combination of the two above types. this is the least used kind of imap server. if you are unsure, ask your it administrator. only applies to imap servers.	email	no	Hvis du bruker en IMAP-server, hvilken type er det? Som regel kan du trygt velge &quot;Cyrus eller Courier&quot;. Disse serverne skiller delene i mappenavn med punktum, for eksempel &quot;INBOX.Sent&quot;. En annen type er University of Washingtons &quot;UWash&quot;-IMAP-server, som bruker skråstreker i stedet for punktum. Selv om den har en mappe som heter &quot;INBOX&quot;, regnes ikke denne som navnerommet for de andre mappene. &quot;UW-Maildir&quot; er en sjelden kombinasjon av de to typene. Spør IT-administratoren hvis du er usikker. Gjelder bare IMAP-servere.
+image	email	no	Bilde
+imap mail server hostname or ip address	admin	no	Vertsnavn eller IP-adresse for IMAP-server
+imap server type	common	no	IMAP-servertype
+important	email	no	viktig
+in the email index page, the page which lists all the mails in a folder, mail may be sorted by date, author, size, or subject, however all of these need to be ordered from first to last, this options controlls what is first and last. for example, if sorting by date, the newest to oldest displays the most recent emails first, in decending order down to the oldest emails last. 	email	no	På e-postoversikten, siden som viser alle meldingene i en mappe, kan meldingene sorteres etter dato, avsender, størrelse eller emne. Rekkefølgen må også bestemmes. Ved sortering etter dato viser for eksempel rekkefølgen nyeste til eldste de nyeste meldingene først og de eldste sist.
+inbox	email	no	Innboks
+input error	email	no	Inndatafeil
+input error:	email	no	Inndatafeil:
+it is not rfc standard to base64 encode a part of a message that is not an attachment. note this check is currently done after the message is already being viewed, it should probably stop the message from being automatically displayed, i.e. give a "show this" button instead.	email	no	RFC-standarden tillater ikke Base64-koding av meldingsdeler som ikke er vedlegg. Denne kontrollen utføres nå etter at meldingen vises. Den burde kanskje hindre automatisk visning og heller tilby en knapp for å vise innholdet.
+jan	email	no	jan.
+javascript	email	no	JavaScript
+jul	email	no	jul.
+jun	email	no	jun.
+keep	email	no	Behold
+keyword	email	no	nøkkelord
+keywords	email	no	Nøkkelord
+layout 1	common	no	Oppsett 1
+layout 2	common	no	Oppsett 2
+lines	email	no	Linjer
+list messages	email	no	Vis meldinger
+long names	email	no	Lange navn
+mail folder(uw-maildir)	email	no	E-postmappe (UW-Maildir)
+mail server	email	no	E-postserver
+mail server login type	admin	no	Påloggingstype for e-postserver
+mail server type	email	no	E-postservertype
+mail settings	admin	no	E-postinnstillinger
+mail you send will use this address as the &quot;from&quot; address. this may be the same as your phpgroupware login name, or the server administrator may have set it for you. when the recipient clicks reply, this address will be used. you can leave this box blank and the default value will be used.	email	no	E-post du sender, bruker denne adressen som &quot;Fra&quot;-adresse. Den kan være den samme som phpGroupWare-brukernavnet ditt eller være angitt av serveradministratoren. Når mottakeren svarer, brukes denne adressen. La feltet stå tomt for å bruke standardverdien.
+mailbox	email	no	postkasse
+manage accounts	email	no	Administrer kontoer
+manage folders	email	no	Administrer mapper
+mar	email	no	mar.
+message has an attachment that is some kind of script or exe file that windows users should be warned not to click on it. these are filenames like attachments the end with the usual "bad stuff", such as bat, inf, pif, com, exe, reg, vbs, and scr	email	no	Meldingen har et vedlegg som er et skript eller en kjørbar fil. Windows-brukere bør ikke åpne slike filer. Eksempler på filendelser som kan være farlige, er bat, inf, pif, com, exe, reg, vbs og scr.
+message list layout	common	no	Meldingslisteoppsett
+messages	email	no	Meldinger
+messages found in folder	email	no	Meldinger funnet i mappen
+messages have been moved to	email	no	meldinger er flyttet til
+more actions	email	no	Flere handlinger
+more choices	email	no	Flere valg
+most us and european users do not need to enable this. if this option is checked then your email server can handle folder names with non us-ascii charactors in them/ default is disabled, not checked. only use if you are really sure you need it. only works with imap servers, pop servers do not have folders.	email	no	De fleste brukere i USA og Europa trenger ikke å aktivere dette. Når alternativet er valgt, kan e-postserveren håndtere mappenavn med tegn utenfor US-ASCII. Standardinnstillingen er deaktivert. Aktiver bare dette hvis du er sikker på at det trengs. Gjelder bare IMAP-servere; POP-servere har ikke mapper.
+move down	email	no	Flytt ned
+move selected messages into	email	no	Flytt valgte meldinger til
+move this message into	email	no	Flytt denne meldingen til
+move up	email	no	Flytt opp
+mozilla modern style	email	no	Mozilla Modern-stil
+name of the mail server you want to access. should be a name like &quot;mail.example.com&quot;. if you leave this box blank then the default value will be used.	email	no	Navnet på e-postserveren du vil bruke, for eksempel &quot;mail.example.com&quot;. La feltet stå tomt for å bruke standardverdien.
+new	email	no	Ny
+new account	email	no	Ny konto
+new filter	email	no	Nytt filter
+new message	email	no	Ny melding
+new messages	email	no	Nye meldinger
+newest	common	no	nyeste
+next message	email	no	Neste melding
+no change	email	no	ingen endring
+no error returned from server	email	no	Serveren returnerte ingen feil
+no message found in folder '%1'	email	no	Fant ingen melding i mappen «%1»
+no next message	email	no	ingen neste melding
+no previous message	email	no	ingen forrige melding
+noia &#64; carlitus style	email	no	Noia &#64; Carlitus-stil
+non-standard	email	no	Ikke-standard
+not used	email	no	ikke i bruk
+notify on delivery	email	no	Varsle ved levering
+nov	email	no	nov.
+number	common	no	Antall
+number of matches:	email	no	Antall treff:
+oct	email	no	okt.
+old	email	no	Gammel
+oldest	common	no	eldste
+on	email	no	På
+only needed with the university of washington &quot;uwash&quot; imap server. the default value is &quot;mail&quot; which means your mail folders, other then inbox, are located in a directory called &quot;mail&quot; directly under your &quot;home&quot; directory. this box may be left empty, which means your mail folders are located in your &quot;home&quot; directory, not a subdirectory. if your mail folders are located in a subdirectory of &quot;home&quot; then put the name of that subdirectory here. generally, it is not necessary to use any special slashes or tildes, &quot;home&quot; is always considered the base directory, and the slash bewteen &quot;home&quot; and the subdirectory will be added for you automatically, do not put the slash in this box.	email	no	Dette er bare nødvendig med University of Washingtons &quot;UWash&quot;-IMAP-server. Standardverdien &quot;mail&quot; betyr at e-postmappene, bortsett fra innboksen, ligger i en mappe kalt &quot;mail&quot; direkte under &quot;home&quot;-mappen. Feltet kan stå tomt hvis mappene ligger direkte i &quot;home&quot;. Hvis de ligger i en undermappe, skriver du navnet på den her. Du trenger vanligvis ikke å skrive skråstreker eller tilder; &quot;home&quot; regnes alltid som rotmappen, og skråstreken mellom &quot;home&quot; og undermappen legges til automatisk. Ikke skriv skråstreken i feltet.
+or	common	no	eller
+or enter text	email	no	eller skriv inn tekst
+organization	email	no	Organisasjon
+persistent email server session	email	no	Vedvarende e-postserverøkt
+phone	email	no	Telefon
+php-imap support not installed - exiting	email	no	Støtte for PHP IMAP er ikke installert – avslutter
+please fill in everything you need	email	no	Fyll ut alle nødvendige felt
+please select a folder to rename	email	no	Velg en mappe som skal få nytt navn
+please select a message first	email	no	Velg en melding først
+please submit a filename to attach	email	no	Oppgi et filnavn for vedlegget
+please type a folder name in the text box	email	no	Skriv inn et mappenavn i tekstfeltet
+previous	email	no	Forrige
+previous message	email	no	Forrige melding
+printable	email	no	utskriftsvennlig
+raw message	email	no	råmelding
+read mail	email	no	Les e-post
+received headers	email	no	Mottatte meldingshoder
+recent	email	no	Nylige
+recipient	email	no	Mottaker
+redirect	email	no	Videresend
+reject	email	no	Avvis
+rename (expert)	email	no	Gi nytt navn (avansert)
+rename a folder	email	no	Gi en mappe nytt navn
+reply	email	no	Svar
+reply all	email	no	Svar alle
+replyto	email	no	Svar til
+request delivery notification	email	no	Be om leveringsbekreftelse
+requested filter action:	email	no	Forespurt filterhandling:
+required	email	no	obligatorisk
+reset	email	no	Tilbakestill
+result	email	no	resultat
+return mails during this time period	email	no	Hent e-post i denne perioden
+save deleted messages in folder named below	email	no	Lagre slettede meldinger i mappen nedenfor
+save sent messages in folder named below	email	no	Lagre sendte meldinger i mappen nedenfor
+search for mails in these folders	email	no	Søk etter e-post i disse mappene
+search this folder	email	no	søk i denne mappen
+section	email	no	Del
+seen	email	no	Lest
+select home email address	email	no	Velg privat e-postadresse
+select this box if you want the text body of the message you are forwarding to appear inline in the body of your sent message	email	no	Velg dette alternativet hvis meldingsteksten du videresender, skal vises direkte i teksten i meldingen du sender.
+select work email address	email	no	Velg e-postadresse for arbeid
+select your mail server type	admin	no	Velg type e-postserver
+select your screensize for propper showing of the javascript addressbook	email	no	Velg skjermstørrelse for riktig visning av JavaScript-adresseboken
+select your style for the addressbook. the traditional, simple style. or the new javascript enabled complex addressbook	email	no	Velg stil for adresseboken: den tradisjonelle, enkle stilen eller den nye, avanserte JavaScript-adresseboken.
+send	email	no	Send
+send deleted messages to the trash	email	no	Flytt slettede meldinger til papirkurven
+send forwarded mail as quoted attachment	email	no	Send videresendt e-post som sitert vedlegg
+sender	email	no	Avsender
+sent	email	no	sendt
+sent folder	email	no	mappe for sendte meldinger
+sent messages folder	common	no	Mappe for sendte meldinger
+sent messages folder name	email	no	Navn på mappe for sendte meldinger
+sent messages saved in &quot;sent&quot; folder	common	no	Sendte meldinger lagret i mappen &quot;Sent&quot;
+sent messages saved to folder:	email	no	Sendte meldinger lagret i mappen:
+sep	email	no	sep.
+settings	email	no	Innstillinger
+short names	email	no	korte navn
+show help	email	no	Vis hjelp
+show long names	email	no	Vis lange navn
+show message	email	no	vis melding
+show new messages in combobox	email	no	Vis nye meldinger i nedtrekkslisten
+show new messages on main screen	email	no	Vis nye meldinger på hovedsiden
+show sender's email address with name	email	no	Vis avsenderens e-postadresse sammen med navnet
+show short names	email	no	Vis korte navn
+show total folder size by default	email	no	Vis samlet mappestørrelse som standard
+simple	email	no	Enkel
+size	email	no	Størrelse
+size larger than	email	no	Størrelse større enn
+size smaller than	email	no	Størrelse mindre enn
+small	email	no	Liten
+smaller	email	no	Mindre
+smallest	email	no	Minst
+somebody	email	no	noen
+sort by	email	no	Sorter etter
+spell check	email	no	Stavekontroll
+standard e-mail preferences	email	no	Standardinnstillinger for e-post
+stop if matched	email	no	Stopp ved treff
+switch accounts	email	no	Bytt konto
+switch current folder to	common	no	Bytt gjeldende mappe til
+test all filters	email	no	Test alle filtre
+test or apply all filters	email	no	test eller bruk alle filtre
+test run this filter	email	no	Test dette filteret
+text	email	no	Tekst
+the email application offers 2 different layouts for the index page, that is the page that lists the emails in a folder. this page may be the page the user looks at the most and so different layouts, or looks, are offered.	email	no	E-postprogrammet tilbyr to ulike oppsett for oversiktssiden, som viser meldingene i en mappe. Siden er ofte den brukeren ser mest på, og derfor kan du velge mellom flere utforminger.
+the email application offers different button displays, these buttons can be text, images, or both.	email	no	E-postprogrammet tilbyr ulike visninger av knappene. Knappene kan vises som tekst, bilder eller begge deler.
+the email application offers different icon image themes, groups of images of a similar style which are used in this email application. currently the available themes are images based on evolution by ximian and the netscape7, mozilla browser buttons. additional themes are anticipated and welcome.	email	no	E-postprogrammet tilbyr ulike ikontemaer med bilder i en gjennomgående stil. De tilgjengelige temaene er basert på Evolution fra Ximian og knappene i nettleserne Netscape 7 og Mozilla. Flere temaer kan komme til senere.
+the email application offers different icon image themes, these icons can be big or small.	email	no	E-postprogrammet tilbyr ulike størrelser på ikonene: store eller små.
+the login name to use when checking mail for this email account. this may be the same as your phpgroupware login name, or the server administrator may have set it for you. if your have multiple email accounts set up, you will need to fill this in. if you have only one email account set up, then you can probably leave this alone. if you clear this box, then it goes back to the default value. if you only need some custom settings but want this one to be the default value, then leave this box blank, the default value will be used, and you will see that default value in this box the next time you come to this preferences page.	email	no	Brukernavnet som skal brukes når e-post hentes for denne kontoen. Det kan være det samme som phpGroupWare-brukernavnet ditt, eller det kan være angitt av serveradministratoren. Hvis du har flere e-postkontoer, må du fylle ut feltet. Har du bare én konto, kan du vanligvis la det stå. Hvis du tømmer feltet, gjenopprettes standardverdien. La feltet stå tomt hvis du vil bruke standardverdien selv om du tilpasser andre innstillinger. Standardverdien vises her neste gang du åpner denne siden.
+the login name to use when checking mail for this email account. this may be the same as your phpgroupware login name, or the server administrator may have set it for you. if your have multiple email accounts set up, you will need to fill this in. if you have only one email account set up, then you can probably leave this alone. if you do set a custom password, this box will be blank the next time you come to this settings page. this is a security feature because your custom email password is not sent to your browser after you set it. to change your custom password, simply enter a new password in the box. extra email accounts require you to set this. for your default email account, you can clear your custom password by unchecking the &quot;use custom settings&quot; option.	email	no	Brukernavnet som skal brukes når e-post hentes for denne kontoen. Det kan være det samme som phpGroupWare-brukernavnet ditt, eller det kan være angitt av serveradministratoren. Hvis du har flere kontoer, må du fylle ut feltet. Har du bare én konto, kan du vanligvis la det stå. Hvis du angir et eget passord, er dette feltet tomt neste gang du åpner innstillingssiden. Dette er av sikkerhetshensyn; det egendefinerte passordet sendes ikke tilbake til nettleseren. Skriv inn et nytt passord for å endre det. Ekstra kontoer krever at dette feltet fylles ut. For standardkontoen kan du fjerne det egendefinerte passordet ved å fjerne avmerkingen for &quot;Bruk egendefinerte innstillinger&quot;.
+the password to use when checking mail for this email account. this may be the same as your phpgroupware password, or the server administrator may have set it for you. if your have multiple email accounts set up, you will need to fill this in. if you have only one email account set up, then you can probably leave this alone. if you do set a custom password, this box will be blank the next time you come to this settings page. this is a security feature because your custom email password is not sent to your browser after you set it. to change your custom password, simply enter a new password in the box. extra email accounts require you to set this. for your default email account, you can clear your custom password by unchecking the &quot;use custom settings&quot; option.	email	no	Passordet som skal brukes når e-post hentes for denne kontoen. Det kan være det samme som phpGroupWare-passordet ditt, eller det kan være angitt av serveradministratoren. Hvis du har flere kontoer, må du fylle ut feltet. Har du bare én konto, kan du vanligvis la det stå. Hvis du angir et eget passord, er feltet tomt neste gang du åpner innstillingssiden. Dette er av sikkerhetshensyn; passordet sendes ikke tilbake til nettleseren. Skriv inn et nytt passord for å endre det. Ekstra kontoer krever at dette feltet fylles ut. For standardkontoen kan du fjerne det egendefinerte passordet ved å fjerne avmerkingen for &quot;Bruk egendefinerte innstillinger&quot;.
+the type of mail server you want to access. imap mail servers have folders, such as the sent and trash folders. pop servers do not have folders. pop, pop-3, and pop3 are the same thing. you can have the server connection encrypted by using imaps or pops, only if the mailserver supports it and if your phpgroupware installation has a &quot;ssl&quot; capabable version of php.	email	no	Typen e-postserver du vil bruke. IMAP-servere har mapper, for eksempel for sendte meldinger og papirkurven. POP-servere har ikke mapper. POP, POP-3 og POP3 er det samme. Du kan kryptere serverforbindelsen med IMAPS eller POPS hvis e-postserveren støtter det, og phpGroupWare-installasjonen bruker en PHP-versjon med SSL-støtte.
+then do this	email	no	Gjør deretter dette
+then take this actions	email	no	Utfør deretter disse handlingene
+there is no text or other part of the email to display to the user, all part(s) are attachments.	email	no	Meldingen inneholder ingen tekst eller andre deler som kan vises; alle delene er vedlegg.
+there was an error trying to connect to your imap server.<br />please contact your admin to check the servername, username or password.	email	no	Det oppstod en feil ved tilkobling til IMAP-serveren.<br />Kontakt administratoren for å kontrollere servernavn, brukernavn og passord.
+there was an error trying to connect to your mail server.<br />please, check your username and password, or contact your admin.	email	no	Det oppstod en feil ved tilkobling til e-postserveren.<br />Kontroller brukernavnet og passordet, eller kontakt administratoren.
+there was an error trying to connect to your pop3 server.<br />please contact your admin to check the servername, username or password.	email	no	Det oppstod en feil ved tilkobling til POP3-serveren.<br />Kontakt administratoren for å kontrollere servernavn, brukernavn og passord.
+this confusing and often misunderstood option is left over from this email apps origins as aeromail by mark cushman. when viewing a list of emails in a folder, the from column may show you a) the senders name only, if a name was provided, b) the senders from email address, in addition to the senders name, or c) the senders reply to address if it is different from the senders from address, in addition to the senders name if it was provided. typically users set this to none, which will show only the senders name. if no name was supplied by the sender, then the senders from email address will be shown, whether a seperate reply to address is provided has no effect on this, the from address is always used if the senders name is not provided.	email	no	Dette forvirrende og ofte misforståtte alternativet stammer fra e-postprogrammets opprinnelse som Aeromail, laget av Mark Cushman. I meldingslisten kan Fra-kolonnen vise a) bare avsenderens navn, hvis det er oppgitt, b) avsenderens e-postadresse sammen med navnet, eller c) svaradressen hvis den er forskjellig fra avsenderadressen, sammen med navnet hvis det er oppgitt. Vanligvis velges «ingen», slik at bare avsenderens navn vises. Hvis avsenderen ikke har oppgitt et navn, vises avsenderadressen. En eventuell separat svaradresse påvirker ikke dette; avsenderadressen brukes alltid når navn mangler.
+this data not supplied.	email	no	Disse dataene er ikke oppgitt.
+this folder is empty	email	no	Denne mappen er tom
+this is really a visual template conflict issue. the phpgw template already has it own css, and style sheets are cascading, subsequent css can be inherited by the page and totally b0rk the look of the template theme. or maybe not, only certain css tags are really capable of this such as the css body property, or the a (href) properties.	email	no	Dette er egentlig en konflikt mellom visuelle maler. phpGW-malen har allerede egne CSS-regler, og stilark overstyrer hverandre i rekkefølge. Senere CSS kan arves av siden og ødelegge utseendet på temaet. Kanskje ikke alle regler gjør det; særlig CSS-egenskaper for body og a (lenker) kan ha denne virkningen.
+this is the name that appears in the account combobox. if for leave this blank, your accounts will be given a standard name like account[1]: jane doe, where jane doe is the name you give below as your full name. if you want to give an account a special name you can fill this in. no matter what, this is for your use, your emails will still use your full name as your from name for email messages. note that your full name for your email account 0 is the name you gave in the phpgroupware setup.	email	no	Dette navnet vises i kontolisten. Hvis du lar feltet stå tomt, får kontoen et standardnavn, for eksempel «Konto[1]: Jane Doe», der Jane Doe er navnet du oppgir nedenfor som fullt navn. Du kan skrive inn et eget navn for kontoen. Dette navnet er bare til eget bruk; e-postmeldingene bruker fortsatt fullt navn som avsendernavn. Merk at fullt navn for e-postkonto 0 er navnet som ble oppgitt under phpGroupWare-oppsettet.
+this is the name that appears in the users from address. the default mail account gets this value automatically from the phpgwapi. additional accounts are created with the phpgwapi supplied fullname you can specify a different fullname for each extra email account.	email	no	Dette navnet vises i brukerens Fra-adresse. Standardkontoen henter verdien automatisk fra phpgwapi. Ekstra kontoer opprettes med fullt navn fra phpgwapi, men du kan angi et annet fullt navn for hver ekstra e-postkonto.
+this pref currently does nothing users may have more than one email account. in the future it is anticipated that automatic actions may be performed on these accounts, such as automatic new mail checks,auto filtering, etc... perhaps the user may want to disable an account so that these automatic actions do not occur for that account. this is one possible use. also, an admin may want to disable accounts from time to time.	email	no	Denne innstillingen har foreløpig ingen funksjon. Brukere kan ha flere e-postkontoer. I fremtiden kan automatiske handlinger utføres på kontoene, for eksempel automatisk kontroll av nye meldinger eller filtrering. Brukeren kan da ønske å deaktivere en konto slik at slike handlinger ikke utføres. Administratoren kan også ha behov for å deaktivere kontoer fra tid til annen.
+this specifies whether or not to show the number of new message in the folders combo box on the index screen.	email	no	Angir om antallet nye meldinger skal vises i mappelisten på oversiktssiden.
+this specifies whether or not to show the total size of folders by default. if this is not checked, you will be presented with a button allowing you to display folder size..	email	no	Angir om samlet størrelse for mapper skal vises som standard. Hvis alternativet ikke er valgt, vises en knapp du kan bruke til å vise mappestørrelsen.
+this text will be appended to the bottom of the users emails for this email account. currently, html tags are not supported. also, forwarded email will not get this email sig appended to it for reasons such as it clutters the email, the forwarded part probably has its own email sig from the original author, which is really the information that matters the most.	email	no	Denne teksten legges til nederst i e-postmeldingene fra denne kontoen. HTML-koder støttes ikke. Signaturen legges heller ikke til videresendt e-post, blant annet fordi den kan gjøre meldingen rotete, og den videresendte delen vanligvis allerede inneholder den opprinnelige avsenderens signatur.
+to	email	no	Til
+to address	email	no	Til-adresse
+total messages	email	no	Meldinger totalt
+trash	email	no	papirkurv
+trash folder	email	no	papirkurvmappe
+u-wash mail folder	email	no	U-Wash-e-postmappe
+unable to get source folder name	email	no	Kan ikke hente navnet på kildemappen
+unable to get target folder name	email	no	Kan ikke hente navnet på målmappen
+unanswered	email	no	ubesvart
+undeleted	email	no	ikke slettet
+undisclosed recipients	email	no	Skjulte mottakere
+undisclosed sender	email	no	Skjult avsender
+unflagged	email	no	ikke merket
+unknown action	email	no	Ukjent handling
+unknown error	email	no	Ukjent feil
+unknown translation	email	no	ukjent oversettelse
+unseen	email	no	Ulest
+use custom settings	email	no	Bruk egendefinerte innstillinger
+view as html	email	no	Vis som HTML
+view formatted	email	no	Vis formatert
+view headers	email	no	Vis meldingshoder
+view unformatted	email	no	Vis uformatert
+warn_attachment_name_dangerous	email	no	Vedlegget har et filnavn som kan være farlig.
+warn_attachment_only_mail	email	no	Meldingen inneholder bare vedlegg og ingen lesbar meldingstekst.
+warn_b64_encoded_displayable	email	no	Meldingsinnholdet er Base64-kodet, selv om det ikke er et vedlegg.
+warn_has_iframe_maybe_klez	email	no	HTML-meldingen inneholder en IFRAME som kan være knyttet til Klez-ormen.
+warn_script_tags	email	no	HTML-meldingen inneholder skriptblokker.
+warn_style_sheet	email	no	HTML-meldingen inneholder et stilark.
+we have recently added this new addressbook so that users can choose to have a more complex addressbook that features a) easy, point and click searching, b) best suited for organizations with large central addressbooks with many categories. you can choose here which addressbook do you prefer.	email	no	Vi har nylig lagt til denne adresseboken, slik at brukerne kan velge en mer avansert adressebok med a) enkelt søk med museklikk og b) funksjoner som passer for organisasjoner med store sentrale adressebøker og mange kategorier. Her kan du velge hvilken adressebok du foretrekker.
+we have three sizes that tell us how to better render the addressbook for you: 800x600 (addressbook will popout in a 700 pixel wide box), 1024x768 (it will be a 800 box), 1200x1600 (will be a 900 box). the fonts for all html stuff will be, respectively set to xx-small, x-small and normal (no font setting).	email	no	Velg mellom tre størrelser for best visning av adresseboken: 800x600 (adresseboken åpnes i et vindu som er 700 piksler bredt), 1024x768 (800 piksler bredt) og 1200x1600 (900 piksler bredt). Skriftstørrelsen for HTML-innhold settes henholdsvis til svært liten, liten og normal (ingen egen skriftstørrelse).
+wrote	email	no	skrevet
+you have %1 new messages!	common	no	Du har %1 nye meldinger!
+you have 1 new message!	common	no	Du har 1 ny melding!
+you have messages!	common	no	Du har meldinger!
+you have no new messages	common	no	Du har ingen nye meldinger
+you must click	email	no	Du må klikke
+you must click %1 for the file to actually upload	email	no	Du må klikke på %1 for at filen skal lastes opp
+your full name	common	no	Ditt fulle navn
+your message has been sent	common	no	Meldingen er sendt!
+your server administrator will set the default values for the following options. you may never need to change any of them. if you do need to use settings that are different from the defaults for the options below here, then check this box. default is disabled, not checked. if you fill in some of the options, but later decide to go back to the default values, unchecking this box will erase your custom values and put back the default values. all of the following options start out with the default value, so you may see some settings below even if you have never filled them in. this checkbox only shows up for the default email account. if you are setting up additional email accounts, you will be required to fill in the following options and this checkbox will not be displayed, it will be checked for all extra email accounts.	email	no	Serveradministratoren angir standardverdiene for alternativene nedenfor, og det kan hende du aldri trenger å endre dem. Merk av i denne boksen hvis du vil bruke andre innstillinger enn standardverdiene. Boksen er som standard ikke valgt. Hvis du senere vil gå tilbake til standardverdiene, fjerner du avmerkingen; de egendefinerte verdiene slettes og standardverdiene gjenopprettes. Alle alternativene starter med standardverdier, så noen felt kan allerede være utfylt. Avmerkingsboksen vises bare for standardkontoen. Når du setter opp ekstra e-postkontoer, må du fylle ut alternativene nedenfor; boksen vises ikke og egendefinerte innstillinger brukes alltid.

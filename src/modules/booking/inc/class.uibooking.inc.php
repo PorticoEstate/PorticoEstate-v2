@@ -522,6 +522,7 @@ class booking_uibooking extends booking_uicommon
 			$booking['completed'] = '0';
 			$booking['reminder'] = '1';
 			$booking['secret'] = $this->generate_secret();
+			$booking['created_by_account_id'] = $this->current_account_id();
 			array_set_default($booking, 'audience', array());
 			array_set_default($booking, 'agegroups', array());
 			array_set_default($_POST, 'resources', array());

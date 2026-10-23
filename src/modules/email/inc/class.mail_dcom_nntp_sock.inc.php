@@ -32,6 +32,8 @@ class mail_dcom extends mail_dcom_base
 	var $folder;
 	var $start_msg;
 	var $end_msg;
+	var $num_msgs;
+
 
 	function mode_reader()
 	{

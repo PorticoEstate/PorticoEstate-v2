@@ -1179,7 +1179,7 @@ class mail_msg_base
 			$args_array['do_login'] = False;
 		}
 		// ---- newer 3 way do_login_ex value from the bootstrap class
-		if ((!defined(BS_LOGIN_NOT_SPECIFIED))
+		if ((!defined('BS_LOGIN_NOT_SPECIFIED'))
 			|| (!isset($args_array['do_login_ex']))
 		)
 		{
@@ -1237,7 +1237,7 @@ class mail_msg_base
 			*/
 
 		// test for previous login, meaning we have all the cached data we need
-		if (($args_array['do_login_ex'] >= BS_LOGIN_ONLY_IF_NEEDED)
+		if (($args_array['do_login_ex'] >= email_msg_bootstrap::LOGIN_ONLY_IF_NEEDED)
 			&& ($this->session_cache_enabled == True)
 			&& ($this->session_cache_extreme == True)
 		)
@@ -1290,7 +1290,7 @@ class mail_msg_base
 				$decision_to_login = True;
 			}
 		}
-		elseif ($args_array['do_login_ex'] == BS_LOGIN_NEVER)
+		elseif ($args_array['do_login_ex'] == email_msg_bootstrap::LOGIN_NEVER)
 		{
 			// whether or not extreme caching is on, if  "BS_LOGIN_NEVER" then we DO NOT login
 			$decision_to_login = False;

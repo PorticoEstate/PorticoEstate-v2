@@ -153,23 +153,41 @@
 		);
 
 		/**
-		 * The phone numbers an SMS sent from a reservation's page reaches: the people who registered
-		 * as participants and, for an allocation or a booking that comes from an application, the applicant.
-		 * Only resolves the numbers; nothing is sent.
+		 * Whether the applicant of the application behind an interntildeling (a booking) is texted too.
+		 * Off: that applicant is the one of the season's tildeling, not the person who made the
+		 * interntildeling, and the product owners have not agreed (ruling 33650, item 4). This is the one
+		 * place to turn it on; nothing else needs to change. An allocation always texts its applicant.
+		 */
+		const SMS_BOOKING_APPLICANT = false;
+
+		/**
+		 * The phone numbers an SMS sent from a reservation's page reaches. Only resolves the numbers;
+		 * nothing is sent.
 		 *
-		 * The participants are exactly the numbers the page has always used. The applicant's number
-		 * is added when it is not already one of them: same digits, with or without the country code.
+		 * The participants are exactly the numbers the page has always used. Besides them:
+		 * - an allocation: the applicant of its application, when the number is not already a participant's
+		 *   (same digits, with or without the country code);
+		 * - a booking (interntildeling): the citizen who made it (bb_booking.created_by_user_id), or when
+		 *   there is no such citizen or their number is not usable, the contacts of the booking's group.
+		 *   Creator OR contacts, never both. A creator whose number equals a participant's is reached as
+		 *   that participant and does not send the SMS on to the contacts. A creator whose send FAILS later
+		 *   does not either: only "no usable number" falls back. The applicant of a booking is only texted
+		 *   when SMS_BOOKING_APPLICANT is on.
 		 *
 		 * When the reservation comes from an application but the applicant has no usable number,
 		 * applicant_skipped says why, so the caller can tell the officer who could not be contacted:
 		 * 'no_number' (nothing entered), 'not_phone_shaped' (see usable_phone_sql) or 'all_zeros'.
 		 * It is null when there is no application, and when the applicant is reached (also as a participant).
+		 * creator_skipped says the same for a booking's creator: it is set only when a creator is recorded
+		 * but has no usable number, not when no creator is recorded.
 		 *
 		 * @param string $reservation_type
 		 * @param int $reservation_id
 		 * @return array array(
-		 *	'recipients' => list of array('phone' => string, 'source' => 'participant'|'application'|'account'),
-		 *	'applicant_skipped' => null|'no_number'|'not_phone_shaped'|'all_zeros'
+		 *	'recipients' => list of array('phone' => string,
+		 *		'source' => 'participant'|'application'|'account'|'creator'|'group_contact'),
+		 *	'applicant_skipped' => null|'no_number'|'not_phone_shaped'|'all_zeros',
+		 *	'creator_skipped' => null|'no_number'|'not_phone_shaped'|'all_zeros'
 		 * )
 		 */
 		public function get_sms_recipients( $reservation_type, $reservation_id )
@@ -196,8 +214,38 @@
 				$known[] = self::phone_key($phone);
 			}
 
+			$creator_skipped = null;
+			if ($reservation_type == 'booking')
+			{
+				$creator = $this->get_creator_phone($reservation_id);
+				if (isset($creator['phone']))
+				{
+					if (!in_array(self::phone_key($creator['phone']), $known, true))
+					{
+						$recipients[] = $creator;
+						$known[] = self::phone_key($creator['phone']);
+					}
+				}
+				else
+				{
+					if (isset($creator['skipped']))
+					{
+						$creator_skipped = $creator['skipped'];
+					}
+					foreach ($this->get_group_contact_phones($reservation_id) as $phone)
+					{
+						if (!in_array(self::phone_key($phone), $known, true))
+						{
+							$recipients[] = array('phone' => $phone, 'source' => 'group_contact');
+							$known[] = self::phone_key($phone);
+						}
+					}
+				}
+			}
+
 			$applicant_skipped = null;
-			if (isset(self::$applicant_tables[$reservation_type]))
+			if (isset(self::$applicant_tables[$reservation_type])
+				&& ($reservation_type != 'booking' || self::SMS_BOOKING_APPLICANT))
 			{
 				$applicant = $this->get_applicant_phone($reservation_type, $reservation_id);
 				if (isset($applicant['skipped']))
@@ -210,7 +258,69 @@
 				}
 			}
 
-			return array('recipients' => $recipients, 'applicant_skipped' => $applicant_skipped);
+			return array(
+				'recipients' => $recipients,
+				'applicant_skipped' => $applicant_skipped,
+				'creator_skipped' => $creator_skipped
+			);
+		}
+
+		/**
+		 * The phone of the citizen who made an interntildeling (bb_booking.created_by_user_id, a bb_user),
+		 * by the applicant's rule: only a phone-shaped number with a digit other than 0 is usable.
+		 *
+		 * @param int $booking_id
+		 * @return array|null array('phone' => string, 'source' => 'creator'), or
+		 *	array('skipped' => 'no_number'|'not_phone_shaped'|'all_zeros') when a creator is recorded but has
+		 *	no usable number (also a user who has been anonymized), or null when no citizen creator is
+		 *	recorded: an older booking, one made by staff, or by a login that has no bb_user
+		 */
+		protected function get_creator_phone( $booking_id )
+		{
+			$usable = self::usable_phone_sql('u.phone');
+			$sql = "SELECT CASE WHEN {$usable} THEN btrim(u.phone) END AS phone,"
+				. " CASE WHEN btrim(coalesce(u.phone, '')) <> '' THEN " . self::skip_reason_sql('u.phone') . " END AS skipped"
+				. " FROM bb_booking b JOIN bb_user u ON u.id = b.created_by_user_id"
+				. " WHERE b.id = " . (int) $booking_id;
+			$this->db->query($sql, __LINE__, __FILE__);
+			if (!$this->db->next_record())
+			{
+				return null;
+			}
+
+			$phone = (string) $this->db->f('phone');
+			if ($phone !== '')
+			{
+				return array('phone' => $phone, 'source' => 'creator');
+			}
+
+			$reason = (string) $this->db->f('skipped');
+
+			return array('skipped' => $reason !== '' ? $reason : 'no_number');
+		}
+
+		/**
+		 * The usable phone numbers of the contacts of the group an interntildeling was made for, oldest
+		 * contact first. A contact without a usable number (see usable_phone_sql) is left out.
+		 *
+		 * @param int $booking_id
+		 * @return string[]
+		 */
+		protected function get_group_contact_phones( $booking_id )
+		{
+			$sql = "SELECT btrim(gc.phone) AS phone"
+				. " FROM bb_booking b JOIN bb_group_contact gc ON gc.group_id = b.group_id"
+				. " WHERE b.id = " . (int) $booking_id . " AND " . self::usable_phone_sql('gc.phone')
+				. " ORDER BY gc.id";
+			$this->db->query($sql, __LINE__, __FILE__);
+
+			$phones = array();
+			while ($this->db->next_record())
+			{
+				$phones[] = (string) $this->db->f('phone');
+			}
+
+			return $phones;
 		}
 
 		/**

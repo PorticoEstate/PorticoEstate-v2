@@ -786,39 +786,33 @@ class html_widgets
 		// this is optional
 		$this->clear_href_vars();
 		// Create Links for all the buttons
-		$folders_link = phpgw::link('/index.php', array(
-			'menuaction' => 'email.uifolder.folder',
-			// going to the folder list page, we only need log into the INBOX folder
-			'fldball[folder]' => 'INBOX',
-			'fldball[acctnum]' => \App\modules\email\services\MailMessage::getInstance()->get_acctnum()
+		$activeAccount = \App\modules\email\services\MailMessage::getInstance()->get_acctnum();
+		$activeFolder = \App\modules\email\services\MailMessage::getInstance()->prep_folder_out();
+		$folders_link = phpgw::link('/email/view/folders', array(
+			'fldball[folder]' => $activeFolder,
+			'fldball[acctnum]' => $activeAccount
 		));
-		$compose_link = phpgw::link('/index.php', array(
-			'menuaction' => 'email.uicompose.compose',
+		$compose_link = phpgw::link('/email/view/compose', array(
 			// this data tells us where to return to after sending a message
-			'fldball[folder]' => \App\modules\email\services\MailMessage::getInstance()->prep_folder_out(),
-			'fldball[acctnum]' => \App\modules\email\services\MailMessage::getInstance()->get_acctnum(),
+			'fldball[folder]' => $activeFolder,
+			'fldball[acctnum]' => $activeAccount,
 			'sort' => \App\modules\email\services\MailMessage::getInstance()->get_arg_value('sort'),
 			'order' => \App\modules\email\services\MailMessage::getInstance()->get_arg_value('order'),
 			'start' => \App\modules\email\services\MailMessage::getInstance()->get_arg_value('start')
 		));
-		$search_link = phpgw::link('/index.php', array(
-			'menuaction' => 'email.uisearch.form',
-			// this data tells us what account we are operating in
-			'fldball[folder]' => \App\modules\email\services\MailMessage::getInstance()->prep_folder_out(),
-			'fldball[acctnum]' => \App\modules\email\services\MailMessage::getInstance()->get_acctnum()
+		$search_link = phpgw::link('/email/view/search', array(
+			'fldball[folder]' => $activeFolder,
+			'fldball[acctnum]' => $activeAccount
 		));
 
-		$filters_link = phpgw::link('/index.php', array(
-			'menuaction' => 'email.uifilters.filters_list',
-			// this data tells us what folder and account was last active
-			'fldball[folder]' => \App\modules\email\services\MailMessage::getInstance()->prep_folder_out(),
-			'fldball[acctnum]' => \App\modules\email\services\MailMessage::getInstance()->get_acctnum()
+		$filters_link = phpgw::link('/email/view/filters', array(
+			'fldball[folder]' => $activeFolder,
+			'fldball[acctnum]' => $activeAccount
 		));
-		$accounts_link = phpgw::link('/index.php', array('menuaction' => 'email.uipreferences.ex_accounts_list'));
-		$email_prefs_link = phpgw::link('/index.php', array(
-			'menuaction' => 'email.uipreferences.preferences',
-			'ex_acctnum' => \App\modules\email\services\MailMessage::getInstance()->get_acctnum()
-		));
+		$accounts_link = phpgw::link('/email/view/accounts');
+		$email_prefs_link = $activeAccount > 0
+			? phpgw::link('/email/view/account', array('ex_acctnum' => $activeAccount))
+			: phpgw::link('/email/view/preferences');
 		// Check to see if mailserver supports folders.
 		$has_folders = \App\modules\email\services\MailMessage::getInstance()->get_mailsvr_supports_folders();
 		// Create Buttons
@@ -985,8 +979,8 @@ class html_widgets
 		{
 			$this->new_form();
 			$this->set_form_name('folders_cbox');
-			$this->set_form_action(phpgw::link('/index.php', array('menuaction' => 'email.uiindex.index')));
-			$this->set_form_method('post');
+			$this->set_form_action(phpgw::link('/email/view/inbox'));
+			$this->set_form_method('get');
 			$this->tpl->set_var('form_folders_cbox_opentag', $this->get_form());
 			$this->tpl->set_var('folders_combobox', $this->all_folders_combobox());
 			$this->tpl->set_var('form_folders_cbox_closetag', $this->form_closetag());
@@ -1003,8 +997,8 @@ class html_widgets
 		// <form name="acctbox" action="/mail/index.php?menuaction=email.uiindex.index" method="post">
 		$this->new_form();
 		$this->set_form_name('accounts_cbox');
-		$this->set_form_action(phpgw::link('/index.php', array('menuaction' => 'email.uiindex.index')));
-		$this->set_form_method('post');
+		$this->set_form_action(phpgw::link('/email/view/inbox'));
+		$this->set_form_method('get');
 		$this->tpl->set_var('form_acctbox_opentag', $this->get_form());
 		$this->tpl->set_var('acctbox_combobox', $this->all_accounts_combobox());
 		// associated image is still filled from row one

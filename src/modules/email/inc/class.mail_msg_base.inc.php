@@ -3094,44 +3094,6 @@ HTML;
 		return True;
 	}
 
-	/*!
-		@function care_about_unseen DEPRECIATED
-		@abstract When reporting the number of unseen, or new, messages in a folder, we may skip 
-		folders such as Trash and Sent because we do not care what is unseen in those folders.
-		@param $folder string ?
-		@result boolean
-		@discussion DEPRECIATED function was used when the number of unseen messages in a 
-		folder was included in the dropdown folder list combobox HTML select widget.
-		*/
-	function care_about_unseen($folder)
-	{
-		$folder = $this->get_folder_short($folder);
-		// we ALWAYS care about new messages in the INBOX
-		if ((stristr($folder_long, 'INBOX'))
-			&& (strlen($folder_long) == strlen('INBOX'))
-		)
-		{
-			return True;
-		}
-
-		$we_care = True; // initialize
-		$ignore_these_folders = array();
-		// DO NOT CHECK UNSEEN for these folders
-		$ignore_these_folders[0] = "sent";
-		$ignore_these_folders[1] = "trash";
-		$ignore_these_folders[2] = "templates";
-		for ($i = 0; $i < count($ignore_these_folders); $i++)
-		{
-			$match_this = $ignore_these_folders[$i];
-			if (preg_match("/^.*$match_this$/i", $folder))
-			{
-				$we_care = False;
-				break;
-			}
-		}
-		return $we_care;
-	}
-
 	// ----  Password Crypto Workaround broken common->en/decrypt  -----
 	/*!
 		@function encrypt_email_passwd
@@ -4576,20 +4538,6 @@ HTML;
 	}
 
 	/*!
-		@function  addslashes_gpc
-		@abstract reverse of function stripslashes_gpc BUT THIS IS NEVER USED.
-		@discussion Magic quotes, if they are turned on, are added BY PHP before the 
-		script is called. Therefor this function HAS NO USE. It is the decoding that is important 
-		to the coder.
-		*/
-	function addslashes_gpc($data)
-	{	/* add the escape \ that magic_quotes HTTP POST would add, " becomes \" and  '  becomes  \'  
-			  but ONLY if magic_quotes is OFF, else we may *double* add slashes */
-		// get_magic_quotes_gpc() removed in PHP 8.0; magic quotes were always off since PHP 5.4
-		return addslashes($data);
-	}
-
-	/*!
 		@function is_serialized
 		@abstract find out if something is already serialized
 		@param $data could be almost anything
@@ -5068,7 +5016,7 @@ HTML;
 		If message being moved has flags "Recent" or "Unseen", folder status info needs its unseen count reduced 
 		by one AND its total count reduced by one.
 		*/
-	function event_msg_move_or_delete($msgball = '', $called_by = 'not_specified', $to_fldball = '')
+	function event_msg_move_or_delete($msgball = array(), $called_by = 'not_specified', $to_fldball = array())
 	{
 		if (($this->session_cache_enabled == False)
 			&& ($this->session_cache_extreme == False)

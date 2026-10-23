@@ -398,17 +398,6 @@ class mail_msg extends mail_msg_wrappers
 					}
 
 
-					// "show_num_new" is currently BROKEN
-					// do we show the number of new (unseen) messages for this folder
-					//if (($local_args['show_num_new'])
-					//&& ($this->care_about_unseen($folder_short)))
-					//{
-					//	$mailbox_status = $this->a[$this->acctnum]['dcom']->status($mailsvr_stream,$this->get_arg_value('mailsvr_callstr').$folder_long,SA_ALL);
-					//	if ($mailbox_status->unseen > 0)
-					//	{
-					//		$item_tags = $item_tags . $unseen_prefix . $mailbox_status->unseen . $unseen_suffix;
-					//	}
-					//}
 					$item_tags = $item_tags . "</option>\r\n";
 				}
 			}
@@ -2533,90 +2522,6 @@ class mail_msg extends mail_msg_wrappers
 			$report_this = '';
 		}
 		return $report_this;
-	}
-
-	/*!
-	@function report_total_foldersize
-	@abstract ALIAS to report_total_foldersize_conditional
-	@param See the real function 
-	@discussion This function is being rewritten, so it not points to the new replacement function 
-	only for backward compat until all old function names are replaced. 
-	@author Angles
-	*/
-	function report_total_foldersize($force_showsize = '')
-	{
-		// the OLD version of this function took an array as the param, the NEW function does not
-		// old function calls are adapted to the new function by fropping the old arg array.
-		if (is_array($force_showsize))
-		{
-			// drop this param value, it is for the OLD funtion that is replaced. 
-			$force_showsize = '';
-		}
-		return $this->report_total_foldersize_conditional($force_showsize);
-	}
-
-	/*!
-	@function report_total_foldersize_conditional
-	@abstract MAYBE get the total of all messges sizes in a folder added up to "folder size" ONLY IF SPECIFIED.
-	@param $force_showsize (boolean) OPTIONAL, if not provided the arg value "force_showsize" is used, if available,
-	which is usually submitted via GPC by the user. However, if this param IS provided, it is used instead
-	of the arg value (overriding the arg value). In which case, if True, then we really so get the size, if False this function
-	does NOT get the size. If neither the arg value not this param are specified, the default is False, do not
-	get size data.
-	@result string, either (a) folder size nicely formatted for human readability, or (b) an empty string
-	if it was not OK to obtain the data according to the speed skip test
-	@discussion  total size of all emails in this folder added up, if its OK to get that data.
-	Getting folder size *can* take long time if alot of mail is in the folder, which put unneeded load on the IMAP server,
-	Additionally, there are 2 ways to get folder stats about a folder, one way ALWAYS requests the size from
-	the mailserver, the other way does NOT request the size from the mailserver. For speed reasons,
-	we only use the way that does NOT ask for the size, and additionally we may cache that data too.
-	However, if the user specifically requests the folder size, only then do we actually use the IMAP function
-	that will return the size. If various logic determines we are specifically to get the size data, then we
-	get the data and return it in human formatted format. Otherwise we do NOT get the size, and return
-	an empty string.
-	@author Angles
-	*/
-	function report_total_foldersize_conditional($force_showsize = '##NOTHING##')
-	{
-		// fallback value
-		$do_show_size = False;
-		// ----  Is It OK To Get The Folder Size?  ----
-		if (($force_showsize != $this->nothing)
-			&& ($force_showsize)
-		)
-		{
-			// a param not "##NOTHING## means USE THE PARAM as the determining value
-			// we use the value of the param, it superceeds the GPC arg value.
-			$do_show_size = True;
-			// it is also possible that param was passed as false, in which case $do_show_size never gets set to true in this logic block
-		}
-		elseif (($force_showsize == $this->nothing)
-			&& ($this->get_isset_arg('force_showsize'))
-			&& ($this->get_arg_value('force_showsize') != '')
-		)
-		{
-			// no param was specified, so we use the arg value "force_showsize", its an external CPG aquired arg
-			// in this case, user has requested override of this speed skip option
-			$do_show_size = True;
-		}
-		elseif ($this->get_isset_pref('show_foldersize'))
-		{
-			// user has set the pref to always show the size of the folder
-			$do_show_size = True;
-		}
-		// if we get to here and $do_show_size  has not specifically been set to True, then False is the fallback default
-
-		// if it's ok to obtain size, and size IS obtained, this $return_folder_size will be filled
-		$return_folder_size = '';
-
-		// ----  Get The Folder Size if it's OK  ----
-		if ($do_show_size)
-		{
-			// FOLDER SIZE info obtained now
-			$raw_folder_size = $this->get_folder_size();
-			$return_folder_size = $this->format_byte_size($raw_folder_size);
-		}
-		return $return_folder_size;
 	}
 
 	/*!

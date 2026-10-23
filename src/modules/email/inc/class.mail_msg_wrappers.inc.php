@@ -450,41 +450,6 @@ class mail_msg_wrappers extends mail_msg_base
 	}
 
 	/*!
-		@function all_headers_in_folder
-		@abstract wrapper for IMAP_HEADERS, phpgw supplies the nedessary stream arg and mail_dcom reference
-		@param $fldball   array[folder]   string ; array[acctnum]   int
-		@result returns the php IMAP_HEADERS data, php manual says 
-		function.imap-headers.php
-		Returns headers for all messages in a mailbox 
-		Returns an array of string formatted with header info. One element per mail message
-		@discussion = = = = USELESS FUNCTION = = = = 
-		returns array of strings, each string is extremely truncated
-		partial contents of date, from, and subject, also includes the msg size in chars
-		*/
-	function all_headers_in_folder($fldball = array(), $display_error = true)
-	{
-		if (
-			!(isset($fldball))
-			|| ((string)$fldball == '')
-		)
-		{
-			$fldball = $this->get_arg_value('fldball');
-		}
-		$acctnum = $fldball['acctnum'];
-		if (
-			!(isset($acctnum))
-			|| ((string)$acctnum == '')
-		)
-		{
-			$acctnum = $this->get_acctnum();
-		}
-		$this->ensure_stream_and_folder($fldball, 'all_headers_in_folder', $display_error);
-		$mailsvr_stream = $this->get_arg_value('mailsvr_stream', $acctnum);
-
-		return $this->getTransport($acctnum)->headers($mailsvr_stream);
-	}
-
-	/*!
 		@function phpgw_get_flag
 		@abstract ?
 		*/
@@ -795,9 +760,7 @@ class mail_msg_wrappers extends mail_msg_base
 		The other data IMAP_MAILBOXMSGINFO returns (if size is NOT needed) is obtainable
 		from "get_folder_status_info" more quickly and wth less load to the IMAP server
 		The data communications object (class mail_dcom) and mailsvr_stream are supplied by the class.
-		CACHE NOTE - USE THE WRAPPER FUNCTION "report_total_foldersize_conditional" which wraps this 
-		function with logic to only actually call this function if various conditional allow us to use this 
-		function, since getting size data is time consuming.  STREAM NOTE - this function DOES 
+		STREAM NOTE - this function DOES
 		require changing folders to the onr we want size data on. This may cause problems, since normal 
 		status info without size data is obtained without the need to actually switch to the subject folder. 
 		For example, using this in a combobox, of in a folder list, looping thru every folder getting this data 
@@ -1584,63 +1547,6 @@ class mail_msg_wrappers extends mail_msg_base
 			// so just SKIP IT
 			return False;
 		}
-	}
-
-	/*!
-		@function phpgw_mail_move
-		@abstract DEPRECIATED - NO LONGER USED. Use "industrial_interacct_mail_move" instead.
-		@author Angles
-		@access public
-		*/
-	function phpgw_mail_move($msg_list, $mailbox, $display_error = true)
-	{
-		// OLD FUNCTION does not provide enough information, all we can do is expire
-		$this->event_msg_move_or_delete(array(), 'phpgw_mail_move');
-		// delete session msg array data thAt is now stale
-		//$this->expire_session_cache_item('msgball_list');
-
-		$retval = $this->getTransport($this->acctnum)->mail_move($this->get_arg_value('mailsvr_stream'), $msg_list, $mailbox);
-		return $retval;
-	}
-
-	/*!
-		@function interacct_mail_move
-		@abstract DEPRECIATED - BEING PHASED OUT. Use "industrial_interacct_mail_move" instead.
-		@author Angles
-		@access public
-		*/
-	function interacct_mail_move($mov_msgball = array(), $to_fldball = array(), $display_error = true)
-	{
-		// this needs A LOT of work!!! do not rely on this yet
-
-		// delete session msg array data thAt is now stale
-		$this->event_msg_move_or_delete($mov_msgball, 'interacct_mail_move' . ' LINE ' . __LINE__, $to_fldball);
-		//$this->expire_session_cache_item('msgball_list');
-
-		// Note: Only call this function with ONE msgball at a time, i.e. NOT a list of msgballs
-		$acctnum = (int)$mov_msgball['acctnum'];
-		if (
-			!(isset($acctnum))
-			|| ((string)$acctnum == '')
-		)
-		{
-			$acctnum = $this->get_acctnum();
-		}
-		$this->ensure_stream_and_folder($mov_msgball, 'interacct_mail_move' . ' LINE ' . __LINE__, $display_error);
-
-
-		// NO - this function only works with folders within the same account
-		//$this->ensure_stream_and_folder($to_fldball, 'interacct_mail_move'.' LINE '.__LINE__, $display_error);
-
-		//$mailsvr_stream = (int)$this->get_arg_value('mailsvr_stream', $acctnum);
-		$mailsvr_stream = $this->get_arg_value('mailsvr_stream', $acctnum);
-		$msgnum = (string)$mov_msgball['msgnum'];
-		$mailbox = $to_fldball['folder'];
-		// the acctnum we are moving FROM *may* be different from the acctnum we are moving TO
-		// that requires a fetch then an append - FIXME!!!
-
-		$retval = $this->getTransport($acctnum)->mail_move($mailsvr_stream, $msgnum, $mailbox);
-		return $retval;
 	}
 
 	/**

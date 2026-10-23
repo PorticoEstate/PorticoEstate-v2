@@ -286,6 +286,8 @@ abstract class booking_uicommon extends phpgwapi_uicommon_jquery
 	 * contacted (see sms_result_messages). Does nothing unless the box was ticked and filled in;
 	 * when it was, the officer is redirected back to the reservation. A recipient whose send fails,
 	 * whether the gateway says so or throws, is reported as not reached and the others are still sent.
+	 * That includes the creator of an interntildeling: a failed send to them is reported as failed and
+	 * the group's contacts are NOT tried instead; only a creator without a usable number falls back.
 	 *
 	 * @param int $id the reservation
 	 * @param string $type 'allocation' or 'booking'
@@ -333,7 +335,7 @@ abstract class booking_uicommon extends phpgwapi_uicommon_jquery
 				}
 			}
 
-			foreach (self::sms_result_messages($recipients, $reached, $resolved['applicant_skipped']) as $message)
+			foreach (self::sms_result_messages($recipients, $reached, $resolved['applicant_skipped'], $resolved['creator_skipped'], $type) as $message)
 			{
 				Cache::message_set(lang($message['key'], $message['phone']), $message['type']);
 			}
@@ -344,35 +346,59 @@ abstract class booking_uicommon extends phpgwapi_uicommon_jquery
 
 	/**
 	 * What the officer is told after an SMS from a reservation's page: one line per recipient, saying
-	 * whether it was sent to them or could not be, with their role, and a line when the applicant
-	 * could not be contacted at all. Gives lang keys, not texts, so the cases can be checked without
-	 * a translation installed.
+	 * whether it was sent to them or could not be, with their role (participant, applicant, creator of
+	 * the interntildeling or contact of its group), and a line when the applicant or the creator could
+	 * not be contacted at all. The creator's line comes before the contact lines that took their place.
+	 * Gives lang keys, not texts, so the cases can be checked without a translation installed.
 	 *
 	 * @param array $recipients as returned by booking_soparticipant::get_sms_recipients()
 	 * @param array $reached recipient index => whether the gateway accepted the message
 	 * @param string|null $applicant_skipped as returned by booking_soparticipant::get_sms_recipients()
+	 * @param string|null $creator_skipped as returned by booking_soparticipant::get_sms_recipients()
+	 * @param string $type 'allocation' or 'booking': a booking's nobody-line does not name the applicant
 	 * @return array list of array('type' => 'message'|'error', 'key' => string, 'phone' => string)
 	 */
-	protected static function sms_result_messages( $recipients, $reached, $applicant_skipped )
+	protected static function sms_result_messages( $recipients, $reached, $applicant_skipped, $creator_skipped = null, $type = 'allocation' )
 	{
+		$roles = array(
+			'participant' => 'participant',
+			'creator' => 'creator',
+			'group_contact' => 'group_contact'
+		);
 		$sent_keys = array(
 			'participant' => 'sms_sent_to_participant',
-			'applicant' => 'sms_sent_to_applicant'
+			'applicant' => 'sms_sent_to_applicant',
+			'creator' => 'sms_sent_to_creator',
+			'group_contact' => 'sms_sent_to_group_contact'
 		);
 		$failed_keys = array(
 			'participant' => 'sms_failed_to_participant',
-			'applicant' => 'sms_failed_to_applicant'
+			'applicant' => 'sms_failed_to_applicant',
+			'creator' => 'sms_failed_to_creator',
+			'group_contact' => 'sms_failed_to_group_contact'
 		);
 
 		$messages = array();
 		if (!$recipients)
 		{
-			$messages[] = array('type' => 'error', 'key' => 'sms_no_recipients', 'phone' => '');
+			$messages[] = array(
+				'type' => 'error',
+				'key' => $type == 'booking' ? 'sms_no_recipients_booking' : 'sms_no_recipients',
+				'phone' => ''
+			);
 		}
 
+		$creator_line_pending = (bool) $creator_skipped;
 		foreach ($recipients as $index => $recipient)
 		{
-			$role = $recipient['source'] == 'participant' ? 'participant' : 'applicant';
+			// Any other source is the applicant: the number on the application or on the applicant's account.
+			$role = isset($roles[$recipient['source']]) ? $roles[$recipient['source']] : 'applicant';
+			if ($creator_line_pending && $role == 'group_contact')
+			{
+				$messages[] = array('type' => 'error', 'key' => 'sms_creator_no_valid_phone', 'phone' => '');
+				$creator_line_pending = false;
+			}
+
 			if (!empty($reached[$index]))
 			{
 				$messages[] = array('type' => 'message', 'key' => $sent_keys[$role], 'phone' => $recipient['phone']);
@@ -381,6 +407,11 @@ abstract class booking_uicommon extends phpgwapi_uicommon_jquery
 			{
 				$messages[] = array('type' => 'error', 'key' => $failed_keys[$role], 'phone' => $recipient['phone']);
 			}
+		}
+
+		if ($creator_line_pending)
+		{
+			$messages[] = array('type' => 'error', 'key' => 'sms_creator_no_valid_phone', 'phone' => '');
 		}
 
 		if ($applicant_skipped)

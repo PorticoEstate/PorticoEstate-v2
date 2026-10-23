@@ -2679,6 +2679,39 @@ class mail_msg extends mail_msg_wrappers
 		{
 			$start = 0;
 		}
+		if (!empty($folder_info['is_imap']) && $totaltodisplay > $start)
+		{
+			$acctnum = (int) ($folder_info['fldball']['acctnum'] ?? $this->get_acctnum());
+			$mailsvr_stream = $this->get_arg_value('mailsvr_stream', $acctnum);
+			if (is_string($mailsvr_stream) && $mailsvr_stream !== '')
+			{
+				$message_numbers = array();
+				for ($metadata_index = $start; $metadata_index < $totaltodisplay; $metadata_index++)
+				{
+					if (isset($msgball_list[$metadata_index]))
+					{
+						$page_msgball = $this->ball_data_parse_str($msgball_list[$metadata_index]);
+						$message_numbers[] = (int) ($page_msgball['msgnum'] ?? 0);
+					}
+				}
+				$found_message_numbers = $this->getTransport($acctnum)->prefetch_message_metadata($mailsvr_stream, $message_numbers);
+				if (is_array($found_message_numbers) && array_diff($message_numbers, $found_message_numbers))
+				{
+					$this->expire_session_cache_item('msgball_list', $acctnum);
+					$msgball_list = $this->get_msgball_list($acctnum, $ex_folder);
+					$message_numbers = array();
+					for ($metadata_index = $start; $metadata_index < $totaltodisplay; $metadata_index++)
+					{
+						if (isset($msgball_list[$metadata_index]))
+						{
+						$page_msgball = $this->ball_data_parse_str($msgball_list[$metadata_index]);
+						$message_numbers[] = (int) ($page_msgball['msgnum'] ?? 0);
+					}
+					}
+					$this->getTransport($acctnum)->prefetch_message_metadata($mailsvr_stream, $message_numbers);
+				}
+			}
+		}
 		// keep track of how many loops we've done, for the return array, will be advanced to 0 before it's used
 		$x = -1;
 		for ($i = $start; $i < $totaltodisplay; $i++)

@@ -106,17 +106,31 @@ class email_mail_dcom extends mail_dcom_base
 
 	function header($stream, $msg_nr, $fromlength = 0, $tolength = 0, $defaulthost = '')
 	{
+		$flags = 0;
 		// do we need to temporarily switch to regular msg num sequence for this function?
 		if ($this->force_msg_uids == True)
 		{
-			// this function can nothandle UIDs, switch to sequence number
-			$new_msg_nr = IMAPManager::imap_msgno($stream, $msg_nr);
-			if ($new_msg_nr)
+			if (is_string($stream))
 			{
-				$msg_nr = $new_msg_nr;
+				$flags |= PE_IMAP_FT_UID;
+			}
+			else
+			{
+				// Native imap_header() requires a sequence number, not a UID.
+				$new_msg_nr = IMAPManager::imap_msgno($stream, $msg_nr);
+				if ($new_msg_nr)
+				{
+					$msg_nr = $new_msg_nr;
+				}
 			}
 		}
-		return IMAPManager::imap_header($stream, $msg_nr, $fromlength, $tolength, $defaulthost);
+		return IMAPManager::imap_header($stream, $msg_nr, $fromlength, $tolength, $defaulthost, $flags);
+	}
+
+	function prefetch_message_metadata($stream, array $message_numbers)
+	{
+		$flags = $this->force_msg_uids == True ? PE_IMAP_FT_UID : 0;
+		return IMAPManager::imap_prefetch_message_metadata($stream, $message_numbers, $flags);
 	}
 
 	function headers($stream)

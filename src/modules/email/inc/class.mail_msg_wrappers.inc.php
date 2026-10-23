@@ -4208,6 +4208,8 @@ Array
 					&& ($got_data['validity']['folder_status_info']['uidnext'] == $folder_info['uidnext'])
 					&& ($got_data['validity']['folder_status_info']['uidvalidity'] == $folder_info['uidvalidity'])
 					&& ($got_data['validity']['folder_status_info']['number_all']  == $folder_info['number_all'])
+					&& is_array($got_data['msgball_list'] ?? null)
+					&& count($got_data['msgball_list']) == (int) $folder_info['number_all']
 					&& ($got_data['validity']['sort'] == $this->get_arg_value('sort', $acctnum))
 					&& ($got_data['validity']['order'] == $this->get_arg_value('order', $acctnum))
 					&& ($got_data['validity']['mailsvr_callstr'] == $this->get_arg_value('mailsvr_callstr', $acctnum))

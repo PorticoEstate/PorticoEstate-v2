@@ -67,7 +67,7 @@ class EmailMessageActionsTest extends TestCase
 			public function phpgw_header($message, $errors) { return $message['msgnum'] === 999 ? false : (object) []; }
 			public function ensure_stream_and_folder($message, $operation, $errors): bool { return true; }
 			public function getTransport($account): object { return $this->transport; }
-			public function expire_session_cache_item($key, $account, $folder): void { $this->expired[] = [$key, $account, $folder]; }
+			public function expire_session_cache_item($key, $account, $folder = ''): void { $this->expired[] = [$key, $account, $folder]; }
 		};
 		$request = EmailMessageActions::normalize(['action' => 'move', 'account' => 0,
 			'messages' => array_map(static fn($number) => ['acctnum' => 0, 'folder' => 'Source', 'msgnum' => $number], [2, 999, 8]),
@@ -78,6 +78,7 @@ class EmailMessageActionsTest extends TestCase
 		$this->assertCount(1, $result['failed']);
 		$this->assertSame('Message no longer exists', $result['failed'][0]['error']);
 		$this->assertFalse($result['failed'][0]['copied']);
+		$this->assertContains(['msgball_list', 0, ''], $mail->expired);
 		$this->assertContains(['phpgw_header', 0, 'Source'], $mail->expired);
 		$this->assertContains(['folder_status_info', 0, 'Target'], $mail->expired);
 	}

@@ -96,4 +96,133 @@ class ModernImapMimeTest extends TestCase
 			$property->setValue(null, $original);
 		}
 	}
+
+	public function testFetchStructureUsesBodyStructureInsteadOfFetchingMessageBody(): void
+	{
+		$property = new \ReflectionProperty(\ModernIMAPWrapper::class, 'connections');
+		$property->setAccessible(true);
+		$original = $property->getValue();
+		$protocol = $this->getMockBuilder(\stdClass::class)->addMethods(['fetch'])->getMock();
+		$response = new class {
+			public function validatedData(): array
+			{
+				return [42 => ['UID' => 42, 'BODYSTRUCTURE' => [
+					'APPLICATION', 'PDF', [['NAME', 'report.pdf']], null, null, 'BASE64', 256, null,
+					['ATTACHMENT', [['FILENAME', 'report.pdf']]], null, null, null,
+				]]];
+			}
+		};
+		$protocol->expects($this->once())->method('fetch')->with(
+			['BODYSTRUCTURE', 'UID'],
+			[42],
+			null,
+			\Webklex\PHPIMAP\IMAP::ST_UID
+		)->willReturn($response);
+		$client = $this->getMockBuilder(\stdClass::class)->addMethods(['openFolder', 'getConnection'])->getMock();
+		$client->expects($this->once())->method('openFolder')->with('INBOX');
+		$client->method('getConnection')->willReturn($protocol);
+		$property->setValue(null, ['structure-test' => [
+			'client' => $client,
+			'folder' => (object) ['path' => 'INBOX'],
+		]]);
+		try
+		{
+			$structure = \ModernIMAPWrapper::imap_fetchstructure('structure-test', 42, 1);
+			$this->assertSame(3, $structure->type);
+			$this->assertSame('ATTACHMENT', $structure->disposition);
+			$this->assertSame('report.pdf', $structure->dparameters[0]->value);
+		}
+		finally
+		{
+			$property->setValue(null, $original);
+		}
+	}
+
+	public function testMetadataPrefetchCachesHeadersAndStructuresForUidRows(): void
+	{
+		$property = new \ReflectionProperty(\ModernIMAPWrapper::class, 'connections');
+		$property->setAccessible(true);
+		$original = $property->getValue();
+		$protocol = $this->getMockBuilder(\stdClass::class)->addMethods(['fetch'])->getMock();
+		$response = new class {
+			public function validatedData(): array
+			{
+				return [42 => [
+					'UID' => 42,
+					'INTERNALDATE' => '06-Oct-2026 10:00:00 +0000',
+					'RFC822.SIZE' => 256,
+					'BODY[HEADER]' => "From: Sender <sender@example.test>\r\nSubject: Batch header\r\nDate: Tue, 06 Oct 2026 10:00:00 +0000\r\nMessage-ID: <batch@example.test>\r\n",
+					'FLAGS' => ['\\Seen'],
+				]];
+			}
+		};
+		$protocol->expects($this->once())->method('fetch')->with(
+			['UID', 'INTERNALDATE', 'RFC822.SIZE', 'BODY.PEEK[HEADER]', 'FLAGS'],
+			[42, 43],
+			null,
+			\Webklex\PHPIMAP\IMAP::ST_UID
+		)->willReturn($response);
+		$config = new \Webklex\PHPIMAP\Config(['options' => []]);
+		$client = $this->getMockBuilder(\stdClass::class)->addMethods(['openFolder', 'getConnection', 'getConfig'])->getMock();
+		$client->expects($this->once())->method('openFolder')->with('INBOX');
+		$client->method('getConnection')->willReturn($protocol);
+		$client->method('getConfig')->willReturn($config);
+		$property->setValue(null, ['prefetch-test' => [
+			'client' => $client,
+			'folder' => (object) ['path' => 'INBOX'],
+		]]);
+		try
+		{
+			$this->assertSame([42], \ModernIMAPWrapper::imap_prefetch_message_metadata('prefetch-test', [42, 42, 43], 1));
+			$header = \ModernIMAPWrapper::imap_header('prefetch-test', 42, 0, 0, '', 1);
+			$this->assertSame('Batch header', $header->subject);
+			$this->assertSame(' ', $header->Unseen);
+			$this->assertSame(256, (int) $header->Size);
+		}
+		finally
+		{
+			$property->setValue(null, $original);
+		}
+	}
+
+	public function testSortAcceptsNumericStringCriteriaFromRequests(): void
+	{
+		$property = new \ReflectionProperty(\ModernIMAPWrapper::class, 'connections');
+		$property->setAccessible(true);
+		$original = $property->getValue();
+		$protocol = $this->getMockBuilder(\stdClass::class)->addMethods(['fetch'])->getMock();
+		$response = new class {
+			public function validatedData(): array
+			{
+				return [1 => [
+					'UID' => 42,
+					'INTERNALDATE' => '06-Oct-2026 10:00:00 +0000',
+					'RFC822.SIZE' => 256,
+					'BODY[HEADER]' => "Subject: Sortable subject\r\nFrom: sender@example.test\r\n",
+				]];
+			}
+		};
+		$protocol->expects($this->once())->method('fetch')->with(
+			['UID', 'INTERNALDATE', 'RFC822.SIZE', 'BODY.PEEK[HEADER]'],
+			1,
+			INF,
+			\Webklex\PHPIMAP\IMAP::ST_MSGN
+		)->willReturn($response);
+		$client = $this->getMockBuilder(\stdClass::class)->addMethods(['openFolder', 'getConnection', 'getConfig'])->getMock();
+		$client->expects($this->once())->method('openFolder')->with('INBOX');
+		$client->method('getConnection')->willReturn($protocol);
+		$client->method('getConfig')->willReturn(new \Webklex\PHPIMAP\Config(['options' => []]));
+		$property->setValue(null, ['sort-test' => [
+			'client' => $client,
+			'folder' => (object) ['path' => 'INBOX'],
+		]]);
+		try
+		{
+			$this->assertSame([42], \ModernIMAPWrapper::imap_sort('sort-test', '3', '0', 1));
+		}
+		finally
+		{
+			$property->setValue(null, $original);
+		}
+	}
 }

@@ -178,10 +178,18 @@ class IMAPManager
     {
         return self::executeWithFallback('imap_fetchstructure', [$stream, $msgNum, $flags]);
     }
-    
-    public static function imap_header($stream, $msgNum, $fromlength = 0, $tolength = 0, $defaulthost = '')
+
+    public static function imap_prefetch_message_metadata($stream, array $messageNumbers, $flags = 0)
     {
-        return self::executeWithFallback('imap_header', [$stream, $msgNum, $fromlength, $tolength, $defaulthost]);
+        if (!is_string($stream)) {
+            return false;
+        }
+        return ModernIMAPWrapper::imap_prefetch_message_metadata($stream, $messageNumbers, $flags);
+    }
+    
+    public static function imap_header($stream, $msgNum, $fromlength = 0, $tolength = 0, $defaulthost = '', $flags = 0)
+    {
+        return self::executeWithFallback('imap_header', [$stream, $msgNum, $fromlength, $tolength, $defaulthost, $flags]);
     }
     
     public static function imap_headerinfo($stream, $msgNum, $fromlength = 0, $tolength = 0, $defaulthost = '')

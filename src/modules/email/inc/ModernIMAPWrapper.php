@@ -352,9 +352,13 @@ class ModernIMAPWrapper
         }
 
         try {
+            $criteria = filter_var($criteria, FILTER_VALIDATE_INT);
             if (!in_array($criteria, range(0, 6), true)) {
                 throw new InvalidArgumentException('Invalid IMAP sort criterion');
             }
+
+            $reverse = (bool) $reverse;
+            $options = (int) $options;
 
             $connection = self::$connections[$stream];
             $client = $connection['client'];
@@ -419,6 +423,79 @@ class ModernIMAPWrapper
             : $query->getMessageByMsgn((int) $msgNum);
     }
 
+    public static function imap_prefetch_message_metadata($stream, array $messageNumbers, $flags = 0)
+    {
+        if (!isset(self::$connections[$stream]['folder'])) {
+            return false;
+        }
+
+        $messageNumbers = array_values(array_unique(array_filter(array_map('intval', $messageNumbers), static fn($number) => $number > 0)));
+        if (!$messageNumbers) {
+            return [];
+        }
+
+        try {
+            $connection = self::$connections[$stream];
+            $client = $connection['client'];
+            $client->openFolder($connection['folder']->path);
+            $mode = ($flags & 1) ? \Webklex\PHPIMAP\IMAP::ST_UID : \Webklex\PHPIMAP\IMAP::ST_MSGN;
+            $metadata = $client->getConnection()->fetch(
+                ['UID', 'INTERNALDATE', 'RFC822.SIZE', 'BODY.PEEK[HEADER]', 'FLAGS'],
+                $messageNumbers,
+                null,
+                $mode
+            )->validatedData();
+
+            $foundMessageNumbers = [];
+            foreach ($metadata as $messageNumber => $attributes) {
+                $identifier = (int) ($attributes['UID'] ?? $messageNumber);
+                $foundMessageNumbers[] = $identifier;
+                if (isset($attributes['BODY[HEADER]']) && is_string($attributes['BODY[HEADER]']) && $attributes['BODY[HEADER]'] !== '') {
+                    self::$connections[$stream]['messageHeaders'][$identifier] = self::convertFetchedHeader($attributes, $identifier, $client);
+                }
+            }
+            return $foundMessageNumbers;
+        } catch (Exception $exception) {
+            self::$lastError = $exception->getMessage();
+            return false;
+        }
+    }
+
+    private static function convertFetchedHeader(array $attributes, int $messageNumber, $client): stdClass
+    {
+        $source = new \Webklex\PHPIMAP\Header((string) ($attributes['BODY[HEADER]'] ?? ''), $client->getConfig());
+        $header = new stdClass();
+        foreach (['from', 'to', 'cc', 'bcc', 'reply_to', 'sender', 'return_path'] as $field) {
+            $addresses = $source->get($field)->toArray();
+            $header->$field = array_map(static fn($address) => (object) [
+                'personal' => $address->personal,
+                'mailbox' => $address->mailbox,
+                'host' => $address->host,
+            ], $addresses);
+            $header->{$field . 'address'} = implode(', ', array_map(static fn($address) => (string) $address, $addresses));
+        }
+        if (!$header->reply_to) {
+            $header->reply_to = $header->from;
+            $header->reply_toaddress = $header->fromaddress;
+        }
+        $header->subject = $header->Subject = (string) ($source->get('subject')->first() ?? '');
+        $header->date = $header->Date = (string) ($source->get('date')->first() ?? '');
+        $header->udate = strtotime((string) ($attributes['INTERNALDATE'] ?? '')) ?: 0;
+        $header->message_id = (string) ($source->get('message_id')->first() ?? '');
+        $header->size = $header->Size = (string) ($attributes['RFC822.SIZE'] ?? 0);
+        $header->Msgno = (string) $messageNumber;
+
+        $flags = array_map(static fn($flag) => strtolower(ltrim((string) $flag, '\\')), (array) ($attributes['FLAGS'] ?? []));
+        $hasFlag = static fn($flag) => in_array($flag, $flags, true);
+        $isSeen = $hasFlag('seen');
+        $header->Unseen = $isSeen ? ' ' : 'U';
+        $header->Recent = $hasFlag('recent') ? ($isSeen ? 'R' : 'N') : ' ';
+        foreach (['answered' => 'A', 'flagged' => 'F', 'deleted' => 'D', 'draft' => 'X'] as $flag => $marker) {
+            $header->{ucfirst($flag)} = $hasFlag($flag) ? $marker : ' ';
+        }
+        return $header;
+    }
+
     /**
      * Modern replacement for imap_fetchheader()
      */
@@ -434,7 +511,6 @@ class ModernIMAPWrapper
             if ($message) {
                 return $message->getHeader()->raw;
             }
-            
             return false;
             
         } catch (Exception $e) {
@@ -490,8 +566,28 @@ class ModernIMAPWrapper
         if (!isset(self::$connections[$stream]['folder'])) {
             return false;
         }
+
+        $structure = self::$connections[$stream]['messageStructures'][(int) $msgNum] ?? null;
+        if (is_array($structure)) {
+            return self::convertBodyStructure($structure);
+        }
         
         try {
+            $connection = self::$connections[$stream];
+            $client = $connection['client'];
+            $client->openFolder($connection['folder']->path);
+            $mode = ($flags & 1) ? \Webklex\PHPIMAP\IMAP::ST_UID : \Webklex\PHPIMAP\IMAP::ST_MSGN;
+            $data = $client->getConnection()->fetch(
+                ['BODYSTRUCTURE', 'UID'],
+                [(int) $msgNum],
+                null,
+                $mode
+            )->validatedData();
+            $attributes = $data[(int) $msgNum] ?? (is_array($data) ? reset($data) : []);
+            if (is_array($attributes['BODYSTRUCTURE'] ?? null)) {
+                return self::convertBodyStructure($attributes['BODYSTRUCTURE']);
+            }
+
             $message = self::getMessage($stream, $msgNum, $flags);
             if (!$message) return false;
             $parser = new \ZBateson\MailMimeParser\MailMimeParser();
@@ -502,6 +598,81 @@ class ModernIMAPWrapper
             self::$lastError = $e->getMessage();
             return false;
         }
+    }
+
+    private static function convertBodyStructure(array $bodyStructure): stdClass
+    {
+        $isMultipart = isset($bodyStructure[0]) && is_array($bodyStructure[0]);
+        if ($isMultipart) {
+            $childCount = 0;
+            $parts = [];
+            while (isset($bodyStructure[$childCount]) && is_array($bodyStructure[$childCount])) {
+                $parts[] = self::convertBodyStructure($bodyStructure[$childCount]);
+                $childCount++;
+            }
+            $type = 'MULTIPART';
+            $subtype = (string) ($bodyStructure[$childCount] ?? '');
+            $parameters = $bodyStructure[$childCount + 1] ?? null;
+            $disposition = $bodyStructure[$childCount + 2] ?? null;
+        } else {
+            $type = (string) ($bodyStructure[0] ?? 'OTHER');
+            $subtype = (string) ($bodyStructure[1] ?? '');
+            $parameters = $bodyStructure[2] ?? null;
+            $dispositionIndex = strtoupper($type) === 'TEXT' ? 9 : 8;
+            if (strtoupper($type) === 'MESSAGE' && strtoupper($subtype) === 'RFC822') {
+                if (isset($bodyStructure[8]) && is_array($bodyStructure[8])) {
+                    $parts = [self::convertBodyStructure($bodyStructure[8])];
+                } else {
+                    $parts = [];
+                }
+                $dispositionIndex = 11;
+            } else {
+                $parts = [];
+            }
+            $disposition = $bodyStructure[$dispositionIndex] ?? null;
+        }
+
+        $type = strtoupper($type);
+        $encoding = strtoupper((string) ($isMultipart ? '' : ($bodyStructure[5] ?? '')));
+        $structure = new stdClass();
+        $structure->type = ['TEXT' => 0, 'MULTIPART' => 1, 'MESSAGE' => 2, 'APPLICATION' => 3, 'AUDIO' => 4, 'IMAGE' => 5, 'VIDEO' => 6][$type] ?? 7;
+        $structure->subtype = strtoupper($subtype);
+        $structure->ifsubtype = $subtype !== '' ? 1 : 0;
+        $structure->encoding = ['7BIT' => 0, '8BIT' => 1, 'BINARY' => 2, 'BASE64' => 3, 'QUOTED-PRINTABLE' => 4][$encoding] ?? 5;
+        $structure->bytes = (int) ($isMultipart ? 0 : ($bodyStructure[6] ?? 0));
+        $structure->id = $isMultipart ? '' : (string) ($bodyStructure[3] ?? '');
+        $structure->ifid = $structure->id !== '' ? 1 : 0;
+        $structure->description = $isMultipart ? '' : (string) ($bodyStructure[4] ?? '');
+        $structure->ifdescription = $structure->description !== '' ? 1 : 0;
+        $structure->parameters = self::convertBodyParameters($parameters);
+        $structure->ifparameters = $structure->parameters ? 1 : 0;
+        $dispositionType = is_array($disposition) ? (string) ($disposition[0] ?? '') : '';
+        $structure->disposition = strtoupper($dispositionType);
+        $structure->ifdisposition = $structure->disposition !== '' ? 1 : 0;
+        $structure->dparameters = self::convertBodyParameters(is_array($disposition) ? ($disposition[1] ?? null) : null);
+        $structure->ifdparameters = $structure->dparameters ? 1 : 0;
+        if ($parts) {
+            $structure->parts = $parts;
+        }
+        return $structure;
+    }
+
+    private static function convertBodyParameters($parameters): array
+    {
+        if (!is_array($parameters)) {
+            return [];
+        }
+
+        $result = [];
+        foreach ($parameters as $parameter) {
+            if (is_array($parameter) && isset($parameter[0])) {
+                $result[] = (object) [
+                    'attribute' => strtoupper((string) $parameter[0]),
+                    'value' => (string) ($parameter[1] ?? ''),
+                ];
+            }
+        }
+        return $result;
     }
     
     private static function convertMimeStructure(\ZBateson\MailMimeParser\Message\IMimePart $part): stdClass
@@ -536,14 +707,19 @@ class ModernIMAPWrapper
     /**
      * Modern replacement for imap_header() / imap_headerinfo()
      */
-    public static function imap_header($stream, $msgNum, $fromlength = 0, $tolength = 0, $defaulthost = '')
+    public static function imap_header($stream, $msgNum, $fromlength = 0, $tolength = 0, $defaulthost = '', $flags = 0)
     {
         if (!isset(self::$connections[$stream]['folder'])) {
             return false;
         }
+
+        $cachedHeader = self::$connections[$stream]['messageHeaders'][(int) $msgNum] ?? null;
+        if ($cachedHeader instanceof stdClass) {
+            return $cachedHeader;
+        }
         
         try {
-            $message = self::getMessage($stream, $msgNum);
+            $message = self::getMessage($stream, $msgNum, $flags);
             
             if ($message) {
                 $header = new stdClass();
@@ -564,10 +740,12 @@ class ModernIMAPWrapper
                 $header->subject = $header->Subject = (string) $message->getSubject();
                 $date = $message->getDate()->first();
                 $header->date = $header->Date = $date ? (string) $date : '';
+                $mode = ($flags & 1) ? \Webklex\PHPIMAP\IMAP::ST_UID : \Webklex\PHPIMAP\IMAP::ST_MSGN;
                 $internalDates = $message->getClient()->getConnection()->fetch(
-                    ['UID', 'INTERNALDATE'], [(int) $msgNum], null, \Webklex\PHPIMAP\IMAP::ST_MSGN
+                    ['UID', 'INTERNALDATE'], [(int) $msgNum], null, $mode
                 )->validatedData();
-                $header->udate = strtotime($internalDates[(int) $msgNum]['INTERNALDATE'] ?? '') ?: 0;
+                $internalDate = $internalDates[(int) $msgNum]['INTERNALDATE'] ?? '';
+                $header->udate = strtotime($internalDate) ?: 0;
                 $header->message_id = (string) $message->getMessageId();
                 $header->size = $header->Size = (string) $message->getSize();
                 $header->Msgno = (string) $msgNum;

@@ -134,6 +134,7 @@ final class EmailMessageActions
 	private function expire(object $mail, int $account, string $folder): void
 	{
 		$folder = $mail->prep_folder_out($folder);
-		foreach (['msgball_list', 'phpgw_header', 'folder_status_info', 'msg_structure'] as $key) $mail->expire_session_cache_item($key, $account, $folder);
+		$mail->expire_session_cache_item('msgball_list', $account);
+		foreach (['phpgw_header', 'folder_status_info', 'msg_structure'] as $key) $mail->expire_session_cache_item($key, $account, $folder);
 	}
 }

@@ -84,7 +84,7 @@ class LegacyIMAPWrapper
     /**
      * Legacy imap_header() - direct passthrough to native function
      */
-    public static function imap_header($stream, $msgNum, $fromlength = 0, $tolength = 0, $defaulthost = '')
+    public static function imap_header($stream, $msgNum, $fromlength = 0, $tolength = 0, $defaulthost = '', $flags = 0)
     {
         if (!function_exists('imap_header')) {
             return false;

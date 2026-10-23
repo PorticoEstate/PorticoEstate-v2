@@ -461,14 +461,14 @@ class mail_msg_wrappers extends mail_msg_base
 		returns array of strings, each string is extremely truncated
 		partial contents of date, from, and subject, also includes the msg size in chars
 		*/
-	function all_headers_in_folder($fldball = '', $display_error = true)
+	function all_headers_in_folder($fldball = array(), $display_error = true)
 	{
 		if (
 			!(isset($fldball))
 			|| ((string)$fldball == '')
 		)
 		{
-			$msgball = $this->get_arg_value('fldball');
+			$fldball = $this->get_arg_value('fldball');
 		}
 		$acctnum = $fldball['acctnum'];
 		if (
@@ -3251,7 +3251,7 @@ Array
 		@author Angles
 		@access Private
 		*/
-	function get_best_acctnum($args_array = '', $got_args = '', $force_feed_acctnum = '', $display_error = true)
+	function get_best_acctnum($args_array = array(), $got_args = array(), $force_feed_acctnum = '', $display_error = true)
 	{
 
 		// ---  which email account do are these args intended to apply to  ----
@@ -3535,7 +3535,7 @@ Array
 		@author Angles
 		@access Private
 		*/
-	function get_best_folder_arg($args_array = '', $got_args = '', $acctnum = '', $display_error = true)
+	function get_best_folder_arg($args_array = array(), $got_args = array(), $acctnum = '', $display_error = true)
 	{
 		// initialize
 		$processed_folder_arg = '';
@@ -4789,7 +4789,7 @@ Array
 		preference array.
 		@access private
 		*/
-	function set_pref_array($pref_array_data = '', $acctnum = '', $display_error = true)
+	function set_pref_array($pref_array_data = array(), $acctnum = '', $display_error = true)
 	{
 		if ((!isset($acctnum))
 			|| ((string)$acctnum == '')
@@ -5364,7 +5364,7 @@ Array
 		@discussion ?
 		@access private
 		*/
-	function set_arg_array($arg_array_data = '', $acctnum = '', $display_error = true)
+	function set_arg_array($arg_array_data = array(), $acctnum = '', $display_error = true)
 	{
 		if ((!isset($acctnum))
 			|| ((string)$acctnum == '')

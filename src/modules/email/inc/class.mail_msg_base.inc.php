@@ -1938,17 +1938,12 @@ class mail_msg_base
 
 			if ($acctnum == 0)
 			{
-				$go_somewhere_url = phpgw::link('/index.php', array(
-					'menuaction' => 'email.uipreferences.preferences',
-					'show_help'  => '1'
-				));
+				$go_somewhere_url = phpgw::link('/email/view/preferences');
 			}
 			else
 			{
-				$go_somewhere_url = phpgw::link('/index.php', array(
-					'menuaction' => 'email.uipreferences.ex_accounts_edit',
-					'ex_acctnum' => $acctnum,
-					'show_help'  => '1'
+				$go_somewhere_url = phpgw::link('/email/view/account', array(
+					'ex_acctnum' => $acctnum
 				));
 			}
 			$go_somewhere_text = lang('click here to edit the settings for this email account.');

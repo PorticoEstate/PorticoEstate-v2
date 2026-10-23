@@ -3060,20 +3060,6 @@ $hdr_envelope->udate = $new_time;
 			// message list page, email/index.php, does not have a "reply to" button anywhere on it,
 			// said button is in the "show the message contents" page, email/message.php
 			$currentapp = Settings::getInstance()->get('flags')['currentapp'];
-			$msg_list_display[$x]['from_link'] = phpgw::link(
-				'/' . $currentapp . '/compose.php',
-				array(
-					'sort' => $this->get_arg_value('sort'),
-					'order' => $this->get_arg_value('order'),
-					'start' => $this->get_arg_value('start'),
-					'to' => urlencode($msg_list_display[$x]['who_to'])
-				)
-					+ $this_loop_msgball['uri']
-			);
-			if ($personal != $from->mailbox . '@' . $from->host)
-			{
-				$msg_list_display[$x]['from_link'] = $msg_list_display[$x]['from_link'] . '&personal=' . urlencode($personal);
-			}
 
 			// if it's a long plain address with no spaces, then add a space to the TD can wrap the text
 			if ((!strstr($msg_list_display[$x]['from_name'], " "))

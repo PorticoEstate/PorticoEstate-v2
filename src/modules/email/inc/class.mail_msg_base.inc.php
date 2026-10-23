@@ -271,6 +271,8 @@ class mail_msg_base
 	//var $reply_prefix = '| ';
 
 	// ---- Data Caching  ----
+	var $cache_mailsvr_data_disabled = False;
+	var $cache_mailsvr_data = False;
 	//var $use_cached_prefs = True;
 	var $use_cached_prefs = False;
 

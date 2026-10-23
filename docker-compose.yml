@@ -32,13 +32,13 @@ services:
         build:
             context: .
             dockerfile: Dockerfile
+            network: ${SLIM_BUILD_NETWORK:-default}
             args:
                 INSTALL_MSSQL: ${INSTALL_MSSQL:-false}
                 INSTALL_XDEBUG: ${INSTALL_XDEBUG:-false}
                 INSTALL_ORACLE: ${INSTALL_ORACLE:-false}
                 http_proxy: ${http_proxy}
                 https_proxy: ${https_proxy}
-    #       network: host  # corporate proxy allow-lists by source IP; bridge NAT gets dropped
         working_dir: /var/www/html
         environment:
             <<: *common-variables

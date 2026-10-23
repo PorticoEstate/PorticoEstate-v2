@@ -182,8 +182,6 @@ class email_msg_bootstrap
 			$this->set_do_login($tmp_prev_value);
 		}
 
-		// make sure utility classes (like html widgets) exist for global access
-		//$this->ensure_utility_classes($debug_level);
 
 		$mail = \App\modules\email\services\MailMessage::getInstance();
 
@@ -219,29 +217,5 @@ class email_msg_bootstrap
 		// else all is good to go and script continues... 
 	}
 
-	/*!
-		@function ensure_utility_classes
-		@abstract utility function for bootstraping, makes sure ancillary global objects are in existance.
-		@param $debug_level (int) the bootstrap code adopts the debug level of the calling object, it is passed as a param.
-		@author Angles
-		@discussion This is a utility function called by this-> ensure_mail_msg_exists. Email uses 
-		utility c lasses from both email and api utility objects, such as html_widgets, 
-		this function makes sure the most commonly used of these are available for global access throughout 
-		the email code. Right now this is private, used only by this class itself.
-		@access private 
-		*/
-	function ensure_utility_classes($debug_level = 0)
-	{
-		// DEBUG - override debug_level param
-		//$debug_level = 3;
 
-		if (is_object($this->widgets))
-		{
-		}
-		else
-		{
-			$my_widgets = CreateObject("email.html_widgets");
-			$this->widgets = $my_widgets;
-		}
-	}
 }

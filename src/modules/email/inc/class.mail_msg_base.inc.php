@@ -4900,7 +4900,6 @@ HTML;
 			// DO NOTHING, this data is not cached in non-extreme mode
 			$did_expire = False;
 
-			$this->mail_msg_wrappers->persistSessionCache();
 			return $did_expire;
 		}
 		elseif (($this->session_cache_enabled == True)
@@ -4973,7 +4972,6 @@ HTML;
 			return $did_alter;
 		}
 
-		$this->mail_msg_wrappers->persistSessionCache();
 		return False;
 	}
 

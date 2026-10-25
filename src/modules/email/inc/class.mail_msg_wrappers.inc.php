@@ -3598,6 +3598,7 @@ Array
 		*/
 	function save_session_cache_item($data_name, $data, $acctnum = '', $extra_keys = '', $display_error = true)
 	{
+		// No-op paths do not flush unrelated state; successful saves persist immediately.
 		$has_handler = False;
 
 		if ((!isset($acctnum))
@@ -3609,14 +3610,12 @@ Array
 
 		if ($this->session_cache_enabled == False)
 		{
-			$this->persistSessionCache();
 			// LEAVING
 			return False;
 		}
 		// IF EMPTY DATA - LEAVE
 		if (!$data)
 		{
-			$this->persistSessionCache();
 			// LEAVING
 			return False;
 		}
@@ -3829,7 +3828,6 @@ Array
 		// 2nd -- "session_cache_extreme" stuff, ADDITIONAL EXTRA CACHED ITEMS
 		if ($this->session_cache_extreme == False)
 		{
-			$this->persistSessionCache();
 			return False;
 		}
 		elseif ($data_name == 'folder_status_info')

@@ -284,14 +284,41 @@ class EmailSocketBaseTest extends TestCase
 		$mail->header_glob = 'old';
 		$mail->header_array = ['old'];
 		$mail->body_array = ['old'];
-		$mail->msg_structure = 'old';
+		$mail->msg_structure = new \msg_structure;
 		$mail->open('{test:110/pop3}INBOX', 'user', 'password');
-		foreach (['header_glob_msgnum', 'header_array_msgnum', 'body_array_msgnum', 'msg_structure_msgnum', 'header_glob', 'msg_structure'] as $key)
+		foreach (['header_glob_msgnum', 'header_array_msgnum', 'body_array_msgnum', 'msg_structure_msgnum', 'header_glob'] as $key)
 		{
 			$this->assertSame('', $mail->$key);
 		}
 		$this->assertSame([], $mail->body_array);
 		$this->assertSame([], $mail->header_array);
+		$this->assertNull($mail->msg_structure);
+	}
+
+	public function testTopLevelStructureIsAnObjectAndCanBeReusedFromCache(): void
+	{
+		require_once __DIR__ . '/../../src/modules/email/inc/class.mail_dcom_pop3_sock.inc.php';
+		$mail = $this->getMockBuilder(\mail_dcom_pop3_sock::class)->disableOriginalConstructor()
+			->onlyMethods(['get_header_array', 'sub_get_structure', 'msg2socket', 'unset_unfilled_fetchstructure'])->getMock();
+		$this->assertNull($mail->msg_structure);
+		$mail->body_array = ['body'];
+		$mail->body_array_msgnum = 42;
+		$mail->method('get_header_array')->willReturn(['Subject: test']);
+		$mail->expects($this->once())->method('sub_get_structure')
+			->with($this->isInstanceOf(\msg_structure::class), ['Subject: test']);
+		$mail->expects($this->once())->method('msg2socket')
+			->willReturnCallback(static function ($command, $pattern, &$response)
+			{
+				$response = '+OK 42 123';
+				return 1;
+			});
+		$mail->expects($this->once())->method('unset_unfilled_fetchstructure');
+
+		$this->assertTrue($mail->fill_toplevel_fetchstructure('', 42));
+		$this->assertInstanceOf(\msg_structure::class, $mail->msg_structure);
+		$this->assertTrue($mail->msg_structure->custom['top_level']);
+		$this->assertSame(123, $mail->msg_structure->bytes);
+		$this->assertSame($mail->msg_structure, $mail->fetchstructure('', 42));
 	}
 
 	public static function pop3Connections(): array

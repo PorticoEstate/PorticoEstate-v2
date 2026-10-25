@@ -6,6 +6,8 @@ This document began as a proposed plan. The execution record below supersedes th
 
 ## Execution Update
 
+- Socket POP3's structure cache is now a nullable `msg_structure` property rather than a string sentinel. Connection resets use null, cache checks are explicit, and top-level initialization no longer evaluates the invalid `nil` constant. Regressions cover object initialization, cached reuse, and reset on opening a connection.
+
 - Removed repository-unused socket header-building, MIME-name/encoding, attachment-name, UUdecode, debugging, and folder-change helpers, including the test-only `read_and_load()`/`create_header()` path. Removed their `$header`, `$msg`, and socket folder-change state. Removed the uncalled `phpgw_get_flag()` wrapper and both transport `get_flag()` implementations. Active POP3 parsing, sorting callbacks, decoding, and multiline reads remain; tests formerly exercising the obsolete reader now cover the active `read_port_glob()` path. This supersedes the property-declaration fixes below.
 
 - Declared the socket base's `$msg` property used by `mail_header()`, matching adjacent legacy object properties and retaining lazy initialization. A regression verifies the property is declared and initially null.

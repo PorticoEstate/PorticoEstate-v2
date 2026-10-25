@@ -455,7 +455,7 @@ class mail_dcom_base_sock extends phpgwapi_network
 	// so sort does not have to call status again for data already recieved.
 	var $mailbox_status = '';
 
-	var $msg_structure = '';
+	public ?msg_structure $msg_structure = null;
 	var $msg_structure_msgnum = '';
 	var $hdr_info_envelope;
 	// server error strings *should* get stored here
@@ -494,18 +494,6 @@ class mail_dcom_base_sock extends phpgwapi_network
 
 		$this->tempfile = "{$this->serverSettings['temp_dir']}/" . $this->phpgwapi_common->randomstring() . '.mhd';
 		$this->att_files_dir = "{$this->serverSettings['temp_dir']}/{$this->userSettings['sessionid']}";
-	}
-
-	/*!
-		@function error
-		@abstract none
-		*/
-	function error()
-	{
-		echo 'Error: ' . $this->error['code'] . ' : ' . $this->error['msg'] . ' - ' . $this->error['desc'] . "<br />\r\n";
-		$this->close();
-		echo ('<A HREF="' . phpgw::link('/home/') . '">' . lang('Click here to continue') . '...</A>'); //cbsman
-		$this->phpgwapi_common->phpgw_exit();
 	}
 
 	/*!

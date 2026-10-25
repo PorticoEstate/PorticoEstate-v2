@@ -199,7 +199,7 @@ class mail_dcom_pop3_sock extends mail_dcom_base_sock
 		$this->header_array_msgnum = '';
 		$this->body_array = array();
 		$this->body_array_msgnum = '';
-		$this->msg_structure = '';
+		$this->msg_structure = null;
 		$this->msg_structure_msgnum = '';
 
 		// fq_folder is a "fully qualified folder", seperate the parts:
@@ -542,7 +542,7 @@ class mail_dcom_pop3_sock extends mail_dcom_base_sock
 		// outer control structure for the multi-pass functions
 
 		// do we have a cached fetchstructure ?
-		if (($this->msg_structure != '')
+		if (($this->msg_structure !== null)
 			&& ((int)$this->msg_structure_msgnum == (int)($msg_num))
 		)
 		{
@@ -713,7 +713,6 @@ class mail_dcom_pop3_sock extends mail_dcom_base_sock
 
 		// ---  Create Class Base Fetchstructure Object  ---
 		$this->msg_structure_msgnum = (int)$msg_num;
-		$this->msg_structure = nil;
 		$this->msg_structure = new msg_structure;
 		$this->msg_structure->custom['top_level'] = True;
 		$this->msg_structure->custom['parent_cookie'] = ''; // no parent at top level

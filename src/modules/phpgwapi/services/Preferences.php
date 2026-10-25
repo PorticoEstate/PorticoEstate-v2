@@ -507,12 +507,6 @@ class Preferences
 		return $prefs_email_address;
 	}
 
-	function sub_default_address($account_id = '')
-	{
-		return $this->email_address($account_id);
-	}
-
-
 	/**
 	 * Helper function for create_email_preferences, gets mail server port number.
 	 *
@@ -579,33 +573,6 @@ class Preferences
 		return $port_number;
 	}
 	/**
-	 * Helper function for create_email_preferences, gets default userid for email
-	 *
-	 * This will generate the appropriate userid for accessing an email server.
-	 * In the absence of a custom ['email']['userid'], this function should be used to set it.
-	 * @param $accountid - as determined in and/or passed to "create_email_preferences"
-	 * @access Private
-	 */
-	function sub_default_userid($account_id = '')
-	{
-		$accounts = new Accounts();
-		$prefs_email_userid = $accounts->id2lid($account_id);
-
-		if (isset($this->serverSettings['mail_login_type']))
-		{
-			if ($this->serverSettings['mail_login_type'] == 'vmailmgr')
-			{
-				$prefs_email_userid .= "@{$this->serverSettings['mail_suffix']}";
-			}
-			else if ($this->serverSettings['mail_login_type'] == 'ispman')
-			{
-				$prefs_email_userid .= '_' . str_replace('.', '_', $this->serverSettings['mail_suffix']);
-			}
-		}
-		return $prefs_email_userid;
-	}
-
-	/**
 	 * create email preferences
 	 *
 	 * @param $account_id -optional defaults to : get_account_id()
@@ -656,20 +623,8 @@ class Preferences
 		// are we dealing with the default email account or an extra email account?
 		if ($acctnum != 0)
 		{
-			// prefs are actually a sub-element of the main email prefs
-			// at location [email][ex_accounts][X][...pref names] => pref values
-			// make this look like "prefs[email] so the code below code below will do its job transparently
-
-			// store original prefs
-			$orig_prefs = array();
-			$orig_prefs = $prefs;
-			// obtain the desired sub-array of extra account prefs
-			$sub_prefs = array();
-			$sub_prefs['email'] = $prefs['email']['ex_accounts'][$acctnum];
-			// make the switch, make it seem like top level email prefs
-			$prefs = array();
-			$prefs['email'] = $sub_prefs['email'];
-			// since we return just $prefs, it's up to the calling program to put the sub prefs in the right place
+			// Extra accounts retain the legacy top-level email return shape.
+			$prefs = ['email' => $prefs['email']['ex_accounts'][$acctnum]];
 		}
 		print_debug('class.preferences: create_email_preferences: $acctnum: [' . $acctnum . '] ; raw $this->data dump', $this->data, 'api');
 
@@ -758,15 +713,7 @@ class Preferences
 		// if not - force settings to false
 		if (stristr($prefs['email']['mail_server_type'], 'imap') == False)
 		{
-			if (isset($prefs['email']['use_trash_folder']))
-			{
-				unset($prefs['email']['use_trash_folder']);
-			}
-
-			if (isset($prefs['email']['use_sent_folder']))
-			{
-				unset($prefs['email']['use_sent_folder']);
-			}
+			unset($prefs['email']['use_trash_folder'], $prefs['email']['use_sent_folder']);
 		}
 
 		// DEBUG : force some settings to test stuff

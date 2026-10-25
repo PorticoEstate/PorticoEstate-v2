@@ -89,9 +89,10 @@ class email_bopreferences
 			--possible tokens are--
 			string		[any_string]  ex. 'string,new_old'
 			set_or_not	[set|not_set]  ex.  'set_or_not,not_set'
-			function	[string_will_be_eval'd] ex. 'function,$this->sub_default_userid($accountid)'
+			function	[allowlisted resolver token] ex. 'function,sub_default_userid'
 			init_no_fill	we will not fill this item during initialization (ex. a password)
-			varEVAL	[string_to_eval] ex. "$GLOBALS['phpgw_info']['server']['mail_server']"
+			varEVAL	[allowlisted context token] ex. '$this->serverSettings["mail_server"];'
+			EmailPreferenceDefaults resolves these tokens without evaluating PHP.
 		*/
 	function init_available_prefs()
 	{

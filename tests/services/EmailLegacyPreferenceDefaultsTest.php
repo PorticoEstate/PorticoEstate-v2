@@ -95,7 +95,9 @@ namespace Tests\Services
 		{
 			$preferences = $this->preferences();
 			$stored = $preferences->data;
-			$result = $preferences->create_email_preferences('', 2)['email'];
+			$resolved = $preferences->create_email_preferences('', 2);
+			$this->assertSame(['email'], array_keys($resolved));
+			$result = $resolved['email'];
 			$this->assertSame('Trash', $result['trash_folder_name']);
 			$this->assertSame('Sent', $result['sent_folder_name']);
 			$this->assertSame('Drafts', $result['draft_folder_name']);
@@ -119,6 +121,19 @@ namespace Tests\Services
 			$result = $preferences->create_email_preferences(12, 2)['email'];
 			$this->assertArrayNotHasKey('use_trash_folder', $result);
 			$this->assertArrayNotHasKey('use_sent_folder', $result);
+		}
+
+		public function testPopAccountDoesNotIntroduceDisabledFolderFlags(): void
+		{
+			$preferences = $this->preferences();
+			$account = &$preferences->data['email']['ex_accounts'][2];
+			$account['mail_server_type'] = 'pop3';
+			unset($account['use_trash_folder'], $account['use_sent_folder']);
+			$stored = $preferences->data;
+			$result = $preferences->create_email_preferences(12, 2)['email'];
+			$this->assertArrayNotHasKey('use_trash_folder', $result);
+			$this->assertArrayNotHasKey('use_sent_folder', $result);
+			$this->assertSame($stored, $preferences->data);
 		}
 
 		/**

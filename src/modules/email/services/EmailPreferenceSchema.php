@@ -126,9 +126,10 @@ final class EmailPreferenceSchema
 			*init_default*	--possible tokens are--
 						string		[any_string]  ex. 'string,new_old'
 						set_or_not	[set|not_set]  ex.  'set_or_not,not_set'
-						function		[string_will_be_eval'd] ex. "function,$this->sub_default_userid($accountid)"
+						function		[allowlisted resolver token] ex. "function,sub_default_userid"
 						init_no_fill	we will not fill this item during initialization (ex. a password)
-						varEVAL		[string_to_eval] ex. "$GLOBALS['phpgw_info']['server']['mail_server']"
+						varEVAL		[allowlisted context token] ex. '$this->serverSettings["mail_server"];'
+						EmailPreferenceDefaults resolves these tokens without evaluating PHP.
 			*values*		Array of values available to the user, "key" => "value" , used with combobox widgets.
 			*long_desc*	Long help, detained description of the option displayed to the user as "long help".
 			(3) Your are done. The preference is now part of email preferences. It will bedisplayed on the preferences 
@@ -483,7 +484,6 @@ final class EmailPreferenceSchema
 			//'write_props'	=> 'no_db_defang',
 			'write_props'	=> '',
 			'lang_blurb'	=> lang('Email address'),
-			//	'init_default'	=> 'function,$this->sub_default_address($account_id);',
 			'init_default'	=> 'function,sub_default_address',
 			'values'	=> array(),
 			'long_desc' => lang('Mail you send will use this address as the &quot;From&quot; address. This may be the same as your phpGroupWare login name, or the server administrator may have set it for you. When the recipient clicks reply, this address will be used. You can leave this box blank and the default value will be used.')

@@ -43,14 +43,16 @@ class EmailComposeController
 		}
 		finally
 		{
-			if (\App\modules\email\services\MailMessage::hasInstance())
+			try
 			{
-				\App\modules\email\services\MailMessage::getInstance()->end_request();
 				\App\modules\email\services\MailMessage::releaseInstance();
 			}
-			$_GET = $originalGet;
-			$_POST = $originalPost;
-			$_REQUEST = $originalRequest;
+			finally
+			{
+				$_GET = $originalGet;
+				$_POST = $originalPost;
+				$_REQUEST = $originalRequest;
+			}
 		}
 	}
 
@@ -171,9 +173,14 @@ class EmailComposeController
 		}
 		finally
 		{
-			if (is_object($mail)) $mail->end_request();
-			if (\App\modules\email\services\MailMessage::hasInstance()) \App\modules\email\services\MailMessage::releaseInstance();
-			$_POST = $originalPost;
+			try
+			{
+				\App\modules\email\services\MailMessage::releaseInstance();
+			}
+			finally
+			{
+				$_POST = $originalPost;
+			}
 		}
 	}
 
@@ -263,13 +270,15 @@ class EmailComposeController
 					error_log('[email] EmailComposeController::send attachment cleanup failed (' . get_class($exception) . ')');
 				}
 			}
-			if (\App\modules\email\services\MailMessage::hasInstance())
+			try
 			{
-				\App\modules\email\services\MailMessage::getInstance()->end_request();
 				\App\modules\email\services\MailMessage::releaseInstance();
 			}
-			$_POST = $originalPost;
-			$_GET = $originalGet;
+			finally
+			{
+				$_POST = $originalPost;
+				$_GET = $originalGet;
+			}
 		}
 	}
 }

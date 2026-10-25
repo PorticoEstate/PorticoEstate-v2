@@ -76,6 +76,7 @@ class EmailLegacyPreferencesTest extends TestCase
 		$adapter = $this->getMockBuilder(\email_bopreferences::class)->disableOriginalConstructor()
 			->onlyMethods(['init_available_prefs'])->getMock();
 		$adapter->caller = 'unsupported';
+		$adapter->expects($this->never())->method('init_available_prefs');
 		$adapter->args = ['submit_prefs' => 'old'];
 		try
 		{
@@ -93,6 +94,7 @@ class EmailLegacyPreferencesTest extends TestCase
 	{
 		$adapter = $this->getMockBuilder(\email_bopreferences::class)->disableOriginalConstructor()
 			->onlyMethods(['init_available_prefs'])->getMock();
+		$adapter->expects($this->never())->method('init_available_prefs');
 		$adapter->msg = new class
 		{
 			public array $ref_POST = [];
@@ -107,6 +109,57 @@ class EmailLegacyPreferencesTest extends TestCase
 		$this->assertFalse($adapter->ex_accounts_edit('', true));
 		$this->assertSame([], $adapter->args);
 		$this->assertSame(2, $adapter->msg->closed);
+	}
+
+	/**
+	 * @dataProvider submittedForms
+	 */
+	public function testSubmittedFormsLoadSchemaBeforeCollectingFields(array $post, array $expected): void
+	{
+		$adapter = $this->getMockBuilder(\email_bopreferences::class)->disableOriginalConstructor()
+			->onlyMethods(['init_available_prefs'])->getMock();
+		$adapter->msg = (object) ['ref_POST' => $post];
+		$adapter->acctnum = 2;
+		$adapter->expects($this->once())->method('init_available_prefs')
+			->willReturnCallback(static function () use ($adapter): void
+			{
+				$adapter->std_prefs = [['id' => 'shared', 'accts_usage' => 'default,extra_accounts']];
+			});
+		$adapter->grab_set_prefs();
+		$this->assertSame($expected, $adapter->args);
+	}
+
+	public static function submittedForms(): array
+	{
+		return [
+			'default' => [
+				['submit_prefs' => 'save', 'shared' => 'default', 'unknown' => 'ignored'],
+				['submit_prefs' => 'save', 'shared' => 'default'],
+			],
+			'extra' => [
+				['submit_prefs_extra_accounts' => 'save', 2 => ['shared' => 'extra']],
+				['submit_prefs_extra_accounts' => 'save', 2 => ['shared' => 'extra']],
+			],
+		];
+	}
+
+	public function testXmlRpcDispatchDoesNotLoadSchemaAndClearsStaleArguments(): void
+	{
+		$adapter = $this->getMockBuilder(\email_bopreferences::class)->disableOriginalConstructor()
+			->onlyMethods(['init_available_prefs'])->getMock();
+		$adapter->expects($this->never())->method('init_available_prefs');
+		$adapter->caller = 'xmlrpc';
+		$adapter->args = ['submit_prefs' => 'old'];
+		try
+		{
+			$adapter->grab_set_prefs();
+			$this->fail('Expected unsupported XML-RPC update to fail');
+		}
+		catch (\BadMethodCallException $exception)
+		{
+			$this->assertSame('XML-RPC email preference updates are not supported', $exception->getMessage());
+		}
+		$this->assertSame([], $adapter->args);
 	}
 
 	/**

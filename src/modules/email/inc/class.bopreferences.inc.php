@@ -103,6 +103,7 @@ class email_bopreferences
 		on if this class was called from within phogw or via external XMP-RPC. If neither,
 		we should produce an error.
 		@param (none) However, function uses class var ->caller (string) with expected values being "phpgw" and "xmlrpc".
+		Schema loading is deferred until a supported form submission is present.
 		@throws \BadMethodCallException for unsupported callers
 		@author Angles
 		@access Public
@@ -110,11 +111,14 @@ class email_bopreferences
 	function grab_set_prefs()
 	{
 		$this->args = array();
-		// better make sure we have created the available prefs schema
-		$this->init_available_prefs();
-
 		if ($this->caller == 'phpgw')
 		{
+			$post = $this->msg->ref_POST;
+			if (!isset($post[$this->submit_token]) && !isset($post[$this->submit_token_extra_accounts]))
+			{
+				return;
+			}
+			$this->init_available_prefs();
 			$this->grab_set_prefs_args_gpc();
 		}
 		elseif ($this->caller == 'xmlrpc')

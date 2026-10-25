@@ -1714,7 +1714,8 @@ class mail_msg extends mail_msg_wrappers
 		$lines = explode("\n", $data);
 
 		$currentapp = Settings::getInstance()->get('flags')['currentapp'];
-		foreach ($lines as $key => $line)
+		$compose_url = phpgw::link("/" . $currentapp . "/view/compose", array('folder' => $this->prep_folder_out($folder)));
+		foreach ($lines as $line)
 		{
 			$line = preg_replace("/([ \t]|^)www\./i", " http://www.", $line);
 			$line = preg_replace("/([ \t]|^)ftp\./i", " ftp://ftp.", $line);
@@ -1724,8 +1725,7 @@ class mail_msg extends mail_msg_wrappers
 			$line = preg_replace("/(irc:\/\/[^ )\r\n]+)/i", "<A href=\"\\1\">\\1</A>", $line); //added by skwashd for chatzilla :)
 			$line = preg_replace(
 				"/([-a-z0-9_]+(\.[_a-z0-9-]+)*@([a-z0-9-]+(\.[a-z0-9-]+)+))/i",
-				"<a href=\"" . phpgw::link("/" . $currentapp . "/view/compose", array('folder' => $this->prep_folder_out($folder)))
-					. "&to=\\1\">\\1</a>",
+				"<a href=\"" . $compose_url . "&to=\\1\">\\1</a>",
 				$line
 			);
 

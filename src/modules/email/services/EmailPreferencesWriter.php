@@ -5,6 +5,38 @@ namespace App\modules\email\services;
 final class EmailPreferencesWriter
 {
 	/**
+	 * Validates an existing extra-account ID without coercing malformed input.
+	 */
+	public static function existingAccountNumber(mixed $value, array $accounts): int
+	{
+		$account = is_int($value) || is_string($value)
+			? filter_var($value, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]])
+			: false;
+		if ($account === false)
+		{
+			throw new \InvalidArgumentException('Invalid email account');
+		}
+		if (!array_key_exists($account, $accounts))
+		{
+			throw new \OutOfBoundsException('Email account not found');
+		}
+		return $account;
+	}
+
+	public function deleteAccount(
+		int $account, array $accounts, object $preferences, object $mail, bool $saveRepository = true
+	): void
+	{
+		self::existingAccountNumber($account, $accounts);
+		$preferences->delete_struct('email', '["ex_accounts"][' . $account . ']');
+		if ($saveRepository)
+		{
+			$preferences->save_repository();
+			$mail->invalidatePreferenceCache($account);
+		}
+	}
+
+	/**
 	 * Accepts stored preference maps or legacy account summaries with explicit status.
 	 */
 	public static function nextAccountNumber(array $accounts): int

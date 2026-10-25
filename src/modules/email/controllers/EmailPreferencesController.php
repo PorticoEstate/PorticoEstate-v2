@@ -354,9 +354,10 @@ class EmailPreferencesController
 			$bootstrap->set_do_login(false);
 			$bootstrap->ensure_mail_msg_exists('email.api.preferences.account.delete');
 			$preferences = Preferences::getInstance();
-			$preferences->delete_struct('email', '["ex_accounts"][' . $account . ']');
-			$preferences->save_repository();
-			\App\modules\email\services\MailMessage::getInstance()->invalidatePreferenceCache($account);
+			(new \App\modules\email\services\EmailPreferencesWriter())->deleteAccount(
+				$account, (array) ($emailPreferences['ex_accounts'] ?? []),
+				$preferences, \App\modules\email\services\MailMessage::getInstance()
+			);
 			return $this->json($response, ['deleted' => true]);
 		}
 		catch (\Throwable $exception)
@@ -369,7 +370,11 @@ class EmailPreferencesController
 		}
 		finally
 		{
-			if (\App\modules\email\services\MailMessage::hasInstance()) \App\modules\email\services\MailMessage::releaseInstance();
+			if (\App\modules\email\services\MailMessage::hasInstance())
+			{
+				\App\modules\email\services\MailMessage::getInstance()->end_request();
+				\App\modules\email\services\MailMessage::releaseInstance();
+			}
 		}
 	}
 

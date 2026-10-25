@@ -222,46 +222,13 @@ class email_bopreferences
 		@result none, this is an object call
 		@discussion functional relative to function "grab_set_prefs_args_gpc()", except this function grabs the
 		data from an alternative, non-php-GPC, source
-		NOT YET IMPLEMENTED
+		Unsupported; throws explicitly rather than ignoring updates.
 		@author Angles
 		@access Private
 		*/
 	function grab_set_prefs_args_xmlrpc()
 	{
-		// STUB, for future use
-	}
-
-	/*!
-		@function process_submitted_prefs
-		@abstract Process incoming submitted prefs, process the data, and save to repository 
-		if needed. Currently used for processing email preferences, both standard and custom
-		@param $pref_set (array) structured pref data as defined and supplied in "this->init_available_prefs()"
-		@result boolean False if no $pref_set was supplied, True otherwise
-		@discussion Delegates field persistence to EmailPreferencePersister.
-		@author Angles
-		@access Private
-		*/
-	function process_submitted_prefs($prefs_set = '')
-	{
-		if (!$prefs_set)
-		{
-			$prefs_set = array();
-		}
-		if (count($prefs_set) == 0)
-		{
-			return False;
-		}
-
-		(new \App\modules\email\services\EmailPreferencePersister())->writeFields(
-			$prefs_set,
-			$this->args,
-			\App\modules\phpgwapi\services\Preferences::getInstance(),
-			$this->msg,
-			null,
-			true,
-			false
-		);
-		return True;
+		throw new \BadMethodCallException('XML-RPC email preference updates are not supported');
 	}
 
 	/*!
@@ -273,72 +240,31 @@ class email_bopreferences
 		*/
 	function preferences($api_mode = False)
 	{
-		// this will fill $this->args[] array with any submitted prefs args
-		$this->grab_set_prefs();
-
-		// ----  HANDLE SETING PREFERENCE   -------
-		if (isset($this->args[$this->submit_token]))
+		try
 		{
-			(new \App\modules\email\services\EmailPreferencesWriter())->saveDefault(
-				$this->std_prefs, $this->cust_prefs, $this->args,
-				\App\modules\phpgwapi\services\Preferences::getInstance(), $this->msg,
-				true, $this->debug_set_prefs <= 1
-			);
-			// end the email session
+			$this->grab_set_prefs();
+			$submitted = isset($this->args[$this->submit_token]);
+			if ($submitted)
+			{
+				(new \App\modules\email\services\EmailPreferencesWriter())->saveDefault(
+					$this->std_prefs, $this->cust_prefs, $this->args,
+					\App\modules\phpgwapi\services\Preferences::getInstance(), $this->msg,
+					true, $this->debug_set_prefs <= 1
+				);
+			}
+		}
+		finally
+		{
 			$this->msg->end_request();
-			if ($api_mode) return True;
-
-			// redirect user back to main preferences page
-			$take_me_to_url = phpgw::link(
-				'/preferences/index.php'
-			);
-
-			if ($this->debug_set_prefs > 1)
-			{
-			}
-			else
-			{
-				Header('Location: ' . $take_me_to_url);
-			}
 		}
-	}
-
-	/*!
-		@function process_ex_account_submitted_prefs
-		@abstract Extra Email Accounts Process incoming submitted prefs, process the data, and save to repository 
-		@author Angles
-		@access Private
-		*/
-	function process_ex_accounts_submitted_prefs($prefs_set = '')
-	{
-		if (!$prefs_set)
+		if ($submitted && $api_mode)
 		{
-			$prefs_set = array();
+			return True;
 		}
-		if (count($prefs_set) == 0)
+		if ($submitted && $this->debug_set_prefs <= 1)
 		{
-			return False;
+			Header('Location: ' . phpgw::link('/preferences/index.php'));
 		}
-
-		if ((!isset($this->acctnum)) || ((string)$this->acctnum == ''))
-		{
-			$this->acctnum = $this->obtain_ex_acctnum();
-		}
-
-		$wroteValue = (new \App\modules\email\services\EmailPreferencePersister())->writeFields(
-			$prefs_set,
-			$this->args[$this->acctnum] ?? array(),
-			\App\modules\phpgwapi\services\Preferences::getInstance(),
-			$this->msg,
-			(int) $this->acctnum,
-			true,
-			false
-		);
-		if ($wroteValue)
-		{
-			\App\modules\phpgwapi\services\Preferences::getInstance()->sort_struct('email', '["ex_accounts"]');
-		}
-		return True;
 	}
 
 	/*!
@@ -351,69 +277,29 @@ class email_bopreferences
 		*/
 	function ex_accounts_delete($acctnum = '', $api_mode = False)
 	{
-
 		$this->account_group = 'extra_accounts';
-
-		if ((isset($acctnum))
-			|| ((string)$acctnum != '')
-		)
+		try
 		{
-			$this->acctnum = $acctnum;
+			$accounts = (array) ($this->msg->unprocessed_prefs['email']['ex_accounts'] ?? []);
+			$value = $acctnum !== '' && $acctnum !== null ? $acctnum
+				: ($this->msg->ref_POST['ex_acctnum'] ?? $this->msg->ref_GET['ex_acctnum'] ?? $this->acctnum);
+			$this->acctnum = \App\modules\email\services\EmailPreferencesWriter::existingAccountNumber($value, $accounts);
+			(new \App\modules\email\services\EmailPreferencesWriter())->deleteAccount(
+				$this->acctnum, $accounts, \App\modules\phpgwapi\services\Preferences::getInstance(),
+				$this->msg, $this->debug_set_prefs <= 2
+			);
 		}
-
-		if ((!isset($this->acctnum))
-			|| ((string)$this->acctnum == '')
-		)
-		{
-			$acctnum = $this->obtain_ex_acctnum();
-			$this->acctnum = $acctnum;
-		}
-
-		$actually_did_something = False;
-
-		if ((isset($this->acctnum))
-			&& ((string)$this->acctnum != '')
-		)
-		{
-
-			// delete the extra account pref item
-			$pref_struct_str = '["ex_accounts"][' . $this->acctnum . ']';
-			\App\modules\phpgwapi\services\Preferences::getInstance()->delete_struct('email', $pref_struct_str);
-
-			// let the code below this block know we actually did something that requires saving the repository
-			$actually_did_something = True;
-		}
-
-		// DONE with delete pref, SAVE to the Repository
-		if (!$actually_did_something)
-		{
-			// nothing happened above that requires saving the repository
-		}
-		elseif ($this->debug_set_prefs > 2)
-		{
-			// we actually did something that requires saving repository, but are we in debug mode
-		}
-		else
-		{
-			// we actually did something that requires saving repository, and we have the go-ahead
-			\App\modules\phpgwapi\services\Preferences::getInstance()->save_repository();
-			$this->expire_related_cached_items($this->acctnum);
-		}
-		// end the email session
-		if (\App\modules\email\services\MailMessage::hasInstance())
+		finally
 		{
 			$this->msg->end_request();
 		}
-		if ($api_mode) return $actually_did_something;
-		// redirect user back to main preferences page
-		if ($this->debug_set_prefs > 2)
+		if ($api_mode)
 		{
+			return True;
 		}
-		else
+		if ($this->debug_set_prefs <= 2)
 		{
-			$take_me_to_url = phpgw::link('/email/view/accounts');
-
-			Header('Location: ' . $take_me_to_url);
+			Header('Location: ' . phpgw::link('/email/view/accounts'));
 		}
 	}
 
@@ -426,45 +312,33 @@ class email_bopreferences
 		*/
 	function ex_accounts_edit($acctnum = '', $api_mode = False)
 	{
-
-		// ==== ACCTNUM ====
-		// this tells people that we are dealing with the extra email accounts
-		$this->account_group = 'extra_accounts';
-		if ((!isset($acctnum))
-			|| ((string)$acctnum == '')
-		)
+		try
 		{
-			$acctnum = $this->obtain_ex_acctnum();
-			$this->acctnum = $acctnum;
+			$this->account_group = 'extra_accounts';
+			if ($acctnum === '' || $acctnum === null)
+			{
+				$this->acctnum = $this->obtain_ex_acctnum();
+			}
+			else
+			{
+				$this->acctnum = \App\modules\email\services\EmailPreferencesWriter::existingAccountNumber(
+					$acctnum, (array) ($this->msg->unprocessed_prefs['email']['ex_accounts'] ?? [])
+						+ [$this->get_first_empty_ex_acctnum() => []]
+				);
+			}
+			$this->grab_set_prefs();
+			$actually_did_something = isset($this->args[$this->submit_token_extra_accounts]);
+			if ($actually_did_something)
+			{
+				(new \App\modules\email\services\EmailPreferencesWriter())->saveExtraAccount(
+					(int) $this->acctnum, $this->std_prefs, $this->cust_prefs,
+					$this->args[$this->acctnum] ?? array(),
+					\App\modules\phpgwapi\services\Preferences::getInstance(), $this->msg,
+					true, $this->debug_set_prefs <= 1
+				);
+			}
 		}
-		else
-		{
-			$this->acctnum = $acctnum;
-		}
-
-		$actually_did_something = False;
-
-		// --- Add/Modify Email Extra Account Prefs? ----
-
-		// this will fill $this->args[] array with any submitted prefs args
-		$this->grab_set_prefs();
-
-		// ----  HANDLE SETING PREFERENCE   -------
-		if (isset($this->args[$this->submit_token_extra_accounts]))
-		{
-			// let the code below this block know we actually did something that requires saving the repository
-			$actually_did_something = True;
-
-			(new \App\modules\email\services\EmailPreferencesWriter())->saveExtraAccount(
-				(int) $this->acctnum, $this->std_prefs, $this->cust_prefs,
-				$this->args[$this->acctnum] ?? array(),
-				\App\modules\phpgwapi\services\Preferences::getInstance(), $this->msg,
-				true, $this->debug_set_prefs <= 1
-			);
-		}
-
-		// end the email session
-		if (\App\modules\email\services\MailMessage::hasInstance())
+		finally
 		{
 			$this->msg->end_request();
 		}
@@ -473,10 +347,7 @@ class email_bopreferences
 		// redirect user back to main preferences page
 		$take_me_to_url = phpgw::link('/email/view/accounts');
 
-		if ($this->debug_set_prefs > 1)
-		{
-		}
-		else
+		if ($this->debug_set_prefs <= 1)
 		{
 			Header('Location: ' . $take_me_to_url);
 		}
@@ -570,41 +441,22 @@ class email_bopreferences
 
 	/*!
 		@function obtain_ex_acctnum
-		@abstract Preferences handlers pass around the acctnum as POST or GET var "ex_acctnum".
+		@abstract Resolve an edit/create account ID from POST or GET; missing or add_new allocates a slot.
+		@throws \InvalidArgumentException for malformed IDs
+		@throws \OutOfBoundsException for IDs that are neither stored nor the next available slot
 		@author Angles
 		@access Public
 		*/
 	function obtain_ex_acctnum()
 	{
-		// get fromPOST or GET
-		$prelim_acctnum = '##NOTHING##';
-		if ((isset($this->msg->ref_POST['ex_acctnum'])
-			&& ((string)$this->msg->ref_POST['ex_acctnum'] != '')))
+		$value = $this->msg->ref_POST['ex_acctnum'] ?? $this->msg->ref_GET['ex_acctnum'] ?? null;
+		if ($value === null || $value === '' || $value === $this->add_new_account_token)
 		{
-			$prelim_acctnum = (int)$this->msg->ref_POST['ex_acctnum'];
+			return $this->get_first_empty_ex_acctnum();
 		}
-		elseif ((isset($this->msg->ref_GET['ex_acctnum'])
-			&& ((string)$this->msg->ref_GET['ex_acctnum'] != '')))
-		{
-			$prelim_acctnum = (int)$this->msg->ref_GET['ex_acctnum'];
-		}
-		// in all these cases we don't have a valid acct num (or we are asked to make a new one)
-		// so any of these requires a new, blank acctnum
-		// NOTE: EXTRA ACCOUNTS CAN NEVER HAVE ACCNUM 0
-		if ((!isset($prelim_acctnum))
-			|| ($prelim_acctnum == $this->add_new_account_token)
-			|| ($prelim_acctnum == '##NOTHING##')
-			|| ((string)$prelim_acctnum == '')
-			|| ((string)$prelim_acctnum == '0')
-		)
-		{
-			// get the next blank acctnum
-			$final_acctnum = $this->get_first_empty_ex_acctnum();
-		}
-		else
-		{
-			$final_acctnum = $prelim_acctnum;
-		}
-		return $final_acctnum;
+		return \App\modules\email\services\EmailPreferencesWriter::existingAccountNumber(
+			$value, (array) ($this->msg->unprocessed_prefs['email']['ex_accounts'] ?? [])
+				+ [$this->get_first_empty_ex_acctnum() => []]
+		);
 	}
 }

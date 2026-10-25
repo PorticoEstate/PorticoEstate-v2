@@ -80,4 +80,89 @@ class EmailLegacyPreferencesTest extends TestCase
 			['folder_list', 0], ['verified_trash_folder_long', 0],
 		], $expired);
 	}
+
+	public function testNewAccountTokenAllocatesButMalformedInputDoesNot(): void
+	{
+		$adapter = $this->adapter(['ex_acctnum' => 'add_new']);
+		$this->assertSame(1, $adapter->obtain_ex_acctnum());
+		$adapter->msg->ref_POST['ex_acctnum'] = '2invalid';
+		$this->expectException(\InvalidArgumentException::class);
+		$adapter->obtain_ex_acctnum();
+	}
+
+	public function testExistingAccountAndNextFreeSlotCanBeEdited(): void
+	{
+		$adapter = $this->adapter(['ex_acctnum' => '3']);
+		$adapter->msg->unprocessed_prefs = ['email' => ['ex_accounts' => [3 => []]]];
+		$this->assertSame(3, $adapter->obtain_ex_acctnum());
+		$adapter->msg->ref_POST['ex_acctnum'] = '1';
+		$this->assertSame(1, $adapter->obtain_ex_acctnum());
+	}
+
+	public function testDeletionNeverAllocatesAnAccountAndCleansUpOnInvalidInput(): void
+	{
+		$adapter = $this->adapter(['ex_acctnum' => 'add_new']);
+		$adapter->msg = new class
+		{
+			public array $ref_POST = ['ex_acctnum' => 'add_new'];
+			public int $closed = 0;
+			public function end_request(): void { $this->closed++; }
+		};
+		try
+		{
+			$adapter->ex_accounts_delete('', true);
+			$this->fail('Expected invalid deletion to fail');
+		}
+		catch (\InvalidArgumentException $exception)
+		{
+			$this->assertSame('Invalid email account', $exception->getMessage());
+		}
+		$this->assertSame(1, $adapter->msg->closed);
+	}
+
+	/**
+	 * @dataProvider saveEntryPoints
+	 */
+	public function testSaveFailureAlwaysEndsRequest(string $method): void
+	{
+		$adapter = $this->getMockBuilder(\email_bopreferences::class)->disableOriginalConstructor()
+			->onlyMethods(['grab_set_prefs'])->getMock();
+		$adapter->msg = new class
+		{
+			public array $ref_POST = [];
+			public array $extra_accounts = [];
+			public int $closed = 0;
+			public function end_request(): void { $this->closed++; }
+		};
+		$adapter->method('grab_set_prefs')->willThrowException(new \RuntimeException('Request failed'));
+		try
+		{
+			if ($method === 'preferences')
+			{
+				$adapter->preferences(true);
+			}
+			else
+			{
+				$adapter->ex_accounts_edit('', true);
+			}
+			$this->fail('Expected request failure');
+		}
+		catch (\RuntimeException $exception)
+		{
+			$this->assertSame('Request failed', $exception->getMessage());
+		}
+		$this->assertSame(1, $adapter->msg->closed);
+	}
+
+	public static function saveEntryPoints(): array
+	{
+		return [['preferences'], ['ex_accounts_edit']];
+	}
+
+	public function testXmlRpcFailsExplicitly(): void
+	{
+		$adapter = $this->adapter([]);
+		$this->expectException(\BadMethodCallException::class);
+		$adapter->grab_set_prefs_args_xmlrpc();
+	}
 }

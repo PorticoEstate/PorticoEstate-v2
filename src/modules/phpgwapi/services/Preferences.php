@@ -717,37 +717,8 @@ class Preferences
 
 		// = = = =  SIMPLER PREFS  = = = =
 
-		// Default Preferences info that is articulated in the email prefs schema array itself
-		// such email prefs schema array is described and established in /email/class.bopreferences
-		// by function "init_available_prefs", see the discussion there.
-
-		// --- create the objectified /email/class.bopreferences.inc.php ---
-		$bo_mail_prefs = createObject('email.bopreferences');
-
-		// --- bo_mail_prefs->init_available_prefs() ---
-		// this fills object_email_bopreferences->std_prefs and ->cust_prefs
-		// we will initialize the users preferences according to the rules and instructions
-		// embodied in those prefs arrays, applying those rules to the unprocessed
-		// data read from the preferences DB. By taking the raw data and applying those rules,
-		// we will construct valid and known email preference data for this user.
-		if (is_object($bo_mail_prefs))
-		{
-			$bo_mail_prefs->init_available_prefs();
-
-			// --- combine the two array (std and cust) for 1 pass handling ---
-			// when this preference DB was submitted and saved, it was hopefully so well structured
-			// that we can simply combine the two arrays, std_prefs and cust_prefs, and do a one
-			// pass analysis and preparation of this users preferences.
-			$avail_pref_array = $bo_mail_prefs->std_prefs;
-			$c_cust_prefs = count($bo_mail_prefs->cust_prefs);
-			for ($i = 0; $i < $c_cust_prefs; $i++)
-			{
-				// add each custom prefs to the std prefs array
-				$next_idx = count($avail_pref_array);
-				$avail_pref_array[$next_idx] = $bo_mail_prefs->cust_prefs[$i];
-			}
-			print_debug('class.preferences: create_email_preferences: std AND cust arrays combined:', $avail_pref_array, 'api');
-		}
+		$schema = (new \App\modules\email\services\EmailPreferenceSchema())->fields();
+		$avail_pref_array = array_merge($schema['standard'], $schema['custom']);
 
 		// --- make the schema-based pref data for this user ---
 		// user defined values and/or user specified custom email prefs are read from the

@@ -154,4 +154,58 @@ class EmailPreferencesWriterTest extends TestCase
 	{
 		return [[null, true], [null, false], [2, true], [2, false]];
 	}
+
+	/**
+	 * @dataProvider invalidAccountNumbers
+	 */
+	public function testRejectsInvalidExistingAccountNumbers(mixed $value): void
+	{
+		$this->expectException(\InvalidArgumentException::class);
+		EmailPreferencesWriter::existingAccountNumber($value, [1 => []]);
+	}
+
+	public static function invalidAccountNumbers(): array
+	{
+		return [[0], [-1], ['add_new'], ['1abc'], [1.5], [true], [[]], [null], ['']];
+	}
+
+	public function testRejectsUnknownExistingAccount(): void
+	{
+		$this->expectException(\OutOfBoundsException::class);
+		EmailPreferencesWriter::existingAccountNumber(2, [1 => []]);
+	}
+
+	public function testDeletionRejectsUnknownAccountBeforeAnyWrite(): void
+	{
+		$this->expectException(\OutOfBoundsException::class);
+		(new EmailPreferencesWriter())->deleteAccount(2, [1 => []], new \stdClass(), new \stdClass());
+	}
+
+	/**
+	 * @dataProvider deletionModes
+	 */
+	public function testSharedDeletionPreservesOtherAccountsAndDebugMode(bool $save): void
+	{
+		$preferences = new class
+		{
+			public array $deleted = [];
+			public int $saved = 0;
+			public function delete_struct($app, $path): void { $this->deleted[] = [$app, $path]; }
+			public function save_repository(): void { $this->saved++; }
+		};
+		$mail = new class
+		{
+			public array $invalidated = [];
+			public function invalidatePreferenceCache(int $account): void { $this->invalidated[] = $account; }
+		};
+		(new EmailPreferencesWriter())->deleteAccount(2, [1 => [], 2 => []], $preferences, $mail, $save);
+		$this->assertSame([['email', '["ex_accounts"][2]']], $preferences->deleted);
+		$this->assertSame($save ? 1 : 0, $preferences->saved);
+		$this->assertSame($save ? [2] : [], $mail->invalidated);
+	}
+
+	public static function deletionModes(): array
+	{
+		return [[true], [false]];
+	}
 }

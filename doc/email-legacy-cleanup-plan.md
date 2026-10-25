@@ -6,6 +6,8 @@ This document began as a proposed plan. The execution record below supersedes th
 
 ## Execution Update
 
+- Modern subscribe/unsubscribe now issue Webklex SUBSCRIBE/UNSUBSCRIBE commands and validate the server response rather than returning simulated success. Fully qualified mailbox prefixes are removed while encoded mailbox paths are preserved. Offline tests cover both operations, plain/qualified paths, and rejected replies; GreenMail LSUB checks verify state changes and temporary-folder cleanup.
+
 - Modern open now resolves and selects the requested mailbox before publishing its connection handle. Missing mailboxes and connection/lookup/selection exceptions disconnect the provisional client and leave active connection state unchanged. Cleanup exceptions are explicitly reported alongside the original failure without including their potentially sensitive message. Offline failure-stage tests and a GreenMail missing-folder flow verify cleanup and preservation of an existing healthy session.
 
 - Modern deletion now validates and sends complete IMAP message sets via one mark-deleted STORE command, preserving comma lists, bounded/reversed ranges, wildcards, and UID mode without downloading message bodies or implicitly expunging. The lower-level Webklex command API is necessary because its `store()` bounds accept only integers, not `*`. Malformed sets fail before server commands. Offline tests cover command shape/rejection; GreenMail verifies sequence and UID ranges plus the active `empty_trash()` `1:*` path.

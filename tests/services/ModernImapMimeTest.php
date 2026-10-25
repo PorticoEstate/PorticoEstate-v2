@@ -12,6 +12,59 @@ use ZBateson\MailMimeParser\MailMimeParser;
 class ModernImapMimeTest extends TestCase
 {
 	/**
+	 * @dataProvider subscriptionCommands
+	 */
+	public function testSubscriptionsValidateServerResponse(string $method, string $command, string $mailbox, bool $succeeds): void
+	{
+		$property = new \ReflectionProperty(\ModernIMAPWrapper::class, 'connections');
+		$property->setAccessible(true);
+		$original = $property->getValue();
+		$response = $this->getMockBuilder(\stdClass::class)->addMethods(['validatedData'])->getMock();
+		if ($succeeds)
+		{
+			$response->expects($this->once())->method('validatedData')->willReturn([]);
+		}
+		else
+		{
+			$response->expects($this->once())->method('validatedData')->willThrowException(new \RuntimeException('Subscription rejected'));
+		}
+		$protocol = $this->getMockBuilder(\stdClass::class)->addMethods(['subscribeFolder', 'unsubscribeFolder'])->getMock();
+		$protocol->expects($this->once())->method($command)->with('Folder &- Test')->willReturn($response);
+		$client = $this->getMockBuilder(\stdClass::class)->addMethods(['getConnection'])->getMock();
+		$client->method('getConnection')->willReturn($protocol);
+		$property->setValue(null, ['subscription-test' => ['client' => $client]]);
+		try
+		{
+			$this->assertSame($succeeds, \ModernIMAPWrapper::$method('subscription-test', $mailbox));
+			if (!$succeeds)
+			{
+				$this->assertSame('Subscription rejected', \ModernIMAPWrapper::imap_last_error());
+			}
+			$this->assertFalse(\ModernIMAPWrapper::$method('unknown-stream', $mailbox));
+		}
+		finally
+		{
+			$property->setValue(null, $original);
+		}
+	}
+
+	public static function subscriptionCommands(): array
+	{
+		$cases = [];
+		foreach (['imap_subscribe' => 'subscribeFolder', 'imap_unsubscribe' => 'unsubscribeFolder'] as $method => $command)
+		{
+			foreach (['Folder &- Test', '{test:993/imap/ssl}Folder &- Test'] as $mailbox)
+			{
+				foreach ([true, false] as $succeeds)
+				{
+					$cases[] = [$method, $command, $mailbox, $succeeds];
+				}
+			}
+		}
+		return $cases;
+	}
+
+	/**
 	 * @dataProvider openFailures
 	 */
 	public function testFailedOpenDisconnectsWithoutPublishingConnection(string $stage): void

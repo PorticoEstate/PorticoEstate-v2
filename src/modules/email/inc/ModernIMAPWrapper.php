@@ -1159,21 +1159,9 @@ class ModernIMAPWrapper
         
         try {
             $client = self::$connections[$stream]['client'];
-            // Parse mailbox to get folder name
-            if (preg_match('/^\{[^}]+\}(.*)$/', $mailbox, $matches)) {
-                $folderName = $matches[1];
-            } else {
-                $folderName = $mailbox;
-            }
-            
-            $folder = $client->getFolder($folderName);
-            if ($folder) {
-                // Note: Webklex doesn't have explicit subscribe method
-                // In modern IMAP, subscription is usually handled automatically
-                return true;
-            }
-            
-            return false;
+            $path = preg_replace('/^\{[^}]+\}/', '', $mailbox);
+            $client->getConnection()->subscribeFolder($path)->validatedData();
+            return true;
             
         } catch (Exception $e) {
             self::$lastError = $e->getMessage();
@@ -1191,8 +1179,8 @@ class ModernIMAPWrapper
         }
         
         try {
-            // Note: Webklex doesn't have explicit unsubscribe method
-            // In modern IMAP, subscription is usually handled automatically
+            $path = preg_replace('/^\{[^}]+\}/', '', $mailbox);
+            self::$connections[$stream]['client']->getConnection()->unsubscribeFolder($path)->validatedData();
             return true;
             
         } catch (Exception $e) {

@@ -212,6 +212,20 @@ namespace Tests\Services
 				$uid = (string) $uids[0];
 				switch ($operation)
 				{
+					case 'subscriptions':
+						$property = new \ReflectionProperty(\ModernIMAPWrapper::class, 'connections');
+						$property->setAccessible(true);
+						$protocol = $property->getValue()[$stream]['client']->getConnection();
+						$subscribed = static function () use ($protocol, $source): array
+						{
+							return $protocol->requestAndResponse('LSUB', $protocol->escapeString('', $source))
+								->setCanBeEmpty(true)->validatedData();
+						};
+						$this->assertTrue(\IMAPManager::imap_subscribe($stream, $prefix . $source));
+						$this->assertStringContainsString($source, json_encode($subscribed(), JSON_THROW_ON_ERROR));
+						$this->assertTrue(\IMAPManager::imap_unsubscribe($stream, $prefix . $source));
+						$this->assertStringNotContainsString($source, json_encode($subscribed(), JSON_THROW_ON_ERROR));
+						break;
 					case 'missing-open':
 						$connections = \ModernIMAPWrapper::getActiveConnections();
 						$this->assertFalse($transport->open($prefix . $source . '-missing', 'outlook-test', 'local-test-password'));
@@ -327,7 +341,7 @@ namespace Tests\Services
 
 		public static function greenMailOperations(): array
 		{
-			return [['flags'], ['copy'], ['move'], ['delete'], ['reconnect'], ['metadata'], ['ranges'], ['missing-open']];
+			return [['flags'], ['copy'], ['move'], ['delete'], ['reconnect'], ['metadata'], ['ranges'], ['missing-open'], ['subscriptions']];
 		}
 
 		public function testNativeAndSocketPop3ClassesCanCoexistWithImap(): void

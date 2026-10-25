@@ -6,6 +6,8 @@ This document began as a proposed plan. The execution record below supersedes th
 
 ## Execution Update
 
+- Audited PHP/Twig translation calls, compose-prefill translation keys, and dynamically translated search-flag labels against the English and Norwegian email catalogs. Added 174 missing entries to each, including destination folder/account labels, loading states, actions, preference help, and API error messages. Norwegian additions are translated, not English placeholders. A catalog regression checks nonempty four-column entries and source-key coverage using the runtime's case/whitespace/length normalization. Other language catalogs and installed database translations are unchanged.
+
 - Initialized the POP3 address-detail collection before its parsing loop, making the return variable explicitly defined. A regression covers parsed mailbox/host values and the existing false result for blank input.
 
 - POP3 sorting explicitly rejects unsupported criteria with an InvalidArgumentException instead of accessing an undefined `$field_list`. Supported criteria and the existing empty-mailbox behavior are unchanged; a regression verifies rejection before sorting commands or header reads.

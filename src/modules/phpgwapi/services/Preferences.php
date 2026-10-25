@@ -508,69 +508,25 @@ class Preferences
 	}
 
 	/**
-	 * Helper function for create_email_preferences, gets mail server port number.
-	 *
-	 * This will generate the appropriate port number to access a
-	 * mail server of type pop3, pop3s, imap, imaps users value from
-	 * $userSettings['preferences']['email']['mail_port'].
-	 * if that value is not set, it generates a default port for the given $server_type.
-	 * Someday, this *MAY* be
-	 * (a) a se4rver wide admin setting, or
-	 * (b)user custom preference
-	 * Until then, simply set the port number based on the mail_server_type, thereof
-	 * ONLY call this function AFTER ['email']['mail_server_type'] has been set.
-	 * @param $prefs - user preferences array based on element ['email'][]
-	 * @author  Angles
-	 * @access Private
+	 * Resolves the legacy mail_port output from modern or nested legacy preferences.
+	 * Call after schema defaults are filled. Connection-specific IMAP profile
+	 * overrides are applied by the mail transport, not during preference loading.
 	 */
 	function sub_get_mailsvr_port($prefs, $acctnum = 0)
 	{
-		$port_number = 0;
-		// first we try the port number supplied in preferences
-		if ((isset($prefs['email']['accounts'][$acctnum]['mail_port']))
-			&& ($prefs['email']['accounts'][$acctnum]['mail_port'] != '')
-		)
+		$email = $prefs['email'] ?? [];
+		$account = $email['accounts'][$acctnum] ?? $email;
+		$port = $account['mail_server_port'] ?? '';
+		if (is_string($port) && trim($port) === '')
 		{
-			$port_number = $prefs['email']['accounts'][$acctnum]['mail_port'];
+			$port = $account['mail_port'] ?? null;
 		}
-		// preferences does not have a port number, generate a default value
-		else if (isset($prefs['email']['accounts']) && is_array($prefs['email']['accounts']))
-		{
-			if (!isset($prefs['email']['accounts'][$acctnum]['mail_server_type']))
-			{
-				$prefs['email']['accounts'][$acctnum]['mail_server_type'] = $prefs['email']['mail_server_type'];
-			}
-
-			switch ($prefs['email']['accounts'][$acctnum]['mail_server_type'])
-			{
-				case 'pop3s':
-					// POP3 over SSL
-					$port_number = 995;
-					break;
-				case 'pop3':
-					// POP3 normal connection, No SSL
-					// ( same string as normal imap above)
-					$port_number = 110;
-					break;
-				case 'nntp':
-					// NNTP news server port
-					$port_number = 119;
-					break;
-				case 'imaps':
-					// IMAP over SSL
-					$port_number = 993;
-					break;
-				case 'imap':
-					// IMAP normal connection, No SSL
-				default:
-					// UNKNOWN SERVER in Preferences, return a
-					// default value that is likely to work
-					// probably should raise some kind of error here
-					$port_number = 143;
-					break;
-			}
-		}
-		return $port_number;
+		return \App\modules\email\services\EmailServerPortResolver::resolve(
+			(string) ($account['mail_server_type'] ?? $email['mail_server_type']
+				?? $this->serverSettings['mail_server_type'] ?? 'imap'),
+			$port,
+			null
+		);
 	}
 	/**
 	 * create email preferences
@@ -653,14 +609,6 @@ class Preferences
 		// pick up custom "mail_folder" if it exists (used for UWash and UWash Maildir servers)
 		// else use the system default (which we temporarily hard coded to "mail" just above here)
 
-		//---  [email][mail_port]  ---
-		// These sets the mail_port server variable
-		// someday (not currently) this may be a site-wide property set during site setup
-		// additionally, someday (not currently) the user may be able to override this with
-		// a custom email preference. Currently, we simply use standard port numbers
-		// for the service in question.
-		$prefs['email']['mail_port'] = $this->sub_get_mailsvr_port($prefs);
-
 		//---  [email][fullname]  ---
 		// we pick this up from phpgw api for the default account
 		// the user does not directly manipulate this pref for the default email account
@@ -704,6 +652,7 @@ class Preferences
 		$prefs['email'] = (new \App\modules\email\services\EmailPreferenceDefaults($schema))->resolve(
 			(array) $prefs['email'], (int) $acctnum, $user, (array) $this->serverSettings
 		);
+		$prefs['email']['mail_port'] = $this->sub_get_mailsvr_port($prefs);
 		// users preferences are now established to known structured values...
 
 		// SANITY CHECK

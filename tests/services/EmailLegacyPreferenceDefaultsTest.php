@@ -108,6 +108,7 @@ namespace Tests\Services
 			$this->assertSame('encrypted/value', $result['passwd']);
 			$this->assertSame('Default &quot;Name&quot;', $result['fullname']);
 			$this->assertSame('imap.example.test', $result['mail_server']);
+			$this->assertSame(993, $result['mail_port']);
 			$this->assertSame('True', $result['use_trash_folder']);
 			$this->assertArrayNotHasKey('use_draft_folder', $result);
 			$this->assertArrayNotHasKey('show_addresses', $result);
@@ -121,6 +122,43 @@ namespace Tests\Services
 			$result = $preferences->create_email_preferences(12, 2)['email'];
 			$this->assertArrayNotHasKey('use_trash_folder', $result);
 			$this->assertArrayNotHasKey('use_sent_folder', $result);
+			$this->assertSame(110, $result['mail_port']);
+		}
+
+		public function testExtraAccountUsesItsOwnExplicitPortWithoutMutatingStoredData(): void
+		{
+			$preferences = $this->preferences();
+			$preferences->data['email']['mail_server_port'] = '1143';
+			$preferences->data['email']['ex_accounts'][2]['mail_server_port'] = '2993';
+			$stored = $preferences->data;
+			$result = $preferences->create_email_preferences(12, 2)['email'];
+			$this->assertSame(2993, $result['mail_port']);
+			$this->assertSame($stored, $preferences->data);
+		}
+
+		/**
+		 * @dataProvider legacyPortCases
+		 */
+		public function testLegacyPortHelperUsesSharedResolution(array $email, int $account, int $expected): void
+		{
+			$this->assertSame($expected, $this->preferences()->sub_get_mailsvr_port(['email' => $email], $account));
+		}
+
+		public static function legacyPortCases(): array
+		{
+			return [
+				'server protocol fallback' => [[], 0, 993],
+				'imap' => [['mail_server_type' => 'imap'], 0, 143],
+				'pop3s' => [['mail_server_type' => 'pop3s'], 0, 995],
+				'nntp' => [['mail_server_type' => 'nntp'], 0, 119],
+				'modern port wins' => [['mail_server_type' => 'imap', 'mail_server_port' => '1143', 'mail_port' => 143], 0, 1143],
+				'legacy nested port' => [['accounts' => [2 => ['mail_port' => '2110', 'mail_server_type' => 'pop3']]], 2, 2110],
+				'legacy nested protocol' => [['accounts' => [2 => ['mail_server_type' => 'pop3']]], 2, 110],
+				'nested inherits protocol' => [['mail_server_type' => 'pop3s', 'accounts' => [2 => []]], 2, 995],
+				'blank modern port' => [['mail_server_port' => ' ', 'mail_port' => '1993'], 0, 1993],
+				'invalid port' => [['mail_server_type' => 'imap', 'mail_server_port' => '70000'], 0, 143],
+				'invalid legacy port' => [['accounts' => [2 => ['mail_port' => '0']]], 2, 993],
+			];
 		}
 
 		public function testPopAccountDoesNotIntroduceDisabledFolderFlags(): void
@@ -156,6 +194,7 @@ namespace Tests\Services
 			$this->assertSame('Target "Name"', $result['fullname']);
 			$this->assertSame('Trash', $result['trash_folder_name']);
 			$this->assertSame('new_old', $result['default_sorting']);
+			$this->assertSame(143, $result['mail_port']);
 			$this->assertSame('none', $result['show_addresses']);
 			$this->assertArrayNotHasKey('use_draft_folder', $result);
 			$this->assertArrayNotHasKey('passwd', $result);

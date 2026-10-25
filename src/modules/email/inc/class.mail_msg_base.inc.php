@@ -687,7 +687,7 @@ class mail_msg_base
 			'mailsvr_delimiter',
 			'mailsvr_stream',
 			'mailsvr_account_username',
-			// use this uri in any auto-refresh request - filled during "fill_sort_order_start_msgnum()"
+			// use this uri in any auto-refresh request - filled during "fill_sort_order_start()"
 			'index_refresh_uri',
 			'verified_trash_folder_long',
 

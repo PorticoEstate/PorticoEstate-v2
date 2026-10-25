@@ -115,25 +115,12 @@ class mail_msg extends mail_msg_wrappers
 
 	// ---- Messages Sort Order Start and Msgnum  -----
 	/*!
-	@function fill_sort_order_start_msgnum
-	@abstract alias to "fill_sort_order_start" because msgnum is NO LONGER handled here, function was renamed.
-	@author Angles
-	@discussion alias function for backward compatibility only, useful only until the rest of the code calls the
-	real function "fill_sort_order_start"
-	*/
-	function fill_sort_order_start_msgnum()
-	{
-		$this->fill_sort_order_start();
-	}
-
-	/*!
 	@function fill_sort_order_start
 	@abstract handles determining what values sort, order, and start should have.
 	@author Angles
 	@discussion if sort, order, and start are available in the GPC vars and are valid (values work, not out of range) then
 	those GPC vars are used as source data. If not, then data is generated accourding to the users prefs for sort and order,
-	abd start is assumed 0 if not otherwise provided in the GPC vars. NOTE: MSGNUM IS NO LONGER HANDLED
-	IN THIS FUNCTION so it was renamed from "fill_sort_order_start_msgnum" to "fill_sort_order_start".
+	and start is assumed 0 if not otherwise provided in the GPC vars. Message numbers are handled separately.
 	@syntax These are the PHP Sorting definitions and what they do and what their int value is.
 	SORTDATE:  0	//This is the Date that the senders email client stanp the message with
 	SORTARRIVAL: 1	 //This is the date your email server's MTA stamps the message with

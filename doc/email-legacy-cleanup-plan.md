@@ -6,6 +6,8 @@ This document began as a proposed plan. The execution record below supersedes th
 
 ## Execution Update
 
+- Removed the reviewed 194 unused Norwegian `email` rows and matching normalized keys from all 19 email language catalogs (2094 rows total). Shared `common`/`admin` entries, active translations, and entries outside the reviewed candidate set are preserved. English/Norwegian active-source coverage remains green; existing irregular legacy rows in other catalogs were left unchanged.
+
 - Audited PHP/Twig translation calls, compose-prefill translation keys, and dynamically translated search-flag labels against the English and Norwegian email catalogs. Added 174 missing entries to each, including destination folder/account labels, loading states, actions, preference help, and API error messages. Norwegian additions are translated, not English placeholders. A catalog regression checks nonempty four-column entries and source-key coverage using the runtime's case/whitespace/length normalization. Other language catalogs and installed database translations are unchanged.
 
 - Initialized the POP3 address-detail collection before its parsing loop, making the return variable explicitly defined. A regression covers parsed mailbox/host values and the existing false result for blank input.

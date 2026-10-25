@@ -451,4 +451,85 @@ class EmailSocketBaseTest extends TestCase
 			->with(".Header: value\r\n", [], 'True');
 		$this->assertSame(1, $mail->read_and_load('.', true));
 	}
+
+	public function testPop3RejectedSortingCommandDoesNotReadMultilineDataOrSendQuit(): void
+	{
+		require_once __DIR__ . '/../../src/modules/email/inc/class.mail_dcom_pop3_sock.inc.php';
+		$mail = $this->getMockBuilder(\mail_dcom_pop3_sock::class)->disableOriginalConstructor()
+			->onlyMethods(['msg2socket', 'read_port'])->getMock();
+		$mail->socket = fopen('php://memory', 'r+');
+		$socket = $mail->socket;
+		$mail->expects($this->once())->method('msg2socket')
+			->with('TOP 42 0', $this->anything(), $this->anything())
+			->willReturnCallback(static function () use ($mail)
+			{
+				$mail->set_error('550', 'Rejected', 'TOP unavailable');
+				return 0;
+			});
+		$mail->expects($this->never())->method('read_port');
+		$this->expectOutputString('');
+		try
+		{
+			$mail->fetch_header_element(42, 42, 'Subject');
+			$this->fail('Rejected TOP must fail without parsing a multiline reply.');
+		}
+		catch (\RuntimeException $exception)
+		{
+			$this->assertSame('Unable to complete the POP3 operation.', $exception->getMessage());
+			$this->assertSame('Rejected', $mail->error['msg']);
+			$this->assertNull($mail->socket);
+			$this->assertFalse(is_resource($socket));
+		}
+	}
+
+	public function testSortingUsesValidatedUnfoldedHeadersAndReusesLastHeaderCache(): void
+	{
+		require_once __DIR__ . '/../../src/modules/email/inc/class.mail_dcom_pop3_sock.inc.php';
+		$mail = $this->getMockBuilder(\mail_dcom_pop3_sock::class)->disableOriginalConstructor()
+			->onlyMethods(['msg2socket', 'read_port'])->getMock();
+		$mail->expects($this->exactly(2))->method('msg2socket')
+			->withConsecutive(['TOP 1 0', $this->anything(), $this->anything()],
+				['TOP 2 0', $this->anything(), $this->anything()])->willReturn(1);
+		$mail->method('read_port')->willReturnOnConsecutiveCalls(
+			"sUbJeCt: One\r\n", "\tcontinued\r\n", ".\r\n",
+			"From: sender@example.test\r\n", ".\r\n"
+		);
+		$this->assertSame([1 => 'One continued', 2 => ''], $mail->fetch_header_element(1, 2, 'Subject'));
+		$this->assertSame("From: sender@example.test\r\n", $mail->get_header_raw('', 2));
+		$this->assertSame([], $mail->fetch_header_element(2, 1, 'Subject'));
+	}
+
+	/**
+	 * @dataProvider failingOperations
+	 */
+	public function testPop3OperationalFailuresThrowWithoutHtml(string $method, array $arguments): void
+	{
+		require_once __DIR__ . '/../../src/modules/email/inc/class.mail_dcom_pop3_sock.inc.php';
+		$mail = $this->getMockBuilder(\mail_dcom_pop3_sock::class)->disableOriginalConstructor()
+			->onlyMethods(['msg2socket'])->getMock();
+		$mail->socket = fopen('php://memory', 'r+');
+		$mail->method('msg2socket')->willReturn(0);
+		$this->expectOutputString('');
+		try
+		{
+			$mail->$method(...$arguments);
+			$this->fail('Failed command must throw.');
+		}
+		catch (\RuntimeException $exception)
+		{
+			$this->assertSame('Unable to complete the POP3 operation.', $exception->getMessage());
+			$this->assertNull($mail->socket);
+			$this->assertSame('POP3 Operation Failed', $mail->error['msg']);
+		}
+	}
+
+	public static function failingOperations(): array
+	{
+		return [
+			['get_header_raw', ['', 42]],
+			['get_body', ['', 42]],
+			['num_msg', ['']],
+			['delete', ['', '42']],
+		];
+	}
 }

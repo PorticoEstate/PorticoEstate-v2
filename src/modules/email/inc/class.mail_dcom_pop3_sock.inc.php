@@ -51,6 +51,17 @@ defined('PE_IMAP_FT_NOT') || define('PE_IMAP_FT_NOT', 1);
 
 class mail_dcom_pop3_sock extends mail_dcom_base_sock
 {
+	function error()
+	{
+		if (!$this->errorset)
+		{
+			$this->set_error('Error', 'POP3 Operation Failed', 'The POP3 command could not be completed.');
+		}
+		// Do not send QUIT here: a failed operation must not commit pending deletions.
+		$this->close_port();
+		throw new \RuntimeException('Unable to complete the POP3 operation.');
+	}
+
 	/**************************************************************************\
 	 *	Functions that DO NOTHING in POP3  
 		\**************************************************************************/
@@ -484,22 +495,23 @@ class mail_dcom_pop3_sock extends mail_dcom_base_sock
 		*/
 	function fetch_header_element($start, $stop, $element)
 	{
+		$field_element = array();
 		for ($i = $start; $i <= $stop; $i++)
 		{
-			if (!$this->write_port('TOP ' . $i . ' 0'))
+			$headers = $this->get_header_array('', $i);
+			if ($headers === false)
 			{
 				$this->error();
 			}
-			$this->read_and_load('.', true);
-			if ($this->header[$element])
+			$field_element[$i] = '';
+			foreach ($headers as $line)
 			{
-				$field_element[$i] = $this->phpGW_quoted_printable_decode2($this->header[$element]);
-				//echo $field_element[$i].' = '.$this->phpGW_quoted_printable_decode2($this->header[$element])."<br />\n";
-			}
-			else
-			{
-				$field_element[$i] = $this->phpGW_quoted_printable_decode2($this->header[strtoupper($element)]);
-				//echo $field_element[$i].' = '.$this->phpGW_quoted_printable_decode2($this->header[strtoupper($element)])."<br />\n";
+				$separator = strpos($line, ':');
+				if ($separator !== false && strcasecmp(substr($line, 0, $separator), $element) === 0)
+				{
+					$field_element[$i] = $this->phpGW_quoted_printable_decode2(trim(substr($line, $separator + 1)));
+					break;
+				}
 			}
 		}
 		return $field_element;

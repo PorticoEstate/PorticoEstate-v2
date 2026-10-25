@@ -439,9 +439,10 @@ class ModernIMAPWrapper
         }
     }
 
-    private static function getMessage($stream, $msgNum, $flags = 0)
+    private static function getMessage($stream, $msgNum, $flags = 0, bool $peek = true)
     {
-        $query = self::$connections[$stream]['folder']->query()->leaveUnread();
+        $query = self::$connections[$stream]['folder']->query();
+        $query = $peek ? $query->leaveUnread() : $query->markAsRead();
         return ($flags & 1)
             ? $query->getMessageByUid((int) $msgNum)
             : $query->getMessageByMsgn((int) $msgNum);
@@ -601,7 +602,11 @@ class ModernIMAPWrapper
     {
         if (!isset(self::$connections[$stream]['folder'])) return false;
         try {
-            $message = self::getMessage($stream, $msgNum, $flags);
+            $peek = (bool) ($flags & 2);
+            if (!$peek) {
+                self::clearMessageMetadata($stream);
+            }
+            $message = self::getMessage($stream, $msgNum, $flags, $peek);
             return $message ? $message->getRawBody() : false;
         } catch (Exception $exception) {
             self::$lastError = $exception->getMessage();
@@ -623,7 +628,11 @@ class ModernIMAPWrapper
             $client = $connection['client'];
             $client->openFolder($connection['folder']->path);
             $mode = ($flags & 1) ? \Webklex\PHPIMAP\IMAP::ST_UID : \Webklex\PHPIMAP\IMAP::ST_MSGN;
-            $data = $client->getConnection()->fetch(['BODY.PEEK[' . $section . ']', 'UID'], [(int) $msgNum], null, $mode)->validatedData();
+            $peek = (bool) ($flags & 2);
+            if (!$peek) {
+                self::clearMessageMetadata($stream);
+            }
+            $data = $client->getConnection()->fetch([($peek ? 'BODY.PEEK[' : 'BODY[') . $section . ']', 'UID'], [(int) $msgNum], null, $mode)->validatedData();
             $message = $data ? reset($data) : [];
             return $message['BODY[' . $section . ']'] ?? false;
             

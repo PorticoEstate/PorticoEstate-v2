@@ -212,6 +212,20 @@ namespace Tests\Services
 				$uid = (string) $uids[0];
 				switch ($operation)
 				{
+					case 'peek':
+						$this->assertTrue(\IMAPManager::imap_clearflag_full($stream, $uid, '\\Seen', 1));
+						$this->assertStringContainsString('Lifecycle body', \IMAPManager::imap_body($stream, $uid, 3));
+						$this->assertSame($uids, \IMAPManager::imap_search($stream, 'UNSEEN', 1));
+						$this->assertSame([1], \ModernIMAPWrapper::imap_prefetch_message_metadata($stream, [1]));
+						$this->assertStringContainsString('Lifecycle body', \IMAPManager::imap_body($stream, $uid, 1));
+						$this->assertSame(' ', \ModernIMAPWrapper::imap_header($stream, 1)->Unseen);
+						$this->assertSame($uids, \IMAPManager::imap_search($stream, 'SEEN', 1));
+						$this->assertTrue(\IMAPManager::imap_clearflag_full($stream, $uid, '\\Seen', 1));
+						$this->assertStringContainsString('Lifecycle body', \IMAPManager::imap_fetchbody($stream, $uid, '1', 3));
+						$this->assertSame($uids, \IMAPManager::imap_search($stream, 'UNSEEN', 1));
+						$this->assertStringContainsString('Lifecycle body', \IMAPManager::imap_fetchbody($stream, 1, '1'));
+						$this->assertSame($uids, \IMAPManager::imap_search($stream, 'SEEN', 1));
+						break;
 					case 'close-expunge':
 						$this->assertTrue($transport->delete($stream, $uid, 1));
 						$this->assertTrue($transport->reopen($stream, $prefix . 'INBOX'));
@@ -376,7 +390,7 @@ namespace Tests\Services
 
 		public static function greenMailOperations(): array
 		{
-			return [['flags'], ['copy'], ['move'], ['delete'], ['reconnect'], ['metadata'], ['ranges'], ['missing-open'], ['subscriptions'], ['listing'], ['close-expunge']];
+			return [['flags'], ['copy'], ['move'], ['delete'], ['reconnect'], ['metadata'], ['ranges'], ['missing-open'], ['subscriptions'], ['listing'], ['close-expunge'], ['peek']];
 		}
 
 		public function testNativeAndSocketPop3ClassesCanCoexistWithImap(): void

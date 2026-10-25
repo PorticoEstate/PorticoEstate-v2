@@ -474,7 +474,10 @@ class ModernImapMimeTest extends TestCase
 		$this->assertSame('file.txt', $structure->parts[1]->dparameters[0]->value);
 	}
 
-	public function testFetchBodyUsesExactSectionAndReturnsEncodedBytes(): void
+	/**
+	 * @dataProvider bodyFetchModes
+	 */
+	public function testFetchBodyUsesExactSectionAndReturnsEncodedBytes(int $flags): void
 	{
 		$property = new \ReflectionProperty(\ModernIMAPWrapper::class, 'connections');
 		$property->setAccessible(true);
@@ -483,19 +486,27 @@ class ModernImapMimeTest extends TestCase
 		$response = new class {
 			public function validatedData(): array { return [42 => ['BODY[1.2]' => base64_encode('attachment bytes'), 'UID' => 42]]; }
 		};
-		$protocol->expects($this->once())->method('fetch')->with(['BODY.PEEK[1.2]', 'UID'], [42], null, \Webklex\PHPIMAP\IMAP::ST_UID)->willReturn($response);
+		$protocol->expects($this->once())->method('fetch')->with(
+			[($flags & 2) ? 'BODY.PEEK[1.2]' : 'BODY[1.2]', 'UID'], [42], null,
+			($flags & 1) ? \Webklex\PHPIMAP\IMAP::ST_UID : \Webklex\PHPIMAP\IMAP::ST_MSGN
+		)->willReturn($response);
 		$client = $this->getMockBuilder(\stdClass::class)->addMethods(['openFolder', 'getConnection'])->getMock();
 		$client->expects($this->once())->method('openFolder')->with('INBOX.Drafts');
 		$client->method('getConnection')->willReturn($protocol);
 		$property->setValue(null, ['mime-test' => ['client' => $client, 'folder' => (object) ['path' => 'INBOX.Drafts']]]);
 		try
 		{
-			$this->assertSame(base64_encode('attachment bytes'), \ModernIMAPWrapper::imap_fetchbody('mime-test', 42, '1.2', 3));
+			$this->assertSame(base64_encode('attachment bytes'), \ModernIMAPWrapper::imap_fetchbody('mime-test', 42, '1.2', $flags));
 		}
 		finally
 		{
 			$property->setValue(null, $original);
 		}
+	}
+
+	public static function bodyFetchModes(): array
+	{
+		return [[0], [1], [2], [3]];
 	}
 
 	public function testFetchStructureUsesBodyStructureInsteadOfFetchingMessageBody(): void

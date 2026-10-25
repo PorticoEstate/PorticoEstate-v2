@@ -167,7 +167,7 @@ namespace Tests\Services
 					if ($created)
 					{
 						$this->assertTrue($transport->reopen($stream, $prefix . 'INBOX'));
-						$this->assertTrue(\IMAPManager::imap_deletemailbox($stream, $prefix . $folder));
+						$this->assertTrue(\IMAPManager::imap_deletemailbox($stream, $prefix . $folder), $folder . ': ' . $transport->server_last_error());
 					}
 				}
 				finally
@@ -175,6 +175,112 @@ namespace Tests\Services
 					$this->assertTrue($transport->close($stream));
 				}
 			}
+		}
+
+		/**
+		 * @dataProvider greenMailOperations
+		 */
+		public function testGreenMailMessageLifecycle(string $operation): void
+		{
+			if (getenv('GREENMAIL_TEST') !== '1')
+			{
+				$this->markTestSkipped('Set GREENMAIL_TEST=1 to use the local GreenMail fixture.');
+			}
+			$transport = \email_ofemail::createObject('email.mail_dcom', 'imap');
+			\IMAPManager::setMode('modern');
+			$prefix = '{127.0.0.1:1993/imap/ssl/novalidate-cert}';
+			$source = 'lifecycle-' . bin2hex(random_bytes(8));
+			$destination = $source . '-destination';
+			$messageId = '<' . $source . '@example.test>';
+			$message = "From: sender@example.test\r\nTo: outlook-test@outlook.test\r\n"
+				. "Subject: Lifecycle regression\r\nMessage-ID: " . $messageId . "\r\n\r\nLifecycle body\r\n";
+			$stream = $transport->open($prefix . 'INBOX', 'outlook-test', 'local-test-password');
+			$this->assertNotFalse($stream, (string) $transport->server_last_error());
+			$created = [];
+			try
+			{
+				foreach ([$source, $destination] as $folder)
+				{
+					$this->assertTrue(\IMAPManager::imap_createmailbox($stream, $prefix . $folder));
+					$created[] = $folder;
+				}
+				$this->assertTrue($transport->append($stream, $prefix . $source, $message, '\\Seen'));
+				$this->assertTrue($transport->reopen($stream, $prefix . $source));
+				$uids = \IMAPManager::imap_search($stream, 'ALL', 1);
+				$this->assertIsArray($uids);
+				$this->assertCount(1, $uids);
+				$uid = (string) $uids[0];
+				switch ($operation)
+				{
+					case 'flags':
+						$this->assertTrue(\IMAPManager::imap_setflag_full($stream, $uid, '\\Flagged', 1));
+						$this->assertSame($uids, \IMAPManager::imap_search($stream, 'FLAGGED', 1));
+						$this->assertSame($uids, \IMAPManager::imap_search($stream, 'SEEN', 1));
+						$this->assertTrue(\IMAPManager::imap_clearflag_full($stream, $uid, '\\Flagged', 1));
+						$this->assertSame([], \IMAPManager::imap_search($stream, 'FLAGGED', 1));
+						$this->assertSame($uids, \IMAPManager::imap_search($stream, 'SEEN', 1));
+						break;
+					case 'copy':
+					case 'move':
+						$result = $operation === 'copy'
+							? $transport->mailcopy($stream, $uid, $prefix . $destination, 1)
+							: $transport->mail_move($stream, $uid, $prefix . $destination, 1);
+						$this->assertTrue($result, (string) $transport->server_last_error());
+						if ($operation === 'move')
+						{
+							$this->assertTrue($transport->expunge($stream));
+						}
+						$this->assertSame($operation === 'copy' ? 1 : 0, $transport->num_msg($stream));
+						$this->assertTrue($transport->reopen($stream, $prefix . $destination));
+						$this->assertSame(1, $transport->num_msg($stream));
+						$this->assertStringContainsString($messageId, \IMAPManager::imap_fetchheader($stream, 1));
+						$this->assertStringContainsString('Lifecycle body', \IMAPManager::imap_body($stream, 1));
+						break;
+					case 'delete':
+						$this->assertTrue($transport->delete($stream, $uid, 1));
+						$this->assertSame($uids, \IMAPManager::imap_search($stream, 'DELETED', 1));
+						$this->assertSame(1, $transport->num_msg($stream));
+						$this->assertTrue($transport->expunge($stream));
+						$this->assertSame(0, $transport->num_msg($stream));
+						$this->assertSame([], \IMAPManager::imap_search($stream, 'ALL', 1));
+						break;
+					case 'reconnect':
+						$this->assertTrue($transport->reopen($stream, $prefix . 'INBOX'));
+						$this->assertTrue($transport->close($stream));
+						$stream = $transport->open($prefix . $source, 'outlook-test', 'local-test-password');
+						$this->assertNotFalse($stream, (string) $transport->server_last_error());
+						$this->assertTrue($transport->noop_ping_test($stream));
+						$this->assertSame(1, $transport->num_msg($stream));
+						$this->assertSame($uids, \IMAPManager::imap_search($stream, 'ALL', 1));
+						$this->assertStringContainsString($messageId, \IMAPManager::imap_fetchheader($stream, 1));
+						break;
+				}
+			}
+			finally
+			{
+				try
+				{
+					if ($stream === false)
+					{
+						$stream = $transport->open($prefix . 'INBOX', 'outlook-test', 'local-test-password');
+						$this->assertNotFalse($stream, 'Unable to reconnect for temporary-folder cleanup.');
+					}
+					$this->assertTrue($transport->reopen($stream, $prefix . 'INBOX'), (string) $transport->server_last_error());
+					foreach (array_reverse($created) as $folder)
+					{
+						$this->assertTrue(\IMAPManager::imap_deletemailbox($stream, $prefix . $folder), $folder . ': ' . $transport->server_last_error());
+					}
+				}
+				finally
+				{
+					$this->assertTrue($transport->close($stream));
+				}
+			}
+		}
+
+		public static function greenMailOperations(): array
+		{
+			return [['flags'], ['copy'], ['move'], ['delete'], ['reconnect']];
 		}
 
 		public function testNativeAndSocketPop3ClassesCanCoexistWithImap(): void

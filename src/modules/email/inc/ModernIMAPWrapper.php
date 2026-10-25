@@ -170,6 +170,12 @@ class ModernIMAPWrapper
             if (preg_match('/\bSEEN\b/i', $flagCriteria)) {
                 $query->seen();
             }
+            if (preg_match('/\bFLAGGED\b/i', $flagCriteria)) {
+                $query->where('FLAGGED');
+            }
+            if (preg_match('/\bDELETED\b/i', $flagCriteria)) {
+                $query->deleted();
+            }
             if (preg_match('/FROM "([^"]+)"/', $criteria, $matches)) {
                 $query->from($matches[1]);
             }
@@ -834,7 +840,9 @@ class ModernIMAPWrapper
             foreach ($nums as $msgNum) {
                 $message = self::getMessage($stream, trim($msgNum), $flags);
                 if ($message) {
-                    $message->delete();
+                    if (!$message->delete(false)) {
+                        throw new RuntimeException('Unable to mark IMAP message for deletion.');
+                    }
                 }
             }
             

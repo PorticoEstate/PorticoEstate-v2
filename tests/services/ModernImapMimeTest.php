@@ -12,6 +12,79 @@ use ZBateson\MailMimeParser\MailMimeParser;
 class ModernImapMimeTest extends TestCase
 {
 	/**
+	 * @dataProvider flagSearchCriteria
+	 */
+	public function testFlagSearchCriteriaAreForwarded(string $criteria): void
+	{
+		$property = new \ReflectionProperty(\ModernIMAPWrapper::class, 'connections');
+		$property->setAccessible(true);
+		$original = $property->getValue();
+		$query = $this->getMockBuilder(\stdClass::class)->addMethods(['where', 'deleted', 'get'])->getMock();
+		if ($criteria === 'FLAGGED')
+		{
+			$query->expects($this->once())->method('where')->with('FLAGGED');
+			$query->expects($this->never())->method('deleted');
+		}
+		else
+		{
+			$query->expects($this->never())->method('where');
+			$query->expects($this->once())->method('deleted');
+		}
+		$query->method('get')->willReturn([]);
+		$folder = $this->getMockBuilder(\stdClass::class)->addMethods(['query'])->getMock();
+		$folder->method('query')->willReturn($query);
+		$property->setValue(null, ['flags-test' => ['folder' => $folder]]);
+		try
+		{
+			$this->assertSame([], \ModernIMAPWrapper::imap_search('flags-test', $criteria, 1));
+		}
+		finally
+		{
+			$property->setValue(null, $original);
+		}
+	}
+
+	public static function flagSearchCriteria(): array
+	{
+		return [['FLAGGED'], ['DELETED']];
+	}
+
+	/**
+	 * @dataProvider deletionResults
+	 */
+	public function testDeletionMarksWithoutExpungingAndPropagatesFailure(bool $result): void
+	{
+		$property = new \ReflectionProperty(\ModernIMAPWrapper::class, 'connections');
+		$property->setAccessible(true);
+		$original = $property->getValue();
+		$message = $this->getMockBuilder(\stdClass::class)->addMethods(['delete'])->getMock();
+		$message->expects($this->once())->method('delete')->with(false)->willReturn($result);
+		$query = $this->getMockBuilder(\stdClass::class)->addMethods(['leaveUnread', 'getMessageByUid'])->getMock();
+		$query->method('leaveUnread')->willReturnSelf();
+		$query->expects($this->once())->method('getMessageByUid')->with(42)->willReturn($message);
+		$folder = $this->getMockBuilder(\stdClass::class)->addMethods(['query'])->getMock();
+		$folder->method('query')->willReturn($query);
+		$property->setValue(null, ['delete-test' => ['folder' => $folder]]);
+		try
+		{
+			$this->assertSame($result, \ModernIMAPWrapper::imap_delete('delete-test', '42', 1));
+			if (!$result)
+			{
+				$this->assertSame('Unable to mark IMAP message for deletion.', \ModernIMAPWrapper::imap_last_error());
+			}
+		}
+		finally
+		{
+			$property->setValue(null, $original);
+		}
+	}
+
+	public static function deletionResults(): array
+	{
+		return [[true], [false]];
+	}
+
+	/**
 	 * @dataProvider messageCounts
 	 */
 	public function testMessageCountUsesStatusWithoutChangingSelectedMailbox(array $data, $expected): void

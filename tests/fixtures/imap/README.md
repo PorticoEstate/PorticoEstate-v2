@@ -44,6 +44,8 @@ GREENMAIL_TEST=1 vendor/bin/phpunit tests/services/EmailTransportFactoryTest.php
 
 The opt-in live test uses the disposable credentials above, creates a uniquely named folder, checks its empty message count, appends and reads back a message, checks the populated count and append rejection for a nonexistent folder, and removes its test folder in cleanup. It does not modify the seeded INBOX messages. Certificate verification is disabled only for this local GreenMail connection. Without `GREENMAIL_TEST=1`, this live test is skipped; factory and backend-result regressions still run.
 
+The same command also runs isolated-folder flows for flag set/clear, UID copy/move, mark-deleted followed by explicit expunge, and persistence across close/reconnect. Copy/move checks source and destination counts and destination content. Reconnect selects INBOX before disconnecting: GreenMail 2.1.2 can otherwise retain a stale selected-folder listener and throw `NullPointerException` during subsequent folder deletion. The test does not restart GreenMail or clear INBOX to work around server failures.
+
 ## Configure the email client
 
 Create an active standard IMAP emailadmin profile assigned to the test user or `felamimail` application. For the app running in the `portico_internal` Docker network, set server `imap-test`, port `3993`, SSL, and disable certificate verification for this local test profile. For a PHP app running directly on the host, use `127.0.0.1`, port `1993`. Use IMAP login `outlook-test`, email address `outlook-test@outlook.test`, and the test password above. This fixture exercises password-based IMAP behavior; it does not simulate Microsoft OAuth.

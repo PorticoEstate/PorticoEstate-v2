@@ -6,6 +6,8 @@ This document began as a proposed plan. The execution record below supersedes th
 
 ## Execution Update
 
+- Removed the unreferenced `all_folders_listbox`, `folders_mega_listbox`, and `all_ex_accounts_listbox` HTML selector renderers from `class.mail_msg_display.inc.php`. Folder/account data services and active Twig selectors remain in place; MIME and message-navigation methods were retained.
+
 - Removed the unreferenced `report_moved_or_deleted` formatter and obsolete `minimum_version` PHP-version helper from the mail core. Active REST action reporting and MIME/message processing remain unchanged.
 
 - Removed unreferenced mail-core HTML/debug helpers (`href_maketag`, `href_maketag_class`, `img_maketag`, `array_keys_str`, and `_image_on`) after a repository-wide reference search. Removed unreachable output after the connection-recovery early return; active retry behavior remains unchanged.

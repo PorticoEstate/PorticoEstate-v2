@@ -980,28 +980,8 @@ class ModernIMAPWrapper
      */
     public static function imap_list($stream, $ref, $pattern)
     {
-        if (!isset(self::$connections[$stream]['client'])) {
-            return false;
-        }
-        
-        try {
-            $client = self::$connections[$stream]['client'];
-            $folders = $client->getFolders(false);
-            
-            $folderList = [];
-            foreach ($folders as $folder) {
-                $folderName = $ref . $folder->path;
-                if (fnmatch($pattern, $folder->path)) {
-                    $folderList[] = $folderName;
-                }
-            }
-            
-            return $folderList;
-            
-        } catch (Exception $e) {
-            self::$lastError = $e->getMessage();
-            return false;
-        }
+        $mailboxes = self::imap_getmailboxes($stream, $ref, $pattern);
+        return $mailboxes === false ? false : array_column($mailboxes, 'name');
     }
     
     /**
@@ -1127,17 +1107,28 @@ class ModernIMAPWrapper
         
         try {
             $client = self::$connections[$stream]['client'];
-            $folders = $client->getFolders(false);
+            $prefix = '';
+            $reference = $ref;
+            if (preg_match('/^(\{[^}]+\})(.*)$/s', $ref, $matches)) {
+                $prefix = $matches[1];
+                $reference = $matches[2];
+            }
+            $folders = $client->getConnection()->folders($reference, $pattern)->validatedData();
             
             $mailboxes = [];
-            foreach ($folders as $folder) {
-                if (fnmatch($pattern, $folder->path)) {
-                    $mailbox = new stdClass();
-                    $mailbox->name = $ref . $folder->path;
-                    $mailbox->delimiter = $folder->delimiter ?: '.';
-                    $mailbox->attributes = 0; // Could be extended based on folder attributes
-                    $mailboxes[] = $mailbox;
+            $attributeFlags = [
+                '\\noinferiors' => 1, '\\noselect' => 2, '\\marked' => 4, '\\unmarked' => 8,
+                '\\referral' => 16, '\\haschildren' => 32, '\\hasnochildren' => 64,
+            ];
+            foreach ($folders as $path => $folder) {
+                $mailbox = new stdClass();
+                $mailbox->name = $prefix . $path;
+                $mailbox->delimiter = $folder['delimiter'];
+                $mailbox->attributes = 0;
+                foreach ($folder['flags'] as $flag) {
+                    $mailbox->attributes |= $attributeFlags[strtolower($flag)] ?? 0;
                 }
+                $mailboxes[] = $mailbox;
             }
             
             return $mailboxes;

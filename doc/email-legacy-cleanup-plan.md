@@ -6,6 +6,8 @@ This document began as a proposed plan. The execution record below supersedes th
 
 ## Execution Update
 
+- Modern mailbox listing now delegates reference names and wildcard patterns to server LIST rather than filesystem `fnmatch()`. Fully qualified server prefixes are separated from the IMAP reference path and restored on returned names. Both listing APIs share the same result conversion, preserving server delimiters (including NIL) and standard mailbox attribute bits. Offline tests cover reference/prefix handling and attributes; GreenMail nested-folder tests verify `%` versus `*`, nonempty reference paths, and recursive cleanup.
+
 - Modern subscribe/unsubscribe now issue Webklex SUBSCRIBE/UNSUBSCRIBE commands and validate the server response rather than returning simulated success. Fully qualified mailbox prefixes are removed while encoded mailbox paths are preserved. Offline tests cover both operations, plain/qualified paths, and rejected replies; GreenMail LSUB checks verify state changes and temporary-folder cleanup.
 
 - Modern open now resolves and selects the requested mailbox before publishing its connection handle. Missing mailboxes and connection/lookup/selection exceptions disconnect the provisional client and leave active connection state unchanged. Cleanup exceptions are explicitly reported alongside the original failure without including their potentially sensitive message. Offline failure-stage tests and a GreenMail missing-folder flow verify cleanup and preservation of an existing healthy session.

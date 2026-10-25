@@ -12,6 +12,49 @@ use ZBateson\MailMimeParser\MailMimeParser;
 class ModernImapMimeTest extends TestCase
 {
 	/**
+	 * @dataProvider mailboxReferences
+	 */
+	public function testMailboxListingUsesServerPatternsAndAttributes(string $reference, string $serverReference, string $prefix): void
+	{
+		$property = new \ReflectionProperty(\ModernIMAPWrapper::class, 'connections');
+		$property->setAccessible(true);
+		$original = $property->getValue();
+		$response = new class {
+			public function validatedData(): array
+			{
+				return [
+					'Root/Child' => ['delimiter' => '/', 'flags' => ['\\NoSelect', '\\HasChildren', '\\Marked']],
+					'Flat' => ['delimiter' => null, 'flags' => ['\\NoInferiors', '\\HasNoChildren', '\\Unmarked', '\\Unknown']],
+				];
+			}
+		};
+		$protocol = $this->getMockBuilder(\stdClass::class)->addMethods(['folders'])->getMock();
+		$protocol->expects($this->exactly(2))->method('folders')->with($serverReference, '%')->willReturn($response);
+		$client = $this->getMockBuilder(\stdClass::class)->addMethods(['getConnection'])->getMock();
+		$client->method('getConnection')->willReturn($protocol);
+		$property->setValue(null, ['list-test' => ['client' => $client]]);
+		try
+		{
+			$mailboxes = \ModernIMAPWrapper::imap_getmailboxes('list-test', $reference, '%');
+			$this->assertSame($prefix . 'Root/Child', $mailboxes[0]->name);
+			$this->assertSame('/', $mailboxes[0]->delimiter);
+			$this->assertSame(38, $mailboxes[0]->attributes);
+			$this->assertNull($mailboxes[1]->delimiter);
+			$this->assertSame(73, $mailboxes[1]->attributes);
+			$this->assertSame([$prefix . 'Root/Child', $prefix . 'Flat'], \ModernIMAPWrapper::imap_list('list-test', $reference, '%'));
+		}
+		finally
+		{
+			$property->setValue(null, $original);
+		}
+	}
+
+	public static function mailboxReferences(): array
+	{
+		return [['', '', ''], ['Root/', 'Root/', ''], ['{test:993/imap/ssl}Root/', 'Root/', '{test:993/imap/ssl}']];
+	}
+
+	/**
 	 * @dataProvider subscriptionCommands
 	 */
 	public function testSubscriptionsValidateServerResponse(string $method, string $command, string $mailbox, bool $succeeds): void

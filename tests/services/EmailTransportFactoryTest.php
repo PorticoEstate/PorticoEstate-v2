@@ -212,6 +212,27 @@ namespace Tests\Services
 				$uid = (string) $uids[0];
 				switch ($operation)
 				{
+					case 'listing':
+						$property = new \ReflectionProperty(\ModernIMAPWrapper::class, 'connections');
+						$property->setAccessible(true);
+						$protocol = $property->getValue()[$stream]['client']->getConnection();
+						$listed = $protocol->folders('', $source)->validatedData();
+						$delimiter = $listed[$source]['delimiter'];
+						$this->assertNotEmpty($delimiter);
+						$child = $source . $delimiter . 'child';
+						$grandchild = $child . $delimiter . 'grandchild';
+						foreach ([$child, $grandchild] as $path)
+						{
+							$this->assertTrue(\IMAPManager::imap_createmailbox($stream, $prefix . $path));
+							$created[] = $path;
+						}
+						$this->assertSame([$prefix . $child], \ModernIMAPWrapper::imap_list($stream, $prefix, $source . $delimiter . '%'));
+						$recursive = \ModernIMAPWrapper::imap_list($stream, $prefix, $source . $delimiter . '*');
+						$this->assertEqualsCanonicalizing([$prefix . $child, $prefix . $grandchild], $recursive);
+						$this->assertSame([$prefix . $grandchild], \ModernIMAPWrapper::imap_list($stream, $prefix . $child . $delimiter, '%'));
+						$mailboxes = \ModernIMAPWrapper::imap_getmailboxes($stream, $prefix, $source . $delimiter . '%');
+						$this->assertSame($delimiter, $mailboxes[0]->delimiter);
+						break;
 					case 'subscriptions':
 						$property = new \ReflectionProperty(\ModernIMAPWrapper::class, 'connections');
 						$property->setAccessible(true);
@@ -341,7 +362,7 @@ namespace Tests\Services
 
 		public static function greenMailOperations(): array
 		{
-			return [['flags'], ['copy'], ['move'], ['delete'], ['reconnect'], ['metadata'], ['ranges'], ['missing-open'], ['subscriptions']];
+			return [['flags'], ['copy'], ['move'], ['delete'], ['reconnect'], ['metadata'], ['ranges'], ['missing-open'], ['subscriptions'], ['listing']];
 		}
 
 		public function testNativeAndSocketPop3ClassesCanCoexistWithImap(): void

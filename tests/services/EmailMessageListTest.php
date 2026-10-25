@@ -5,11 +5,75 @@ namespace Tests\Services;
 require_once __DIR__ . '/../../vendor/autoload.php';
 require_once __DIR__ . '/../../src/modules/email/inc/class.mail_msg_base.inc.php';
 require_once __DIR__ . '/../../src/modules/email/inc/class.mail_msg_wrappers.inc.php';
+require_once __DIR__ . '/../../src/modules/email/inc/class.mail_msg_display.inc.php';
 
 use PHPUnit\Framework\TestCase;
 
 class EmailMessageListTest extends TestCase
 {
+	/**
+	 * @runInSeparateProcess
+	 * @preserveGlobalState disabled
+	 */
+	public function testDisplayReusesCommonServiceButReadsPreferencesForEachRow(): void
+	{
+		$linker = new class
+		{
+			public static function link($path, $args, $absolute): string
+			{
+				return $path . '?' . http_build_query($args);
+			}
+		};
+		class_alias(get_class($linker), 'phpgw');
+		$mail = $this->getMockBuilder(\mail_msg::class)->disableOriginalConstructor()
+			->onlyMethods(['ball_data_parse_str', 'get_pref_value', 'phpgw_header', 'get_subject',
+				'get_arg_value', 'make_flags_str', 'decode_header_string', 'htmlspecialchars_encode',
+				'ascii2utf', 'getCommon', 'phpgw_fetchstructure'])->getMock();
+		$mail->method('ball_data_parse_str')->willReturnArgument(0);
+		$mail->expects($this->exactly(4))->method('get_pref_value')->willReturnOnConsecutiveCalls(
+			'pop3', 'from', 'pop3', 'replyto'
+		);
+		$mail->expects($this->never())->method('phpgw_fetchstructure');
+		$from = (object) ['personal' => 'Sender', 'mailbox' => 'sender', 'host' => 'example.test'];
+		$reply = (object) ['mailbox' => 'reply', 'host' => 'example.test'];
+		$mail->method('phpgw_header')->willReturn((object) [
+			'Size' => 1024, 'udate' => 946684800, 'from' => [$from], 'reply_to' => [$reply], 'to' => [$from],
+		]);
+		$mail->method('get_subject')->willReturn('Subject');
+		$mail->method('get_arg_value')->willReturn(0);
+		$mail->method('make_flags_str')->willReturn('Seen Answered');
+		foreach (['decode_header_string', 'htmlspecialchars_encode', 'ascii2utf'] as $method)
+		{
+			$mail->method($method)->willReturnArgument(0);
+		}
+		$common = new class
+		{
+			public function show_date($timestamp, $format = null): string
+			{
+				return $format === 'Ymd' ? '20000101' : '2000-01-01 - 12:00';
+			}
+		};
+		$mail->expects($this->once())->method('getCommon')->willReturn($common);
+		$messages = [
+			['msgnum' => 1, 'folder' => 'INBOX', 'acctnum' => 0, 'uri' => ['msgnum' => 1]],
+			['msgnum' => 2, 'folder' => 'Archive', 'acctnum' => 3, 'uri' => ['msgnum' => 2]],
+		];
+		$rows = $mail->get_msg_list_display(['number_all' => 2, 'is_imap' => false], $messages, true);
+		$this->assertCount(2, $rows);
+		$this->assertSame('(sender@example.test)', $rows[0]['display_address_from']);
+		$this->assertSame('&lt;reply@example.test&gt;', $rows[1]['display_address_from']);
+		foreach ($rows as $index => $row)
+		{
+			$this->assertSame($messages[$index]['acctnum'], $row['acctnum']);
+			$this->assertSame($index === 0, $row['first_item']);
+			$this->assertFalse($row['has_attachment']);
+			$this->assertFalse($row['is_unseen']);
+			$this->assertTrue($row['is_answered']);
+			$this->assertSame('2000-01-01', $row['msg_date']);
+			$this->assertStringContainsString('msgnum=' . ($index + 1), $row['subject_link']);
+		}
+	}
+
 	/**
 	 * @dataProvider accounts
 	 */

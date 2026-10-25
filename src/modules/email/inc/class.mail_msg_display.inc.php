@@ -1982,6 +1982,7 @@ class mail_msg extends mail_msg_wrappers
 		}
 		// keep track of how many loops we've done, for the return array, will be advanced to 0 before it's used
 		$x = -1;
+		$common = null;
 		for ($i = $start; $i < $totaltodisplay; $i++)
 		{
 			$this_loop_msgball = $this->ball_data_parse_str($msgball_list[$i]);
@@ -2207,7 +2208,8 @@ $hdr_envelope->udate = $new_time;
 			$personal = $this->htmlspecialchars_encode($personal);
 			$personal = $this->ascii2utf($personal);
 
-			if (($this->get_pref_value('show_addresses') == 'from')
+			$show_addresses = $this->get_pref_value('show_addresses');
+			if (($show_addresses == 'from')
 				&& ($personal != $from->mailbox . '@' . $from->host)
 			)
 			{
@@ -2221,7 +2223,7 @@ $hdr_envelope->udate = $new_time;
 				$msg_list_display[$x]['display_address_from'] = '(' . $from->mailbox . '@' . $from->host . ')';
 				$msg_list_display[$x]['who_to'] = $from->mailbox . '@' . $from->host;
 			}
-			elseif (($this->get_pref_value('show_addresses') == 'replyto')
+			elseif (($show_addresses == 'replyto')
 				&& ($personal != $from->mailbox . '@' . $from->host)
 			)
 			{
@@ -2265,8 +2267,6 @@ $hdr_envelope->udate = $new_time;
 			// the original email is included in this Compose page. Also note that the email app's
 			// message list page, email/index.php, does not have a "reply to" button anywhere on it,
 			// said button is in the "show the message contents" page, email/message.php
-			$currentapp = Settings::getInstance()->get('flags')['currentapp'];
-
 			// if it's a long plain address with no spaces, then add a space to the TD can wrap the text
 			if ((!strstr($msg_list_display[$x]['from_name'], " "))
 				&& (strlen($msg_list_display[$x]['from_name']) > 15)
@@ -2278,9 +2278,10 @@ $hdr_envelope->udate = $new_time;
 
 			// DATE
 			// date_time has both date and time, which probably is long enough to make a TD cell wrap text to 2 lines
-			$msg_date_time = $this->getCommon()->show_date($hdr_envelope->udate);
+			$common ??= $this->getCommon();
+			$msg_date_time = $common->show_date($hdr_envelope->udate);
 			//echo"$msg_date_time";
-			if ($this->getCommon()->show_date($hdr_envelope->udate, 'Ymd') != date('Ymd'))
+			if ($common->show_date($hdr_envelope->udate, 'Ymd') != date('Ymd'))
 			{
 				// this strips the time part, leaving only the date, better for single line TD cells
 				$msg_list_display[$x]['msg_date'] = preg_replace("/ - .*$/", '', $msg_date_time);

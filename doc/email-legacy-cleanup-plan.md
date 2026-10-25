@@ -6,6 +6,8 @@ This document began as a proposed plan. The execution record below supersedes th
 
 ## Execution Update
 
+- Reduced repeated work in `get_msg_list_display`: reuse the common date-formatting service within each list, read `show_addresses` once per row, and remove an unused settings lookup. Preferences and message references remain row-specific, including mixed-account lists.
+
 - Removed the unreferenced `fill_sort_order_start_msgnum` compatibility alias after a repository-wide caller search. Initialization continues to call `fill_sort_order_start` directly; active formatting, MIME, and navigation helpers were retained.
 
 - Removed the unreferenced `all_folders_listbox`, `folders_mega_listbox`, and `all_ex_accounts_listbox` HTML selector renderers from `class.mail_msg_display.inc.php`. Folder/account data services and active Twig selectors remain in place; MIME and message-navigation methods were retained.

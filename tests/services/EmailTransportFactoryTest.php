@@ -212,6 +212,14 @@ namespace Tests\Services
 				$uid = (string) $uids[0];
 				switch ($operation)
 				{
+					case 'missing-open':
+						$connections = \ModernIMAPWrapper::getActiveConnections();
+						$this->assertFalse($transport->open($prefix . $source . '-missing', 'outlook-test', 'local-test-password'));
+						$this->assertSame($connections, \ModernIMAPWrapper::getActiveConnections());
+						$this->assertSame('Mailbox does not exist', $transport->server_last_error());
+						$this->assertTrue($transport->noop_ping_test($stream));
+						$this->assertSame(1, $transport->num_msg($stream));
+						break;
 					case 'ranges':
 						for ($i = 0; $i < 4; $i++)
 						{
@@ -319,7 +327,7 @@ namespace Tests\Services
 
 		public static function greenMailOperations(): array
 		{
-			return [['flags'], ['copy'], ['move'], ['delete'], ['reconnect'], ['metadata'], ['ranges']];
+			return [['flags'], ['copy'], ['move'], ['delete'], ['reconnect'], ['metadata'], ['ranges'], ['missing-open']];
 		}
 
 		public function testNativeAndSocketPop3ClassesCanCoexistWithImap(): void
@@ -364,6 +372,7 @@ namespace Tests\Services
 					{
 						public function connect(): void {}
 						public function disconnect(): void {}
+						public function openFolder($path, $force): void {}
 						public function getFolderByPath($path, $create): object { return (object) ['path' => $path]; }
 					};
 				}

@@ -33,6 +33,7 @@ class ModernIMAPWrapper
      */
     public static function imap_open($mailbox, $username, $password, $flags = 0, $retries = 0, $params = [])
     {
+        $client = null;
         try {
             self::initClientManager();
             
@@ -72,27 +73,32 @@ class ModernIMAPWrapper
             
             $client = self::$clientManager->make($config);
             $client->connect();
+
+            $folderObj = $client->getFolderByPath($folder, true);
+            if (!$folderObj) {
+                throw new RuntimeException('Mailbox does not exist');
+            }
+            $client->openFolder($folderObj->path, true);
             
             // Store connection with unique ID
             $connectionId = 'imap_' . uniqid();
             self::$connections[$connectionId] = [
                 'client' => $client,
-                'folder' => null,
+                'folder' => $folderObj,
                 'currentFolder' => $folder
             ];
-            
-            // Open the specified folder
-            if ($folder) {
-                $folderObj = $client->getFolderByPath($folder, true);
-                if ($folderObj) {
-                    self::$connections[$connectionId]['folder'] = $folderObj;
-                }
-            }
             
             return $connectionId;
             
         } catch (Exception $e) {
             self::$lastError = $e->getMessage();
+            if ($client !== null) {
+                try {
+                    $client->disconnect();
+                } catch (Exception $cleanupException) {
+                    self::$lastError .= ' Connection cleanup failed (' . get_class($cleanupException) . ').';
+                }
+            }
             return false;
         }
     }

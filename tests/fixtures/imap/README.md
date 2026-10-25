@@ -50,6 +50,8 @@ The metadata flow expunges an initial message so UIDs differ from sequence numbe
 
 The range-deletion flow verifies combined sequence ranges/lists, UID ranges after sequence renumbering, mark-only deletion before explicit expunge, and the `empty_trash()` wildcard range over multiple messages.
 
+The missing-mailbox flow verifies that opening a nonexistent folder fails without publishing a connection handle and leaves an existing session usable.
+
 ## Configure the email client
 
 Create an active standard IMAP emailadmin profile assigned to the test user or `felamimail` application. For the app running in the `portico_internal` Docker network, set server `imap-test`, port `3993`, SSL, and disable certificate verification for this local test profile. For a PHP app running directly on the host, use `127.0.0.1`, port `1993`. Use IMAP login `outlook-test`, email address `outlook-test@outlook.test`, and the test password above. This fixture exercises password-based IMAP behavior; it does not simulate Microsoft OAuth.

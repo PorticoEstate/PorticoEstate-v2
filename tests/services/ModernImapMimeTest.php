@@ -12,6 +12,70 @@ use ZBateson\MailMimeParser\MailMimeParser;
 class ModernImapMimeTest extends TestCase
 {
 	/**
+	 * @dataProvider openFailures
+	 */
+	public function testFailedOpenDisconnectsWithoutPublishingConnection(string $stage): void
+	{
+		$property = new \ReflectionProperty(\ModernIMAPWrapper::class, 'clientManager');
+		$property->setAccessible(true);
+		$original = $property->getValue();
+		$connections = \ModernIMAPWrapper::getActiveConnections();
+		$client = $this->getMockBuilder(\stdClass::class)
+			->addMethods(['connect', 'getFolderByPath', 'openFolder', 'disconnect'])->getMock();
+		if ($stage === 'connect')
+		{
+			$client->method('connect')->willThrowException(new \RuntimeException('connect failed'));
+			$client->expects($this->never())->method('getFolderByPath');
+		}
+		elseif ($stage === 'lookup')
+		{
+			$client->method('getFolderByPath')->willThrowException(new \RuntimeException('lookup failed'));
+		}
+		else
+		{
+			$client->method('getFolderByPath')->willReturn(
+				$stage === 'select' ? (object) ['path' => 'Missing'] : null
+			);
+		}
+		if ($stage === 'select')
+		{
+			$client->expects($this->once())->method('openFolder')->with('Missing', true)
+				->willThrowException(new \RuntimeException('select failed'));
+		}
+		else
+		{
+			$client->expects($this->never())->method('openFolder');
+		}
+		$cleanup = $client->expects($this->once())->method('disconnect');
+		if ($stage === 'cleanup')
+		{
+			$cleanup->willThrowException(new \RuntimeException('cleanup sensitive detail'));
+		}
+		$manager = $this->getMockBuilder(\stdClass::class)->addMethods(['make'])->getMock();
+		$manager->method('make')->willReturn($client);
+		$property->setValue(null, $manager);
+		try
+		{
+			$this->assertFalse(\ModernIMAPWrapper::imap_open('{test:993/imap/ssl}Missing', 'user', 'password'));
+			$this->assertSame($connections, \ModernIMAPWrapper::getActiveConnections());
+			$this->assertSame(match ($stage) {
+				'connect', 'lookup', 'select' => $stage . ' failed',
+				'cleanup' => 'Mailbox does not exist Connection cleanup failed (RuntimeException).',
+				default => 'Mailbox does not exist',
+			}, \ModernIMAPWrapper::imap_last_error());
+		}
+		finally
+		{
+			$property->setValue(null, $original);
+		}
+	}
+
+	public static function openFailures(): array
+	{
+		return [['connect'], ['lookup'], ['missing'], ['select'], ['cleanup']];
+	}
+
+	/**
 	 * @dataProvider searchIdentifierModes
 	 */
 	public function testSearchReturnsRequestedIdentifierMode(int $flags, array $expected): void

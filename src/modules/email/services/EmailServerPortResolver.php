@@ -7,12 +7,18 @@ final class EmailServerPortResolver
 	public static function resolve(string $serverType, $accountPort, $profileImapPort): int
 	{
 		$accountPort = self::validPort($accountPort);
-		if ($accountPort !== null) return $accountPort;
+		if ($accountPort !== null)
+		{
+			return $accountPort;
+		}
 
 		if (in_array($serverType, ['imap', 'imaps'], true))
 		{
 			$profileImapPort = self::validPort($profileImapPort);
-			if ($profileImapPort !== null) return $profileImapPort;
+			if ($profileImapPort !== null)
+			{
+				return $profileImapPort;
+			}
 		}
 
 		$defaults = [
@@ -27,7 +33,10 @@ final class EmailServerPortResolver
 
 	private static function validPort($port): ?int
 	{
-		if (!is_int($port) && !is_string($port)) return null;
+		if (!is_int($port) && !is_string($port))
+		{
+			return null;
+		}
 
 		$validated = filter_var(
 			$port,

@@ -68,9 +68,15 @@ class EmailPreferencesController
 	public function save(Request $request, Response $response): Response
 	{
 		$input = $request->getParsedBody();
-		if (!is_array($input)) $input = json_decode((string) $request->getBody(), true);
+		if (!is_array($input))
+		{
+			$input = json_decode((string) $request->getBody(), true);
+		}
 		$values = is_array($input) ? ($input['values'] ?? null) : null;
-		if (!is_array($values)) return $this->json($response, ['error' => lang('Invalid email preferences')], 422);
+		if (!is_array($values))
+		{
+			return $this->json($response, ['error' => lang('Invalid email preferences')], 422);
+		}
 
 		$originalPost = $_POST;
 		try
@@ -85,16 +91,28 @@ class EmailPreferencesController
 			{
 				$field = (array) $field;
 				$id = (string) ($field['id'] ?? '');
-				if ($id === '' || stripos((string) ($field['accts_usage'] ?? ''), 'default') === false || stripos((string) ($field['type'] ?? ''), 'INACTIVE') !== false) continue;
+				if ($id === '' || stripos((string) ($field['accts_usage'] ?? ''), 'default') === false || stripos((string) ($field['type'] ?? ''), 'INACTIVE') !== false)
+				{
+					continue;
+				}
 				if (($field['widget'] ?? '') === 'checkbox')
 				{
 					$normalizedValues[$id] = filter_var($values[$id] ?? false, FILTER_VALIDATE_BOOLEAN);
 					continue;
 				}
-				if (!array_key_exists($id, $values)) continue;
-				if (!is_scalar($values[$id])) return $this->json($response, ['error' => lang('Invalid preference value')], 422);
+				if (!array_key_exists($id, $values))
+				{
+					continue;
+				}
+				if (!is_scalar($values[$id]))
+				{
+					return $this->json($response, ['error' => lang('Invalid preference value')], 422);
+				}
 				$value = (string) $values[$id];
-				if (strlen($value) > 8192) return $this->json($response, ['error' => lang('Preference value is too long')], 422);
+				if (strlen($value) > 8192)
+				{
+					return $this->json($response, ['error' => lang('Preference value is too long')], 422);
+				}
 				if ($id === 'mail_server_port' && $value !== ''
 					&& filter_var($value, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1, 'max_range' => 65535]]) === false)
 				{
@@ -221,11 +239,17 @@ class EmailPreferencesController
 	public function saveAccount(Request $request, Response $response): Response
 	{
 		$input = $request->getParsedBody();
-		if (!is_array($input)) $input = json_decode((string) $request->getBody(), true);
+		if (!is_array($input))
+		{
+			$input = json_decode((string) $request->getBody(), true);
+		}
 		$input = is_array($input) ? $input : [];
 		$account = filter_var($input['id'] ?? null, FILTER_VALIDATE_INT);
 		$values = $input['values'] ?? null;
-		if ($account === false || $account < 1 || !is_array($values)) return $this->json($response, ['error' => lang('Invalid email account')], 422);
+		if ($account === false || $account < 1 || !is_array($values))
+		{
+			return $this->json($response, ['error' => lang('Invalid email account')], 422);
+		}
 
 		$originalPost = $_POST;
 		try
@@ -247,22 +271,37 @@ class EmailPreferencesController
 			{
 				$field = (array) $field;
 				$id = (string) ($field['id'] ?? '');
-				if ($id === '' || stripos((string) ($field['accts_usage'] ?? ''), 'extra_accounts') === false || stripos((string) ($field['type'] ?? ''), 'INACTIVE') !== false) continue;
+				if ($id === '' || stripos((string) ($field['accts_usage'] ?? ''), 'extra_accounts') === false || stripos((string) ($field['type'] ?? ''), 'INACTIVE') !== false)
+				{
+					continue;
+				}
 				if (($field['widget'] ?? '') === 'checkbox')
 				{
 					$normalizedValues[$id] = filter_var($values[$id] ?? false, FILTER_VALIDATE_BOOLEAN);
 					continue;
 				}
-				if (!array_key_exists($id, $values)) continue;
-				if (!is_scalar($values[$id])) return $this->json($response, ['error' => lang('Invalid preference value')], 422);
+				if (!array_key_exists($id, $values))
+				{
+					continue;
+				}
+				if (!is_scalar($values[$id]))
+				{
+					return $this->json($response, ['error' => lang('Invalid preference value')], 422);
+				}
 				$value = (string) $values[$id];
-				if (strlen($value) > 8192) return $this->json($response, ['error' => lang('Preference value is too long')], 422);
+				if (strlen($value) > 8192)
+				{
+					return $this->json($response, ['error' => lang('Preference value is too long')], 422);
+				}
 				if ($id === 'mail_server_port' && $value !== ''
 					&& filter_var($value, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1, 'max_range' => 65535]]) === false)
 				{
 					return $this->json($response, ['error' => lang('Invalid preference value')], 422);
 				}
-				if (($field['widget'] ?? '') === 'combobox' && !array_key_exists($value, (array) ($field['values'] ?? []))) return $this->json($response, ['error' => lang('Invalid preference value')], 422);
+				if (($field['widget'] ?? '') === 'combobox' && !array_key_exists($value, (array) ($field['values'] ?? [])))
+				{
+					return $this->json($response, ['error' => lang('Invalid preference value')], 422);
+				}
 				$normalizedValues[$id] = $value;
 			}
 			$mail = \App\modules\email\services\MailMessage::getInstance();

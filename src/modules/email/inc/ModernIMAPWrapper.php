@@ -839,18 +839,20 @@ class ModernIMAPWrapper
         }
         
         try {
-            // Handle multiple message numbers
-            self::clearMessageMetadata($stream);
-            $nums = is_array($msgNums) ? $msgNums : explode(',', $msgNums);
-            
-            foreach ($nums as $msgNum) {
-                $message = self::getMessage($stream, trim($msgNum), $flags);
-                if ($message) {
-                    if (!$message->delete(false)) {
-                        throw new RuntimeException('Unable to mark IMAP message for deletion.');
-                    }
-                }
+            $set = is_array($msgNums) ? implode(',', $msgNums) : (string) $msgNums;
+            if (!preg_match('/^(?:[1-9][0-9]*|\*)(?::(?:[1-9][0-9]*|\*))?(?:,(?:[1-9][0-9]*|\*)(?::(?:[1-9][0-9]*|\*))?)*$/D', $set)) {
+                throw new InvalidArgumentException('Invalid message set');
             }
+            $connection = self::$connections[$stream];
+            $client = $connection['client'];
+            $client->openFolder($connection['folder']->path);
+            self::clearMessageMetadata($stream);
+            // Webklex store() only accepts integer bounds, so pass the validated set intact.
+            $client->getConnection()->requestAndResponse(
+                ($flags & 1) ? 'UID STORE' : 'STORE',
+                [$set, '+FLAGS.SILENT', '(\\Deleted)'],
+                true
+            )->validatedData();
             
             return true;
             

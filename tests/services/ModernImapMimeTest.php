@@ -85,25 +85,34 @@ class ModernImapMimeTest extends TestCase
 	/**
 	 * @dataProvider deletionResults
 	 */
-	public function testDeletionMarksWithoutExpungingAndPropagatesFailure(bool $result): void
+	public function testDeletionMarksWithoutExpungingAndPropagatesFailure(bool $result, $set, int $flags, string $expectedSet): void
 	{
 		$property = new \ReflectionProperty(\ModernIMAPWrapper::class, 'connections');
 		$property->setAccessible(true);
 		$original = $property->getValue();
-		$message = $this->getMockBuilder(\stdClass::class)->addMethods(['delete'])->getMock();
-		$message->expects($this->once())->method('delete')->with(false)->willReturn($result);
-		$query = $this->getMockBuilder(\stdClass::class)->addMethods(['leaveUnread', 'getMessageByUid'])->getMock();
-		$query->method('leaveUnread')->willReturnSelf();
-		$query->expects($this->once())->method('getMessageByUid')->with(42)->willReturn($message);
-		$folder = $this->getMockBuilder(\stdClass::class)->addMethods(['query'])->getMock();
-		$folder->method('query')->willReturn($query);
-		$property->setValue(null, ['delete-test' => ['folder' => $folder]]);
+		$response = $this->getMockBuilder(\stdClass::class)->addMethods(['validatedData'])->getMock();
+		if ($result)
+		{
+			$response->method('validatedData')->willReturn([]);
+		}
+		else
+		{
+			$response->method('validatedData')->willThrowException(new \RuntimeException('STORE rejected'));
+		}
+		$protocol = $this->getMockBuilder(\stdClass::class)->addMethods(['requestAndResponse', 'expunge'])->getMock();
+		$protocol->expects($this->once())->method('requestAndResponse')
+			->with(($flags & 1) ? 'UID STORE' : 'STORE', [$expectedSet, '+FLAGS.SILENT', '(\\Deleted)'], true)->willReturn($response);
+		$protocol->expects($this->never())->method('expunge');
+		$client = $this->getMockBuilder(\stdClass::class)->addMethods(['openFolder', 'getConnection'])->getMock();
+		$client->expects($this->once())->method('openFolder')->with('Test');
+		$client->method('getConnection')->willReturn($protocol);
+		$property->setValue(null, ['delete-test' => ['folder' => (object) ['path' => 'Test'], 'client' => $client]]);
 		try
 		{
-			$this->assertSame($result, \ModernIMAPWrapper::imap_delete('delete-test', '42', 1));
+			$this->assertSame($result, \ModernIMAPWrapper::imap_delete('delete-test', $set, $flags));
 			if (!$result)
 			{
-				$this->assertSame('Unable to mark IMAP message for deletion.', \ModernIMAPWrapper::imap_last_error());
+				$this->assertSame('STORE rejected', \ModernIMAPWrapper::imap_last_error());
 			}
 		}
 		finally
@@ -114,7 +123,42 @@ class ModernImapMimeTest extends TestCase
 
 	public static function deletionResults(): array
 	{
-		return [[true], [false]];
+		return [
+			[true, '42', 1, '42'],
+			[false, '42', 1, '42'],
+			[true, '2:5,8', 0, '2:5,8'],
+			[true, '1:*', 0, '1:*'],
+			[true, '*:2', 1, '*:2'],
+			[true, ['2', '4:7'], 1, '2,4:7'],
+		];
+	}
+
+	/**
+	 * @dataProvider invalidDeletionSets
+	 */
+	public function testInvalidDeletionSetFailsBeforeSendingCommands(string $set): void
+	{
+		$property = new \ReflectionProperty(\ModernIMAPWrapper::class, 'connections');
+		$property->setAccessible(true);
+		$original = $property->getValue();
+		$client = $this->getMockBuilder(\stdClass::class)->addMethods(['openFolder', 'getConnection'])->getMock();
+		$client->expects($this->never())->method('openFolder');
+		$client->expects($this->never())->method('getConnection');
+		$property->setValue(null, ['invalid-delete' => ['folder' => (object) ['path' => 'Test'], 'client' => $client]]);
+		try
+		{
+			$this->assertFalse(\ModernIMAPWrapper::imap_delete('invalid-delete', $set));
+			$this->assertSame('Invalid message set', \ModernIMAPWrapper::imap_last_error());
+		}
+		finally
+		{
+			$property->setValue(null, $original);
+		}
+	}
+
+	public static function invalidDeletionSets(): array
+	{
+		return [[''], ['0'], ['1:'], ['1,,2'], ["1\r\nEXPUNGE"], ['-1'], ["1\n"]];
 	}
 
 	/**

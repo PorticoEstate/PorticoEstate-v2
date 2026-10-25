@@ -212,6 +212,25 @@ namespace Tests\Services
 				$uid = (string) $uids[0];
 				switch ($operation)
 				{
+					case 'ranges':
+						for ($i = 0; $i < 4; $i++)
+						{
+							$this->assertTrue($transport->append($stream, $prefix . $source, $message, '\\Seen'));
+						}
+						$this->assertTrue($transport->delete($stream, '2:3,5'));
+						$this->assertSame([2, 3, 5], \IMAPManager::imap_search($stream, 'DELETED'));
+						$this->assertSame(5, $transport->num_msg($stream));
+						$this->assertTrue($transport->expunge($stream));
+						$this->assertSame([1, 4], \IMAPManager::imap_search($stream, 'ALL', 1));
+						$this->assertTrue($transport->delete($stream, '1:4', 1));
+						$this->assertSame([1, 4], \IMAPManager::imap_search($stream, 'DELETED', 1));
+						$this->assertTrue($transport->expunge($stream));
+						$this->assertSame(0, $transport->num_msg($stream));
+						$this->assertTrue($transport->append($stream, $prefix . $source, $message, '\\Seen'));
+						$this->assertTrue($transport->append($stream, $prefix . $source, $message, '\\Seen'));
+						$this->assertTrue($transport->empty_trash($stream));
+						$this->assertSame(0, $transport->num_msg($stream));
+						break;
 					case 'metadata':
 						$this->assertTrue($transport->append($stream, $prefix . $source, $message, '\\Seen'));
 						$this->assertTrue($transport->delete($stream, $uid, 1));
@@ -300,7 +319,7 @@ namespace Tests\Services
 
 		public static function greenMailOperations(): array
 		{
-			return [['flags'], ['copy'], ['move'], ['delete'], ['reconnect'], ['metadata']];
+			return [['flags'], ['copy'], ['move'], ['delete'], ['reconnect'], ['metadata'], ['ranges']];
 		}
 
 		public function testNativeAndSocketPop3ClassesCanCoexistWithImap(): void

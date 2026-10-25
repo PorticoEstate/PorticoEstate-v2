@@ -6,6 +6,10 @@ This document began as a proposed plan. The execution record below supersedes th
 
 ## Execution Update
 
+- Declared the socket base's `$msg` property used by `mail_header()`, matching adjacent legacy object properties and retaining lazy initialization. A regression verifies the property is declared and initially null.
+
+- Declared the socket base's parsed `$header` array, which `read_and_load()` previously created dynamically. This removes the undefined-property diagnostic and gives fresh instances an empty header collection without changing parsing behavior. A regression covers declaration, initial state, and loading a From header.
+
 - Consolidated mail/network/controller validation is now green: all 41 files exit zero, with 381 tests, 1814 assertions, and one skipped spellcheck test, including opt-in GreenMail and loopback POP3/TLS. Removed obsolete bosend test dependencies and replaced its send test with current EmailOutgoingMessage MIME/capture coverage. Bootstrap tests now explicitly enable optional body caching for cache persistence checks and expect integer-zero default fetch flags. No production behavior changed in this test-repair batch. The outgoing service test verifies returned MIME, not the controller's sent-folder append integration.
 
 - Consolidated validation ran all 41 mail/network/controller test files independently with GreenMail enabled. After updating the search-controller query double to the new `where()` API and removing its incidental flag-order dependency, 39 files exit successfully (one includes a skipped spellcheck test). Bootstrap retains two previously known failures: selected-part body-cache persistence and a fetchbody flags expectation (`''` versus `0`). Outgoing-message tests cannot load the removed legacy `class.bosend.inc.php`. Overall validation is therefore not green; these unrelated baseline issues remain open. Successful suites include the live GreenMail lifecycle and local POP3/TLS flows; native POP3 and real OAuth remain unverified.

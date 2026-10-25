@@ -73,6 +73,39 @@ class EmailSocketBaseTest extends TestCase
 		}
 	}
 
+	public function testMessagePropertyIsDeclaredAndInitiallyNull(): void
+	{
+		$property = new \ReflectionProperty(\mail_dcom_base_sock::class, 'msg');
+		$this->assertTrue($property->isDefault());
+
+		$mail = (new \ReflectionClass(\mail_dcom_base_sock::class))->newInstanceWithoutConstructor();
+		$this->assertNull($mail->msg);
+	}
+
+	public function testParsedHeadersAreDeclaredAndLoaded(): void
+	{
+		$property = new \ReflectionProperty(\mail_dcom_base_sock::class, 'header');
+		$this->assertTrue($property->isDefault());
+
+		$mail = $this->getMockBuilder(\mail_dcom_base_sock::class)
+			->disableOriginalConstructor()
+			->onlyMethods(['read_port', 'create_header'])->getMock();
+		$this->assertSame([], $mail->header);
+		$mail->method('read_port')->willReturnOnConsecutiveCalls(
+			"From: sender@example.test\r\n",
+			".\r\n"
+		);
+		$mail->expects($this->once())->method('create_header')
+			->with("From: sender@example.test\r\n", [], 'True')
+			->willReturnCallback(static function ($line, &$headers)
+			{
+				$headers['From'] = 'sender@example.test';
+			});
+
+		$this->assertSame(1, $mail->read_and_load('.'));
+		$this->assertSame(['From' => 'sender@example.test'], $mail->header);
+	}
+
 	/**
 	 * @dataProvider encodedHeaders
 	 */

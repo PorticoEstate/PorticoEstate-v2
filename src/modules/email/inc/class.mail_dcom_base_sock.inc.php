@@ -442,6 +442,7 @@ class mail_dcom_base_sock extends phpgwapi_network
 	var $folder_list_changed = False;
 	// Cached Data
 	// raw message data from the server, some raw data, some exploded into a string list
+	var $header = array();
 	var $header_glob = '';
 	var $header_glob_msgnum = '';
 	var $header_array = array();
@@ -459,6 +460,7 @@ class mail_dcom_base_sock extends phpgwapi_network
 
 	var $msg_structure = '';
 	var $msg_structure_msgnum = '';
+	var $msg;
 	var $hdr_info_envelope;
 	// server error strings *should* get stored here
 	var $server_last_error_str = '';

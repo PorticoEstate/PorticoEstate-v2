@@ -6,6 +6,20 @@ This document began as a proposed plan. The execution record below supersedes th
 
 ## Execution Update
 
+- Initialized the POP3 address-detail collection before its parsing loop, making the return variable explicitly defined. A regression covers parsed mailbox/host values and the existing false result for blank input.
+
+- POP3 sorting explicitly rejects unsupported criteria with an InvalidArgumentException instead of accessing an undefined `$field_list`. Supported criteria and the existing empty-mailbox behavior are unchanged; a regression verifies rejection before sorting commands or header reads.
+
+- Initialized the POP3 mailbox-info STAT response buffer before its by-reference command call. A regression checks initialization and preserves numeric-string message count and mailbox size results.
+
+- Initialized the top-level POP3 structure's LIST response buffer as a string, matching `size_msg()`. The structure regression now checks the initial buffer alongside the command and parsed byte count.
+
+- Corrected encapsulated-message charset scanning to use its current loop index (`$ux`) rather than the append-only `$new_idx`. Regressions cover preserving an existing charset after another parameter and adding US-ASCII only when no charset is present.
+
+- Corrected POP3 Followup-To parsing to populate the declared envelope property `followup_to` instead of dynamically creating the misspelled `follow_up_to`. A regression verifies the declared field receives the escaped header value.
+
+- Initialized the POP3 `size_msg()` response buffer as a string before passing it by reference to `msg2socket()`, avoiding implicit-null inference at `explode()`. A regression verifies LIST command arguments and integer size parsing.
+
 - Socket POP3's structure cache is now a nullable `msg_structure` property rather than a string sentinel. Connection resets use null, cache checks are explicit, and top-level initialization no longer evaluates the invalid `nil` constant. Regressions cover object initialization, cached reuse, and reset on opening a connection.
 
 - Removed repository-unused socket header-building, MIME-name/encoding, attachment-name, UUdecode, debugging, and folder-change helpers, including the test-only `read_and_load()`/`create_header()` path. Removed their `$header`, `$msg`, and socket folder-change state. Removed the uncalled `phpgw_get_flag()` wrapper and both transport `get_flag()` implementations. Active POP3 parsing, sorting callbacks, decoding, and multiline reads remain; tests formerly exercising the obsolete reader now cover the active `read_port_glob()` path. This supersedes the property-declaration fixes below.

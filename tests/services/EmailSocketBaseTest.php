@@ -295,6 +295,113 @@ class EmailSocketBaseTest extends TestCase
 		$this->assertNull($mail->msg_structure);
 	}
 
+	/**
+	 * @dataProvider encapsulatedCharsets
+	 */
+	public function testEncapsulatedMessagePreservesOrDefaultsCharset(array $parameters, string $charset): void
+	{
+		require_once __DIR__ . '/../../src/modules/email/inc/class.mail_dcom_pop3_sock.inc.php';
+		$mail = $this->getMockBuilder(\mail_dcom_pop3_sock::class)->disableOriginalConstructor()
+			->onlyMethods(['sub_get_structure'])->getMock();
+		$mail->body_array = ['Content-Type: text/plain', '', 'body'];
+		$mail->method('sub_get_structure')->willReturnCallback(static function ($part) use ($parameters)
+		{
+			foreach ($parameters as $attribute => $value)
+			{
+				$part->parameters[] = new \msg_params($attribute, $value);
+			}
+			$part->ifparameters = count($parameters) > 0;
+		});
+		$structure = new \msg_structure;
+		$structure->type = PE_IMAP_TYPEMESSAGE;
+		$structure->subtype = 'rfc822';
+		$structure->custom['part_start'] = 0;
+		$structure->custom['part_end'] = 2;
+
+		$this->assertTrue($mail->create_embeded_fetchstructure($structure));
+		$child = $structure->parts[0];
+		$charsets = array_values(array_filter($child->parameters, static function ($parameter)
+		{
+			return strtolower($parameter->attribute) === 'charset';
+		}));
+		$this->assertCount(1, $charsets);
+		$this->assertSame($charset, $charsets[0]->value);
+		$this->assertTrue($child->ifparameters);
+	}
+
+	public static function encapsulatedCharsets(): array
+	{
+		return [
+			'existing charset after another parameter' => [['name' => 'message.txt', 'charset' => 'UTF-8'], 'UTF-8'],
+			'other parameter only' => [['name' => 'message.txt'], 'US-ASCII'],
+			'no parameters' => [[], 'US-ASCII'],
+		];
+	}
+
+	public function testAddressDetailsReturnsParsedCollectionAndPreservesEmptyInputBehavior(): void
+	{
+		require_once __DIR__ . '/../../src/modules/email/inc/class.mail_dcom_pop3_sock.inc.php';
+		$mail = (new \ReflectionClass(\mail_dcom_pop3_sock::class))->newInstanceWithoutConstructor();
+		$headers = ['Return-Path: sender@example.test', 'Subject: test'];
+		$count = 0;
+
+		$details = $mail->get_addr_details('return_path', 'sender@example.test', $headers, $count);
+
+		$this->assertCount(1, $details);
+		$this->assertSame('sender', $details[0]->mailbox);
+		$this->assertSame('example.test', $details[0]->host);
+		$this->assertFalse($mail->get_addr_details('return_path', ' ', $headers, $count));
+	}
+
+	public function testFollowupHeaderUsesDeclaredEnvelopeProperty(): void
+	{
+		require_once __DIR__ . '/../../src/modules/email/inc/class.mail_dcom_pop3_sock.inc.php';
+		$mail = $this->getMockBuilder(\mail_dcom_pop3_sock::class)->disableOriginalConstructor()
+			->onlyMethods(['size_msg', 'get_header_array'])->getMock();
+		$mail->method('size_msg')->willReturn(123);
+		$mail->method('get_header_array')->willReturn(['Followup-To: <group@example.test>']);
+
+		$header = $mail->header('', 42);
+
+		$this->assertSame('&lt;group@example.test&gt;', $header->followup_to);
+		$this->assertFalse(property_exists($header, 'follow_up_to'));
+	}
+
+	public function testMailboxInfoParsesSuccessfulStatResponse(): void
+	{
+		require_once __DIR__ . '/../../src/modules/email/inc/class.mail_dcom_pop3_sock.inc.php';
+		$mail = $this->getMockBuilder(\mail_dcom_pop3_sock::class)->disableOriginalConstructor()
+			->onlyMethods(['msg2socket'])->getMock();
+		$mail->expects($this->once())->method('msg2socket')
+			->with('STAT', '^\+ok', '')
+			->willReturnCallback(static function ($command, $pattern, &$response)
+			{
+				$response = "+OK 2 123\r\n";
+				return 1;
+			});
+
+		$info = $mail->mailboxmsginfo();
+
+		$this->assertSame('2', $info->Nmsgs);
+		$this->assertSame('123', $info->Size);
+	}
+
+	public function testMessageSizeParsesSuccessfulListResponse(): void
+	{
+		require_once __DIR__ . '/../../src/modules/email/inc/class.mail_dcom_pop3_sock.inc.php';
+		$mail = $this->getMockBuilder(\mail_dcom_pop3_sock::class)->disableOriginalConstructor()
+			->onlyMethods(['msg2socket'])->getMock();
+		$mail->expects($this->once())->method('msg2socket')
+			->with('LIST 42', '^\+ok', '')
+			->willReturnCallback(static function ($command, $pattern, &$response)
+			{
+				$response = "+OK 42 123\r\n";
+				return 1;
+			});
+
+		$this->assertSame(123, $mail->size_msg('', 42));
+	}
+
 	public function testTopLevelStructureIsAnObjectAndCanBeReusedFromCache(): void
 	{
 		require_once __DIR__ . '/../../src/modules/email/inc/class.mail_dcom_pop3_sock.inc.php';
@@ -307,6 +414,7 @@ class EmailSocketBaseTest extends TestCase
 		$mail->expects($this->once())->method('sub_get_structure')
 			->with($this->isInstanceOf(\msg_structure::class), ['Subject: test']);
 		$mail->expects($this->once())->method('msg2socket')
+			->with('LIST 42', '^\+ok', '')
 			->willReturnCallback(static function ($command, $pattern, &$response)
 			{
 				$response = '+OK 42 123';
@@ -495,6 +603,20 @@ class EmailSocketBaseTest extends TestCase
 			$this->assertNull($mail->socket);
 			$this->assertFalse(is_resource($socket));
 		}
+	}
+
+	public function testSortingRejectsUnsupportedCriterion(): void
+	{
+		require_once __DIR__ . '/../../src/modules/email/inc/class.mail_dcom_pop3_sock.inc.php';
+		$mail = $this->getMockBuilder(\mail_dcom_pop3_sock::class)->disableOriginalConstructor()
+			->onlyMethods(['num_msg', 'msg2socket', 'fetch_header_element'])->getMock();
+		$mail->method('num_msg')->willReturn('2');
+		$mail->expects($this->never())->method('msg2socket');
+		$mail->expects($this->never())->method('fetch_header_element');
+
+		$this->expectException(\InvalidArgumentException::class);
+		$this->expectExceptionMessage('Unsupported POP3 sort criterion: 99');
+		$mail->sort('', 99);
 	}
 
 	public function testSortingUsesValidatedUnfoldedHeadersAndReusesLastHeaderCache(): void

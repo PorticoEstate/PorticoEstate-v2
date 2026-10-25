@@ -314,6 +314,7 @@ class mail_dcom_pop3_sock extends mail_dcom_base_sock
 		// 1)  number of messages
 		// 2) total size of mailbox
 		// imap_mailboxmsginfo is the only function to return both of these
+		$response = '';
 		if (!$this->msg2socket('STAT', "^\+ok", $response))
 		{
 			$this->error();
@@ -455,6 +456,8 @@ class mail_dcom_pop3_sock extends mail_dcom_base_sock
 			case PE_IMAP_SORTSIZE:
 				$field_list = $this->fetch_header_element(1, $msg_num, 'Size');
 				break;
+			default:
+				throw new \InvalidArgumentException('Unsupported POP3 sort criterion: ' . $criteria);
 		}
 		@reset($field_list);
 		if ($criteria == PE_IMAP_SORTSUBJECT)
@@ -479,7 +482,7 @@ class mail_dcom_pop3_sock extends mail_dcom_base_sock
 		$return_array = array();
 		//@reset($field_list);
 		$i = 1;
-		//while(list($key,$value) = each($field_list))
+
 		if (is_array($field_list))
 		{
 			foreach ($field_list as $key => $value)
@@ -723,6 +726,7 @@ class mail_dcom_pop3_sock extends mail_dcom_base_sock
 
 		// ---  Fill Any Missing Necessary Data  ---
 		// --Bytes-- top level msg Size (bytes) is obtainable from the server
+		$response = '';
 		if (!$this->msg2socket('LIST ' . $msg_num, "^\+ok", $response))
 		{
 			$this->error();
@@ -1035,7 +1039,7 @@ class mail_dcom_pop3_sock extends mail_dcom_base_sock
 			for ($ux = 0; $ux < count($tmp_enc_part_idx->parameters); $ux++)
 			{
 
-				$tmp_enc_params = $tmp_enc_part_idx->parameters[$new_idx];
+				$tmp_enc_params = $tmp_enc_part_idx->parameters[$ux];
 				if (stristr($tmp_enc_params->attribute, 'charset'))
 				{
 					$found_charset = True;
@@ -1580,6 +1584,7 @@ class mail_dcom_pop3_sock extends mail_dcom_base_sock
 		*/
 	function size_msg($stream_notused, $msg_num)
 	{
+		$response = '';
 		if (!$this->msg2socket('LIST ' . $msg_num, "^\+ok", $response))
 		{
 			$this->error();
@@ -1658,7 +1663,7 @@ class mail_dcom_pop3_sock extends mail_dcom_base_sock
 					$info->newsgroups = htmlspecialchars($content);
 					break;
 				case 'followup-to:':
-					$info->follow_up_to = htmlspecialchars($content);
+					$info->followup_to = htmlspecialchars($content);
 					break;
 				case 'references:':
 					$info->references = htmlspecialchars($content);
@@ -1749,6 +1754,7 @@ class mail_dcom_pop3_sock extends mail_dcom_base_sock
 			$this->$temp = htmlspecialchars($address);
 		}
 
+		$details = array();
 		for ($i = 0, $pos = 1; $pos; $i++)
 		{
 			//$addr_details = new msg_aka;

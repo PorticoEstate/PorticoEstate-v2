@@ -341,8 +341,7 @@ class email_bopreferences
 		if needed. Currently used for processing email preferences, both standard and custom
 		@param $pref_set (array) structured pref data as defined and supplied in "this->init_available_prefs()"
 		@result boolean False if no $pref_set was supplied, True otherwise
-		@discussion Reusable function, any preference data structured as in "this->init_available_prefs()" can 
-		use this code to automate preference submissions.
+		@discussion Delegates field persistence to EmailPreferencePersister.
 		@author Angles
 		@access Private
 		*/
@@ -352,128 +351,20 @@ class email_bopreferences
 		{
 			$prefs_set = array();
 		}
-		$c_prefs = count($prefs_set);
-		if ($c_prefs == 0)
+		if (count($prefs_set) == 0)
 		{
 			return False;
 		}
 
-		for ($i = 0; $i < $c_prefs; $i++)
-		{
-
-			$this_pref = $prefs_set[$i];
-
-			// ----  skip this item logic  ----
-			// we are ONLY concerned with items that apply to the default email account
-			// extra email accounts are handled elsewhere
-			if (!stristr($this_pref['accts_usage'], 'default'))
-			{
-				// we are not supposed to show this item for the default account, skip this pref item
-				// continue is used within looping structures to skip the rest of the current loop 
-				// iteration and continue execution at the beginning of the next iteration
-				continue;
-			}
-
-			// ---- ok, this item is relevant to the default email account  ----
-			if ((!isset($this->args[$this_pref['id']]))
-				|| (trim($this->args[$this_pref['id']]) == '')
-			)
-			{
-				// ----  nothing submitted for this preference item  ----
-				// ----  OR an empty string was submitted for this pref item  ----
-
-				// so how do we handle this, for this pref...
-				if (isset($this_pref['write_props']) && stristr($this_pref['write_props'], 'empty_no_delete'))
-				{
-					// DO NOT DELETE
-					// "empty_no_delete" means keep the existing pref un-molested, as-is, no change
-					// note there may or may not actually be an existing value in the prefs table
-					// but it does not matter here, because we do not touch this items value at all.
-					// Typical Usage: passwords
-				}
-				elseif (isset($this_pref['write_props']) && stristr($this_pref['write_props'], 'empty_string_ok'))
-				{
-					// "empty_string_ok" means a blank string "" IS a VALID pref value
-					// i.e. this pref can take an empty string as a valid value
-					// whereas most other prefs are simply deleted from the repository if value is empty
-					// Typical Usage: email sig, UWash Mail Folder
-					// a) as always, delete the pref before we assign a value
-					\App\modules\phpgwapi\services\Preferences::getInstance()->delete('email', $this_pref['id']);
-					// b) now assign a blank string value
-					\App\modules\phpgwapi\services\Preferences::getInstance()->add('email', $this_pref['id'], '');
-				}
-				else
-				{
-					// just delete it from the preferences repository
-					\App\modules\phpgwapi\services\Preferences::getInstance()->delete('email', $this_pref['id']);
-				}
-			}
-			else
-			{
-				// ---  we have real data submitted for this preference item  ---
-
-				// so how do we handle this, for this pref...
-				$submitted_pref = $this->args[$this_pref['id']];
-				// init a var to hold the processed submitted_pref
-				$processed_pref = '';
-
-				// most "user_string"s need special processing before they can go into the repository
-				if ($this_pref['type'] == 'user_string')
-				{
-					if (stristr($this_pref['write_props'], 'no_db_defang'))
-					{
-						// typical "user_string" needs to strip any slashes 
-						// that PHP "magic_quotes_gpc"may have added
-						$processed_pref = \App\modules\email\services\MailMessage::getInstance()->stripslashes_gpc($submitted_pref);
-						// most "user_string" items require pre-processing before going into
-						// the repository (strip slashes, html encode, encrypt, etc...)
-						// we call this database "de-fanging", remove database unfriendly chars
-						// currenty defanging is handled by "mail_msg_obj->html_quotes_encode"
-						// EXCEPT when "no_db_defang" is in "write_props"
-						$processed_pref = $submitted_pref;
-					}
-					elseif (stristr($this_pref['write_props'], 'encrypted'))
-					{
-						// certain data (passwords) should be encrypted before going into the repository
-						// "user_string"s to be "encrypted" do NOT get "db_defanged"
-						// before going into the encryption routine
-						// UPDATE: password STILL required "database defanging" because
-						// as of Jan 24 2002, it is verified that un-defanged passwords *may* destroy
-						// all user prefs because they may have the database unfriendly chars that 
-						// "de-fanging" encodes, i.e. this is STILL an issue at the database level
-						$processed_pref = \App\modules\email\services\MailMessage::getInstance()->stripslashes_gpc($submitted_pref);
-						// we SHOULD feed the password as UNALTERED as possible into the encryption
-						// after that, we may manipulate it for database "friendliness"
-						$processed_pref = \App\modules\email\services\MailMessage::getInstance()->encrypt_email_passwd($processed_pref);
-						// the last thing you do before saving to the DB is "de-fang"
-						$processed_pref = \App\modules\email\services\MailMessage::getInstance()->html_quotes_encode($processed_pref);
-						// so the FIRST thing you do when reading from the db MUST be to "UN-defang"
-						// note this IS INDEED what happens in api/class,preferences,
-						// unless "no_db_defang" is specified, any "user_string" will be defanged
-					}
-					else
-					{
-						// typical "user_string" needs to strip any slashes 
-						// that PHP "magic_quotes_gpc"may have added
-						$processed_pref = \App\modules\email\services\MailMessage::getInstance()->stripslashes_gpc($submitted_pref);
-						// and this is a _LAME_ way to make the value "database friendly"
-						// because slashes and quotes will FRY the whole preferences repository
-						$processed_pref = \App\modules\email\services\MailMessage::getInstance()->html_quotes_encode($processed_pref);
-					}
-				}
-				else
-				{
-					// all other data needs no special processing before going into the repository
-					$processed_pref = $submitted_pref;
-				}
-
-				// a) as always, delete the pref before we assign a value
-				\App\modules\phpgwapi\services\Preferences::getInstance()->delete('email', $this_pref['id']);
-				// b) now assign that processed data to this pref item in the repository
-				\App\modules\phpgwapi\services\Preferences::getInstance()->add('email', $this_pref['id'], $processed_pref);
-			}
-		}
-		// since we apparently did process some prefs data, return True
+		(new \App\modules\email\services\EmailPreferencePersister())->writeFields(
+			$prefs_set,
+			$this->args,
+			\App\modules\phpgwapi\services\Preferences::getInstance(),
+			\App\modules\email\services\MailMessage::getInstance(),
+			null,
+			true,
+			false
+		);
 		return True;
 	}
 
@@ -707,130 +598,33 @@ class email_bopreferences
 		*/
 	function process_ex_accounts_submitted_prefs($prefs_set = '')
 	{
-		// basicly, copy and paste the real "process_submitted_prefs" and tweak for extra_accounts applicablility
 		if (!$prefs_set)
 		{
 			$prefs_set = array();
 		}
-		$c_prefs = count($prefs_set);
-		if ($c_prefs == 0)
+		if (count($prefs_set) == 0)
 		{
 			return False;
 		}
 
-		// ==== ACCTNUM ====
-		if ((!isset($this->acctnum))
-			|| ((string)$this->acctnum == '')
-		)
+		if ((!isset($this->acctnum)) || ((string)$this->acctnum == ''))
 		{
 			$this->acctnum = $this->obtain_ex_acctnum();
 		}
 
-		for ($i = 0; $i < $c_prefs; $i++)
+		$wroteValue = (new \App\modules\email\services\EmailPreferencePersister())->writeFields(
+			$prefs_set,
+			$this->args[$this->acctnum] ?? array(),
+			\App\modules\phpgwapi\services\Preferences::getInstance(),
+			\App\modules\email\services\MailMessage::getInstance(),
+			(int) $this->acctnum,
+			true,
+			false
+		);
+		if ($wroteValue)
 		{
-
-			$this_pref = $prefs_set[$i];
-
-			// ----  skip this item logic  ----
-			// we are ONLY concerned with items that apply to the extra email accounts
-			if (!stristr($this_pref['accts_usage'], 'extra_accounts'))
-			{
-				// we are not supposed to handle this item for the extra email accounts, skip this pref item
-				// continue is used within looping structures to skip the rest of the current loop 
-				// iteration and continue execution at the beginning of the next iteration
-				continue;
-			}
-
-			// ---- ok, this item is relevant to extra email accounts  ----
-			if ((!isset($this->args[$this->acctnum][$this_pref['id']]))
-				|| (trim($this->args[$this->acctnum][$this_pref['id']]) == '')
-			)
-			{
-				// nothing submitted for this preference item
-				// OR an empty string was submitted for this pref item
-				if (stristr($this_pref['write_props'], 'empty_no_delete'))
-				{
-					// DO NOT DELETE
-					// "empty_no_delete" means keep the existing pref un-molested, as-is, no change
-					// note there may or may not actually be an existing value in the prefs table
-					// but it does not matter here, because we do not touch this items value at all.
-					// Typical Usage: passwords
-				}
-				elseif (stristr($this_pref['write_props'], 'empty_string_ok'))
-				{
-					// "empty_string_ok" means a blank string "" IS a VALID pref value
-					// i.e. this pref can take an empty string as a valid value
-					// whereas most other prefs are simply deleted from the repository if value is empty
-					// Typical Usage: email sig, UWash Mail Folder
-					// a) as always, delete the pref before we assign a value
-					$pref_struct_str = '["ex_accounts"][' . $this->acctnum . ']["' . $this_pref['id'] . '"]';
-					\App\modules\phpgwapi\services\Preferences::getInstance()->delete_struct('email', $pref_struct_str);
-					// b) now assign a blank string value
-					\App\modules\phpgwapi\services\Preferences::getInstance()->add_struct('email', $pref_struct_str, '');
-				}
-				else
-				{
-					// just delete it from the preferences repository
-					$pref_struct_str = '["ex_accounts"][' . $this->acctnum . ']["' . $this_pref['id'] . '"]';
-					\App\modules\phpgwapi\services\Preferences::getInstance()->delete_struct('email', $pref_struct_str);
-				}
-			}
-			else
-			{
-				// ---  we have real data submitted for this preference item  ---
-				$submitted_pref = $this->args[$this->acctnum][$this_pref['id']];
-				// init a var to hold the processed submitted_pref
-				$processed_pref = '';
-
-				// most "user_string"s need special processing before they can go into the repository
-				if ($this_pref['type'] == 'user_string')
-				{
-					if (stristr($this_pref['write_props'], 'no_db_defang'))
-					{
-						// typical "user_string" needs to strip any slashes 
-						// that PHP "magic_quotes_gpc"may have added
-						$processed_pref = \App\modules\email\services\MailMessage::getInstance()->stripslashes_gpc($submitted_pref);
-						// most "user_string" items require pre-processing before going into
-						// the repository (strip slashes, html encode, encrypt, etc...)
-						// we call this database "de-fanging", remove database unfriendly chars
-						// currenty defanging is handled by "mail_msg_obj->html_quotes_encode"
-						// EXCEPT when "no_db_defang" is in "write_props"
-						$processed_pref = $submitted_pref;
-					}
-					elseif (stristr($this_pref['write_props'], 'encrypted'))
-					{
-						// certain data (passwords) should be encrypted before going into the repository
-						// "user_string"s to be "encrypted" do NOT get "html_quotes_encode"
-						// before going into the encryption routine
-						$processed_pref = \App\modules\email\services\MailMessage::getInstance()->stripslashes_gpc($submitted_pref);
-						$processed_pref = \App\modules\email\services\MailMessage::getInstance()->encrypt_email_passwd($processed_pref);
-					}
-					else
-					{
-						// typical "user_string" needs to strip any slashes 
-						// that PHP "magic_quotes_gpc"may have added
-						$processed_pref = \App\modules\email\services\MailMessage::getInstance()->stripslashes_gpc($submitted_pref);
-						// and this is a _LAME_ way to make the value "database friendly"
-						// because slashes and quotes will FRY the whole preferences repository
-						$processed_pref = \App\modules\email\services\MailMessage::getInstance()->html_quotes_encode($processed_pref);
-					}
-				}
-				else
-				{
-					// all other data needs no special processing before going into the repository
-					$processed_pref = $submitted_pref;
-				}
-
-				// a) as always, delete the pref before we assign a value
-				$pref_struct_str = '["ex_accounts"][' . $this->acctnum . ']["' . $this_pref['id'] . '"]';
-				\App\modules\phpgwapi\services\Preferences::getInstance()->delete_struct('email', $pref_struct_str);
-				// b) now assign that processed data to this pref item in the repository
-				\App\modules\phpgwapi\services\Preferences::getInstance()->add_struct('email', $pref_struct_str, $processed_pref);
-				// SORT THAT ARRAY by key, so the integer array heys go from lowest to hightest
-				\App\modules\phpgwapi\services\Preferences::getInstance()->sort_struct('email', '["ex_accounts"]');
-			}
+			\App\modules\phpgwapi\services\Preferences::getInstance()->sort_struct('email', '["ex_accounts"]');
 		}
-		// since we apparently did process some prefs data, return True
 		return True;
 	}
 

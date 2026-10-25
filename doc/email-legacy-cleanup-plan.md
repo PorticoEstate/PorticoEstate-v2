@@ -6,6 +6,8 @@ This document began as a proposed plan. The execution record below supersedes th
 
 ## Execution Update
 
+- Modern close honors CL_EXPUNGE (32768) using the IMAP CLOSE command, which expunges and deselects the mailbox before logout. Ordinary close remains logout-only. Rejected CLOSE returns false with diagnostics and retains the handle for recovery. Offline tests verify command selection/failures; GreenMail verifies deletion marks survive ordinary logout and disappear after flagged close. An initial EXPUNGE-then-logout attempt encountered the existing GreenMail stale-listener cleanup bug, leaving one additional blocked temporary folder (`lifecycle-83ac71b19f8994af`); the final CLOSE implementation cleans up successfully without restarting or resetting seeded mail.
+
 - Modern mailbox listing now delegates reference names and wildcard patterns to server LIST rather than filesystem `fnmatch()`. Fully qualified server prefixes are separated from the IMAP reference path and restored on returned names. Both listing APIs share the same result conversion, preserving server delimiters (including NIL) and standard mailbox attribute bits. Offline tests cover reference/prefix handling and attributes; GreenMail nested-folder tests verify `%` versus `*`, nonempty reference paths, and recursive cleanup.
 
 - Modern subscribe/unsubscribe now issue Webklex SUBSCRIBE/UNSUBSCRIBE commands and validate the server response rather than returning simulated success. Fully qualified mailbox prefixes are removed while encoded mailbox paths are preserved. Offline tests cover both operations, plain/qualified paths, and rejected replies; GreenMail LSUB checks verify state changes and temporary-folder cleanup.

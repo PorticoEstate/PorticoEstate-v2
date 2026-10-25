@@ -212,6 +212,20 @@ namespace Tests\Services
 				$uid = (string) $uids[0];
 				switch ($operation)
 				{
+					case 'close-expunge':
+						$this->assertTrue($transport->delete($stream, $uid, 1));
+						$this->assertTrue($transport->reopen($stream, $prefix . 'INBOX'));
+						$this->assertTrue($transport->close($stream));
+						$stream = $transport->open($prefix . $source, 'outlook-test', 'local-test-password');
+						$this->assertNotFalse($stream);
+						$this->assertSame(1, $transport->num_msg($stream));
+						$this->assertSame($uids, \IMAPManager::imap_search($stream, 'DELETED', 1));
+						$this->assertTrue($transport->close($stream, 32768));
+						$stream = $transport->open($prefix . 'INBOX', 'outlook-test', 'local-test-password');
+						$this->assertNotFalse($stream);
+						$this->assertTrue($transport->reopen($stream, $prefix . $source));
+						$this->assertSame(0, $transport->num_msg($stream));
+						break;
 					case 'listing':
 						$property = new \ReflectionProperty(\ModernIMAPWrapper::class, 'connections');
 						$property->setAccessible(true);
@@ -362,7 +376,7 @@ namespace Tests\Services
 
 		public static function greenMailOperations(): array
 		{
-			return [['flags'], ['copy'], ['move'], ['delete'], ['reconnect'], ['metadata'], ['ranges'], ['missing-open'], ['subscriptions'], ['listing']];
+			return [['flags'], ['copy'], ['move'], ['delete'], ['reconnect'], ['metadata'], ['ranges'], ['missing-open'], ['subscriptions'], ['listing'], ['close-expunge']];
 		}
 
 		public function testNativeAndSocketPop3ClassesCanCoexistWithImap(): void

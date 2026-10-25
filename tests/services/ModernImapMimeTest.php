@@ -12,6 +12,52 @@ use ZBateson\MailMimeParser\MailMimeParser;
 class ModernImapMimeTest extends TestCase
 {
 	/**
+	 * @dataProvider closeModes
+	 */
+	public function testCloseOnlyExpungesWhenRequested(int $flags, bool $expungeSucceeds): void
+	{
+		$property = new \ReflectionProperty(\ModernIMAPWrapper::class, 'connections');
+		$property->setAccessible(true);
+		$original = $property->getValue();
+		$response = $this->getMockBuilder(\stdClass::class)->addMethods(['validatedData'])->getMock();
+		if ($expungeSucceeds)
+		{
+			$response->method('validatedData')->willReturn([]);
+		}
+		else
+		{
+			$response->method('validatedData')->willThrowException(new \RuntimeException('CLOSE rejected'));
+		}
+		$protocol = $this->getMockBuilder(\stdClass::class)->addMethods(['requestAndResponse'])->getMock();
+		$protocol->expects($flags ? $this->once() : $this->never())->method('requestAndResponse')
+			->with('CLOSE', [], true)->willReturn($response);
+		$client = $this->getMockBuilder(\stdClass::class)->addMethods(['openFolder', 'getConnection', 'disconnect', 'setActiveFolder'])->getMock();
+		$client->expects($flags ? $this->once() : $this->never())->method('openFolder')->with('Test');
+		$client->method('getConnection')->willReturn($protocol);
+		$closed = !$flags || $expungeSucceeds;
+		$client->expects($closed ? $this->once() : $this->never())->method('disconnect');
+		$property->setValue(null, ['close-test' => ['client' => $client, 'folder' => (object) ['path' => 'Test']]]);
+		try
+		{
+			$this->assertSame($closed, \ModernIMAPWrapper::imap_close('close-test', $flags));
+			$this->assertSame(!$closed, in_array('close-test', \ModernIMAPWrapper::getActiveConnections(), true));
+			if (!$closed)
+			{
+				$this->assertSame('CLOSE rejected', \ModernIMAPWrapper::imap_last_error());
+			}
+		}
+		finally
+		{
+			$property->setValue(null, $original);
+		}
+	}
+
+	public static function closeModes(): array
+	{
+		return [[0, true], [32768, true], [32768, false]];
+	}
+
+	/**
 	 * @dataProvider mailboxReferences
 	 */
 	public function testMailboxListingUsesServerPatternsAndAttributes(string $reference, string $serverReference, string $prefix): void

@@ -114,6 +114,14 @@ class ModernIMAPWrapper
         
         try {
             $connection = self::$connections[$stream];
+            // CL_EXPUNGE is unavailable when the native IMAP extension is absent.
+            if ($flags & 32768) {
+                $client = $connection['client'];
+                $client->openFolder($connection['folder']->path);
+                $client->getConnection()->requestAndResponse('CLOSE', [], true)->validatedData();
+                $client->setActiveFolder(null);
+                self::clearMessageMetadata($stream);
+            }
             if (isset($connection['client'])) {
                 $connection['client']->disconnect();
             }

@@ -56,6 +56,8 @@ The subscription flow subscribes and unsubscribes its temporary mailbox and uses
 
 The listing flow creates child/grandchild mailboxes using the server's delimiter, verifies single-level `%` and recursive `*` matching plus nonempty reference paths, and removes children before their parents during cleanup.
 
+The close-expunge flow verifies that ordinary logout preserves deletion marks and that closing with CL_EXPUNGE removes marked messages. The wrapper uses IMAP CLOSE to expunge and deselect before logout.
+
 ## Configure the email client
 
 Create an active standard IMAP emailadmin profile assigned to the test user or `felamimail` application. For the app running in the `portico_internal` Docker network, set server `imap-test`, port `3993`, SSL, and disable certificate verification for this local test profile. For a PHP app running directly on the host, use `127.0.0.1`, port `1993`. Use IMAP login `outlook-test`, email address `outlook-test@outlook.test`, and the test password above. This fixture exercises password-based IMAP behavior; it does not simulate Microsoft OAuth.

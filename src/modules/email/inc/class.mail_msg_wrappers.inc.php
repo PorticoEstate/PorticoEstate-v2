@@ -39,13 +39,23 @@ class mail_msg_wrappers extends mail_msg_base
 	private ?object $commonService = null;
 	private ?array $sessionCache = null;
 	private ?\App\modules\email\services\EmailPreferenceDefaults $preferenceDefaults = null;
+	private array $resolvedPreferenceDefaults = [];
 
 	public function resolvePreferenceDefaults(array $values, int $account): array
 	{
+		$user = (array) $this->userSettings;
+		$server = (array) $this->serverSettings;
+		$cached = $this->resolvedPreferenceDefaults[$account] ?? null;
+		if ($cached !== null && $values === $cached['values']
+			&& $user === $cached['user'] && $server === $cached['server'])
+		{
+			return $cached['values'];
+		}
 		$this->preferenceDefaults ??= new \App\modules\email\services\EmailPreferenceDefaults();
-		return $this->preferenceDefaults->resolve(
-			$values, $account, (array) $this->userSettings, (array) $this->serverSettings
-		);
+		$values = $this->preferenceDefaults->resolve($values, $account, $user, $server);
+		// Compare snapshots because legacy callers can mutate public preference/context arrays.
+		$this->resolvedPreferenceDefaults[$account] = ['values' => $values, 'user' => $user, 'server' => $server];
+		return $values;
 	}
 
 	public function &getSessionCache(): array
@@ -679,8 +689,11 @@ class mail_msg_wrappers extends mail_msg_base
 			$fake_fldball = array();
 			$fake_fldball['acctnum'] = $acctnum;
 			//$fake_fldball['folder'] = $this->get_arg_value('folder');
-			$fake_fldball['folder'] = $this->prep_folder_out($this->get_arg_value('folder'));
-			$this->ensure_stream_and_folder($fake_fldball, 'get_msgball_list' . ' LINE ' . __LINE__, $display_error);
+			$fake_fldball['folder'] = $folder;
+			if (!$this->ensure_stream_and_folder($fake_fldball, 'get_msgball_list' . ' LINE ' . __LINE__, $display_error))
+			{
+				return false;
+			}
 
 			$server_msgnum_list = array();
 
@@ -724,7 +737,7 @@ class mail_msg_wrappers extends mail_msg_base
 			if ($loops > 0)
 			{
 				// we store folder in URLENCODED form in the msgball and therefor the msgball_list
-				$msg_folder = $this->prep_folder_out($this->get_arg_value('folder', $acctnum));
+				$msg_folder = $folder;
 				for ($i = 0; $i < $loops; $i++)
 				{
 					// NEW - try making the msgball_list URI DATA ONLY
@@ -763,7 +776,11 @@ class mail_msg_wrappers extends mail_msg_base
 		*/
 	function get_msgball_list_oldschool($acctnum = '', $folder = '', $only_fill_cache = False, $display_error = true)
 	{
-		$msgball_list = $this->get_msgball_list($acctnum, $folder, $only_fill_cache);
+		$msgball_list = $this->get_msgball_list($acctnum, $folder, $only_fill_cache, $display_error);
+		if ($msgball_list === false)
+		{
+			return false;
+		}
 		$loops = count($msgball_list);
 		for ($i = 0; $i < $loops; $i++)
 		{
@@ -3579,7 +3596,7 @@ Array
 		GLOBALS[phpgw_session][phpgw_app_sessions][email]
 		@access private
 		*/
-	function save_session_cache_item($data_name = 'misc', $data, $acctnum = '', $extra_keys = '', $display_error = true)
+	function save_session_cache_item($data_name, $data, $acctnum = '', $extra_keys = '', $display_error = true)
 	{
 		$has_handler = False;
 

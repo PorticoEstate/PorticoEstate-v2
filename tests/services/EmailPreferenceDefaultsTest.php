@@ -94,5 +94,25 @@ namespace Tests\Services
 			$this->expectExceptionMessage('Unsupported email preference default: unknown');
 			$resolver->resolve([], 0);
 		}
+
+		public function testRuntimeDefaultsStayFreshAfterPublicArrayAndContextChanges(): void
+		{
+			$mail = (new \ReflectionClass(\mail_msg_wrappers::class))->newInstanceWithoutConstructor();
+			$mail->set_pref_array(['email_sig' => ''], 1);
+			$this->assertNull($mail->get_pref_value('fullname', 1));
+			$mail->userSettings['fullname'] = 'User';
+			$this->assertSame('User', $mail->get_pref_value('fullname', 1));
+			$this->assertNull($mail->get_pref_value('mail_server', 1));
+			$mail->serverSettings['mail_server'] = 'imap.example.test';
+			$this->assertSame('imap.example.test', $mail->get_pref_value('mail_server', 1));
+			$mail->a[1]['prefs']['trash_folder_name'] = ' ';
+			$this->assertSame('Trash', $mail->get_pref_value('trash_folder_name', 1));
+			$mail->set_pref_value('trash_folder_name', 'Deleted', 1);
+			$this->assertSame('Deleted', $mail->get_all_prefs(1)['trash_folder_name']);
+			$mail->unset_pref('trash_folder_name', 1);
+			$this->assertSame('Trash', $mail->get_pref_value('trash_folder_name', 1));
+			$this->assertFalse($mail->set_pref_array([], 1));
+			$this->assertSame('Trash', $mail->get_pref_value('trash_folder_name', 1));
+		}
 	}
 }

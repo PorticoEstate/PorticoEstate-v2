@@ -173,14 +173,17 @@ namespace Tests\Controllers
 			$this->withSessionCache(function (): void
 			{
 				$mail = new \mail_msg();
+				$mail->session_cache_extreme = true;
 				$msgball = ['acctnum' => 3, 'folder' => 'INBOX', 'msgnum' => 12, 'part_no' => '1.2'];
 				$this->assertTrue($mail->save_session_cache_item('phpgw_fetchbody', ['msgball' => $msgball, 'phpgw_fetchbody' => 'first'], 3));
 				$msgball['part_no'] = '1.3';
 				$this->assertTrue($mail->save_session_cache_item('phpgw_fetchbody', ['msgball' => $msgball, 'phpgw_fetchbody' => 'second'], 3));
 				$next = new \mail_msg();
+				$next->session_cache_extreme = true;
 				$this->assertSame('first', $next->read_session_cache_item('phpgw_fetchbody', 3, 'INBOX', 12, '1.2'));
 				$this->assertTrue($next->expire_session_cache_item('phpgw_fetchbody', 3, 'INBOX', 12, '1.2'));
 				$afterExpiry = new \mail_msg();
+				$afterExpiry->session_cache_extreme = true;
 				$this->assertFalse($afterExpiry->read_session_cache_item('phpgw_fetchbody', 3, 'INBOX', 12, '1.2'));
 				$this->assertSame('second', $afterExpiry->read_session_cache_item('phpgw_fetchbody', 3, 'INBOX', 12, '1.3'));
 			});
@@ -512,7 +515,7 @@ namespace Tests\Controllers
 				->getMock();
 			$msgball = ['acctnum' => 3, 'folder' => 'INBOX', 'msgnum' => 12, 'part_no' => '1.2'];
 			$transport = $this->getMockBuilder(\stdClass::class)->addMethods(['fetchbody'])->getMock();
-			$transport->expects($this->once())->method('fetchbody')->with('stream-3', 12, '1.2', '')->willReturn('body');
+			$transport->expects($this->once())->method('fetchbody')->with('stream-3', 12, '1.2', 0)->willReturn('body');
 			$mail->setTransport(3, $transport);
 			$mail->method('read_session_cache_item')->willReturn(false);
 			$mail->expects($this->once())->method('ensure_stream_and_folder');

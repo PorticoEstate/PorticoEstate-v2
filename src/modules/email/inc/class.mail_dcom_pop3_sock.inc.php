@@ -174,6 +174,14 @@ class mail_dcom extends mail_dcom_base
 		*/
 	function open($fq_folder, $user, $pass, $flags = '')
 	{
+		$this->header_glob = '';
+		$this->header_glob_msgnum = '';
+		$this->header_array = array();
+		$this->header_array_msgnum = '';
+		$this->body_array = array();
+		$this->body_array_msgnum = '';
+		$this->msg_structure = '';
+		$this->msg_structure_msgnum = '';
 
 		// fq_folder is a "fully qualified folder", seperate the parts:
 		$svr_data = array();
@@ -2109,13 +2117,10 @@ class mail_dcom extends mail_dcom_base
 		// do we have a cached body_array ?
 		if ((count($this->body_array) > 0)
 			&& ((int)$this->body_array_msgnum == (int)($msg_num))
-			// do we have a cached header_array  ?
-			&& (count($this->header_array) > 0)
-			&& ((int)$this->header_array_msgnum == (int)($msg_num))
+			&& ((int)$this->header_glob_msgnum == (int)($msg_num))
 		)
 		{
-			// implode the header_array into a glob
-			$header_glob = implode("\r\n", $this->header_array);
+			$header_glob = $this->header_glob;
 			// implode the body_array into a glob
 			$body_glob = implode("\r\n", $this->body_array);
 		}
@@ -2129,15 +2134,19 @@ class mail_dcom extends mail_dcom_base
 				return False;
 			}
 			// ---  Get Header  ---
-			// we can NOT cache the header in THIS function because we may need to BYPASS them
-			// to do that we need to grab it from the stream,  then start filling body_glob
-			// AFTER we have passed the header in the stream
 			$header_glob = '';
-			while ($line = $this->read_port())
+			while (true)
 			{
-				if ((chop($line) == '.')
-					|| (chop($line) == '')
-				)
+				$line = $this->read_port();
+				if ($line === false || rtrim($line, "\r\n") === '.')
+				{
+					if (!$this->errorset)
+					{
+						$this->set_error('Error', 'Incomplete Response', 'POP3 message ended before its header separator.');
+					}
+					throw new \RuntimeException('POP3 message ended before its header separator.');
+				}
+				if (rtrim($line, "\r\n") === '')
 				{
 					break;
 				}
@@ -2147,6 +2156,10 @@ class mail_dcom extends mail_dcom_base
 			// we know we have passed the headers because we did that above
 			$body_glob = '';
 			$body_glob = $this->read_port_glob('.');
+			$this->header_glob = $header_glob;
+			$this->header_glob_msgnum = (int)$msg_num;
+			$this->header_array = array();
+			$this->header_array_msgnum = '';
 			// --- Explode Into an Array and Save for Future use with Fetchstructure
 			$this->body_array = explode("\r\n", $body_glob);
 			$this->body_array_msgnum = (int)$msg_num;

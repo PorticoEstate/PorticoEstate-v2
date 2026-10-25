@@ -6,6 +6,8 @@ This document began as a proposed plan. The execution record below supersedes th
 
 ## Execution Update
 
+- POP3 body retrieval now caches the raw headers together with the completed body, avoiding repeat RETR requests while preserving folded header bytes. Reopening clears message caches; incomplete headers/bodies are rejected before cache publication. Transport selection remains pending.
+
 - Socket multiline readers now require an exact terminator (ignoring CRLF only) before reporting success. Interrupted responses throw rather than being cached or parsed as complete data; partial parsed headers are cleared and existing network diagnostics retained. POP3 dot-unstuffing and transport selection remain separate work.
 
 - Repaired retained socket-base initialization to call the current network parent constructor. Fixed encoded-header callbacks to decode individual payloads from the supplied string without adding apostrophe escapes, and repaired malformed display-name cleanup expressions; retained legacy byte/charset behavior and header-dispatch policy. Constructor, encoded-word, and address-parser regressions are covered without live connections. Transport selection and POP3 cache work remain pending.

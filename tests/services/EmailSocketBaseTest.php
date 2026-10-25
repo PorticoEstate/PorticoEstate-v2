@@ -222,4 +222,80 @@ class EmailSocketBaseTest extends TestCase
 			['get_body', ["Subject: complete\r\n", "\r\n", "partial body\r\n", false]],
 		];
 	}
+
+	public function testPop3BodyCachePreservesRawFoldedHeadersAndAvoidsRepeatedRetrieval(): void
+	{
+		require_once __DIR__ . '/../../src/modules/email/inc/class.mail_dcom_pop3_sock.inc.php';
+		$mail = $this->getMockBuilder(\mail_dcom::class)->disableOriginalConstructor()
+			->onlyMethods(['msg2socket', 'read_port'])->getMock();
+		$mail->expects($this->exactly(2))->method('msg2socket')
+			->withConsecutive(['RETR 42', $this->anything(), $this->anything()],
+				['RETR 43', $this->anything(), $this->anything()])->willReturn(1);
+		$header = "Subject: folded\r\n\tcontinued\r\n";
+		$mail->method('read_port')->willReturnOnConsecutiveCalls(
+			"Subject: folded\r\n", "\tcontinued\r\n", "\r\n", "body\r\n", ".\r\n",
+			"Subject: next\r\n", "\r\n", ".\r\n"
+		);
+		$this->assertSame("body\r\n", $mail->get_body('', 42, '', false));
+		$this->assertSame($header . "\r\nbody\r\n", $mail->get_body('', 42));
+		$this->assertSame($header, $mail->get_header_raw('', 42));
+		$this->assertSame(['Subject: folded continued'], $mail->get_header_array('', 42));
+		$this->assertSame($header . "\r\nbody\r\n", $mail->get_body('', 42));
+		$this->assertSame('', $mail->get_body('', 43, '', false));
+		$this->assertSame("Subject: next\r\n\r\n", $mail->get_body('', 43));
+	}
+
+	/**
+	 * @dataProvider missingHeaderSeparators
+	 */
+	public function testPop3RejectsMissingHeaderSeparator(array $lines): void
+	{
+		require_once __DIR__ . '/../../src/modules/email/inc/class.mail_dcom_pop3_sock.inc.php';
+		$mail = $this->getMockBuilder(\mail_dcom::class)->disableOriginalConstructor()
+			->onlyMethods(['msg2socket', 'read_port'])->getMock();
+		$mail->method('msg2socket')->willReturn(1);
+		$mail->method('read_port')->willReturnOnConsecutiveCalls(...$lines);
+		try
+		{
+			$mail->get_body('', 42);
+			$this->fail('Missing header separator must fail.');
+		}
+		catch (\RuntimeException $exception)
+		{
+			$this->assertSame('POP3 message ended before its header separator.', $exception->getMessage());
+			$this->assertSame('', $mail->body_array_msgnum);
+			$this->assertSame('', $mail->header_glob_msgnum);
+		}
+	}
+
+	public static function missingHeaderSeparators(): array
+	{
+		return [[["Subject: partial\r\n", false]], [["Subject: partial\r\n", ".\r\n"]]];
+	}
+
+	public function testPop3OpenClearsCachesFromPreviousConnection(): void
+	{
+		require_once __DIR__ . '/../../src/modules/email/inc/class.mail_dcom_pop3_sock.inc.php';
+		$mail = $this->getMockBuilder(\mail_dcom::class)->disableOriginalConstructor()
+			->onlyMethods(['distill_fq_folder', 'open_port', 'read_port', 'msg2socket'])->getMock();
+		$mail->method('distill_fq_folder')->willReturn(['folder' => 'INBOX', 'server' => 'test', 'port' => 110]);
+		$mail->method('open_port')->willReturn(1);
+		$mail->method('read_port')->willReturn("+OK\r\n");
+		$mail->method('msg2socket')->willReturn(1);
+		foreach (['header_glob_msgnum', 'header_array_msgnum', 'body_array_msgnum', 'msg_structure_msgnum'] as $key)
+		{
+			$mail->$key = 42;
+		}
+		$mail->header_glob = 'old';
+		$mail->header_array = ['old'];
+		$mail->body_array = ['old'];
+		$mail->msg_structure = 'old';
+		$mail->open('{test:110/pop3}INBOX', 'user', 'password');
+		foreach (['header_glob_msgnum', 'header_array_msgnum', 'body_array_msgnum', 'msg_structure_msgnum', 'header_glob', 'msg_structure'] as $key)
+		{
+			$this->assertSame('', $mail->$key);
+		}
+		$this->assertSame([], $mail->body_array);
+		$this->assertSame([], $mail->header_array);
+	}
 }

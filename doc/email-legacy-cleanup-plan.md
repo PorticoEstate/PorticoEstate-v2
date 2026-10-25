@@ -6,6 +6,8 @@ This document began as a proposed plan. The execution record below supersedes th
 
 ## Execution Update
 
+- Draft/send enabled-account validation now shares a single-pass `EmailAccountDirectory::hasEnabledAccount` lookup, avoiding intermediate filtered/mapped arrays and stopping at the first match. Existing membership rules and response behavior are preserved.
+
 - Compose, draft, and send cleanup now delegate request closure to `MailMessage::releaseInstance` instead of closing twice. Nested `finally` blocks restore temporary request globals even when mail cleanup throws; cleanup failures remain visible.
 
 - Removed the unused private widget property from `email_msg_bootstrap` and documented its shared-request lifecycle and API/browser failure behavior. Removed account numbers incorrectly passed as legacy debug levels by five controller calls; account selection remains in request parsing and explicit mail operations. Login modes, compatibility constants, and return behavior were retained.

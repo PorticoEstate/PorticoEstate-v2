@@ -9,6 +9,34 @@ use PHPUnit\Framework\TestCase;
 
 class EmailAccountDirectoryTest extends TestCase
 {
+	/**
+	 * @dataProvider enabledAccountCases
+	 */
+	public function testEnabledAccountLookupPreservesExistingMembershipRules(array $accounts, int $account, bool $expected): void
+	{
+		$this->assertSame($expected, EmailAccountDirectory::hasEnabledAccount($accounts, $account));
+		$previous = array_map('intval', array_column(array_filter($accounts,
+			static fn($item) => ($item['status'] ?? '') === 'enabled'), 'acctnum'));
+		$this->assertSame(in_array($account, $previous, true),
+			EmailAccountDirectory::hasEnabledAccount($accounts, $account));
+	}
+
+	public static function enabledAccountCases(): array
+	{
+		return [
+			[[], 0, false],
+			[[['acctnum' => 0, 'status' => 'enabled']], 0, true],
+			[[['acctnum' => '3', 'status' => 'enabled']], 3, true],
+			[[['acctnum' => 3, 'status' => 'disabled']], 3, false],
+			[[['acctnum' => 3, 'status' => 'empty']], 3, false],
+			[[['acctnum' => 3]], 3, false],
+			[[['status' => 'enabled']], 0, false],
+			[[['acctnum' => null, 'status' => 'enabled']], 0, true],
+			[[['acctnum' => 0, 'status' => 'enabled'], ['acctnum' => 3, 'status' => 'enabled']], 4, false],
+			[[['acctnum' => 3, 'status' => 'disabled'], ['acctnum' => 3, 'status' => 'enabled']], 3, true],
+		];
+	}
+
 	public function testSerializesEnabledAndDisabledAccountsAndSkipsEmptySlots(): void
 	{
 		$result = EmailAccountDirectory::serialize([

@@ -4,6 +4,20 @@ namespace App\modules\email\services;
 
 final class EmailAccountDirectory
 {
+	public static function hasEnabledAccount(array $accounts, int $accountNumber): bool
+	{
+		foreach ($accounts as $account)
+		{
+			if (($account['status'] ?? '') === 'enabled'
+				&& array_key_exists('acctnum', $account)
+				&& (int) $account['acctnum'] === $accountNumber)
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+
 	public static function serialize(array $accounts, array $stored): array
 	{
 		$result = [];

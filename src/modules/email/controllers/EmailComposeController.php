@@ -3,6 +3,7 @@
 namespace App\modules\email\controllers;
 
 use App\modules\email\services\EmailComposeSerializer;
+use App\modules\email\services\EmailAccountDirectory;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 
@@ -94,9 +95,10 @@ class EmailComposeController
 			$bootstrap = \CreateObject('email.msg_bootstrap');
 			$bootstrap->ensure_mail_msg_exists('email.api.draft');
 			$mail = \App\modules\email\services\MailMessage::getInstance();
-			$enabled = array_map('intval', array_column(array_filter((array) $mail->extra_and_default_acounts,
-				static fn($item) => ($item['status'] ?? '') === 'enabled'), 'acctnum'));
-			if (!in_array($account, $enabled, true)) throw new \InvalidArgumentException('Select an enabled email account');
+			if (!EmailAccountDirectory::hasEnabledAccount((array) $mail->extra_and_default_acounts, $account))
+			{
+				throw new \InvalidArgumentException('Select an enabled email account');
+			}
 			$mail->set_acctnum($account);
 			$storage = new \App\modules\email\services\EmailAttachmentStorage($mail->att_files_dir);
 			$attachments = [];
@@ -207,9 +209,10 @@ class EmailComposeController
 			$bootstrap = \CreateObject('email.msg_bootstrap');
 			$bootstrap->ensure_mail_msg_exists('email.api.send');
 			$mail = \App\modules\email\services\MailMessage::getInstance();
-			$enabledAccounts = array_map('intval', array_column(array_filter((array) $mail->extra_and_default_acounts,
-				static fn($item) => ($item['status'] ?? '') === 'enabled'), 'acctnum'));
-			if (!in_array($account, $enabledAccounts, true)) return $this->json($response, ['error' => lang('Select an enabled email account')], 422);
+			if (!EmailAccountDirectory::hasEnabledAccount((array) $mail->extra_and_default_acounts, $account))
+			{
+				return $this->json($response, ['error' => lang('Select an enabled email account')], 422);
+			}
 			$mail->set_acctnum($account);
 			$sender = new \App\modules\email\services\EmailOutgoingMessage();
 			$mailer = $sender->prepare($payload, $mail);

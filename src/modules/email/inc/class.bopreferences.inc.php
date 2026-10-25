@@ -18,7 +18,8 @@
  *
  * Schema, save orchestration, account allocation, and cache invalidation are
  * shared with the API. Legacy request parsing, redirects, and debug behavior
- * remain here.
+ * remain here. Cache invalidation is owned by EmailPreferencesWriter and the
+ * mail wrapper rather than this adapter.
  * @package email
  */
 class email_bopreferences
@@ -33,21 +34,16 @@ class email_bopreferences
 	);
 	var $msg_bootstrap;
 	public object $msg;
-	var $not_set = '-1';
 	var $std_prefs = array();
 	var $cust_prefs = array();
 	var $submit_token = 'submit_prefs';
 	var $submit_token_extra_accounts = 'submit_prefs_extra_accounts';
-	var $submit_token_delete_ex_account = 'submit_prefs_delete_ex_account';
 	var $add_new_account_token = 'add_new';
 
-	// possible values: "default" or "extra_accounts"
-	var $account_group = 'default';
 	var $acctnum = '';
 
 	// were we called from phpgroupware ("phpgw")or externally via xml-rpc ("xmlrpc")
 	var $caller = 'phpgw';
-	var $pref_errors = '';
 	var $args = array();
 	var $debug_set_prefs = 0;
 
@@ -99,30 +95,6 @@ class email_bopreferences
 		$schema = (new \App\modules\email\services\EmailPreferenceSchema())->fields();
 		$this->std_prefs = $schema['standard'];
 		$this->cust_prefs = $schema['custom'];
-	}
-
-	/*!
-		@function expire_related_cached_items
-		@abstract change in any preferences may require Expiring Cached Data for several things
-		@param (int) acctnum 
-		@discussion EXPIRE ANY CACHED ITEM THAT WAS DERIVED FROM A CHANGED PREF ITEM. 
-		We should be precise and only expire if necessary, but for now just expire any cached item that could 
-		be effected by a change in preferences. NOTE: we locate this after we have obtained a reliable 
-		acctnum which these prefs apply to.  Currently expires these things, mailsvr_callstr, mailsvr_namespace, 
-		mailsvr_delimiter, and folder_list. Note that "folder_list" requires expiration here because the elements that 
-		make up all the folder long, or fully qualified, folder name probably have changed too. 
-		@author Angles
-		*/
-	function expire_related_cached_items($acctnum = '')
-	{
-		if ((!isset($acctnum))
-			|| ((string)$acctnum == '')
-		)
-		{
-			$acctnum = $this->acctnum;
-		}
-
-		$this->msg->invalidatePreferenceCache((int) $acctnum);
 	}
 
 	/*!
@@ -282,7 +254,6 @@ class email_bopreferences
 		*/
 	function ex_accounts_delete($acctnum = '', $api_mode = False)
 	{
-		$this->account_group = 'extra_accounts';
 		try
 		{
 			$accounts = (array) ($this->msg->unprocessed_prefs['email']['ex_accounts'] ?? []);
@@ -319,7 +290,6 @@ class email_bopreferences
 	{
 		try
 		{
-			$this->account_group = 'extra_accounts';
 			if ($acctnum === '' || $acctnum === null)
 			{
 				$this->acctnum = $this->obtain_ex_acctnum();

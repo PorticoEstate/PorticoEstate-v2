@@ -6,6 +6,8 @@ This document began as a proposed plan. The execution record below supersedes th
 
 ## Execution Update
 
+- Simplified bootstrap login-policy assignments and removed a temporary variable. Documented and tested the legacy boolean/integer return distinction, unsupported-input fallback, and direct public login setting before request initialization; no login-policy changes were introduced.
+
 - Draft/send enabled-account validation now shares a single-pass `EmailAccountDirectory::hasEnabledAccount` lookup, avoiding intermediate filtered/mapped arrays and stopping at the first match. Existing membership rules and response behavior are preserved.
 
 - Compose, draft, and send cleanup now delegate request closure to `MailMessage::releaseInstance` instead of closing twice. Nested `finally` blocks restore temporary request globals even when mail cleanup throws; cleanup failures remain visible.

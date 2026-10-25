@@ -720,5 +720,32 @@ namespace Tests\Controllers
 			$this->assertTrue($bootstrap->set_do_login(true));
 			$this->assertSame(\email_msg_bootstrap::LOGIN_ONLY_IF_NEEDED, $bootstrap->get_do_login_ex());
 		}
+
+		/**
+		 * @dataProvider fallbackLoginInputs
+		 */
+		public function testLegacyLoginFallbackResetsAPreviousNoLoginPolicy(mixed $input): void
+		{
+			$bootstrap = new \email_msg_bootstrap();
+			$bootstrap->set_do_login(false);
+			$this->assertSame(\email_msg_bootstrap::LOGIN_ONLY_IF_NEEDED, $bootstrap->set_do_login($input));
+			$this->assertTrue($bootstrap->get_do_login());
+			$this->assertSame(\email_msg_bootstrap::LOGIN_ONLY_IF_NEEDED, $bootstrap->get_do_login_ex());
+		}
+
+		public static function fallbackLoginInputs(): array
+		{
+			return [[0], [-1], [4], ['1'], [null], [1.0], [[]], ['##NOTHING##']];
+		}
+
+		public function testBootstrapHonorsDirectPublicLoginSettingBeforeFirstRequest(): void
+		{
+			$mail = $this->mailDouble();
+			$bootstrap = new \email_msg_bootstrap();
+			$bootstrap->do_login = false;
+			$bootstrap->ensure_mail_msg_exists('unit-test');
+			$this->assertFalse($mail->requests[0]['do_login']);
+			$this->assertSame(\email_msg_bootstrap::LOGIN_NEVER, $mail->requests[0]['do_login_ex']);
+		}
 	}
 }

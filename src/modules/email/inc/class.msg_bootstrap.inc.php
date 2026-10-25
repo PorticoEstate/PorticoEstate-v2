@@ -32,7 +32,6 @@ class email_msg_bootstrap
 	 * @var boolean $do_login Defaults to True, most often you do not need to change this.
 	 */
 	var $do_login = True;
-	//var $do_login = False;
 	var $do_login_ex = 0;
 
 	var $debug_level = 0;
@@ -51,45 +50,22 @@ class email_msg_bootstrap
 		}
 	}
 
-	/*!
-		@function set_do_login REIMPLEMENTATION
-		@abstract whether to try to login to the mail server or not during a call to "ensure_mail_msg_exists". 
-		OPTIONAL, default is True. Behavior depends on caching method.
-		@param $do_login (boolean) 
-		@author Angles
-		@result (boolean) whatever the value var $this->do_login has on exiting the function.
-		@discussion OPTONAL, default of True works for most situations. This do_login value is 
-		used in this objects function "ensure_mail_msg_exists" where it is passed to the mail_msg class. 
-		Again, this is OPTONAL, default of True works for most situations, such as 
-		(1a) If session_cache_extreme is True, and do_login=True, this will _allow_ a server login, 
-		if needed, only if the app needs to get data that is not already cached.
-		(1b) If session_cache_extreme is False, and do_login=True, this will _always_ try to establish 
-		a mail server stream at the beginning of every script run. 
-		(2a and 2b) Setting do_login to False is useful in certain limited situations, such as the email settings page, 
-		or the preferences page. There you want to set or get email preference data but you do NOT 
-		require a login, or when there may be no preference data set yet, such as the first time a user 
-		sets the preferences, so a login is not even possible. The preference data will be handled by the 
-		mail_msg class as usual. Setting do_login to False for these occasions is OK no matter if 
-		session_cache_extreme is True or False. 
-		@access public
-		*/
+	/**
+	 * Sets the login policy; false disables login for preference-only requests.
+	 *
+	 * Boolean inputs return that boolean. Integer modes return the selected mode.
+	 * Other inputs and unsupported integers retain the legacy ONLY_IF_NEEDED fallback.
+	 * The caller argument is retained for compatibility.
+	 *
+	 * @return bool|int
+	 */
 	function set_do_login($do_login = '##NOTHING##', $called_by = 'not_provided')
 	{
 		// backward compat, when this was only true or false
 		if (is_bool($do_login))
 		{
-			if ($do_login)
-			{
-				$this->do_login_ex = self::LOGIN_ONLY_IF_NEEDED;
-			}
-			else
-			{
-				$this->do_login_ex = self::LOGIN_NEVER;
-			}
-
+			$this->do_login_ex = $do_login ? self::LOGIN_ONLY_IF_NEEDED : self::LOGIN_NEVER;
 			$this->do_login = $do_login;
-
-			// LEAVING HERE
 			return $this->do_login;
 		}
 		elseif (is_int($do_login))
@@ -98,13 +74,12 @@ class email_msg_bootstrap
 			$this->do_login_ex = in_array($do_login, $validModes, true)
 				? $do_login
 				: self::LOGIN_ONLY_IF_NEEDED;
-			$this->do_login = $this->do_login_ex !== self::LOGIN_NEVER;
 		}
 		else
 		{
-			$this->do_login = true;
 			$this->do_login_ex = self::LOGIN_ONLY_IF_NEEDED;
 		}
+		$this->do_login = $this->do_login_ex !== self::LOGIN_NEVER;
 		return $this->do_login_ex;
 	}
 
@@ -166,9 +141,7 @@ class email_msg_bootstrap
 		// make sure do_login has been set
 		if ($this->get_do_login_ex() == self::LOGIN_NOT_SPECIFIED)
 		{
-			// this gives us a good general default value
-			$tmp_prev_value = $this->get_do_login();
-			$this->set_do_login($tmp_prev_value);
+			$this->set_do_login($this->get_do_login());
 		}
 
 

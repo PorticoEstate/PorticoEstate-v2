@@ -9,6 +9,15 @@ use PHPUnit\Framework\TestCase;
 
 class EmailAccountsSerializerTest extends TestCase
 {
+	public function testSharedAccountNameFallbackPreservesEncodedInputForCaller(): void
+	{
+		$this->assertSame('Work &amp; Mail', EmailAccountsSerializer::accountName([
+			'account_name' => ' Work &amp; Mail ', 'fullname' => 'User',
+		]));
+		$this->assertSame('User', EmailAccountsSerializer::accountName(['account_name' => ' ', 'fullname' => 'User']));
+		$this->assertSame('Unknown account', EmailAccountsSerializer::accountName([]));
+	}
+
 	public function testSerializesEnabledAndDisabledAccountsAndOmitsEmptySlots(): void
 	{
 		$this->assertSame([

@@ -4,42 +4,62 @@ namespace App\modules\email\services;
 
 final class EmailPreferencesWriter
 {
+	/**
+	 * Accepts stored preference maps or legacy account summaries with explicit status.
+	 */
 	public static function nextAccountNumber(array $accounts): int
 	{
-		$position = 1;
+		$occupied = [];
 		foreach ($accounts as $key => $account)
 		{
 			$number = (int) ($account['acctnum'] ?? $key);
-			if (!isset($account['fullname'], $account['email_sig'], $account['layout']))
+			$complete = isset($account['status'])
+				? $account['status'] !== 'empty'
+				: isset($account['fullname'], $account['email_sig'], $account['layout']);
+			if ($number > 0 && $complete)
 			{
-				return $number;
+				$occupied[$number] = true;
 			}
-			if ($number !== $position)
-			{
-				return $position;
-			}
+		}
+		$position = 1;
+		while (isset($occupied[$position]))
+		{
 			$position++;
 		}
 		return $position;
 	}
 
-	public function saveDefault(array $standardSchema, array $customSchema, array $values, object $preferences, object $mail): void
+	/**
+	 * Legacy adapters retain form decoding and can suppress repository saves in debug mode.
+	 */
+	public function saveDefault(
+		array $standardSchema, array $customSchema, array $values, object $preferences,
+		object $mail, bool $legacyInput = false, bool $saveRepository = true
+	): void
 	{
 		$persister = new EmailPreferencePersister();
-		$customEnabled = filter_var($values['use_custom_settings'] ?? false, FILTER_VALIDATE_BOOLEAN);
-		$persister->writeFields($standardSchema, $values, $preferences, $mail);
+		$customEnabled = $legacyInput ? isset($values['use_custom_settings'])
+			: filter_var($values['use_custom_settings'] ?? false, FILTER_VALIDATE_BOOLEAN);
+		$persister->writeFields($standardSchema, $values, $preferences, $mail, null, $legacyInput, !$legacyInput);
 		if ($customEnabled)
 		{
-			$persister->writeFields($customSchema, $values, $preferences, $mail);
+			$persister->writeFields($customSchema, $values, $preferences, $mail, null, $legacyInput, !$legacyInput);
 		}
 		else
 		{
 			$persister->deleteFields($customSchema, $preferences);
 		}
-		$preferences->save_repository();
+		if ($saveRepository)
+		{
+			$preferences->save_repository();
+			$mail->invalidatePreferenceCache(0);
+		}
 	}
 
-	public function saveExtraAccount(int $account, array $standardSchema, array $customSchema, array $values, object $preferences, object $mail): void
+	public function saveExtraAccount(
+		int $account, array $standardSchema, array $customSchema, array $values,
+		object $preferences, object $mail, bool $legacyInput = false, bool $saveRepository = true
+	): void
 	{
 		$persister = new EmailPreferencePersister();
 		$basePath = '["ex_accounts"][' . $account . ']';
@@ -49,9 +69,15 @@ final class EmailPreferencesWriter
 			$values,
 			$preferences,
 			$mail,
-			$account
+			$account,
+			$legacyInput,
+			!$legacyInput
 		);
 		$preferences->sort_struct('email', '["ex_accounts"]');
-		$preferences->save_repository();
+		if ($saveRepository)
+		{
+			$preferences->save_repository();
+			$mail->invalidatePreferenceCache($account);
+		}
 	}
 }

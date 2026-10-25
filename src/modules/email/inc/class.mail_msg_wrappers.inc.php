@@ -140,6 +140,18 @@ class mail_msg_wrappers extends mail_msg_base
 		$this->transports[$account] = $transport;
 	}
 
+	/**
+	 * Clears connection-derived data and the bulk preference cache after a preference change.
+	 */
+	public function invalidatePreferenceCache(int $account): void
+	{
+		foreach (['mailsvr_callstr', 'mailsvr_namespace', 'mailsvr_delimiter', 'folder_list', 'verified_trash_folder_long'] as $key)
+		{
+			$this->expire_session_cache_item($key, $account);
+		}
+		$this->so->so_appsession_passthru('0;cached_prefs', ' ');
+	}
+
 	public function getTransport(int $account): object
 	{
 		if (!isset($this->transports[$account]))

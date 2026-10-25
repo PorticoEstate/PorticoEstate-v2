@@ -135,10 +135,6 @@ class EmailPreferencesController
 				Preferences::getInstance(),
 				$mail
 			);
-			foreach (['mailsvr_callstr', 'mailsvr_namespace', 'mailsvr_delimiter', 'folder_list'] as $key)
-			{
-				$mail->expire_session_cache_item($key, 0);
-			}
 			return $this->json($response, ['saved' => true]);
 		}
 		catch (\Throwable $exception)
@@ -319,7 +315,6 @@ class EmailPreferencesController
 				Preferences::getInstance(),
 				$mail
 			);
-			foreach (['mailsvr_callstr', 'mailsvr_namespace', 'mailsvr_delimiter', 'folder_list'] as $key) $mail->expire_session_cache_item($key, $account);
 			return $this->json($response, ['saved' => true, 'id' => $account]);
 		}
 		catch (\Throwable $exception)
@@ -355,9 +350,13 @@ class EmailPreferencesController
 			{
 				return $this->json($response, ['error' => lang('Email account not found')], 404);
 			}
+			$bootstrap = \CreateObject('email.msg_bootstrap');
+			$bootstrap->set_do_login(false);
+			$bootstrap->ensure_mail_msg_exists('email.api.preferences.account.delete');
 			$preferences = Preferences::getInstance();
 			$preferences->delete_struct('email', '["ex_accounts"][' . $account . ']');
 			$preferences->save_repository();
+			\App\modules\email\services\MailMessage::getInstance()->invalidatePreferenceCache($account);
 			return $this->json($response, ['deleted' => true]);
 		}
 		catch (\Throwable $exception)

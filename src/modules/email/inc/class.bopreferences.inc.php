@@ -14,11 +14,11 @@
  */
 
 /**
- * Preferences
+ * Legacy preference request adapter.
  *
- * If prefs are submitted that alter anything relative to a cached data item, 
- * the cached item MUST BE EXPIRED, for example
- * GLOBALS[phpgw]->msg->expire_session_cache_item("mailserver_callstr")
+ * Schema, save orchestration, account allocation, and cache invalidation are
+ * shared with the API. Legacy request parsing, redirects, and debug behavior
+ * remain here.
  * @package email
  */
 class email_bopreferences
@@ -32,8 +32,7 @@ class email_bopreferences
 		'ex_accounts_delete' => True
 	);
 	var $msg_bootstrap;
-	// convience reference to the msg object
-	var $msg = '##NOTHING##';
+	public object $msg;
 	var $not_set = '-1';
 	var $std_prefs = array();
 	var $cust_prefs = array();
@@ -69,12 +68,7 @@ class email_bopreferences
 		// USE NEW login instructions, defined in bootstrap class
 		$this->msg_bootstrap->set_do_login(BS_LOGIN_NEVER);
 		$this->msg_bootstrap->ensure_mail_msg_exists('email.bopreferences. *constructor*', $this->debug_set_prefs);
-		// make the convience reference
-		if ($this->msg == '##NOTHING##')
-		{
-			$this->msg = \App\modules\email\services\MailMessage::getInstance();
-		}
-		//return;
+		$this->msg = \App\modules\email\services\MailMessage::getInstance();
 	}
 
 	/*!
@@ -104,19 +98,6 @@ class email_bopreferences
 		$schema = (new \App\modules\email\services\EmailPreferenceSchema())->fields();
 		$this->std_prefs = $schema['standard'];
 		$this->cust_prefs = $schema['custom'];
-
-		if ($this->debug_set_prefs > 3)
-		{
-			$this->debug_dump_prefs();
-		}
-	}
-
-	function debug_dump_prefs()
-	{
-		// DEBUG begin
-		//Header('Location: ' . phpgw::link('/preferences/index.php'));
-		//return;
-		// DEBUG end
 	}
 
 	/*!
@@ -140,14 +121,7 @@ class email_bopreferences
 			$acctnum = $this->acctnum;
 		}
 
-		\App\modules\email\services\MailMessage::getInstance()->expire_session_cache_item('mailsvr_callstr', $acctnum);
-		\App\modules\email\services\MailMessage::getInstance()->expire_session_cache_item('mailsvr_namespace', $acctnum);
-		\App\modules\email\services\MailMessage::getInstance()->expire_session_cache_item('mailsvr_delimiter', $acctnum);
-		// DAAA! the folder list probably also changes if the components that make up the Fully Qualified folder name have changed
-		\App\modules\email\services\MailMessage::getInstance()->expire_session_cache_item('folder_list', $acctnum);
-		// NEW: now we cache all the prefs in bulk cache in the appsession
-		$my_location = '0;cached_prefs';
-		\App\modules\email\services\MailMessage::getInstance()->so->so_appsession_passthru($my_location, ' ');
+		$this->msg->invalidatePreferenceCache((int) $acctnum);
 	}
 
 	/*!
@@ -199,121 +173,43 @@ class email_bopreferences
 		*/
 	function grab_set_prefs_args_gpc()
 	{
-		// ----  HANDLE GRABBING PREFERENCE GPC HTTP_POST_VARS ARGS  -------
-		// for abstraction from phpgw UI and from PHP's GPC data, put the submitted GPC data
-		// into a class var $this->args[] array. This array is then used to represent the submitted
-		// data, instead of $GLOBALS['phpgw']->msg->ref_POST. 
-		// HOWEVER, do not attempt to grab data if the "submit_prefs" GPC submit_token variable is not present
-
-		// ----  DEFAULT EMAIL ACCOUNT  ----
-		if (isset(\App\modules\email\services\MailMessage::getInstance()->ref_POST[$this->submit_token]))
+		$post = $this->msg->ref_POST;
+		if (isset($post[$this->submit_token]))
 		{
-
-			// EXPIRE stuff that may get stale by changing prefs
-			$this->expire_related_cached_items(0);
-
-			//$this->args['submit_prefs'] = $GLOBALS['phpgw']->msg->ref_POST['submit_prefs'];
-			$this->args[$this->submit_token] = \App\modules\email\services\MailMessage::getInstance()->ref_POST[$this->submit_token];
-			// standard prefs
-			$loops = count($this->std_prefs);
-			for ($i = 0; $i < $loops; $i++)
-			{
-				// ----  skip this item logic  ----
-				// we are ONLY concerned with items that apply to the default email account
-				// existence of $this->submit_token indicates this data is intended for the default email account
-				if (!stristr($this->std_prefs[$i]['accts_usage'], 'default'))
-				{
-				}
-				else
-				{
-					// ok, we have a pref item that applies to the default email account
-					$this_pref_name = $this->std_prefs[$i]['id'];
-					if (isset(\App\modules\email\services\MailMessage::getInstance()->ref_POST[$this_pref_name]))
-					{
-						$this->args[$this_pref_name] = \App\modules\email\services\MailMessage::getInstance()->ref_POST[$this_pref_name];
-					}
-				}
-			}
-			// custom prefs
-			$loops = count($this->cust_prefs);
-			for ($i = 0; $i < $loops; $i++)
-			{
-				// ----  skip this item logic  ----
-				// we are ONLY concerned with items that apply to the default email account
-				// existence of $this->submit_token indicates this data is intended for the default email account
-				if (!stristr($this->cust_prefs[$i]['accts_usage'], 'default'))
-				{
-				}
-				else
-				{
-					// ok, we have a pref item that applies to the default email account
-					$this_pref_name = $this->cust_prefs[$i]['id'];
-					if (isset(\App\modules\email\services\MailMessage::getInstance()->ref_POST[$this_pref_name]))
-					{
-						$this->args[$this_pref_name] = \App\modules\email\services\MailMessage::getInstance()->ref_POST[$this_pref_name];
-					}
-				}
-			}
+			$token = $this->submit_token;
+			$scope = 'default';
+			$values = $post;
 		}
-		// ----  EXTRA EMAIL ACCOUNTS  ----
-		elseif (isset(\App\modules\email\services\MailMessage::getInstance()->ref_POST[$this->submit_token_extra_accounts]))
+		elseif (isset($post[$this->submit_token_extra_accounts]))
 		{
-
-			//$this->args['submit_prefs'] = $GLOBALS['phpgw']->msg->ref_POST['submit_prefs'];
-			$this->args[$this->submit_token_extra_accounts] = \App\modules\email\services\MailMessage::getInstance()->ref_POST[$this->submit_token_extra_accounts];
-
-			// ==== ACCTNUM ====
-			if ((!isset($this->acctnum))
-				|| ((string)$this->acctnum == '')
-			)
+			if (!isset($this->acctnum) || (string) $this->acctnum === '')
 			{
 				$this->acctnum = $this->obtain_ex_acctnum();
 			}
+			$token = $this->submit_token_extra_accounts;
+			$scope = 'extra_accounts';
+			$values = $post[$this->acctnum] ?? array();
+		}
+		else
+		{
+			return;
+		}
 
-			// EXPIRE stuff that may get stale by changing prefs
-			$this->expire_related_cached_items($this->acctnum);
-
-			// standard prefs
-			$loops = count($this->std_prefs);
-			for ($i = 0; $i < $loops; $i++)
+		$this->args[$token] = $post[$token];
+		foreach (array_merge($this->std_prefs, $this->cust_prefs) as $field)
+		{
+			$id = $field['id'];
+			if (stripos($field['accts_usage'], $scope) === false || !isset($values[$id]))
 			{
-				// ----  skip this item logic  ----
-				// we are ONLY concerned with items that apply to EXTRA email accounts
-				// existence of "$this->submit_token_extra_accounts" indicates this data is intended for 
-				// extra email accounts
-				if (!stristr($this->std_prefs[$i]['accts_usage'], 'extra_accounts'))
-				{
-				}
-				else
-				{
-					// ok, we have a pref item that applies to the default email account
-					$this_pref_name = $this->std_prefs[$i]['id'];
-					if (isset(\App\modules\email\services\MailMessage::getInstance()->ref_POST[$this->acctnum][$this_pref_name]))
-					{
-						$this->args[$this->acctnum][$this_pref_name] = \App\modules\email\services\MailMessage::getInstance()->ref_POST[$this->acctnum][$this_pref_name];
-					}
-				}
+				continue;
 			}
-			// custom prefs
-			$loops = count($this->cust_prefs);
-			for ($i = 0; $i < $loops; $i++)
+			if ($scope === 'default')
 			{
-				// ----  skip this item logic  ----
-				// we are ONLY concerned with items that apply to EXTRA email accounts
-				// existence of "$this->submit_token_extra_accounts" indicates this data is intended for 
-				// extra email accounts
-				if (!stristr($this->cust_prefs[$i]['accts_usage'], 'extra_accounts'))
-				{
-				}
-				else
-				{
-					// ok, we have a pref item that applies to extra email accounts
-					$this_pref_name = $this->cust_prefs[$i]['id'];
-					if (isset(\App\modules\email\services\MailMessage::getInstance()->ref_POST[$this->acctnum][$this_pref_name]))
-					{
-						$this->args[$this->acctnum][$this_pref_name] = \App\modules\email\services\MailMessage::getInstance()->ref_POST[$this->acctnum][$this_pref_name];
-					}
-				}
+				$this->args[$id] = $values[$id];
+			}
+			else
+			{
+				$this->args[$this->acctnum][$id] = $values[$id];
 			}
 		}
 	}
@@ -360,7 +256,7 @@ class email_bopreferences
 			$prefs_set,
 			$this->args,
 			\App\modules\phpgwapi\services\Preferences::getInstance(),
-			\App\modules\email\services\MailMessage::getInstance(),
+			$this->msg,
 			null,
 			true,
 			false
@@ -377,49 +273,19 @@ class email_bopreferences
 		*/
 	function preferences($api_mode = False)
 	{
-		// establish all available prefs for email
-		$this->init_available_prefs();
-
 		// this will fill $this->args[] array with any submitted prefs args
 		$this->grab_set_prefs();
 
 		// ----  HANDLE SETING PREFERENCE   -------
 		if (isset($this->args[$this->submit_token]))
 		{
-			// is set_magic_quotes_runtime(0) done here or somewhere else
-			//set_magic_quotes_runtime(0);
-
-			// constructor will initialize $GLOBALS['phpgw']->msg
-
-			// ---  Process Standard Prefs  ---
-			$this->process_submitted_prefs($this->std_prefs);
-
-			// ---  Process Custom Prefs  ---
-			if (isset($this->args['use_custom_settings']))
-			{
-				// custom settings are in use, process them
-				$this->process_submitted_prefs($this->cust_prefs);
-			}
-			else
-			{
-				// custom settings are NOT being used, DELETE them from the repository
-				$c_prefs = count($this->cust_prefs);
-				for ($i = 0; $i < $c_prefs; $i++)
-				{
-					\App\modules\phpgwapi\services\Preferences::getInstance()->delete('email', $this->cust_prefs[$i]['id']);
-				}
-			}
-
-			// DONE processing prefs, SAVE to the Repository
-			if ($this->debug_set_prefs > 1)
-			{
-			}
-			else
-			{
-				\App\modules\phpgwapi\services\Preferences::getInstance()->save_repository();
-			}
+			(new \App\modules\email\services\EmailPreferencesWriter())->saveDefault(
+				$this->std_prefs, $this->cust_prefs, $this->args,
+				\App\modules\phpgwapi\services\Preferences::getInstance(), $this->msg,
+				true, $this->debug_set_prefs <= 1
+			);
 			// end the email session
-			\App\modules\email\services\MailMessage::getInstance()->end_request();
+			$this->msg->end_request();
 			if ($api_mode) return True;
 
 			// redirect user back to main preferences page
@@ -435,159 +301,6 @@ class email_bopreferences
 				Header('Location: ' . $take_me_to_url);
 			}
 		}
-
-		// DEPRECIATED CODE follows, but do not delete yet, it has useful comments.
-		/*
-				// these are the standard (non-custom) email options
-				// that do NOT hold user-entered strings as their values
-				$prefs = array(
-					'default_sorting',
-					'layout',
-					'show_addresses',
-					'mainscreen_showmail',
-					'use_sent_folder',
-					'use_trash_folder',
-					'enable_utf7'
-				);
-				$c_prefs = count($prefs);
-				for($i=0;$i<$c_prefs;$i++)
-				{
-					\App\modules\phpgwapi\services\Preferences::getInstance()->delete('email',$prefs[$i]);
-					if (isset($this->args[$prefs[$i]])
-						&& $this->args[$prefs[$i]] != '')
-					{
-						\App\modules\phpgwapi\services\Preferences::getInstance()->add('email',$prefs[$i],$this->args[$prefs[$i]]);
-					}
-				}
-				// these are the standard (non-custom) email options
-				// that each DO hold a user-entered strings as their value
-				$prefs = array(
-					'email_sig',
-					'trash_folder_name',
-					'sent_folder_name'
-				);
-				$c_prefs = count($prefs);
-				for($i=0;$i<$c_prefs;$i++)
-				{
-					\App\modules\phpgwapi\services\Preferences::getInstance()->delete('email',$prefs[$i]);
-					if(isset($this->args[$prefs[$i]]))
-					{
-						$temp_var = $email_base->stripslashes_gpc($this->args[$prefs[$i]]);
-						if($i == 0)
-						{
-							$temp_var = $email_base->html_quotes_encode($temp_var);
-						}
-						\App\modules\phpgwapi\services\Preferences::getInstance()->add('email',$prefs[$i],$temp_var);
-					}
-					else
-					{
-						switch($i)
-						{
-							case 1:
-								$temp_var = 'Trash';
-								break;
-							case 2:
-								$temp_var = 'Sent';
-								break;
-						}
-						\App\modules\phpgwapi\services\Preferences::getInstance()->add('email',$prefs[$i],$temp_var);
-					}
-				}
-				// these are the "custom" email options, here handle both user-entered strings
-				// and non user-entered string options in the same proc
-				// also, the password is handled seperately below
-				$prefs = array(
-					'use_custom_settings',
-					'userid',
-					'address',
-					'mail_server',
-					'mail_server_type',
-					'imap_server_type',
-					'mail_folder'
-				);
-				// NOTE: it is possible that a user-entered string, particularly the "mail_folder" pref
-				// may contain certain chars, such as slashes, quotes, etc..., which (a)  may need to be
-				// run through "stripslashes_gpc" and or (b) may be database-unfriendly chars
-				// which *may* need to be encoded IF these bad chars are not escaped or otherwise de-fanged
-				// at the preference class level or the database class level.
-				// UNKNOWN at present (11-30-2001) if this is still an issue (it was in 0.9.12) ed: Angles
-				$c_prefs = count($prefs);
-				\App\modules\phpgwapi\services\Preferences::getInstance()->delete('email',$prefs[0]);
-				if (!isset($this->args[$prefs[0]]))
-				{
-					// use is NOT using custom settings, so delete them all from the repository
-					for($i=1;$i<$c_prefs;$i++)
-					{
-						\App\modules\phpgwapi\services\Preferences::getInstance()->delete('email',$prefs[$i]);
-					}
-					// and also the passwd, which is not in that array above because it gets special handling
-					\App\modules\phpgwapi\services\Preferences::getInstance()->delete('email','passwd');
-				}
-				else
-				{
-					// custom prefs ARE in use
-					\App\modules\phpgwapi\services\Preferences::getInstance()->add('email',$prefs[0],$this->args[$prefs[0]]);
-					for($i=1;$i<$c_prefs;$i++)
-					{
-						// if ((isset($email_base->args[$check_array[$i]])) && ($email_base->args[$check_array[$i]] != ''))
-						if ((isset($this->args[$prefs[$i]]))
-						&& ($this->args[$prefs[$i]] != ''))
-						{
-							// user has specified a value for this particular email custom option
-							\App\modules\phpgwapi\services\Preferences::getInstance()->add('email',$prefs[$i],$this->args[$prefs[$i]]);
-						}
-						else
-						{
-							// user did not supply a value for this particular custom option,
-							// so the user wants to use the phpgwapi supplied value instead, 
-							// We accomplished by entirely removing (no key, no value) this pref
-							// from the repository, so next time function "create_email_preferences"
-							// is called, it knows by the lack of the existence of a custom particular
-							// custom option to use the server supplied default instead for that item
-							\App\modules\phpgwapi\services\Preferences::getInstance()->delete('email',$prefs[$i]);
-						}
-					}
-					if (isset($this->args['passwd'])
-					&& $this->args['passwd'] != '')
-					{
-						//@capability: set and unset a custom email password preference
-						//@discussion:  an email password is NEVER sent to the client UI from the server
-						//so this option shows up as en empty value in the UI
-						//These senarios are possible here:
-						//(1) user submits an empty passwd pref AND user already has a custom passwd set
-						//then the previous, existing users custom passwd is left UNMOLESTED, as-is, untouched.
-						//(2) user does submit a password, then this gets "encrypted" (depends on existence of mcrypt or not)
-						//and put in the repository.
-						//This minimizes passwd from traveling thru the ether.
-						//(3) user wants to delete an existing custom passwd from the repository,
-						//the user must (a) uncheck "use custom preferences", and (b) submit that page,
-						//which clears ALL custom options. Now if the user leter checks "use custom preferences"
-						//but does NOT fill in a custom passwd, the user's phpgw login password will be used
-						//as the email server password, following the concept that unfilled custom options
-						//get a phpgw system default value.
-						\App\modules\phpgwapi\services\Preferences::getInstance()->delete('email','passwd');
-						\App\modules\phpgwapi\services\Preferences::getInstance()->add('email','passwd',$email_base->encrypt_email_passwd($email_base->stripslashes_gpc($this->args['passwd'])));
-					}
-				}
-				if ($this->debug_set_prefs > 1) 
-				{
-					echo 'email.bopreferences: *debug* skipping save_repository<br />';
-				}
-				else
-				{
-					\App\modules\phpgwapi\services\Preferences::getInstance()->save_repository();
-				}
-				$email_base->end_request();
-			}
-			if ($this->debug_set_prefs > 1) 
-			{
-				echo 'email.bopreferences: *debug* skipping Header redirection<br />';
-			}
-			else
-			{
-				Header('Location: ' . phpgw::link('/preferences/index.php'));
-			}
-			*/
 	}
 
 	/*!
@@ -616,7 +329,7 @@ class email_bopreferences
 			$prefs_set,
 			$this->args[$this->acctnum] ?? array(),
 			\App\modules\phpgwapi\services\Preferences::getInstance(),
-			\App\modules\email\services\MailMessage::getInstance(),
+			$this->msg,
 			(int) $this->acctnum,
 			true,
 			false
@@ -684,11 +397,12 @@ class email_bopreferences
 		{
 			// we actually did something that requires saving repository, and we have the go-ahead
 			\App\modules\phpgwapi\services\Preferences::getInstance()->save_repository();
+			$this->expire_related_cached_items($this->acctnum);
 		}
 		// end the email session
 		if (\App\modules\email\services\MailMessage::hasInstance())
 		{
-			\App\modules\email\services\MailMessage::getInstance()->end_request();
+			$this->msg->end_request();
 		}
 		if ($api_mode) return $actually_did_something;
 		// redirect user back to main preferences page
@@ -732,9 +446,6 @@ class email_bopreferences
 
 		// --- Add/Modify Email Extra Account Prefs? ----
 
-		// establish all available prefs for email
-		$this->init_available_prefs();
-
 		// this will fill $this->args[] array with any submitted prefs args
 		$this->grab_set_prefs();
 
@@ -744,66 +455,18 @@ class email_bopreferences
 			// let the code below this block know we actually did something that requires saving the repository
 			$actually_did_something = True;
 
-			// is set_magic_quotes_runtime(0) done here or somewhere else
-			//set_magic_quotes_runtime(0);
-
-			// constructor will (has taken care of) initialize $GLOBALS['phpgw']->msg
-
-			// ---  Process Standard Prefs  ---
-			$this->process_ex_accounts_submitted_prefs($this->std_prefs);
-
-			// ---  Process Custom Prefs  ---
-			// CUSTOM PREFS ARE MANDATORY! FOR EXTRA ACCOUNTS
-			// first, delete whatever value was there for "use custom settings" (during pre-release, at times this actually was an option, make sure it's gone grom the db)
-			$pref_struct_str = '["ex_accounts"][' . $this->acctnum . ']["' . $this->cust_prefs[0]['id'] . '"]';
-			\App\modules\phpgwapi\services\Preferences::getInstance()->delete_struct('email', $pref_struct_str);
-
-			$this->process_ex_accounts_submitted_prefs($this->cust_prefs);
-
-			/*
-				// ---  Process Custom Prefs  ---
-				// if they were not mandatory, but that does not work
-				if ($this->debug_set_prefs > 1) { echo 'email.bopreferences.ex_accounts_edit(): about to process Custom Prefs<br />'; }
-				if (isset($this->args['use_custom_settings']))
-				{
-					// custom settings are in use, process them
-					if ($this->debug_set_prefs > 1) { echo 'email.bopreferences.ex_accounts_edit(): custom prefs are in use<br />'; }
-					$this->process_ex_accounts_submitted_prefs($this->cust_prefs);
-				}
-				else
-				{
-					// custom settings are NOT being used, DELETE them from the repository
-					$c_prefs = count($this->cust_prefs);			
-					if ($this->debug_set_prefs > 1) { echo 'email.bopreferences.ex_accounts_edit(): custom prefs NOT in use, deleting them<br />'; }
-					for($i=0;$i<$c_prefs;$i++)
-					{
-						$pref_struct_str = '["ex_accounts"]['.$this->acctnum.']["'.$this->cust_prefs[$i]['id'].'"]';
-						if ($this->debug_set_prefs > 1) { echo ' ** (looping) email: bopreferences.ex_accounts_edit(): using preferences->delete_struct("email", $pref_struct_str) which will eval $pref_struct_str='.$pref_struct_str.'<br />'; }
-						\App\modules\phpgwapi\services\Preferences::getInstance()->delete_struct('email',$pref_struct_str);
-					}
-				}
-				*/
-		}
-
-		// DONE processing prefs, SAVE to the Repository
-		if (!$actually_did_something)
-		{
-			// nothing happened above that requires saving the repository
-		}
-		elseif ($this->debug_set_prefs > 1)
-		{
-			// we actually did something that requires saving repository, but are we in debug mode
-		}
-		else
-		{
-			// we actually did something that requires saving repository, and we have the go-ahead
-			\App\modules\phpgwapi\services\Preferences::getInstance()->save_repository();
+			(new \App\modules\email\services\EmailPreferencesWriter())->saveExtraAccount(
+				(int) $this->acctnum, $this->std_prefs, $this->cust_prefs,
+				$this->args[$this->acctnum] ?? array(),
+				\App\modules\phpgwapi\services\Preferences::getInstance(), $this->msg,
+				true, $this->debug_set_prefs <= 1
+			);
 		}
 
 		// end the email session
 		if (\App\modules\email\services\MailMessage::hasInstance())
 		{
-			\App\modules\email\services\MailMessage::getInstance()->end_request();
+			$this->msg->end_request();
 		}
 		if ($api_mode) return $actually_did_something;
 
@@ -828,7 +491,7 @@ class email_bopreferences
 	function ex_accounts_list()
 	{
 
-		$extra_accounts = \App\modules\email\services\MailMessage::getInstance()->extra_accounts;
+		$extra_accounts = $this->msg->extra_accounts;
 		// list accounts, except "empty" ones (show "enabled" and "disabled"
 		$return_list = array();
 		foreach ($extra_accounts as $extra_account)
@@ -846,42 +509,21 @@ class email_bopreferences
 				$return_list[$next_pos]['acctnum'] = $this_acctnum;
 				$return_list[$next_pos]['status'] = $this_status;
 
-				// FIRST get a usable "accountname" string to show the user and make "go_there_url" and "go_there_href"
-				/*!
-					@capability boprefs ex_accounts_list what is the string name of this account
-					@abstract HOW TO IDENTIFY THIS ACCOUNT to the user
-					@discussion We recently added a pref for "account_name" which is seperate from 
-					"fullname". At this moment 021019 this "account_name" is not guarantee to be filled. 
-					So we fallback here to the "fullname" if necessary. Disabled accounts, at this moment 
-					that really is not coded at all, but disabled accounts may not have their pref data 
-					available via msg->get_pref_value. 
-					*/
+				$namePreferences = $this_status === 'disabled'
+					? ($this->msg->unprocessed_prefs['email']['ex_accounts'][$this_acctnum] ?? array())
+					: [
+						'account_name' => $this->msg->get_pref_value('account_name', $this_acctnum),
+						'fullname' => $this->msg->get_pref_value('fullname', $this_acctnum),
+					];
+				if ($this_status === 'disabled'
+					&& trim((string) ($namePreferences['account_name'] ?? '')) === ''
+					&& trim((string) ($namePreferences['fullname'] ?? '')) === '')
+				{
+					$namePreferences['account_name'] = $this->msg->get_pref_value('account_name', $this_acctnum);
+				}
+				$accountname = \App\modules\email\services\EmailAccountsSerializer::accountName($namePreferences);
 				if ($this_status == 'disabled')
 				{
-					// "disabled" accounts will not return a fullname because they were not initialized during "begin_request"
-					// try to directly obtain it from RAW prefs data
-					//$fullname = '(disabled) '.$GLOBALS['phpgw']->msg->unprocessed_prefs['email']['ex_accounts'][$this_acctnum]['fullname'];
-					$accountname = \App\modules\email\services\MailMessage::getInstance()->unprocessed_prefs['email']['ex_accounts'][$this_acctnum]['account_name'];
-					if ((isset($accountname) == False)
-						|| (trim($accountname) == '')
-					)
-					{
-						$accountname = \App\modules\email\services\MailMessage::getInstance()->unprocessed_prefs['email']['ex_accounts'][$this_acctnum]['fullname'];
-					}
-					// test again
-					if ((isset($accountname) == False)
-						|| (trim($accountname) == '')
-					)
-					{
-						$accountname = \App\modules\email\services\MailMessage::getInstance()->get_pref_value('account_name', $this_acctnum);
-					}
-					// FIX ME test again, take care of this in the prefs reading like it should be, not here
-					if ((isset($accountname) == False)
-						|| (trim($accountname) == '')
-					)
-					{
-						$accountname = 'unknown accountname on (' . __LINE__ . ')';
-					}
 					$accountname = '(disabled) ' . $accountname;
 
 					// we can click "go" to not read mail of a disabled account
@@ -890,21 +532,6 @@ class email_bopreferences
 				}
 				else
 				{
-					$accountname = \App\modules\email\services\MailMessage::getInstance()->get_pref_value('account_name', $this_acctnum);
-					if ((isset($accountname) == False)
-						|| (trim($accountname) == '')
-					)
-					{
-						$accountname = \App\modules\email\services\MailMessage::getInstance()->get_pref_value('fullname', $this_acctnum);
-					}
-					// FIX ME test again, should we take care of this in the prefs reading, not here?
-					if ((isset($accountname) == False)
-						|| (trim($accountname) == '')
-					)
-					{
-						$accountname = 'unknown accountname on (' . __LINE__ . ')';
-					}
-
 					$return_list[$next_pos]['go_there_url'] = phpgw::link('/email/view/inbox', array(
 						'fldball[folder]' => 'INBOX',
 						'fldball[acctnum]' => $this_acctnum
@@ -913,8 +540,8 @@ class email_bopreferences
 				}
 				// NEXT: html encode the acctname string
 				// html encode entities on the fullname so it's safe to display in the browser, and prefix with the acctnum
-				$accountname = \App\modules\email\services\MailMessage::getInstance()->htmlspecialchars_decode($accountname);
-				$accountname = \App\modules\email\services\MailMessage::getInstance()->htmlspecialchars_encode($accountname);
+				$accountname = $this->msg->htmlspecialchars_decode($accountname);
+				$accountname = $this->msg->htmlspecialchars_encode($accountname);
 				// FINALLY we have a string we are going to display to the user that is the name of the account
 				$return_list[$next_pos]['display_string'] = '[' . $this_acctnum . '] ' . $accountname;
 
@@ -938,41 +565,7 @@ class email_bopreferences
 		*/
 	function get_first_empty_ex_acctnum()
 	{
-		$loops = count(\App\modules\email\services\MailMessage::getInstance()->extra_accounts);
-		if ($loops == 0)
-		{
-			$first_empty_ex_acctnum = 1;
-		}
-		else
-		{
-			$did_get_acctnum = False;
-			for ($i = 0; $i < $loops; $i++)
-			{
-				$this_acctnum = \App\modules\email\services\MailMessage::getInstance()->extra_accounts[$i]['acctnum'];
-				$this_status = \App\modules\email\services\MailMessage::getInstance()->extra_accounts[$i]['status'];
-				// loop =0 *would* = acctnum 1 *if* acctnum slots are filled in order, they'd always be 1 apart
-				if ($this_status == 'empty')
-				{
-					$first_empty_ex_acctnum = (int)$this_acctnum;
-					$did_get_acctnum = True;
-					break;
-				}
-				elseif ((int)($i + 1) != (int)$this_acctnum)
-				{
-					$first_empty_ex_acctnum = (int)($i + 1);
-					$did_get_acctnum = True;
-					break;
-				}
-			}
-			if ($did_get_acctnum == False)
-			{
-				// all slots taken, add +1 to last filled acctnum
-				$first_empty_ex_acctnum = count(\App\modules\email\services\MailMessage::getInstance()->extra_accounts);
-				// since extra accounts are not zero based, add one to that count to get real next available
-				$first_empty_ex_acctnum++;
-			}
-		}
-		return $first_empty_ex_acctnum;
+		return \App\modules\email\services\EmailPreferencesWriter::nextAccountNumber($this->msg->extra_accounts);
 	}
 
 	/*!
@@ -985,15 +578,15 @@ class email_bopreferences
 	{
 		// get fromPOST or GET
 		$prelim_acctnum = '##NOTHING##';
-		if ((isset(\App\modules\email\services\MailMessage::getInstance()->ref_POST['ex_acctnum'])
-			&& ((string)\App\modules\email\services\MailMessage::getInstance()->ref_POST['ex_acctnum'] != '')))
+		if ((isset($this->msg->ref_POST['ex_acctnum'])
+			&& ((string)$this->msg->ref_POST['ex_acctnum'] != '')))
 		{
-			$prelim_acctnum = (int)\App\modules\email\services\MailMessage::getInstance()->ref_POST['ex_acctnum'];
+			$prelim_acctnum = (int)$this->msg->ref_POST['ex_acctnum'];
 		}
-		elseif ((isset(\App\modules\email\services\MailMessage::getInstance()->ref_GET['ex_acctnum'])
-			&& ((string)\App\modules\email\services\MailMessage::getInstance()->ref_GET['ex_acctnum'] != '')))
+		elseif ((isset($this->msg->ref_GET['ex_acctnum'])
+			&& ((string)$this->msg->ref_GET['ex_acctnum'] != '')))
 		{
-			$prelim_acctnum = (int)\App\modules\email\services\MailMessage::getInstance()->ref_GET['ex_acctnum'];
+			$prelim_acctnum = (int)$this->msg->ref_GET['ex_acctnum'];
 		}
 		// in all these cases we don't have a valid acct num (or we are asked to make a new one)
 		// so any of these requires a new, blank acctnum

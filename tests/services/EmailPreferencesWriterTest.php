@@ -20,6 +20,8 @@ class EmailPreferencesWriterTest extends TestCase
 		};
 		$mail = new class
 		{
+			public array $invalidated = [];
+			public function invalidatePreferenceCache(int $account): void { $this->invalidated[] = $account; }
 			public function html_quotes_encode($value): string { return 'encoded:' . $value; }
 			public function encrypt_email_passwd($value): string { return 'encrypted:' . $value; }
 		};
@@ -45,6 +47,7 @@ class EmailPreferencesWriterTest extends TestCase
 		$this->assertContains(['delete', 'email', 'custom_value'], $preferences->writes);
 		$this->assertNotContains(['delete', 'email', 'extra_only'], $preferences->writes);
 		$this->assertSame(['save'], end($preferences->writes));
+		$this->assertSame([0], $mail->invalidated);
 	}
 
 	public function testAllocatesTheFirstUnusedAccountNumber(): void
@@ -54,6 +57,12 @@ class EmailPreferencesWriterTest extends TestCase
 		$this->assertSame(2, EmailPreferencesWriter::nextAccountNumber([1 => $complete, 3 => $complete]));
 		$this->assertSame(2, EmailPreferencesWriter::nextAccountNumber([1 => $complete, 2 => ['fullname' => 'Incomplete']]));
 		$this->assertSame(3, EmailPreferencesWriter::nextAccountNumber([1 => $complete, 2 => $complete]));
+		$this->assertSame(3, EmailPreferencesWriter::nextAccountNumber([2 => $complete, 1 => $complete]));
+		$this->assertSame(2, EmailPreferencesWriter::nextAccountNumber([
+			['acctnum' => 3, 'status' => 'disabled'],
+			['acctnum' => 1, 'status' => 'enabled'],
+			['acctnum' => 2, 'status' => 'empty'],
+		]));
 	}
 
 	public function testWritesExtraAccountValuesToNestedPreferencePaths(): void
@@ -68,6 +77,8 @@ class EmailPreferencesWriterTest extends TestCase
 		};
 		$mail = new class
 		{
+			public array $invalidated = [];
+			public function invalidatePreferenceCache(int $account): void { $this->invalidated[] = $account; }
 			public function html_quotes_encode($value): string { return 'encoded:' . $value; }
 			public function encrypt_email_passwd($value): string { return 'encrypted:' . $value; }
 		};
@@ -91,5 +102,56 @@ class EmailPreferencesWriterTest extends TestCase
 		$this->assertContains(['add', 'email', '["ex_accounts"][2]["mail_server"]', 'encoded:imap.example.test'], $preferences->writes);
 		$this->assertContains(['sort', 'email', '["ex_accounts"]'], $preferences->writes);
 		$this->assertSame(['save'], end($preferences->writes));
+		$this->assertSame([2], $mail->invalidated);
+	}
+
+	/**
+	 * @dataProvider legacySaveModes
+	 */
+	public function testLegacySavePreservesEncodingAndDebugMode(?int $account, bool $save): void
+	{
+		$preferences = new class
+		{
+			public array $writes = [];
+			public function delete($app, $id): void { $this->writes[] = ['delete', $id]; }
+			public function add($app, $id, $value): void { $this->writes[] = ['add', $id, $value]; }
+			public function delete_struct($app, $path): void { $this->writes[] = ['delete', $path]; }
+			public function add_struct($app, $path, $value): void { $this->writes[] = ['add', $path, $value]; }
+			public function sort_struct($app, $path): void { $this->writes[] = ['sort', $path]; }
+			public function save_repository(): void { $this->writes[] = ['save']; }
+		};
+		$mail = new class
+		{
+			public array $invalidated = [];
+			public function invalidatePreferenceCache(int $account): void { $this->invalidated[] = $account; }
+			public function stripslashes_gpc($value): string { return 'stripped:' . $value; }
+			public function html_quotes_encode($value): string { return 'encoded:' . $value; }
+			public function encrypt_email_passwd($value): string { return 'encrypted:' . $value; }
+		};
+		$scope = $account === null ? 'default' : 'extra_accounts';
+		$standard = [['id' => 'enabled', 'widget' => 'checkbox', 'type' => 'exists', 'accts_usage' => $scope]];
+		$custom = [['id' => 'passwd', 'widget' => 'passwordbox', 'type' => 'user_string',
+			'accts_usage' => $scope, 'write_props' => 'encrypted,empty_no_delete']];
+		$values = ['enabled' => 'on', 'use_custom_settings' => 'on', 'passwd' => 'secret'];
+		$writer = new EmailPreferencesWriter();
+		if ($account === null)
+		{
+			$writer->saveDefault($standard, $custom, $values, $preferences, $mail, true, $save);
+		}
+		else
+		{
+			$writer->saveExtraAccount($account, $standard, $custom, $values, $preferences, $mail, true, $save);
+		}
+		$path = $account === null ? '' : '["ex_accounts"][' . $account . ']';
+		$this->assertContains(['add', $account === null ? 'enabled' : $path . '["enabled"]', 'on'], $preferences->writes);
+		$this->assertContains(['add', $account === null ? 'passwd' : $path . '["passwd"]',
+			($account === null ? 'encoded:' : '') . 'encrypted:stripped:secret'], $preferences->writes);
+		$this->assertSame($save ? 1 : 0, count(array_filter($preferences->writes, static fn($write) => $write === ['save'])));
+		$this->assertSame($save ? [$account ?? 0] : [], $mail->invalidated);
+	}
+
+	public static function legacySaveModes(): array
+	{
+		return [[null, true], [null, false], [2, true], [2, false]];
 	}
 }

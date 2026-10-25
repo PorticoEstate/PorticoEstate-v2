@@ -6,6 +6,8 @@ This document began as a proposed plan. The execution record below supersedes th
 
 ## Execution Update
 
+- Removed the unreferenced `class.mail_dcom_imap_sock.inc.php`, `class.mail_dcom_nntp.inc.php`, and `class.mail_dcom_nntp_sock.inc.php` implementations after checking repository loaders and callers. The active factory selects only IMAP/IMAPS and POP3/POP3S; the shared socket base remains required by POP3. Updated obsolete troubleshooting guidance. Residual news-mode compatibility branches and port defaults were not removed; external direct includes cannot be verified. Transport selection and POP3 dot-unstuffing are now complete in automated checks; live-server/TLS validation remains pending.
+
 - POP3 multiline paths now remove exactly one transport-added leading dot after checking the terminator. RETR headers/bodies, TOP headers, and sorting reads opt in; shared reader defaults remain unchanged. Cached content is already unstuffed and is not decoded again. Byte-exact regression tests cover leading dots, whitespace, blank lines, and repeated reads.
 
 - POP3 socket login now validates the positive greeting, returns connection/authentication failures without rendering HTML or exiting, and retains diagnostics for the mail core. Failed logins close their socket; QUIT always closes locally, including failed/throwing commands, and repeated close is safe. Live POP3/TLS verification and dot-unstuffing remain pending.

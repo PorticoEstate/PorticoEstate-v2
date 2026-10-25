@@ -151,12 +151,16 @@ class mail_dcom_pop3_sock extends mail_dcom_base_sock
 	}
 	/*!
 		@function noop_ping_test
-		@abstract function NOT YET IMPLEMENTED in pop3 sockets
+		@abstract Checks the connection without changing pending deletions
 		*/
 	function noop_ping_test($stream)
 	{
-		// not yet implemented
-		return False;
+		if ($this->msg2socket('NOOP', '^\+ok(?:[ \t\r\n]|$)', $response))
+		{
+			return true;
+		}
+		$this->close_port();
+		return false;
 	}
 	/*!
 		@function server_last_error

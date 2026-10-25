@@ -6,6 +6,8 @@ This document began as a proposed plan. The execution record below supersedes th
 
 ## Execution Update
 
+- Implemented socket POP3 connection checks with NOOP and a token-boundary-validated positive response. Healthy checks leave the session available; rejected, malformed, disconnected, or already-closed connections return false with network diagnostics and close locally without QUIT, avoiding unintended deletion commits. Real loopback tests cover both positive response forms, negative and malformed replies, EOF, post-close checks, and subsequent commands on healthy sessions.
+
 - Fixed modern IMAP message counts: Webklex `Folder::examine()` returns an array, not an object with `exists`. Counts now reuse STATUS/MESSAGES, returning integer zero for empty mailboxes without switching the selected mailbox to read-only via EXAMINE. Missing counts fail explicitly. Unit regressions and the live GreenMail temporary-folder test cover empty and populated mailboxes; this resolves the count issue recorded in the preceding append batch.
 
 - IMAP transport `append()` now returns the backend boolean instead of discarding it. Regressions cover both backend results. An opt-in GreenMail test verifies IMAPS append success, header/body read-back, rejection for a nonexistent mailbox, and cleanup of its uniquely named folder without modifying seeded INBOX messages. During validation, `imap_num_msg()` returned false for the selected test folder; the append test uses SEARCH to verify message count instead. That separate message-count issue remains open.

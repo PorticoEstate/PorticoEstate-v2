@@ -168,6 +168,53 @@ class EmailPop3LoopbackTest extends TestCase
 		return [['USER test-user', "+OK user\r\n"], ['PASS test-password', "+OK authenticated\r\n"]];
 	}
 
+	/**
+	 * @dataProvider noopResponses
+	 */
+	public function testNoopChecksConnectionWithoutCommittingDeletions(string $response, bool $healthy): void
+	{
+		$steps = array_merge($this->loginSteps(), [
+			['DELE 1', "+OK marked\r\n"],
+			['NOOP', $response],
+		]);
+		if ($healthy)
+		{
+			$steps[] = ['STAT', "+OK 1 100\r\n"];
+			$steps[] = ['QUIT', "+OK committed\r\n"];
+		}
+		$folder = $this->startServer($steps, !$healthy && $response !== '');
+		$this->expectOutputString('');
+		$stream = $this->mail->open($folder, 'test-user', 'test-password');
+		$this->assertIsResource($stream);
+		$this->assertTrue($this->mail->delete($stream, '1'));
+		$this->assertSame($healthy, $this->mail->noop_ping_test($stream));
+		if ($healthy)
+		{
+			$this->assertIsResource($this->mail->socket);
+			$this->assertSame('1', $this->mail->num_msg($stream));
+		}
+		else
+		{
+			$this->assertNull($this->mail->socket);
+			$this->assertNotSame('', $this->mail->server_last_error());
+		}
+		$this->assertTrue($this->mail->close());
+		$this->assertFalse($this->mail->noop_ping_test($stream));
+		$this->assertNotSame('', $this->mail->server_last_error());
+		$this->assertServerCompleted();
+	}
+
+	public static function noopResponses(): array
+	{
+		return [
+			'positive' => ["+OK alive\r\n", true],
+			'bare positive' => ["+OK\r\n", true],
+			'rejected' => ["-ERR unavailable\r\n", false],
+			'invalid prefix' => ["+OKAY invalid\r\n", false],
+			'disconnected' => ['', false],
+		];
+	}
+
 	public function testLoginSortRetrieveCacheAndDeleteOverTcp(): void
 	{
 		$header = "Subject: Loopback\r\n\tcontinued\r\nFrom: sender@example.test\r\n";

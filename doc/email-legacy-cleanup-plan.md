@@ -6,6 +6,8 @@ This document began as a proposed plan. The execution record below supersedes th
 
 ## Execution Update
 
+- Removed repository-unused socket header-building, MIME-name/encoding, attachment-name, UUdecode, debugging, and folder-change helpers, including the test-only `read_and_load()`/`create_header()` path. Removed their `$header`, `$msg`, and socket folder-change state. Removed the uncalled `phpgw_get_flag()` wrapper and both transport `get_flag()` implementations. Active POP3 parsing, sorting callbacks, decoding, and multiline reads remain; tests formerly exercising the obsolete reader now cover the active `read_port_glob()` path. This supersedes the property-declaration fixes below.
+
 - Declared the socket base's `$msg` property used by `mail_header()`, matching adjacent legacy object properties and retaining lazy initialization. A regression verifies the property is declared and initially null.
 
 - Declared the socket base's parsed `$header` array, which `read_and_load()` previously created dynamically. This removes the undefined-property diagnostic and gives fresh instances an empty header collection without changing parsing behavior. A regression covers declaration, initial state, and loading a From header.

@@ -73,39 +73,6 @@ class EmailSocketBaseTest extends TestCase
 		}
 	}
 
-	public function testMessagePropertyIsDeclaredAndInitiallyNull(): void
-	{
-		$property = new \ReflectionProperty(\mail_dcom_base_sock::class, 'msg');
-		$this->assertTrue($property->isDefault());
-
-		$mail = (new \ReflectionClass(\mail_dcom_base_sock::class))->newInstanceWithoutConstructor();
-		$this->assertNull($mail->msg);
-	}
-
-	public function testParsedHeadersAreDeclaredAndLoaded(): void
-	{
-		$property = new \ReflectionProperty(\mail_dcom_base_sock::class, 'header');
-		$this->assertTrue($property->isDefault());
-
-		$mail = $this->getMockBuilder(\mail_dcom_base_sock::class)
-			->disableOriginalConstructor()
-			->onlyMethods(['read_port', 'create_header'])->getMock();
-		$this->assertSame([], $mail->header);
-		$mail->method('read_port')->willReturnOnConsecutiveCalls(
-			"From: sender@example.test\r\n",
-			".\r\n"
-		);
-		$mail->expects($this->once())->method('create_header')
-			->with("From: sender@example.test\r\n", [], 'True')
-			->willReturnCallback(static function ($line, &$headers)
-			{
-				$headers['From'] = 'sender@example.test';
-			});
-
-		$this->assertSame(1, $mail->read_and_load('.'));
-		$this->assertSame(['From' => 'sender@example.test'], $mail->header);
-	}
-
 	/**
 	 * @dataProvider encodedHeaders
 	 */
@@ -179,49 +146,39 @@ class EmailSocketBaseTest extends TestCase
 	/**
 	 * @dataProvider interruptedReaders
 	 */
-	public function testInterruptedResponseThrowsAndDiscardsPartialHeaders(string $method, bool $existingError): void
+	public function testInterruptedResponseThrowsWithoutReturningPartialData(bool $existingError): void
 	{
 		$mail = $this->getMockBuilder(\mail_dcom_base_sock::class)->disableOriginalConstructor()
-			->onlyMethods(['read_port', 'create_header'])->getMock();
+			->onlyMethods(['read_port'])->getMock();
 		$mail->method('read_port')->willReturnOnConsecutiveCalls("Subject: partial\r\n", false);
-		$mail->method('create_header')->willReturnCallback(static function ($line, &$headers)
-		{
-			$headers['Subject'] = 'partial';
-		});
 		if ($existingError)
 		{
 			$mail->set_error('Error', 'Read Timeout', 'Timed out while reading from server.');
 		}
 		try
 		{
-			$mail->$method('.');
+			$mail->read_port_glob('.');
 			$this->fail('Incomplete response must not be returned as successful data.');
 		}
 		catch (\RuntimeException $exception)
 		{
 			$this->assertSame('Mail server response ended before its terminator.', $exception->getMessage());
 			$this->assertSame($existingError ? 'Read Timeout' : 'Incomplete Response', $mail->error['msg']);
-			if ($method === 'read_and_load')
-			{
-				$this->assertSame([], $mail->header);
-			}
 		}
 	}
 
 	public static function interruptedReaders(): array
 	{
-		return [['read_port_glob', false], ['read_port_glob', true], ['read_and_load', false], ['read_and_load', true]];
+		return [[false], [true]];
 	}
 
-	public function testHeaderLoadingStopsAtTerminatorWithoutConsumingNextResponse(): void
+	public function testMultilineReaderStopsAtTerminatorWithoutConsumingNextResponse(): void
 	{
 		$mail = $this->getMockBuilder(\mail_dcom_base_sock::class)->disableOriginalConstructor()
-			->onlyMethods(['read_port', 'create_header'])->getMock();
+			->onlyMethods(['read_port'])->getMock();
 		$mail->expects($this->exactly(2))->method('read_port')
 			->willReturnOnConsecutiveCalls("Subject: complete\r\n", ".\r\n");
-		$mail->expects($this->once())->method('create_header')
-			->with("Subject: complete\r\n", [], 'True');
-		$this->assertSame(1, $mail->read_and_load('.'));
+		$this->assertSame("Subject: complete\r\n", $mail->read_port_glob('.'));
 	}
 
 	/**
@@ -474,15 +431,13 @@ class EmailSocketBaseTest extends TestCase
 		$this->assertSame(".Header: value\r\n", $mail->get_header_raw('', 42));
 	}
 
-	public function testSortingHeaderReaderUnstuffsBeforeParsing(): void
+	public function testMultilineReaderUnstuffsDotsWhenRequested(): void
 	{
 		$mail = $this->getMockBuilder(\mail_dcom_base_sock::class)->disableOriginalConstructor()
-			->onlyMethods(['read_port', 'create_header'])->getMock();
+			->onlyMethods(['read_port'])->getMock();
 		$mail->expects($this->exactly(2))->method('read_port')
 			->willReturnOnConsecutiveCalls("..Header: value\r\n", ".\r\n");
-		$mail->expects($this->once())->method('create_header')
-			->with(".Header: value\r\n", [], 'True');
-		$this->assertSame(1, $mail->read_and_load('.', true));
+		$this->assertSame(".Header: value\r\n", $mail->read_port_glob('.', true));
 	}
 
 	public function testPop3RejectedSortingCommandDoesNotReadMultilineDataOrSendQuit(): void

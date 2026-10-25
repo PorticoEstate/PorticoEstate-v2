@@ -305,28 +305,4 @@ class mail_dcom_base
 		}
 	}
 
-	/*!
-		@function get_flag
-		@abstract ?
-		*/
-	function get_flag($stream, $msg_num, $flag)
-	{
-		// ralfbecker patch dated 021124
-		$header = explode("\n", $this->fetchheader($stream, $msg_num));
-		$flag = strtolower($flag);
-		for ($i = 0; $i < count($header); $i++)
-		{
-			$pos = strpos($header[$i], ":");
-			if (is_int($pos) && $pos)
-			{
-				$keyword = trim(substr($header[$i], 0, $pos));
-				$content = trim(substr($header[$i], $pos + 1));
-				if (strtolower($keyword) == $flag)
-				{
-					return $content;
-				}
-			}
-		}
-		return false;
-	}
 } // end of class mail_dcom

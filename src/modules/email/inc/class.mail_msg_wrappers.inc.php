@@ -481,26 +481,7 @@ class mail_msg_wrappers extends mail_msg_base
 	}
 
 	/*!
-		@function phpgw_get_flag
-		@abstract ?
-		*/
-	function phpgw_get_flag($flag = '', $display_error = true)
-	{
-		// sanity check
-		if ($flag == '')
-		{
-			return '';
-		}
-		else
-		{
-			$msgball = $this->get_arg_value('msgball');
-			$this->ensure_stream_and_folder($msgball, 'phpgw_get_flag' . ' LINE ' . __LINE__, $display_error);
-			return $this->getTransport($this->acctnum)->get_flag($this->get_arg_value('mailsvr_stream'), $this->get_arg_value('["msgball"]["msgnum"]'), $flag);
-		}
-	}
-
-	/*!
-		@function phpgw_get_flag
+		@function phpgw_set_flag
 		@abstract ?
 		*/
 	function phpgw_set_flag($msgball, $flag, $display_error = true)

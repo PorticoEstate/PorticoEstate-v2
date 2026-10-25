@@ -82,4 +82,76 @@ class EmailMessageActionsTest extends TestCase
 		$this->assertContains(['phpgw_header', 0, 'Source'], $mail->expired);
 		$this->assertContains(['folder_status_info', 0, 'Target'], $mail->expired);
 	}
+
+	public function testDeleteMovesMessageToConfiguredTrashFolder(): void
+	{
+		$mail = new class
+		{
+			public array $extra_and_default_acounts = [['acctnum' => 0, 'status' => 'enabled']];
+			public object $transport;
+			public function __construct()
+			{
+				$this->transport = new class
+				{
+					public bool $force_msg_uids = true;
+					public array $moved = [];
+					public function mail_move($stream, $number, $folder): bool
+					{
+						$this->moved[] = [$number, $folder];
+						return true;
+					}
+					public function expunge($stream): bool { return true; }
+				};
+			}
+			public function get_folder_list($account, $refresh): array
+			{
+				return [['folder_long' => 'INBOX'], ['folder_long' => 'Trash']];
+			}
+			public function get_arg_value($key, $account): string
+			{
+				if ($key === 'verified_trash_folder_long') return 'Trash';
+				return $key === 'mailsvr_stream' ? 'imap_test' : '';
+			}
+			public function prep_folder_out($folder): string { return $folder; }
+			public function phpgw_header($message, $errors) { return (object) []; }
+			public function ensure_stream_and_folder($message, $operation, $errors): bool { return true; }
+			public function getTransport($account): object { return $this->transport; }
+			public function expire_session_cache_item($key, $account, $folder = ''): void {}
+		};
+		$request = EmailMessageActions::normalize([
+			'action' => 'delete',
+			'account' => 0,
+			'confirmed' => true,
+			'messages' => [['acctnum' => 0, 'folder' => 'INBOX', 'msgnum' => 5]],
+		]);
+
+		$result = (new EmailMessageActions())->execute($mail, $request);
+
+		$this->assertSame([['5', 'Trash']], $mail->transport->moved);
+		$this->assertCount(1, $result['completed']);
+		$this->assertSame([], $result['failed']);
+	}
+
+	public function testDeleteDoesNotPermanentlyDeleteWhenEnabledTrashCannotBeResolved(): void
+	{
+		$mail = new class
+		{
+			public array $extra_and_default_acounts = [['acctnum' => 0, 'status' => 'enabled']];
+			public function get_folder_list($account, $refresh): array { return [['folder_long' => 'INBOX']]; }
+			public function get_arg_value($key, $account): string
+			{
+				throw new \App\modules\email\services\EmailMailConfigurationException('Mailbox creation is not permitted');
+			}
+		};
+		$request = EmailMessageActions::normalize([
+			'action' => 'delete',
+			'account' => 0,
+			'confirmed' => true,
+			'messages' => [['acctnum' => 0, 'folder' => 'INBOX', 'msgnum' => 5]],
+		]);
+
+		$this->expectException(\App\modules\email\services\EmailMailConfigurationException::class);
+		$this->expectExceptionMessage('Mailbox creation is not permitted');
+		(new EmailMessageActions())->execute($mail, $request);
+	}
 }

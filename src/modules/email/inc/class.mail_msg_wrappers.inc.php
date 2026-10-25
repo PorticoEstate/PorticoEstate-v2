@@ -38,6 +38,15 @@ class mail_msg_wrappers extends mail_msg_base
 	private array $transports = [];
 	private ?object $commonService = null;
 	private ?array $sessionCache = null;
+	private ?\App\modules\email\services\EmailPreferenceDefaults $preferenceDefaults = null;
+
+	public function resolvePreferenceDefaults(array $values, int $account): array
+	{
+		$this->preferenceDefaults ??= new \App\modules\email\services\EmailPreferenceDefaults();
+		return $this->preferenceDefaults->resolve(
+			$values, $account, (array) $this->userSettings, (array) $this->serverSettings
+		);
+	}
 
 	public function &getSessionCache(): array
 	{
@@ -2541,7 +2550,8 @@ Array
 		@function get_verified_trash_folder_long
 		@abstract SPECIAL HANDLER for use by "get_arg_value" for "verified_trash_folder_long"
 		@param (int) the account number OPTIONAL if not supplied current acctnum is used
-		@result (string) folder long name of trash folder, or empty string on failure
+		@result (string) folder long name of trash folder, or empty string when Trash is disabled or unsupported
+		@throws \App\modules\email\services\EmailMailConfigurationException if enabled Trash cannot be resolved
 		@discussion First there is a pref called "trash_folder_name" that needs some processing 
 		because .1. the name is stored in user friendly form, is not known to be authentic server 
 		string folder long style, and .2. if the folder does not yet exist we must make it. This function 
@@ -2582,76 +2592,43 @@ Array
 		}
 
 		// are we even supposed to use a trash folder
-		if ((!$this->get_isset_pref('use_trash_folder', $acctnum))
-			|| (!$this->get_pref_value('use_trash_folder', $acctnum))
-		)
+		if (!filter_var($this->get_pref_value('use_trash_folder', $acctnum), FILTER_VALIDATE_BOOLEAN))
 		{
 			// exit, trash folder pref is NOT TO USE ONE, so we certainly do not have a "verified" name in this case
 			$this->set_arg_value('verified_trash_folder_long', '', $acctnum);
 			return '';
 		}
 		$trash_folder_name = trim((string) $this->get_pref_value('trash_folder_name', $acctnum));
-		if ($trash_folder_name === '')
-		{
-			$this->set_arg_value('verified_trash_folder_long', '', $acctnum);
-			return '';
-		}
 
-		// does the trash folder actually exist ?
-		$verified_trash_folder_long = $this->folder_lookup('', $trash_folder_name);
-		if ((isset($verified_trash_folder_long))
-			&& ($verified_trash_folder_long != '')
-		)
+		$verified_trash_folder_long = $this->folder_lookup('', $trash_folder_name, $acctnum);
+		if ($verified_trash_folder_long === '')
 		{
-			$havefolder = True;
-		}
-		else
-		{
-			$havefolder = False;
-		}
-
-
-		if (!$havefolder)
-		{
-			// create the Trash folder so it will exist (Netscape does this too)
-			//$mailsvr_callstr = $this->get_arg_value('mailsvr_callstr', $acctnum);
 			$namespace = $this->get_arg_value('mailsvr_namespace', $acctnum);
 			$delimiter = $this->get_arg_value('mailsvr_delimiter', $acctnum);
 			$make_this_folder_clean = $namespace . $delimiter . $trash_folder_name;
-			$make_this_folder_encoded = $this->prep_folder_out($make_this_folder_clean);
-			//$this->createmailbox($mailsvr_stream,$server_str .$trash_folder_long);	
-			//$this->phpgw_createmailbox("$server_str"."$trash_folder_long");
-			$fake_fldball = array();
-			$fake_fldball['folder'] = $make_this_folder_encoded;
-			$fake_fldball['acctnum'] = $acctnum;
-			//$did_create = $this->phpgw_createmailbox($fake_fldball);
-			$did_create = $this->phpgw_createmailbox_ex($fake_fldball);
-			if (!$did_create)
-			{
-				echo 'mail_msg(_wrappers)(' . __LINE__ . '): get_verified_trash_folder_long: UNABLE TO CREATE [' . htmlspecialchars(serialize($fake_fldball)) . ']';
-			}
+			$did_create = $this->phpgw_createmailbox_ex([
+				'folder' => $this->prep_folder_out($make_this_folder_clean),
+				'acctnum' => $acctnum,
+			], $display_error);
+			$creation_error = $did_create ? '' : trim((string) $this->getTransport($acctnum)->server_last_error());
 
-			// try again to get the real long folder name of the just created trash folder
-			$verified_trash_folder_long = $this->folder_lookup('', $trash_folder_name);
-			// did the folder get created and do we now have the official full name of that folder?
-			if ($verified_trash_folder_long != '')
+			$this->get_folder_list($acctnum, true);
+			$verified_trash_folder_long = $this->folder_lookup('', $trash_folder_name, $acctnum);
+			if ($verified_trash_folder_long === '')
 			{
-				$havefolder = True;
+				$message = 'Unable to resolve Trash folder "' . $make_this_folder_clean . '" for account ' . $acctnum . '. ';
+				$message .= $did_create
+					? 'The server accepted mailbox creation, but the folder is missing from its refreshed folder list.'
+					: 'The server did not create the mailbox.';
+				if ($creation_error !== '')
+				{
+					$message .= ' ' . $creation_error;
+				}
+				throw new \App\modules\email\services\EmailMailConfigurationException($message);
 			}
 		}
 
-		if ($havefolder == False)
-		{
-			// FAILED to find or make trash folder, return empty string
-			$verified_trash_folder_long = '';
-		}
-		else
-		{
-			// SUCCESS, put the result in L1 (page view only) cache
-			// cache the result in "level one cache" class var holder
-			$this->set_arg_value('verified_trash_folder_long', $verified_trash_folder_long, $acctnum);
-			// LATER put it in appsession cache BUT make code to delete it from cache when submitting new prefs
-		}
+		$this->set_arg_value('verified_trash_folder_long', $verified_trash_folder_long, $acctnum);
 		return $verified_trash_folder_long;
 	}
 
@@ -4515,7 +4492,7 @@ Array
 		@abstract OOP access of pref items for any given email account. 
 		@param $pref_name (string) id if the desired pref item 
 		@param $acctnum (int) OPTIONAL acctnum this applies to, "current acctnum" will be supplied if this arg is not given. 
-		@result value of the desired pref IF it exists, if no you are returned nothing (null). 
+		@result effective preference value including schema defaults, or null if absent.
 		@discussion ?
 		@access public
 		@author Angles
@@ -4528,6 +4505,10 @@ Array
 		{
 			$acctnum = $this->get_acctnum();
 		}
+
+		$this->a[$acctnum]['prefs'] = $this->resolvePreferenceDefaults(
+			(array) ($this->a[$acctnum]['prefs'] ?? []), (int) $acctnum
+		);
 
 		if ((isset($pref_name))
 			&& ((string)$pref_name != '')
@@ -4597,20 +4578,7 @@ Array
 		*/
 	function get_isset_pref($pref_name = '', $acctnum = '', $display_error = true)
 	{
-		if (!$acctnum)
-		{
-			$acctnum = $this->get_acctnum();
-		}
-		// error check
-		if (
-			isset($pref_name) && $pref_name
-			&& isset($this->a[$acctnum]['prefs'][$pref_name])
-		)
-		{
-			return true;
-		}
-		// arg not set, or invalid input $arg_name
-		return false;
+		return $this->get_pref_value($pref_name, $acctnum, $display_error) !== null;
 	}
 
 	/*!
@@ -4671,6 +4639,7 @@ Array
 
 		if (isset($this->a[$acctnum]['prefs']))
 		{
+			$this->a[$acctnum]['prefs'] = $this->resolvePreferenceDefaults($this->a[$acctnum]['prefs'], (int) $acctnum);
 			return $this->a[$acctnum]['prefs'];
 		}
 		else
@@ -4712,7 +4681,7 @@ Array
 			&& (count($pref_array_data) > 0)
 		)
 		{
-			$this->a[$acctnum]['prefs'] = $pref_array_data;
+			$this->a[$acctnum]['prefs'] = $this->resolvePreferenceDefaults($pref_array_data, (int) $acctnum);
 			// return True to indicate we filled, not just cleared
 			return True;
 		}
@@ -4945,7 +4914,9 @@ Array
 			$this->_get_arg_is_known($arg_name, 'get_arg_value');
 		}
 
-		if (!$acctnum)
+		if ((!isset($acctnum))
+			|| ((string)$acctnum == '')
+		)
 		{
 			$acctnum = $this->get_acctnum();
 		}

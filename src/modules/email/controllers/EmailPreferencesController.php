@@ -17,6 +17,9 @@ class EmailPreferencesController
 			$schema = (new \App\modules\email\services\EmailPreferenceSchema())->fields();
 			$userSettings = Settings::getInstance()->get('user');
 			$emailPreferences = (array) ($userSettings['preferences']['email'] ?? []);
+			$emailPreferences = (new \App\modules\email\services\EmailPreferenceDefaults($schema))->resolve(
+				$emailPreferences, 0, (array) $userSettings, (array) Settings::getInstance()->get('server')
+			);
 			$fields = [];
 			$groups = [
 				'normal' => ['label' => lang('Standard preferences'), 'fields' => $schema['standard']],
@@ -41,7 +44,7 @@ class EmailPreferencesController
 						'widget' => (string) ($field['widget'] ?? 'textbox'),
 						'values' => (array) ($field['values'] ?? []),
 						'value' => is_scalar($value) ? (string) $value : '',
-						'checked' => !empty($value),
+						'checked' => filter_var($value, FILTER_VALIDATE_BOOLEAN),
 						'hidden' => $hidden,
 					];
 				}
@@ -196,7 +199,10 @@ class EmailPreferencesController
 			{
 				return $this->json($response, ['error' => lang('Email account not found')], 404);
 			}
-			$accountPreferences = (array) $userSettings['preferences']['email']['ex_accounts'][$account] ?? [];
+			$accountPreferences = (new \App\modules\email\services\EmailPreferenceDefaults($schema))->resolve(
+				(array) ($storedAccounts[$account] ?? []), $account,
+				(array) $userSettings, (array) Settings::getInstance()->get('server')
+			);
 
 			$fields = [];
 			foreach (array_merge($schema['standard'], $schema['custom']) as $field)
@@ -212,7 +218,7 @@ class EmailPreferencesController
 					'widget' => (string) ($field['widget'] ?? 'textbox'),
 					'values' => (array) ($field['values'] ?? []),
 					'value' => is_scalar($value) ? (string) $value : '',
-					'checked' => !empty($value),
+					'checked' => filter_var($value, FILTER_VALIDATE_BOOLEAN),
 					'hidden' => $hidden,
 				];
 			}

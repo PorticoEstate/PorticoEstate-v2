@@ -490,11 +490,9 @@ class mail_dcom_base extends phpgwapi_network
 
 	function __construct()
 	{
-		$this->serverSettings = \App\modules\phpgwapi\services\Settings::getInstance()->get('server');
+		parent::__construct(true);
 		$this->userSettings = \App\modules\phpgwapi\services\Settings::getInstance()->get('user');
 		$this->phpgwapi_common = new \phpgwapi_common();
-		$this->errorset = 0;
-		$this->network(True);
 
 		$this->tempfile = "{$this->serverSettings['temp_dir']}/" . $this->phpgwapi_common->randomstring() . '.mhd';
 		$this->att_files_dir = "{$this->serverSettings['temp_dir']}/{$this->userSettings['sessionid']}";
@@ -634,6 +632,7 @@ class mail_dcom_base extends phpgwapi_network
 		@abstract used with POP3, reads data from port until we encounted param $end
 		@param $end (string) is the flag to look for that tells us when to stop reading the port's data
 		@result raw string of data (glob) as received from the server
+		@throws \RuntimeException if the response ends before its terminator.
 		@discussion POP3 servers data typically ends with special charactor(s),
 		usually an empty line, i.e. a lone CRLF pair, or line that is a period "." followed br a CRLF pair
 		thus we can direct this function to read the server's data until such special end flag is reached
@@ -645,14 +644,22 @@ class mail_dcom_base extends phpgwapi_network
 		$glob_response = '';
 		while ($line = $this->read_port())
 		{
-			//echo $line."<br />\r\n";
-			if (chop($line) == $end)
+			if (rtrim($line, "\r\n") === $end)
 			{
-				break;
+				return $glob_response;
 			}
 			$glob_response .= $line;
 		}
-		return $glob_response;
+		$this->incomplete_response();
+	}
+
+	private function incomplete_response()
+	{
+		if (!$this->errorset)
+		{
+			$this->set_error('Error', 'Incomplete Response', 'Server response ended before its terminator.');
+		}
+		throw new \RuntimeException('Mail server response ended before its terminator.');
 	}
 
 	/*!
@@ -1095,98 +1102,62 @@ class mail_dcom_base extends phpgwapi_network
 		$this->header = array();
 		while ($line = $this->read_port())
 		{
-			//echo $line."<br />\n";
-			if (chop($line) == $end) break;
+			if (rtrim($line, "\r\n") === $end)
+			{
+				return 1;
+			}
 			$this->create_header($line, $this->header, "True");
 		}
-		return 1;
+		$this->header = array();
+		$this->incomplete_response();
 	}
 
-	/*!
-		@function phpGW_quoted_printable_decode
-		@abstract NOT USED
-		@author unknown, maybe Skeeter ? Rehberg ? Engo ?
-		@param $string string
-		@discussion Not currently used. Unknown why this additional processing was required.
-		Author noted this - PHP "quoted_printable_decode" function does not work properly, 
-		it should convert "_" characters into " ".
-		*/
+	/**
+	 * Decodes Q-encoded header text, where underscores represent spaces.
+	 */
 	function phpGW_quoted_printable_decode($string)
 	{
 		$string = str_replace('_', ' ', $string);
 		return quoted_printable_decode($string);
 	}
 
-	/*!
-		@function phpGW_quoted_printable_decode2
-		@abstract NOT USED Remove "=" at the end of the lines. "quoted_printable_decode" doesn't do it.
-		@author unknown, maybe Skeeter ? Rehberg ? Engo ?
-		@param $string (string)
-		@discussion Not currently used. Unknown why this additional processing was required.
-		*/
+	/**
+	 * Retains legacy soft-line-break removal for socket header callers.
+	 */
 	function phpGW_quoted_printable_decode2($string)
 	{
 		$string = $this->phpGW_quoted_printable_decode($string);
 		return preg_replace("/\=\n/", '', $string);
 	}
 
-	/*!
-		@function decode_base64
-		@abstract NOT USED base64 decoding with additional string manipulations.
-		@author unknown, maybe Skeeter ? Rehberg ? Engo ?
-		@param $string (string)
-		@discussion Not currently used. Unknown why this additional processing was required. 
-		Uses ereg_replace and preg_replace in addition to php function base64_decode. 
-		It is possible the preg_replace is used to pull only the base64 encoded text from a larger 
-		message.
-		*/
+	/**
+	 * Decodes B-encoded words without changing surrounding header text.
+	 */
 	function decode_base64($string)
 	{
-		$string = str_replace("'", "\'", $string);
-		//			$string = preg_replace("/\=\?(.*?)\?b\?(.*?)\?\=/ieU",base64_decode("\\2"),$string);
-
-		// Not tested..
-		$string = preg_replace_callback(
-			"/\=\?(.*?)\?b\?(.*?)\?\=/iU",
-			function ($matches)
+		return preg_replace_callback(
+			"/\=\?(.*?)\?b\?(.*?)\?\=/i",
+			static function ($matches)
 			{
-				foreach ($matches as $match)
-				{
-					return base64_decode($match);
-				}
+				return base64_decode($matches[2]);
 			},
-			$str
+			$string
 		);
-
-		return $string;
 	}
 
-	/*!
-		@function decode_qp
-		@abstract NOT USED
-		@author unknown, maybe Skeeter ? Rehberg ? Engo ?
-		@param $string (string)
-		@discussion Calls other unused functions in this file. 
-		*/
+	/**
+	 * Decodes Q-encoded words without changing surrounding header text.
+	 */
 	function decode_qp($string)
 	{
-		$string = str_replace("'", "\'", $string);
-		//			$string = preg_replace("/\=\?(.*?)\?q\?(.*?)\?\=/ieU",$this->phpGW_quoted_printable_decode2("\\2"),$string);
-
-		// Not tested..
-		$string = preg_replace_callback(
-			"/\=\?(.*?)\?q\?(.*?)\?\=/iU",
+		return preg_replace_callback(
+			"/\=\?(.*?)\?q\?(.*?)\?\=/i",
 			function ($matches)
 			{
-				foreach ($matches as $match)
-				{
-					return $this->phpGW_quoted_printable_decode2($match);
-				}
+				return $this->phpGW_quoted_printable_decode2($matches[2]);
 			},
-			$str
+			$string
 		);
-
-		return $string;
 	}
 
 	/*!
@@ -1194,7 +1165,7 @@ class mail_dcom_base extends phpgwapi_network
 		@abstract ?
 		@author unknown, maybe Skeeter ? Rehberg ? Engo ?
 		@param $string (string)
-		@discussion Calls other unused functions in this file. 
+		@discussion Decodes encoded words for the socket address parser.
 		*/
 	function decode_header($string)
 	{
@@ -1214,7 +1185,7 @@ class mail_dcom_base extends phpgwapi_network
 		@function decode_author
 		@abstract ?
 		@author unknown, maybe Skeeter ? Rehberg ? Engo ?
-		@discussion Calls other plossibly unused functions in this file. 
+		@discussion Extracts an address and display name from a decoded socket header.
 		*/
 	function decode_author($author, &$email, &$name)
 	{
@@ -1249,8 +1220,8 @@ class mail_dcom_base extends phpgwapi_network
 		{
 			$name = $email;
 		}
-		$name = preg_replace("/^\"(.*)\"$", "\\1/i", $name);
-		$name = preg_replace("/^\((.*)\)$", "\\1/i", $name);
+		$name = preg_replace('/^"(.*)"$/', '$1', $name);
+		$name = preg_replace('/^\((.*)\)$/', '$1', $name);
 	}
 
 	// OBSOLETED ?

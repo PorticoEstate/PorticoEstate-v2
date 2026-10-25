@@ -6,6 +6,10 @@ This document began as a proposed plan. The execution record below supersedes th
 
 ## Execution Update
 
+- Socket multiline readers now require an exact terminator (ignoring CRLF only) before reporting success. Interrupted responses throw rather than being cached or parsed as complete data; partial parsed headers are cleared and existing network diagnostics retained. POP3 dot-unstuffing and transport selection remain separate work.
+
+- Repaired retained socket-base initialization to call the current network parent constructor. Fixed encoded-header callbacks to decode individual payloads from the supplied string without adding apostrophe escapes, and repaired malformed display-name cleanup expressions; retained legacy byte/charset behavior and header-dispatch policy. Constructor, encoded-word, and address-parser regressions are covered without live connections. Transport selection and POP3 cache work remain pending.
+
 - Transport scope confirmed: retain IMAP/IMAPS/OAuth and POP3/POP3S; NNTP modernization is out of scope. First shared-network batch reads complete lines, detects read timeout/EOF, finishes partial writes, safely closes sockets repeatedly, and corrects response-code parsing. Binary byte-count and CRLF behavior are retained. Transport selection, retained socket repairs, and POP3 cache optimization remain follow-up work.
 
 - Simplified bootstrap login-policy assignments and removed a temporary variable. Documented and tested the legacy boolean/integer return distinction, unsupported-input fallback, and direct public login setting before request initialization; no login-policy changes were introduced.

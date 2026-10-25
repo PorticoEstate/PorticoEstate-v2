@@ -911,7 +911,14 @@ class ModernIMAPWrapper
         
         try {
             $folder = self::$connections[$stream]['folder'];
-            return $folder->examine()->exists;
+            $status = self::imap_status($stream, $folder->path, 1);
+            if ($status === false) {
+                return false;
+            }
+            if (!isset($status->messages)) {
+                throw new RuntimeException('IMAP STATUS response did not include a message count.');
+            }
+            return $status->messages;
             
         } catch (Exception $e) {
             self::$lastError = $e->getMessage();

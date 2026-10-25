@@ -88,6 +88,95 @@ namespace Tests\Services
 				? 'mail_dcom_pop3' : 'mail_dcom_pop3_sock', get_class($transport));
 		}
 
+		/**
+		 * @dataProvider appendResults
+		 */
+		public function testImapAppendReturnsBackendResult(bool $succeeds): void
+		{
+			$transport = \email_ofemail::createObject('email.mail_dcom', 'imap');
+			$property = new \ReflectionProperty(\ModernIMAPWrapper::class, 'connections');
+			$property->setAccessible(true);
+			$original = $property->getValue();
+			$response = $this->getMockBuilder(\stdClass::class)->addMethods(['validatedData'])->getMock();
+			if ($succeeds)
+			{
+				$response->expects($this->once())->method('validatedData')->willReturn([]);
+			}
+			else
+			{
+				$response->expects($this->once())->method('validatedData')
+					->willThrowException(new \RuntimeException('APPEND rejected'));
+			}
+			$protocol = $this->getMockBuilder(\stdClass::class)->addMethods(['appendMessage'])->getMock();
+			$protocol->expects($this->once())->method('appendMessage')
+				->with('Sent', "Subject: Test\r\n\r\nBody\r\n", ['\\Seen'])->willReturn($response);
+			$client = $this->getMockBuilder(\stdClass::class)->addMethods(['getConnection'])->getMock();
+			$client->method('getConnection')->willReturn($protocol);
+			$property->setValue(null, ['append-test' => ['client' => $client]]);
+			try
+			{
+				$this->assertSame($succeeds, $transport->append(
+					'append-test', '{test:993/imap/ssl}Sent', "Subject: Test\r\n\r\nBody\r\n", '\\Seen'
+				));
+			}
+			finally
+			{
+				$property->setValue(null, $original);
+			}
+		}
+
+		public static function appendResults(): array
+		{
+			return [[true], [false]];
+		}
+
+		public function testAppendRoundTripAgainstDisposableGreenMailFolder(): void
+		{
+			if (getenv('GREENMAIL_TEST') !== '1')
+			{
+				$this->markTestSkipped('Set GREENMAIL_TEST=1 to use the local GreenMail fixture.');
+			}
+			$transport = \email_ofemail::createObject('email.mail_dcom', 'imap');
+			\IMAPManager::setMode('modern');
+			$prefix = '{127.0.0.1:1993/imap/ssl/novalidate-cert}';
+			$folder = 'append-regression-' . bin2hex(random_bytes(8));
+			$messageId = '<' . $folder . '@example.test>';
+			$message = "From: sender@example.test\r\nTo: outlook-test@outlook.test\r\n"
+				. "Subject: Append regression\r\nMessage-ID: " . $messageId . "\r\n\r\nUnique append body\r\n";
+			$stream = $transport->open($prefix . 'INBOX', 'outlook-test', 'local-test-password');
+			$this->assertNotFalse($stream, (string) $transport->server_last_error());
+			$created = false;
+			try
+			{
+				$this->assertTrue(\IMAPManager::imap_createmailbox($stream, $prefix . $folder));
+				$created = true;
+				$this->assertTrue($transport->reopen($stream, $prefix . $folder));
+				$this->assertSame(0, \IMAPManager::imap_num_msg($stream));
+				$this->assertTrue($transport->append($stream, $prefix . $folder, $message, '\\Seen'));
+				$this->assertTrue($transport->reopen($stream, $prefix . $folder));
+				$this->assertSame(1, \IMAPManager::imap_num_msg($stream));
+				$this->assertSame([1], \IMAPManager::imap_search($stream, 'ALL'));
+				$this->assertStringContainsString($messageId, \IMAPManager::imap_fetchheader($stream, 1));
+				$this->assertStringContainsString('Unique append body', \IMAPManager::imap_body($stream, 1));
+				$this->assertFalse($transport->append($stream, $prefix . $folder . '-missing', $message, '\\Seen'));
+			}
+			finally
+			{
+				try
+				{
+					if ($created)
+					{
+						$this->assertTrue($transport->reopen($stream, $prefix . 'INBOX'));
+						$this->assertTrue(\IMAPManager::imap_deletemailbox($stream, $prefix . $folder));
+					}
+				}
+				finally
+				{
+					$this->assertTrue($transport->close($stream));
+				}
+			}
+		}
+
 		public function testNativeAndSocketPop3ClassesCanCoexistWithImap(): void
 		{
 			$imap = \email_ofemail::createObject('email.mail_dcom', 'imap');

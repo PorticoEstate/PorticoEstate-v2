@@ -11,6 +11,51 @@ use ZBateson\MailMimeParser\MailMimeParser;
 
 class ModernImapMimeTest extends TestCase
 {
+	/**
+	 * @dataProvider messageCounts
+	 */
+	public function testMessageCountUsesStatusWithoutChangingSelectedMailbox(array $data, $expected): void
+	{
+		$property = new \ReflectionProperty(\ModernIMAPWrapper::class, 'connections');
+		$property->setAccessible(true);
+		$original = $property->getValue();
+		$response = new class($data) {
+			private array $data;
+			public function __construct(array $data) { $this->data = $data; }
+			public function validatedData(): array { return $this->data; }
+		};
+		$protocol = $this->getMockBuilder(\stdClass::class)->addMethods(['folderStatus'])->getMock();
+		$protocol->expects($this->once())->method('folderStatus')->with('INBOX.Test', ['MESSAGES'])->willReturn($response);
+		$client = $this->getMockBuilder(\stdClass::class)->addMethods(['getConnection', 'openFolder'])->getMock();
+		$client->method('getConnection')->willReturn($protocol);
+		$client->expects($this->never())->method('openFolder');
+		$property->setValue(null, ['count-test' => [
+			'client' => $client, 'folder' => (object) ['path' => 'INBOX.Test'],
+		]]);
+		try
+		{
+			$this->assertSame($expected, \ModernIMAPWrapper::imap_num_msg('count-test'));
+			if ($expected === false)
+			{
+				$this->assertStringContainsString('message count', \ModernIMAPWrapper::imap_last_error());
+			}
+			$this->assertFalse(\ModernIMAPWrapper::imap_num_msg('unknown-stream'));
+		}
+		finally
+		{
+			$property->setValue(null, $original);
+		}
+	}
+
+	public static function messageCounts(): array
+	{
+		return [
+			'empty' => [['MESSAGES' => 0], 0],
+			'populated' => [['messages' => '3'], 3],
+			'missing count' => [[], false],
+		];
+	}
+
 	private function structure(string $raw): object
 	{
 		$part = (new MailMimeParser())->parse($raw, false);

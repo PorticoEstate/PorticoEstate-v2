@@ -33,7 +33,7 @@ class email_mail_dcom extends mail_dcom_base
 	function append($stream, $folder, $message, $flags = 0)
 	{
 		$folder = $this->utf7_encode($folder);
-		$return = IMAPManager::imap_append($stream, $folder, $message, $flags);
+		return IMAPManager::imap_append($stream, $folder, $message, $flags);
 	}
 
 	function base64($text)

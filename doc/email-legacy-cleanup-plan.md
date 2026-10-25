@@ -6,6 +6,10 @@ This document began as a proposed plan. The execution record below supersedes th
 
 ## Execution Update
 
+- Fixed modern IMAP message counts: Webklex `Folder::examine()` returns an array, not an object with `exists`. Counts now reuse STATUS/MESSAGES, returning integer zero for empty mailboxes without switching the selected mailbox to read-only via EXAMINE. Missing counts fail explicitly. Unit regressions and the live GreenMail temporary-folder test cover empty and populated mailboxes; this resolves the count issue recorded in the preceding append batch.
+
+- IMAP transport `append()` now returns the backend boolean instead of discarding it. Regressions cover both backend results. An opt-in GreenMail test verifies IMAPS append success, header/body read-back, rejection for a nonexistent mailbox, and cleanup of its uniquely named folder without modifying seeded INBOX messages. During validation, `imap_num_msg()` returned false for the selected test folder; the append test uses SEARCH to verify message count instead. That separate message-count issue remains open.
+
 - Added local POP3S/TLS checks: a trusted loopback certificate permits an encrypted login/STAT/QUIT session; an untrusted certificate and a trusted certificate with the wrong hostname reject the connection before authentication. Tests generate short-lived certificates/private keys in owner-only temporary files, set process-local OpenSSL trust, restore the environment, and delete the files. Production verification policy is unchanged; real-server and native-transport interoperability remain unverified.
 
 - Added real loopback TCP tests against a disposable scripted POP3 server. They cover login, STAT, TOP sorting, folded headers, RETR/dot unstuffing and long lines, cache command counts, DELE/QUIT, rejected authentication, failure disconnect without QUIT after DELE, and truncated-response cache rejection. The tests use synthetic credentials and an OS-assigned loopback port; they do not validate real-server deletion persistence, native POP3, IMAP/OAuth, or POP3S/TLS interoperability.

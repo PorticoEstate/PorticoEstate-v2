@@ -8,8 +8,9 @@ This document began as a proposed plan. The execution record below supersedes th
 
 - Removed the obsolete email popup entry points, UI/business-object implementations, spellcheck chain, and unreferenced legacy screen templates.
 - Reduced the retained menuaction classes to Twig navigation bridges and kept `bosend.send()` for confirmed send compatibility.
-- Kept `bopreferences` because shared phpgwapi code still invokes it, and kept generic `html_widgets` folder/form/error helpers used outside the retired screens.
-- Kept `error_report.tpl` and both `widget_toolbar.tpl` files because retained `html_widgets` methods still load them.
+- Kept `bopreferences` as a legacy request/presentation adapter; preference definitions, defaults, persistence, and cache invalidation now use shared services.
+- Removed `inc/class.html_widgets.inc.php` after replacing its home-screen folder form with `EmailHomeSummary` and `html/base/home-summary.twig`, and its remaining connection-error renderer with `html/base/connection-error.twig`. Repository searches found no remaining runtime callers.
+- Retained `error_report.tpl` and both `widget_toolbar.tpl` files pending a separate reference audit; their former `html_widgets` loaders have been removed, but this does not establish that all related assets are unused.
 - Updated attachment rendering to use the REST endpoint. A repository-wide search found no remaining executable references to the deleted class names, popup scripts, or spell services; matches for `class.boaction` are stale comments in shared message code.
 - Focused automated checks passed for outgoing send, MIME parsing, compose serialization/prefill, and message content (21 tests, 108 assertions). PHP lint passed for the retained changed email classes, and `git diff --check` passed. A direct generic combobox render check also passed.
 - The user-validated address-book, attachment, draft, send, print, and redirect workflows predate this cleanup batch; they have not all been repeated after deletion. Repository searches do not establish whether out-of-repository integrations call retired menuactions.
@@ -63,6 +64,7 @@ All paths below are relative to `src/modules/email/` unless otherwise stated.
 | `inc/class.bosend.inc.php` | Keep compatibility path in this cleanup. | Remove only with separate approval and replacement contracts for send/draft/spell submissions. |
 | `inc/class.spell.inc.php`, `class.bocompose.inc.php` | Conditional retention/deletion. | `bosend.spellcheck()` reaches `spell`, which can re-enter legacy compose rendering and popup helpers. Keep the required chain unless deliberately adapted. |
 | `inc/class.boaction.inc.php` | Audit per method, not whole-file deletion. | Download, HTML viewing, and mutation links may have compatibility consumers. |
+| `inc/class.html_widgets.inc.php` | Removed. | Home-screen and connection-error rendering migrated to Twig; no remaining repository runtime references found. |
 | `templates/base/`, `templates/probusiness/`, other legacy template sets | Delete only orphaned template families. | First remove runtime loaders; XSL wrapper/helper usage must be checked separately. |
 | Root PHP scripts such as `compose.php`, `attach_file.php`, `addressbook-js.php`, `addressbook.php`, `view_image.php`, `index.php` | Inspect individually for bridge or retirement treatment. | Do not remove public URLs without a documented redirect or retirement decision. |
 
@@ -105,7 +107,7 @@ Plan item P3.1: remove superseded UI islands and orphaned business objects (REQ-
 Plan item P4.1: remove unused templates/assets and public legacy data operations (REQ-001 through REQ-005).
 
 - [x] T014 [Plan:P4.1] Delete orphaned `.tpl` families for retired compose, address-book, attachment, search, list, filter, and preference renderers across legacy template sets. Keep templates still required by retained compatibility code.
-- [ ] T015 [Plan:P4.1] Audit `app_data*.xsl`, legacy JavaScript, images, and template-set registrations against runtime loaders, including `html_widgets` and hooks. Delete only proven orphans; retain translations, help, setup, and shared assets by default.
+- [ ] T015 [Plan:P4.1] Audit `app_data*.xsl`, legacy JavaScript, images, and template-set registrations against remaining runtime loaders and hooks, including assets formerly loaded by the removed `html_widgets`. Delete only proven orphans; retain translations, help, setup, and shared assets by default.
 - [ ] T016 [Plan:P4.1] Repository callers were scanned and `class.boaction.inc.php` was removed, but out-of-repository compatibility consumers cannot be ruled out. Revisit if deployment integrations require these old public actions.
 - [x] T017 [Plan:P4.1] Keep `bosend` send compatibility, `MailerSmtp`, and the `phpgwapi.mailer_smtp` factory mapping. Any further removal requires a separate approved change outside this module-only cleanup.
 

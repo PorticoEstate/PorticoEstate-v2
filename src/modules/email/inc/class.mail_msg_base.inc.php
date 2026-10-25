@@ -1908,40 +1908,11 @@ class mail_msg_base
 			// not recoverable, continue with error report
 		}
 
-		// we could just return this text
-		$error_text_plain =
-			lang("There was an error trying to connect to your mail server.<br />Please, check your username and password, or contact your admin.") . "\n"
-			. "source: email class.mail_msg_base.inc.php" . "\n"
-			. "called from: {$called_from}\n"
-			. "imap_last_error: [{$error_report}]\n"
-			. "tried RH bug recovery?: [" . $this->mail_msg_wrappers->get_isset_arg('beenthere_loginerr_tryagain_buggy_cert', $acctnum) . "]\n"
-			. lang('if there is no obvious error, check your username and password first.') . "\n";
-		// or use this text in an html error report
-		$error_text_formatted =
-			'<div class="error">'
-			. lang("There was an error trying to connect to your mail server.<br />Please, check your username and password, or contact your admin.") . "<br>\n"
-			. "<br>\n"
-			. "source: email class.mail_msg_base.inc.php<br>\n"
-			. "<br>\n"
-			. "called from: {$called_from}<br>\n"
-			. "<br>\n"
-			. "imap_last_error: [{$error_report}]<br\n"
-			. "tried RH bug recovery?: [" . $this->mail_msg_wrappers->get_isset_arg('beenthere_loginerr_tryagain_buggy_cert', $acctnum) . "] <br>\n"
-			. "<br>\n"
-			. lang('if there is no obvious error, check your username and password first.') . "<br>\n</div>\n";
 		// Render the email error page when this request came through an email route.
 		$requestPath = parse_url((string) ($_SERVER['REQUEST_URI'] ?? ''), PHP_URL_PATH);
 		$isEmailRoute = is_string($requestPath) && preg_match('~(?:^|/)email(?:/|$)~', $requestPath) === 1;
 		if ($isEmailRoute)
 		{
-			$this->mail_msg_wrappers->getCommon()->phpgw_header(true);
-			// we were called from within the email app itself
-			// so show the error PAGE and then have it EXIT for us
-			// use the error report page widget
-			$widgets = CreateObject("email.html_widgets");
-			$widgets->init_error_report_values();
-			$widgets->prop_error_report_text($error_text_formatted);
-
 			if ($acctnum == 0)
 			{
 				$go_somewhere_url = phpgw::link('/email/view/preferences');
@@ -1952,11 +1923,35 @@ class mail_msg_base
 					'ex_acctnum' => $acctnum
 				));
 			}
-			$go_somewhere_text = lang('click here to edit the settings for this email account.');
-			$widgets->prop_go_somewhere_link($go_somewhere_url, $go_somewhere_text);
-
-			// by putting anything (or TRUE) in the param of this function, it will shutdown the script for us.
-			$widgets->display_error_report_page(true);
+			try
+			{
+				$this->mail_msg_wrappers->getCommon()->phpgw_header(true);
+				echo (new \App\modules\phpgwapi\helpers\TwigHelper('email'))->render('@views/connection-error.twig', [
+					'message' => lang('There was an error trying to connect to your mail server.'),
+					'advice' => lang('Please, check your username and password, or contact your admin.'),
+					'calledFrom' => $called_from,
+					'serverError' => $error_report,
+					'recoveryAttempted' => (bool) $this->mail_msg_wrappers->get_isset_arg('beenthere_loginerr_tryagain_buggy_cert', $acctnum),
+					'settingsUrl' => $go_somewhere_url,
+					'settingsLabel' => lang('click here to edit the settings for this email account.'),
+					'homeUrl' => phpgw::link('/home/'),
+					'homeLabel' => lang('click here to return to your home page.'),
+				]);
+			}
+			finally
+			{
+				if (\App\modules\email\services\MailMessage::hasInstance())
+				{
+					try
+					{
+						\App\modules\email\services\MailMessage::getInstance()->end_request();
+					}
+					finally
+					{
+						\App\modules\email\services\MailMessage::releaseInstance();
+					}
+				}
+			}
 			$this->mail_msg_wrappers->getCommon()->phpgw_exit(False);
 		}
 		return false;

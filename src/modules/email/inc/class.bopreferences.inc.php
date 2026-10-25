@@ -131,11 +131,13 @@ class email_bopreferences
 		on if this class was called from within phogw or via external XMP-RPC. If neither,
 		we should produce an error.
 		@param (none) However, function uses class var ->caller (string) with expected values being "phpgw" and "xmlrpc".
+		@throws \BadMethodCallException for unsupported callers
 		@author Angles
 		@access Public
 		*/
 	function grab_set_prefs()
 	{
+		$this->args = array();
 		// better make sure we have created the available prefs schema
 		$this->init_available_prefs();
 
@@ -149,7 +151,7 @@ class email_bopreferences
 		}
 		else
 		{
-			$this->pref_errors .= 'email: bopreferences: grab_set_prefs: unsupported "caller" variable<br />';
+			throw new \BadMethodCallException('Unsupported email preference caller: ' . $this->caller);
 		}
 	}
 
@@ -161,6 +163,7 @@ class email_bopreferences
 		not attempt to grab data if the "submit_prefs" GPC submit_token variable is not present.
 		@param none
 		@result none, this is an object call
+		Each collection replaces previous submission arguments, including when no form was submitted.
 		@discussion  For abstraction from phpgw UI and from PHP's GPC data, put the submitted GPC data
 		into a class var $this->args[] array. This array is then used to represent the submitted data, 
 		instead of $GLOBALS['phpgw']->msg->ref_POST.  
@@ -174,6 +177,7 @@ class email_bopreferences
 		*/
 	function grab_set_prefs_args_gpc()
 	{
+		$this->args = array();
 		$post = $this->msg->ref_POST;
 		if (isset($post[$this->submit_token]))
 		{
@@ -322,10 +326,7 @@ class email_bopreferences
 			}
 			else
 			{
-				$this->acctnum = \App\modules\email\services\EmailPreferencesWriter::existingAccountNumber(
-					$acctnum, (array) ($this->msg->unprocessed_prefs['email']['ex_accounts'] ?? [])
-						+ [$this->get_first_empty_ex_acctnum() => []]
-				);
+				$this->acctnum = $this->editableAccountNumber($acctnum);
 			}
 			$this->grab_set_prefs();
 			$actually_did_something = isset($this->args[$this->submit_token_extra_accounts]);
@@ -362,68 +363,56 @@ class email_bopreferences
 		*/
 	function ex_accounts_list()
 	{
-
-		$extra_accounts = $this->msg->extra_accounts;
-		// list accounts, except "empty" ones (show "enabled" and "disabled"
 		$return_list = array();
-		foreach ($extra_accounts as $extra_account)
+		foreach ($this->msg->extra_accounts as $extra_account)
 		{
 			$this_acctnum = $extra_account['acctnum'];
 			$this_status = $extra_account['status'];
-
 			if ($this_status == 'empty')
 			{
+				continue;
+			}
+
+			$namePreferences = $this_status === 'disabled'
+				? ($this->msg->unprocessed_prefs['email']['ex_accounts'][$this_acctnum] ?? array())
+				: [
+					'account_name' => $this->msg->get_pref_value('account_name', $this_acctnum),
+					'fullname' => $this->msg->get_pref_value('fullname', $this_acctnum),
+				];
+			if ($this_status === 'disabled'
+				&& trim((string) ($namePreferences['account_name'] ?? '')) === ''
+				&& trim((string) ($namePreferences['fullname'] ?? '')) === '')
+			{
+				$namePreferences['account_name'] = $this->msg->get_pref_value('account_name', $this_acctnum);
+			}
+			$accountname = \App\modules\email\services\EmailAccountsSerializer::accountName($namePreferences);
+			$go_url = '';
+			$go_href = '&nbsp;';
+			if ($this_status == 'disabled')
+			{
+				$accountname = '(disabled) ' . $accountname;
 			}
 			else
 			{
-				$next_pos = count($return_list);
-				//$next_pos = $this_acctnum - 1;
-				$return_list[$next_pos]['acctnum'] = $this_acctnum;
-				$return_list[$next_pos]['status'] = $this_status;
-
-				$namePreferences = $this_status === 'disabled'
-					? ($this->msg->unprocessed_prefs['email']['ex_accounts'][$this_acctnum] ?? array())
-					: [
-						'account_name' => $this->msg->get_pref_value('account_name', $this_acctnum),
-						'fullname' => $this->msg->get_pref_value('fullname', $this_acctnum),
-					];
-				if ($this_status === 'disabled'
-					&& trim((string) ($namePreferences['account_name'] ?? '')) === ''
-					&& trim((string) ($namePreferences['fullname'] ?? '')) === '')
-				{
-					$namePreferences['account_name'] = $this->msg->get_pref_value('account_name', $this_acctnum);
-				}
-				$accountname = \App\modules\email\services\EmailAccountsSerializer::accountName($namePreferences);
-				if ($this_status == 'disabled')
-				{
-					$accountname = '(disabled) ' . $accountname;
-
-					// we can click "go" to not read mail of a disabled account
-					$return_list[$next_pos]['go_there_url'] = '';
-					$return_list[$next_pos]['go_there_href'] = '&nbsp;';
-				}
-				else
-				{
-					$return_list[$next_pos]['go_there_url'] = phpgw::link('/email/view/inbox', array(
-						'fldball[folder]' => 'INBOX',
-						'fldball[acctnum]' => $this_acctnum
-					));
-					$return_list[$next_pos]['go_there_href'] = '<a href="' . $return_list[$next_pos]['go_there_url'] . '">' . lang('go') . '</a>';
-				}
-				// NEXT: html encode the acctname string
-				// html encode entities on the fullname so it's safe to display in the browser, and prefix with the acctnum
-				$accountname = $this->msg->htmlspecialchars_decode($accountname);
-				$accountname = $this->msg->htmlspecialchars_encode($accountname);
-				// FINALLY we have a string we are going to display to the user that is the name of the account
-				$return_list[$next_pos]['display_string'] = '[' . $this_acctnum . '] ' . $accountname;
-
-				// NEXT: control action links
-				$return_list[$next_pos]['edit_url'] = phpgw::link('/email/view/account', array(
-					'ex_acctnum' => $this_acctnum
+				$go_url = phpgw::link('/email/view/inbox', array(
+					'fldball[folder]' => 'INBOX',
+					'fldball[acctnum]' => $this_acctnum
 				));
-				$return_list[$next_pos]['edit_href'] = '<a href="' . $return_list[$next_pos]['edit_url'] . '">' . lang('Edit') . '</a>';
-
+				$go_href = '<a href="' . $go_url . '">' . lang('go') . '</a>';
 			}
+			// Preserve legacy entity normalization before escaping for display.
+			$accountname = $this->msg->htmlspecialchars_decode($accountname);
+			$accountname = $this->msg->htmlspecialchars_encode($accountname);
+			$edit_url = phpgw::link('/email/view/account', array('ex_acctnum' => $this_acctnum));
+			$return_list[] = [
+				'acctnum' => $this_acctnum,
+				'status' => $this_status,
+				'go_there_url' => $go_url,
+				'go_there_href' => $go_href,
+				'display_string' => '[' . $this_acctnum . '] ' . $accountname,
+				'edit_url' => $edit_url,
+				'edit_href' => '<a href="' . $edit_url . '">' . lang('Edit') . '</a>',
+			];
 		}
 
 		return $return_list;
@@ -455,6 +444,11 @@ class email_bopreferences
 		{
 			return $this->get_first_empty_ex_acctnum();
 		}
+		return $this->editableAccountNumber($value);
+	}
+
+	private function editableAccountNumber(mixed $value): int
+	{
 		return \App\modules\email\services\EmailPreferencesWriter::existingAccountNumber(
 			$value, (array) ($this->msg->unprocessed_prefs['email']['ex_accounts'] ?? [])
 				+ [$this->get_first_empty_ex_acctnum() => []]

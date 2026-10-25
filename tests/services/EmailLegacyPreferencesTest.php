@@ -53,6 +53,111 @@ class EmailLegacyPreferencesTest extends TestCase
 		$this->assertSame([], $adapter->args);
 	}
 
+	public function testRepeatedCollectionDropsOmittedFieldsAndOldSubmitTokens(): void
+	{
+		$adapter = $this->adapter(['submit_prefs' => 'save', 'shared' => 'first', 'custom' => 'old']);
+		$adapter->grab_set_prefs_args_gpc();
+		$adapter->msg->ref_POST = ['submit_prefs' => 'save', 'shared' => 'second'];
+		$adapter->grab_set_prefs_args_gpc();
+		$this->assertSame(['submit_prefs' => 'save', 'shared' => 'second'], $adapter->args);
+
+		$adapter->acctnum = 2;
+		$adapter->msg->ref_POST = ['submit_prefs_extra_accounts' => 'save', 2 => ['shared' => 'extra']];
+		$adapter->grab_set_prefs_args_gpc();
+		$this->assertSame(['submit_prefs_extra_accounts' => 'save', 2 => ['shared' => 'extra']], $adapter->args);
+
+		$adapter->msg->ref_POST = [];
+		$adapter->grab_set_prefs_args_gpc();
+		$this->assertSame([], $adapter->args);
+	}
+
+	public function testUnsupportedCallerThrowsAndClearsPreviousSubmission(): void
+	{
+		$adapter = $this->getMockBuilder(\email_bopreferences::class)->disableOriginalConstructor()
+			->onlyMethods(['init_available_prefs'])->getMock();
+		$adapter->caller = 'unsupported';
+		$adapter->args = ['submit_prefs' => 'old'];
+		try
+		{
+			$adapter->grab_set_prefs();
+			$this->fail('Expected unsupported caller to fail');
+		}
+		catch (\BadMethodCallException $exception)
+		{
+			$this->assertSame('Unsupported email preference caller: unsupported', $exception->getMessage());
+		}
+		$this->assertSame([], $adapter->args);
+	}
+
+	public function testNoSubmissionCannotReplayAnEarlierSave(): void
+	{
+		$adapter = $this->getMockBuilder(\email_bopreferences::class)->disableOriginalConstructor()
+			->onlyMethods(['init_available_prefs'])->getMock();
+		$adapter->msg = new class
+		{
+			public array $ref_POST = [];
+			public array $extra_accounts = [];
+			public int $closed = 0;
+			public function end_request(): void { $this->closed++; }
+		};
+		$adapter->args = ['submit_prefs' => 'old'];
+		$this->assertNull($adapter->preferences(true));
+		$this->assertSame([], $adapter->args);
+		$adapter->args = ['submit_prefs_extra_accounts' => 'old', 1 => ['shared' => 'stale']];
+		$this->assertFalse($adapter->ex_accounts_edit('', true));
+		$this->assertSame([], $adapter->args);
+		$this->assertSame(2, $adapter->msg->closed);
+	}
+
+	/**
+	 * @dataProvider editableAccountCases
+	 */
+	public function testExplicitAndRequestAccountIdsUseSameEditValidation(mixed $value, ?string $error): void
+	{
+		$adapter = $this->getMockBuilder(\email_bopreferences::class)->disableOriginalConstructor()
+			->onlyMethods(['grab_set_prefs'])->getMock();
+		$adapter->msg = new class
+		{
+			public array $ref_POST = [];
+			public array $extra_accounts = [['acctnum' => 3, 'status' => 'enabled']];
+			public array $unprocessed_prefs = ['email' => ['ex_accounts' => [3 => []]]];
+			public int $closed = 0;
+			public function end_request(): void { $this->closed++; }
+		};
+		$adapter->msg->ref_POST = ['ex_acctnum' => $value];
+		foreach (['request', 'explicit'] as $source)
+		{
+			try
+			{
+				$result = $source === 'request'
+					? $adapter->obtain_ex_acctnum()
+					: $adapter->ex_accounts_edit($value, true);
+				$this->assertNull($error);
+				$this->assertSame($source === 'request' ? (int) $value : false, $result);
+				if ($source === 'explicit')
+				{
+					$this->assertSame((int) $value, $adapter->acctnum);
+				}
+			}
+			catch (\InvalidArgumentException | \OutOfBoundsException $exception)
+			{
+				$this->assertSame($error, get_class($exception));
+			}
+		}
+		$this->assertSame(1, $adapter->msg->closed);
+	}
+
+	public static function editableAccountCases(): array
+	{
+		return [
+			'stored' => ['3', null],
+			'next slot' => ['1', null],
+			'unknown' => ['8', \OutOfBoundsException::class],
+			'malformed' => ['3invalid', \InvalidArgumentException::class],
+			'default account' => [0, \InvalidArgumentException::class],
+		];
+	}
+
 	public function testLegacyAllocationUsesSharedAllocator(): void
 	{
 		$adapter = $this->adapter([]);

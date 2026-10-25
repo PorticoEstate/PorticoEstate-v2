@@ -4715,35 +4715,6 @@ class mail_msg_base
 		return $finding;
 	}
 
-	/*!
-		@function minimum_version
-		@abstract check if the version of php running the script is at least version "vercheck"
-		@param $vercheck (string) is the minimum version of php you desire, like "4.1.0" 
-		a blank param will retuen false
-		@discussion semi replacement version-compare, which is a php4.1+ function. This provides 
-		similar functionality. The code was found in the user comments on date Jul 25 2002 on php 
-		doc page www.php.net/manual/en/function.version-compare.php author is webmaster@mgs2online.f2s.com 
-		as indicated on that page.
-		@example
-		if (minimum_version("4.1.0")) {
-			echo "version supports action"
-		}
-		@author webmaster@mgs2online.f2s.com from page www.php.net/manual/en/function.version-compare.php
-		*/
-	function minimum_version($vercheck = '1.0.0')
-	{
-		$minver = (int)str_replace('.', '', $vercheck);
-		$curver = (int)str_replace('.', '', phpversion());
-		if ($curver >= $minver)
-		{
-			return true;
-		}
-		else
-		{
-			return false;
-		}
-	}
-
 	/**************************************************************************\
 	 * 
 	 *  EVENTS 

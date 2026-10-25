@@ -614,10 +614,9 @@ class Preferences
 	 * 	$userSettings['preferences'] = createObject('phpgwapi.preferences')->create_email_preferences();
 	 * which fills an array based at:
 	 * 	$userSettings['preferences']['email'][prefs_are_elements_here]
-	 * Reading the raw preference DB data and comparing to the email preference schema defined in
-	 * /email/class.bopreferences.inc.php (see discussion there and below) to create default preference values
-	 * for the  in the ['email'][] pref data array in cases where the user has not supplied
-	 * a preference value for any particular preference item available to the user.
+	 * Decodes stored strings in a local copy and applies EmailPreferenceDefaults using
+	 * EmailPreferenceSchema. Default and extra accounts use the same scope-aware defaults
+	 * as the runtime and API editors; persisted preferences are not changed.
 	 * @access Public
 	 */
 	public function create_email_preferences($accountid = '', $acctnum = 0)
@@ -626,7 +625,7 @@ class Preferences
 		// we may need function "html_quotes_decode" from the mail_msg class
 		$email_base = createObject("email.mail_msg");
 
-		$account_id = $accountid;
+		$account_id = $accountid === '' || $accountid === null ? $this->account_id : $accountid;
 		// If the current user is not the request user, grab the preferences
 		// and reset back to current user.
 		if ($account_id != $this->account_id)
@@ -639,13 +638,16 @@ class Preferences
 
 			// Grab the new users settings, only if they are not the
 			// current users settings.
-			$this->account_id = $account_id;
-			$prefs = $this->Readpreferences();
-			
-
-			// Reset the data to what it was prior to this call
-			$this->account_id = $temp_account_id;
-			$this->data = $temp_data;
+			try
+			{
+				$this->account_id = $account_id;
+				$prefs = $this->Readpreferences();
+			}
+			finally
+			{
+				$this->account_id = $temp_account_id;
+				$this->data = $temp_data;
+			}
 		}
 		else
 		{
@@ -729,146 +731,24 @@ class Preferences
 		// but the password in the array [email][paswd] should be left in encrypted form
 		// and only decrypted seperately when used to login in to an email server.
 
-		// --- generating a default value if necessary ---
-		// in the absence of a user defined custom email preference for a particular item, we can
-		// determine the desired default value for that pref as such:
-		// $this_avail_pref['init_default']  is a comma seperated seperated string which should
-		// be exploded into an array containing 2 elements that are:
-		// exploded[0] : an description of how to handle the next string element to get a default value.
-		// Possible "instructional tokens" for exploded[0] (called $set_proc[0] below) are:
-		//	string
-		//	set_or_not
-		//	function
-		//	init_no_fill
-		//	varEVAL
-		// tells you how to handle the string in exploded[1] (called $set_proc[1] below) to get a valid
-		// default value for a particular preference if one is needed (i.e. if no user custom
-		// email preference exists that should override that default value, in which case we
-		// do not even need to obtain such a default value as described in ['init_default'] anyway).
-
-		// --- loop thru $avail_pref_array and process each pref item ---
-		$c_prefs = count($avail_pref_array);
-		for ($i = 0; $i < $c_prefs; $i++)
+		// Decode stored values before adding defaults, which are already plain text.
+		foreach ($avail_pref_array as $field)
 		{
-			$this_avail_pref = $avail_pref_array[$i];
-			//@ is used here as it is needed for this crappy code
-			@print_debug('class.preferences: create_email_preferences: value from DB for $prefs[email][' . $this_avail_pref['id'] . '] = [' . $prefs['email'][$this_avail_pref['id']] . ']', 'messageonly', 'api');
-			@print_debug('class.preferences: create_email_preferences: std/cust_prefs $this_avail_pref[' . $i . '] dump:', $this_avail_pref, 'api');
-
-			// --- is there a value in the DB for this preference item ---
-			// if the prefs DB has no value for this defined available preference, we must make one.
-			// This occurs if (a) this is user's first login, or (b) this is a custom pref which the user
-			// has not overriden, do a default (non-custom) value is needed.
-			if (!isset($prefs['email'][$this_avail_pref['id']]))
+			$id = $field['id'];
+			if (isset($prefs['email'][$id]) && $field['type'] === 'user_string'
+				&& stripos($field['write_props'], 'no_db_defang') === false)
 			{
-				// now we are analizing an individual pref that is available to the user
-				// AND the user had no existing value in the prefs DB for this.
-
-				// --- get instructions on how to generate a default value ---
-				$set_proc = explode(',', $this_avail_pref['init_default']);
-				print_debug(' * set_proc=[' . serialize($set_proc) . ']', 'messageonly', 'api');
-
-				// --- use "instructional token" in $set_proc[0] to take appropriate action ---
-				// STRING
-				if ($set_proc[0] == 'string')
-				{
-					// means this pref item's value type is string
-					// which defined string default value is in $set_proc[1]
-					print_debug('* handle "string" set_proc: ', serialize($set_proc), 'api');
-					if (trim($set_proc[1]) == '')
-					{
-						// this happens when $this_avail_pref['init_default'] = "string, "
-						$this_string = '';
-					}
-					else
-					{
-						$this_string = $set_proc[1];
-					}
-					$prefs['email'][$this_avail_pref['id']] = $this_string;
-				}
-				// SET_OR_NOT
-				elseif ($set_proc[0] == 'set_or_not')
-				{
-					// typical with boolean options, True = "set/exists" and False = unset
-					print_debug('* handle "set_or_not" set_proc: ', serialize($set_proc), 'api');
-					if ($set_proc[1] == 'not_set')
-					{
-						// leave it NOT SET
-					}
-					else
-					{
-						// opposite of boolean not_set  = string "True" which simply sets a
-						// value it exists in the users session [email][] preference array
-						$prefs['email'][$this_avail_pref['id']] = 'True';
-					}
-				}
-				// FUNCTION
-				elseif ($set_proc[0] == 'function')
-				{
-					// string in $set_proc[1] should be "eval"uated as code, calling a function
-					// which will give us a default value to put in users session [email][] prefs array
-					print_debug(' * handle "function" set_proc: ', serialize($set_proc), 'api');
-					$evaled = '';
-					//eval('$evaled = $this->'.$set_proc[1].'('.$account_id.');');
-
-					$code = '$evaled = $this->' . $set_proc[1] . '(' . $account_id . ');';
-					print_debug(' * $code: ', $code, 'api');
-					eval($code);
-
-					print_debug('* $evaled:', $evaled, 'api');
-					$prefs['email'][$this_avail_pref['id']] = $evaled;
-				}
-				// INIT_NO_FILL
-				elseif ($set_proc[0] == 'init_no_fill')
-				{
-					// we have an available preference item that we may NOT fill with a default
-					// value. Only the user may supply a value for this pref item.
-					print_debug('* handle "init_no_fill" set_proc:', serialize($set_proc), 'api');
-					// we are FORBADE from filling this at this time!
-				}
-				// varEVAL
-				elseif ($set_proc[0] == 'varEVAL')
-				{
-					// similar to "function" but used for array references, the string in $set_proc[1]
-					// represents code which typically is an array referencing a system/api property
-					print_debug('* handle "GLOBALS" set_proc:', serialize($set_proc), 'api');
-					$evaled = '';
-					$code = '$evaled = ' . $set_proc[1];
-					print_debug(' * $code:', $code, 'api');
-					@eval($code); //@ to supress errors created during eval - ugly hack i know
-					print_debug('* $evaled:', $evaled, 'api');
-					$prefs['email'][$this_avail_pref['id']] = $evaled;
-				}
-				else
-				{
-					// error, no instructions on how to handle this element's default value creation
-					echo 'class.preferences: create_email_preferences: set_proc ERROR: ' . serialize($set_proc) . '<br>';
-				}
-			}
-			else
-			{
-				// we have a value in the database, do we need to prepare it in any way?
-				// (the following discussion is unconfirmed:)
-				// DO NOT ALTER the data in the prefs array!!!! or the next time we call
-				// save_repository withOUT undoing what we might do here, the
-				// prefs will permenantly LOOSE the very thing(s) we are un-doing
-				/// here until the next OFFICIAL submit email prefs function, where it
-				// will again get this preparation before being written to the database.
-
-				// NOTE: if database de-fanging is eventually handled deeper in the
-				// preferences class, then the following code would become depreciated
-				// and should be removed in that case.
-				if (($this_avail_pref['type'] == 'user_string') &&
-					(stristr($this_avail_pref['write_props'], 'no_db_defang') == False)
-				)
-				{
-					// this value was "de-fanged" before putting it in the database
-					// undo that defanging now
-					$db_unfriendly = $email_base->html_quotes_decode($prefs['email'][$this_avail_pref['id']]);
-					$prefs['email'][$this_avail_pref['id']] = $db_unfriendly;
-				}
+				$prefs['email'][$id] = $email_base->html_quotes_decode($prefs['email'][$id]);
 			}
 		}
+		$user = (array) $this->userSettings;
+		if (!isset($prefs['email']['userid']) || !isset($prefs['email']['address']))
+		{
+			$user['account_lid'] = (new Accounts())->id2lid($account_id);
+		}
+		$prefs['email'] = (new \App\modules\email\services\EmailPreferenceDefaults($schema))->resolve(
+			(array) $prefs['email'], (int) $acctnum, $user, (array) $this->serverSettings
+		);
 		// users preferences are now established to known structured values...
 
 		// SANITY CHECK

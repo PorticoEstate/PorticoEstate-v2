@@ -46,6 +46,8 @@ The opt-in live test uses the disposable credentials above, creates a uniquely n
 
 The same command also runs isolated-folder flows for flag set/clear, UID copy/move, mark-deleted followed by explicit expunge, and persistence across close/reconnect. Copy/move checks source and destination counts and destination content. Reconnect selects INBOX before disconnecting: GreenMail 2.1.2 can otherwise retain a stale selected-folder listener and throw `NullPointerException` during subsequent folder deletion. The test does not restart GreenMail or clear INBOX to work around server failures.
 
+The metadata flow expunges an initial message so UIDs differ from sequence numbers, then checks search identifier modes, UID/sequence header-cache isolation, refreshed flags after mutation, and header isolation when switching mailboxes.
+
 ## Configure the email client
 
 Create an active standard IMAP emailadmin profile assigned to the test user or `felamimail` application. For the app running in the `portico_internal` Docker network, set server `imap-test`, port `3993`, SSL, and disable certificate verification for this local test profile. For a PHP app running directly on the host, use `127.0.0.1`, port `1993`. Use IMAP login `outlook-test`, email address `outlook-test@outlook.test`, and the test password above. This fixture exercises password-based IMAP behavior; it does not simulate Microsoft OAuth.

@@ -12,6 +12,39 @@ use ZBateson\MailMimeParser\MailMimeParser;
 class ModernImapMimeTest extends TestCase
 {
 	/**
+	 * @dataProvider searchIdentifierModes
+	 */
+	public function testSearchReturnsRequestedIdentifierMode(int $flags, array $expected): void
+	{
+		$property = new \ReflectionProperty(\ModernIMAPWrapper::class, 'connections');
+		$property->setAccessible(true);
+		$original = $property->getValue();
+		$message = new class {
+			public function getUid(): int { return 42; }
+			public function getMsgn(): int { return 2; }
+		};
+		$query = $this->getMockBuilder(\stdClass::class)->addMethods(['all', 'get'])->getMock();
+		$query->expects($this->once())->method('all');
+		$query->method('get')->willReturn([$message]);
+		$folder = $this->getMockBuilder(\stdClass::class)->addMethods(['query'])->getMock();
+		$folder->method('query')->willReturn($query);
+		$property->setValue(null, ['search-test' => ['folder' => $folder]]);
+		try
+		{
+			$this->assertSame($expected, \ModernIMAPWrapper::imap_search('search-test', 'ALL', $flags));
+		}
+		finally
+		{
+			$property->setValue(null, $original);
+		}
+	}
+
+	public static function searchIdentifierModes(): array
+	{
+		return [[0, [2]], [1, [42]]];
+	}
+
+	/**
 	 * @dataProvider flagSearchCriteria
 	 */
 	public function testFlagSearchCriteriaAreForwarded(string $criteria): void

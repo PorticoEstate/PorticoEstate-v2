@@ -135,6 +135,7 @@ class ModernIMAPWrapper
             $client->openFolder($folder->path, true);
             self::$connections[$stream]['folder'] = $folder;
             self::$connections[$stream]['currentFolder'] = $folder->path;
+            self::clearMessageMetadata($stream);
             return true;
         } catch (Exception $exception) {
             $client->setActiveFolder(null);
@@ -193,7 +194,7 @@ class ModernIMAPWrapper
             $uids = [];
             
             foreach ($messages as $message) {
-                $uids[] = $message->getUid();
+                $uids[] = (int) (($flags & 1) ? $message->getUid() : $message->getMsgn());
             }
             
             return $uids;
@@ -259,6 +260,7 @@ class ModernIMAPWrapper
             $oldPath = preg_replace('/^\{[^}]*\}/', '', $oldName);
             $newPath = preg_replace('/^\{[^}]*\}/', '', $newName);
             $client->getConnection()->renameFolder($oldPath, $newPath)->validatedData();
+            self::clearMessageMetadata($stream);
             $client->setActiveFolder(null);
             $current = self::$connections[$stream]['folder'];
             if ($current && ($current->path === $oldPath
@@ -308,6 +310,7 @@ class ModernIMAPWrapper
             $client->openFolder($connection['folder']->path);
             $mode = ($flags & 1) ? \Webklex\PHPIMAP\IMAP::ST_UID : \Webklex\PHPIMAP\IMAP::ST_MSGN;
             $client->getConnection()->moveMessage($path, $msgList, null, $mode)->validatedData();
+            self::clearMessageMetadata($stream);
             return true;
         } catch (Exception $exception) {
             self::$lastError = $exception->getMessage();
@@ -340,6 +343,7 @@ class ModernIMAPWrapper
             $client->openFolder($connection['folder']->path);
             $mode = ($options & 1) ? \Webklex\PHPIMAP\IMAP::ST_UID : \Webklex\PHPIMAP\IMAP::ST_MSGN;
             $flags = preg_split('/\s+/', trim($flag), -1, PREG_SPLIT_NO_EMPTY);
+            self::clearMessageMetadata($stream);
             foreach (explode(',', (string) $msgNums) as $range) {
                 $bounds = explode(':', $range);
                 $client->getConnection()->store($flags, (int) $bounds[0], isset($bounds[1]) ? (int) $bounds[1] : null, $operation, true, $mode)->validatedData();
@@ -454,10 +458,11 @@ class ModernIMAPWrapper
 
             $foundMessageNumbers = [];
             foreach ($metadata as $messageNumber => $attributes) {
-                $identifier = (int) ($attributes['UID'] ?? $messageNumber);
+                $identifier = (int) (($flags & 1) ? ($attributes['UID'] ?? $messageNumber) : $messageNumber);
                 $foundMessageNumbers[] = $identifier;
                 if (isset($attributes['BODY[HEADER]']) && is_string($attributes['BODY[HEADER]']) && $attributes['BODY[HEADER]'] !== '') {
-                    self::$connections[$stream]['messageHeaders'][$identifier] = self::convertFetchedHeader($attributes, $identifier, $client);
+                    self::$connections[$stream]['messageHeaders'][$connection['folder']->path][$flags & 1][$identifier]
+                        = self::convertFetchedHeader($attributes, $identifier, $client);
                 }
             }
             return $foundMessageNumbers;
@@ -769,7 +774,7 @@ class ModernIMAPWrapper
             return false;
         }
 
-        $cachedHeader = self::$connections[$stream]['messageHeaders'][(int) $msgNum] ?? null;
+        $cachedHeader = self::$connections[$stream]['messageHeaders'][self::$connections[$stream]['folder']->path][$flags & 1][(int) $msgNum] ?? null;
         if ($cachedHeader instanceof stdClass) {
             return $cachedHeader;
         }
@@ -835,6 +840,7 @@ class ModernIMAPWrapper
         
         try {
             // Handle multiple message numbers
+            self::clearMessageMetadata($stream);
             $nums = is_array($msgNums) ? $msgNums : explode(',', $msgNums);
             
             foreach ($nums as $msgNum) {
@@ -866,6 +872,7 @@ class ModernIMAPWrapper
         try {
             $connection = self::$connections[$stream];
             $connection['client']->openFolder($connection['folder']->path);
+            self::clearMessageMetadata($stream);
             $connection['client']->getConnection()->expunge()->validatedData();
             return true;
             
@@ -873,6 +880,12 @@ class ModernIMAPWrapper
             self::$lastError = $e->getMessage();
             return false;
         }
+
+    }
+
+    private static function clearMessageMetadata($stream): void
+    {
+        unset(self::$connections[$stream]['messageHeaders'], self::$connections[$stream]['messageStructures']);
     }
     
     public static function imap_status($stream, $mailbox, $options)

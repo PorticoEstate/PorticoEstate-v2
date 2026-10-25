@@ -212,6 +212,26 @@ namespace Tests\Services
 				$uid = (string) $uids[0];
 				switch ($operation)
 				{
+					case 'metadata':
+						$this->assertTrue($transport->append($stream, $prefix . $source, $message, '\\Seen'));
+						$this->assertTrue($transport->delete($stream, $uid, 1));
+						$this->assertTrue($transport->expunge($stream));
+						$second = str_replace('Lifecycle regression', 'Second message', $message);
+						$this->assertTrue($transport->append($stream, $prefix . $source, $second, '\\Seen'));
+						$this->assertSame([1, 2], \IMAPManager::imap_search($stream, 'ALL', 0));
+						$this->assertSame([2, 3], \IMAPManager::imap_search($stream, 'ALL', 1));
+						$this->assertSame([2], \ModernIMAPWrapper::imap_prefetch_message_metadata($stream, [2], 1));
+						$this->assertSame('Lifecycle regression', \ModernIMAPWrapper::imap_header($stream, 2, 0, 0, '', 1)->subject);
+						$this->assertSame('Second message', \ModernIMAPWrapper::imap_header($stream, 2)->subject);
+						$this->assertSame([1], \ModernIMAPWrapper::imap_prefetch_message_metadata($stream, [1], 0));
+						$this->assertSame('Lifecycle regression', \ModernIMAPWrapper::imap_header($stream, 1)->subject);
+						$this->assertTrue(\IMAPManager::imap_setflag_full($stream, '2', '\\Flagged', 1));
+						$this->assertSame('F', \ModernIMAPWrapper::imap_header($stream, 2, 0, 0, '', 1)->Flagged);
+						$this->assertSame([1], \ModernIMAPWrapper::imap_prefetch_message_metadata($stream, [1], 0));
+						$this->assertTrue($transport->append($stream, $prefix . $destination, $second, '\\Seen'));
+						$this->assertTrue($transport->reopen($stream, $prefix . $destination));
+						$this->assertSame('Second message', \ModernIMAPWrapper::imap_header($stream, 1)->subject);
+						break;
 					case 'flags':
 						$this->assertTrue(\IMAPManager::imap_setflag_full($stream, $uid, '\\Flagged', 1));
 						$this->assertSame($uids, \IMAPManager::imap_search($stream, 'FLAGGED', 1));
@@ -280,7 +300,7 @@ namespace Tests\Services
 
 		public static function greenMailOperations(): array
 		{
-			return [['flags'], ['copy'], ['move'], ['delete'], ['reconnect']];
+			return [['flags'], ['copy'], ['move'], ['delete'], ['reconnect'], ['metadata']];
 		}
 
 		public function testNativeAndSocketPop3ClassesCanCoexistWithImap(): void

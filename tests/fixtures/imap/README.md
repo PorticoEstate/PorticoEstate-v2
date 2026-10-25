@@ -60,6 +60,8 @@ The close-expunge flow verifies that ordinary logout preserves deletion marks an
 
 The PEEK flow verifies that whole-body and MIME-section reads preserve unread state with FT_PEEK and mark Seen without it, including refresh of prefetched header flags.
 
+The search-criteria flow uses the application's criteria builder for combined body/subject/flag/date filtering, verifies nonmatching body/date restrictions, and checks explicit rejection of unsupported criteria. The wrapper supports the application's conjunction-based search fields, not arbitrary IMAP boolean/group expressions.
+
 ## Configure the email client
 
 Create an active standard IMAP emailadmin profile assigned to the test user or `felamimail` application. For the app running in the `portico_internal` Docker network, set server `imap-test`, port `3993`, SSL, and disable certificate verification for this local test profile. For a PHP app running directly on the host, use `127.0.0.1`, port `1993`. Use IMAP login `outlook-test`, email address `outlook-test@outlook.test`, and the test password above. This fixture exercises password-based IMAP behavior; it does not simulate Microsoft OAuth.

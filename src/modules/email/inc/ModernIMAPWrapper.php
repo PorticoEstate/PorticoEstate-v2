@@ -173,35 +173,44 @@ class ModernIMAPWrapper
             // Convert IMAP search criteria to Webklex format
             $query = $folder->query();
 
-            if (strcasecmp(trim($criteria), 'ALL') === 0) {
-                $query->all();
+            $tokens = [];
+            $offset = 0;
+            $criteria = trim($criteria);
+            while ($offset < strlen($criteria)) {
+                if (!preg_match('/\G\s*(?:"((?:[^"\\\\\r\n]|\\\\["\\\\])*)"|([A-Za-z0-9_.@:+\/-]+))(?=\s|$)/', $criteria, $match, 0, $offset)) {
+                    throw new InvalidArgumentException('Invalid IMAP search criteria');
+                }
+                $tokens[] = isset($match[2]) ? $match[2] : str_replace(['\\"', '\\\\'], ['"', '\\'], $match[1]);
+                $offset += strlen($match[0]);
             }
-            
-            // Basic criteria parsing (extend as needed)
-            $flagCriteria = preg_replace('/"(?:[^"\\\\]|\\\\.)*"/', '', $criteria);
-            if (preg_match('/\bUNSEEN\b/i', $flagCriteria)) {
-                $query->unseen();
+            if (!$tokens) {
+                throw new InvalidArgumentException('Empty IMAP search criteria');
             }
-            if (preg_match('/\bSEEN\b/i', $flagCriteria)) {
-                $query->seen();
-            }
-            if (preg_match('/\bFLAGGED\b/i', $flagCriteria)) {
-                $query->where('FLAGGED');
-            }
-            if (preg_match('/\bDELETED\b/i', $flagCriteria)) {
-                $query->deleted();
-            }
-            if (preg_match('/FROM "([^"]+)"/', $criteria, $matches)) {
-                $query->from($matches[1]);
-            }
-            if (preg_match('/TO "([^"]+)"/', $criteria, $matches)) {
-                $query->to($matches[1]);
-            }
-            if (preg_match('/SUBJECT "([^"]+)"/', $criteria, $matches)) {
-                $query->subject($matches[1]);
-            }
-            if (preg_match('/SINCE (\d+-\w+-\d+)/', $criteria, $matches)) {
-                $query->since($matches[1]);
+            $flagMethods = ['ALL' => 'all', 'UNSEEN' => 'unseen', 'SEEN' => 'seen', 'DELETED' => 'deleted'];
+            $otherFlags = ['ANSWERED', 'FLAGGED', 'NEW', 'OLD', 'RECENT', 'UNANSWERED', 'UNDELETED', 'UNFLAGGED'];
+            for ($i = 0; $i < count($tokens); $i++) {
+                $operator = strtoupper($tokens[$i]);
+                if (isset($flagMethods[$operator])) {
+                    $query->{$flagMethods[$operator]}();
+                } elseif (in_array($operator, $otherFlags, true)) {
+                    $query->where($operator);
+                } elseif (in_array($operator, ['SUBJECT', 'BODY', 'FROM', 'TO', 'CC', 'BCC', 'KEYWORD', 'ON', 'BEFORE', 'SINCE'], true)) {
+                    if (!isset($tokens[++$i])) {
+                        throw new InvalidArgumentException('Missing IMAP search operand');
+                    }
+                    $value = $tokens[$i];
+                    if (in_array($operator, ['ON', 'BEFORE', 'SINCE'], true)) {
+                        $date = DateTimeImmutable::createFromFormat('!m/d/Y', $value)
+                            ?: DateTimeImmutable::createFromFormat('!d-M-Y', $value);
+                        if (!$date || !in_array($value, [$date->format('m/d/Y'), $date->format('d-M-Y')], true)) {
+                            throw new InvalidArgumentException('Invalid IMAP search date');
+                        }
+                        $value = $date->format('d-M-Y');
+                    }
+                    $query->where($operator, $value);
+                } else {
+                    throw new InvalidArgumentException('Unsupported IMAP search criterion: ' . $operator);
+                }
             }
             
             $messages = $query->get();

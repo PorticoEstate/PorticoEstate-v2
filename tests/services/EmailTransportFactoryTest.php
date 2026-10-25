@@ -212,6 +212,17 @@ namespace Tests\Services
 				$uid = (string) $uids[0];
 				switch ($operation)
 				{
+					case 'search-criteria':
+						$criteria = \App\modules\email\services\EmailSearchCriteria::build([
+							'terms' => ['BODY' => 'Lifecycle body', 'SUBJECT' => 'Lifecycle regression'],
+							'flags' => ['UNDELETED'],
+							'dates' => ['SINCE' => '01/01/2020', 'BEFORE' => '01/01/2030'],
+						]);
+						$this->assertSame($uids, \IMAPManager::imap_search($stream, $criteria, 1));
+						$this->assertSame([], \IMAPManager::imap_search($stream, 'BODY "does not occur in message"', 1));
+						$this->assertSame([], \IMAPManager::imap_search($stream, 'BEFORE "01/01/2020"', 1));
+						$this->assertFalse(\IMAPManager::imap_search($stream, 'UNSUPPORTED "term"', 1));
+						break;
 					case 'peek':
 						$this->assertTrue(\IMAPManager::imap_clearflag_full($stream, $uid, '\\Seen', 1));
 						$this->assertStringContainsString('Lifecycle body', \IMAPManager::imap_body($stream, $uid, 3));
@@ -390,7 +401,7 @@ namespace Tests\Services
 
 		public static function greenMailOperations(): array
 		{
-			return [['flags'], ['copy'], ['move'], ['delete'], ['reconnect'], ['metadata'], ['ranges'], ['missing-open'], ['subscriptions'], ['listing'], ['close-expunge'], ['peek']];
+			return [['flags'], ['copy'], ['move'], ['delete'], ['reconnect'], ['metadata'], ['ranges'], ['missing-open'], ['subscriptions'], ['listing'], ['close-expunge'], ['peek'], ['search-criteria']];
 		}
 
 		public function testNativeAndSocketPop3ClassesCanCoexistWithImap(): void

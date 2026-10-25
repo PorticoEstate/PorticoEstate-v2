@@ -6,6 +6,8 @@ This document began as a proposed plan. The execution record below supersedes th
 
 ## Execution Update
 
+- Modern search now consumes the entire supported application criteria string instead of independently matching a few regex fragments. It handles all flags/text fields emitted by EmailSearchCriteria, escaped quotes/backslashes, case-insensitive operators, and ON/BEFORE/SINCE dates in application `m/d/Y` or IMAP `d-M-Y` form. Malformed/unsupported criteria explicitly fail rather than silently omitting restrictions; arbitrary IMAP boolean/group syntax remains unsupported. Offline exact-operand tests and GreenMail application-generated combined text/flag/date queries verify filtering and no-match cases.
+
 - Modern whole-body and MIME-section reads now honor FT_PEEK: ordinary reads mark Seen and invalidate cached flags; PEEK reads preserve unread state. Shared header/structure lookups retain their existing non-marking behavior. Offline command-shape tests cover UID/sequence and PEEK/non-PEEK combinations; GreenMail verifies actual Seen/Unseen state and header-cache refresh after body reads.
 
 - Modern close honors CL_EXPUNGE (32768) using the IMAP CLOSE command, which expunges and deselects the mailbox before logout. Ordinary close remains logout-only. Rejected CLOSE returns false with diagnostics and retains the handle for recovery. Offline tests verify command selection/failures; GreenMail verifies deletion marks survive ordinary logout and disappear after flagged close. An initial EXPUNGE-then-logout attempt encountered the existing GreenMail stale-listener cleanup bug, leaving one additional blocked temporary folder (`lifecycle-83ac71b19f8994af`); the final CLOSE implementation cleans up successfully without restarting or resetting seeded mail.

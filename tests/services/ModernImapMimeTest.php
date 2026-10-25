@@ -12,6 +12,57 @@ use ZBateson\MailMimeParser\MailMimeParser;
 class ModernImapMimeTest extends TestCase
 {
 	/**
+	 * @dataProvider applicationSearchCriteria
+	 */
+	public function testApplicationSearchCriteriaAreFullyApplied(string $criteria, array $expected, bool $valid): void
+	{
+		$property = new \ReflectionProperty(\ModernIMAPWrapper::class, 'connections');
+		$property->setAccessible(true);
+		$original = $property->getValue();
+		$calls = [];
+		$query = $this->getMockBuilder(\stdClass::class)->addMethods(['where', 'get'])->getMock();
+		$query->method('where')->willReturnCallback(static function (...$arguments) use (&$calls)
+		{
+			$calls[] = $arguments;
+		});
+		$query->expects($valid ? $this->once() : $this->never())->method('get')->willReturn([]);
+		$folder = $this->getMockBuilder(\stdClass::class)->addMethods(['query'])->getMock();
+		$folder->method('query')->willReturn($query);
+		$property->setValue(null, ['criteria-test' => ['folder' => $folder]]);
+		try
+		{
+			$this->assertSame($valid ? [] : false, \ModernIMAPWrapper::imap_search('criteria-test', $criteria));
+			$this->assertSame($expected, $calls);
+			if (!$valid)
+			{
+				$this->assertNotSame('', \ModernIMAPWrapper::imap_last_error());
+			}
+		}
+		finally
+		{
+			$property->setValue(null, $original);
+		}
+	}
+
+	public static function applicationSearchCriteria(): array
+	{
+		return [
+			['BODY "UNSEEN DELETED" CC "copy@example.test" BCC "hidden@example.test" KEYWORD "project"',
+				[['BODY', 'UNSEEN DELETED'], ['CC', 'copy@example.test'], ['BCC', 'hidden@example.test'], ['KEYWORD', 'project']], true],
+			['subject "He said \\"yes\\" \\\\ path"', [['SUBJECT', 'He said "yes" \\ path']], true],
+			['ON "10/25/2026" BEFORE "11/01/2026" SINCE 01-Oct-2026',
+				[['ON', '25-Oct-2026'], ['BEFORE', '01-Nov-2026'], ['SINCE', '01-Oct-2026']], true],
+			['ANSWERED NEW OLD RECENT UNANSWERED UNDELETED UNFLAGGED',
+				[['ANSWERED'], ['NEW'], ['OLD'], ['RECENT'], ['UNANSWERED'], ['UNDELETED'], ['UNFLAGGED']], true],
+			['UNKNOWN "term"', [], false],
+			['SUBJECT', [], false],
+			['SUBJECT "unterminated', [], false],
+			['ON "02/30/2026"', [], false],
+			['', [], false],
+		];
+	}
+
+	/**
 	 * @dataProvider closeModes
 	 */
 	public function testCloseOnlyExpungesWhenRequested(int $flags, bool $expungeSucceeds): void

@@ -1,0 +1,17 @@
+{% autoescape 'html' %}
+{% if summary.folders %}
+<form method="get" action="{{ summary.inboxUrl }}">
+    <label for="email-home-folder"><strong>{{ folderLabel }}</strong></label>
+    <select id="email-home-folder" name="fldball_fake_uri" onchange="this.form.submit()">
+        <option value="">{{ switchLabel }}</option>
+        {% for folder in summary.folders %}
+        <option value="{{ folder.value }}">{{ folder.name }}</option>
+        {% endfor %}
+    </select>
+    <button type="submit">{{ goLabel }}</button>
+    <a href="{{ summary.composeUrl }}">{{ composeLabel }}</a>
+</form>
+{% else %}
+<a href="{{ summary.composeUrl }}">{{ composeLabel }}</a>
+{% endif %}
+{% endautoescape %}

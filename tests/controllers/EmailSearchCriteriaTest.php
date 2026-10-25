@@ -55,7 +55,8 @@ namespace Tests\Controllers
 				public array $flags = [];
 				public function unseen() { $this->flags[] = 'UNSEEN'; return $this; }
 				public function seen() { $this->flags[] = 'SEEN'; return $this; }
-				public function subject($subject) { return $this; }
+				public array $terms = [];
+				public function where($operator, $value) { $this->terms[] = [$operator, $value]; return $this; }
 				public function get() { return []; }
 			};
 			$folder = new class($query)
@@ -79,8 +80,14 @@ namespace Tests\Controllers
 				] as [$criteria, $expected])
 				{
 					$query->flags = [];
+					$query->terms = [];
 					$this->assertSame([], \ModernIMAPWrapper::imap_search('test-search', $criteria));
-					$this->assertSame($expected, $query->flags, $criteria);
+					$this->assertEqualsCanonicalizing($expected, $query->flags, $criteria);
+					if (str_starts_with($criteria, 'SUBJECT '))
+					{
+						$this->assertCount(1, $query->terms);
+						$this->assertSame('SUBJECT', $query->terms[0][0]);
+					}
 				}
 			}
 			finally

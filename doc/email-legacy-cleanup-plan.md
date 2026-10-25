@@ -6,6 +6,8 @@ This document began as a proposed plan. The execution record below supersedes th
 
 ## Execution Update
 
+- Transport scope confirmed: retain IMAP/IMAPS/OAuth and POP3/POP3S; NNTP modernization is out of scope. First shared-network batch reads complete lines, detects read timeout/EOF, finishes partial writes, safely closes sockets repeatedly, and corrects response-code parsing. Binary byte-count and CRLF behavior are retained. Transport selection, retained socket repairs, and POP3 cache optimization remain follow-up work.
+
 - Simplified bootstrap login-policy assignments and removed a temporary variable. Documented and tested the legacy boolean/integer return distinction, unsupported-input fallback, and direct public login setting before request initialization; no login-policy changes were introduced.
 
 - Draft/send enabled-account validation now shares a single-pass `EmailAccountDirectory::hasEnabledAccount` lookup, avoiding intermediate filtered/mapped arrays and stopping at the first match. Existing membership rules and response behavior are preserved.

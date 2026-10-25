@@ -6,6 +6,8 @@ This document began as a proposed plan. The execution record below supersedes th
 
 ## Execution Update
 
+- Removed unreferenced mail-core HTML/debug helpers (`href_maketag`, `href_maketag_class`, `img_maketag`, `array_keys_str`, and `_image_on`) after a repository-wide reference search. Removed unreachable output after the connection-recovery early return; active retry behavior remains unchanged.
+
 - Removed the obsolete email popup entry points, UI/business-object implementations, spellcheck chain, and unreferenced legacy screen templates.
 - Reduced the retained menuaction classes to Twig navigation bridges and kept `bosend.send()` for confirmed send compatibility.
 - Kept `bopreferences` as a legacy request/presentation adapter; preference definitions, defaults, persistence, and cache invalidation now use shared services.

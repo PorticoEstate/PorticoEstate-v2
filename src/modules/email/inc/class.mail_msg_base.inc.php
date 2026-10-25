@@ -2003,15 +2003,6 @@ class mail_msg_base
 		elseif (stristr($old_mailsvr_callstr, 'notls'))
 		{
 			return false;
-			echo <<<HTML
-					<div class="error">
-						Detected that there has already been an attempt to recover that failed<br>
-						exiting...'
-					</div>
-
-HTML;
-			//$GLOBALS['phpgw']->common->phpgw_exit(False);
-			$this->login_error('mail_msg: loginerr_tryagain_buggy_cert(LINE ' . __LINE__ . '), called_from: ' . $called_from, $acctnum);
 		}
 		else
 		{
@@ -5232,84 +5223,5 @@ HTML;
 		return $did_expire;
 	}
 
-	/**************************************************************************\
-	 * USEFUL  AND   SIMPLE  HTML  FUNCTIONS	*
-		\**************************************************************************/
-
-	/*!
-		@function href_maketag
-		@abstract will generate a typical A HREF html item
-		*/
-	function href_maketag($href_link = '', $href_text = 'default text')
-	{
-		return '<a href="' . $href_link . '">' . $href_text . '</a>' . "\n";
-	}
-
-	/*!
-		@function href_maketag_class
-		@abstract will generate a typical A HREF html item with optional CLASS value for css specs
-		*/
-	function href_maketag_class($href_link = '', $href_text = 'default text', $css_class_name = '')
-	{
-		if ($css_class_name != '')
-		{
-			$class_prop = ' class="' . $css_class_name . '" ';
-		}
-		else
-		{
-			$class_prop = '';
-		}
-		return '<a ' . $class_prop . ' href="' . $href_link . '">' . $href_text . '</a>' . "\n";
-	}
-
-	/*!
-		@function img_maketag
-		@abstract will generate a typical IMG html item
-		*/
-	function img_maketag($location = '', $alt = '', $height = '', $width = '', $border = '')
-	{
-		$alt_default_txt = 'image';
-		$alt_unknown_txt = 'unknown';
-		if ($location == '')
-		{
-			return '<img src="" alt="[' . $alt_unknown_txt . ']">';
-		}
-		if ($alt != '')
-		{
-			$alt_tag = ' alt="[' . $alt . ']"';
-			$title_tag = ' title="' . $alt . '"';
-		}
-		else
-		{
-			$alt_tag = ' alt="[' . $alt_default_txt . ']"';
-			$title_tag = '';
-		}
-		if ($height != '')
-		{
-			$height_tag = ' height="' . $height . '"';
-		}
-		else
-		{
-			$height_tag = '';
-		}
-		if ($width != '')
-		{
-			$width_tag = ' width="' . $width . '"';
-		}
-		else
-		{
-			$width_tag = '';
-		}
-		if ($border != '')
-		{
-			$border_tag = ' border="' . $border . '"';
-		}
-		else
-		{
-			$border_tag = '';
-		}
-		$image_html = '<img src="' . $location . '"' . $height_tag . $width_tag . $border_tag . $title_tag . $alt_tag . '>';
-		return $image_html;
-	}
 }
 	// end of class mail_msg

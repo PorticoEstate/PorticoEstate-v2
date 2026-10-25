@@ -2314,19 +2314,6 @@ class mail_msg extends mail_msg_wrappers
 	}
 
 	/*!
-	@function array_keys_str
-	@abstract debug function, report all "keys" in an associative array of "key - value"
-	@param $my_array
-	@author Angles
-	*/
-	function array_keys_str($my_array)
-	{
-		$all_keys = array();
-		$all_keys = array_keys($my_array);
-		return implode(', ', $all_keys);
-	}
-
-	/*!
 	@function report_moved_or_deleted
 	@abstract if mail was moved or deleted, we should report to the user what happened
 	@param none, it uses the class args described below in "discussion"
@@ -2960,25 +2947,4 @@ $hdr_envelope->udate = $new_time;
 		return $msg_list_display;
 	}
 
-	/*!
-	@function _image_on
-	@abstract temp replacement for phpgwapi  image_on until it supports images in different dirs.
-	@discussion Email themes have a group of similar looking images grouped into a directory with
-	somewhat standard names that AngleMail understands as a themed image set. phpgwapi does not
-	currently support subdirectories under the template images directory. Params are only to match the
-	phpgw api function, we do not really use them. As of this writting, Feb 2003, images used for all themes,
-	i.e. are not in a theme subdir but are used, are check and attach on the index page, they are not even
-	sized, and, these are sized but not themed, on the message view page, are view_nofmt, view_formatted,
-	view_headers, view_raw, and view_printable. Remember if these are themed they must be moved
-	into the subdirs, all of them, even if they are copies, and removed from the main images dir, so it is
-	obvious if they are group themed or not.
-	@author Angles
-	*/
-	function _image_on($appname, $image, $extension = '_on', $navbar = False)
-	{
-		//$prefer_ext = '.gif';
-		$prefer_ext = '.png';
-		$serverSettings = Settings::getInstance()->get('server');
-		return $serverSettings['webserver_url'] . '/email/templates/base/images/' . $image . $prefer_ext;
-	}
 } // end class mail_msg

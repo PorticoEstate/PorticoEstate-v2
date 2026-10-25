@@ -48,6 +48,21 @@ namespace Tests\Services
 
 	class EmailConnectionErrorTest extends TestCase
 	{
+		public function testRecoveryDoesNotRetryOrRenderWhenNotlsWasAlreadySelected(): void
+		{
+			$mail = $this->getMockBuilder(\mail_msg_wrappers::class)->disableOriginalConstructor()
+				->onlyMethods(['get_mailsvr_callstr', 'set_arg_value', 'login_error', 'ensure_stream_and_folder'])->getMock();
+			$mail->mail_msg_wrappers = $mail;
+			$mail->expects($this->once())->method('set_arg_value')
+				->with('beenthere_loginerr_tryagain_buggy_cert', 'beenthere', 3);
+			$mail->expects($this->once())->method('get_mailsvr_callstr')
+				->with(3)->willReturn('{imap.example.test:143/imap/notls}INBOX');
+			$mail->expects($this->never())->method('login_error');
+			$mail->expects($this->never())->method('ensure_stream_and_folder');
+			$this->expectOutputString('');
+			$this->assertFalse($mail->loginerr_tryagain_buggy_cert('test', 'failure', 'imap', 3));
+		}
+
 		/**
 		 * @runInSeparateProcess
 		 * @preserveGlobalState disabled

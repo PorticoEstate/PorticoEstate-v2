@@ -520,6 +520,18 @@ final class EmailPreferenceSchema
 		);
 		$i++;
 		$this->cust_prefs[$i] = array(
+			'id' 		=> 'mail_server_port',
+			'type'		=> 'user_string',
+			'widget'	=> 'textbox',
+			'accts_usage'	=> 'default, extra_accounts',
+			'write_props'	=> 'no_db_defang',
+			'lang_blurb'	=> lang('Mail Server port'),
+			'init_default'	=> 'string,',
+			'values'	=> array(),
+			'long_desc' => lang('Optional port number for the mail server. Leave blank to use the configured IMAP profile port or the default port for the selected mail server type.')
+		);
+		$i++;
+		$this->cust_prefs[$i] = array(
 			'id' 		=> 'imap_server_type',
 			'type'		=> 'known_string',
 			'widget'	=> 'combobox',

@@ -2265,73 +2265,51 @@ HTML;
 		// what's the name or IP of the mail server
 		$mail_server = $this->mail_msg_wrappers->get_pref_value('mail_server', $acctnum);
 
-		// what's the port we should use
-		// mail port is not yet *really* a user settable pref, SO WE WILL PUT LOGIC HERE TO FIGURE OUT WHAT IT SHOULD BE
-		//$pref_mail_port = $this->mail_msg_wrappers->get_pref_value('mail_port', $acctnum)
-		/*!
-			@concept pref_mail_port
-			@discussion The preferences for email were designed to *someday* let the user specify a 
-			non standard port to use for the mail server. This preference never came to be. The user 
-			still can not actually set a port number to use for the mail server. However, in the preferences 
-			api there is still code initializing a preference item called "mail_port", with a note that some day it 
-			would be user settable, but since it is not currently, the api preferences class has a function to 
-			determine the port number based on what kind of server we are connecting to. THIS DOES NOT 
-			REALLY BELONG IN PREFS, it never because a user preference, so the api preferences should 
-			not be concerned with mail_port. THEREFOR we will SET IT HERE. For backwards compatibility 
-			we still set a pref value for mail_port after we are done here, until we replace any code that asks 
-			prefs for a port number. Then, port number should be exclusively treated as an "arg" accessable through 
-			the OOP style ->get_arg_value('mail_port')  function. We do not have a seperate functin for this, 
-			we do it here, because the "mail_port" and the "mail_server_type" and the "mailsvr_callstr" are 
-			inextricibly linked, they exist only as a related group if data. CONCLUSION: we determine 
-			"mail_port" in this function "get_mailsvr_callstr" which is a private function anyway.
-			*/
-
 		// determine the Mail Server Call String AND PORT
-		// construct the email server call string from the opening bracket "{"  to the closing bracket  "}"
+		// construct the email server call string from the opening bracket "{"  to the closing bracket "}"
 		$mail_server_type = $this->mail_msg_wrappers->get_pref_value('mail_server_type', $acctnum);
+		$account_port = $this->mail_msg_wrappers->get_pref_value('mail_server_port', $acctnum);
+
 		$profile_imap_port = null;
 		if (in_array($mail_server_type, ['imap', 'imaps'], true))
 		{
 			$profile = \CreateObject('emailadmin.emailadmin_bo', true)->getResolvedProfileData('email');
 			if (is_array($profile))
 			{
-				$profile_imap_port = filter_var(
-					$profile['imapPort'] ?? null,
-					FILTER_VALIDATE_INT,
-					['options' => ['min_range' => 1, 'max_range' => 65535]]
-				);
+				$profile_imap_port = $profile['imapPort'] ?? null;
 			}
 		}
+		$mail_port = \App\modules\email\services\EmailServerPortResolver::resolve(
+			$mail_server_type,
+			$account_port,
+			$profile_imap_port
+		);
+
 		if ($mail_server_type == 'imaps')
 		{
 			// IMAP over SSL
 			$callstr_extra = '/imap/ssl/novalidate-cert';
-			$mail_port = $profile_imap_port ?: 993;
 		}
 		elseif ($mail_server_type == 'pop3s')
 		{
 			// POP3 over SSL
 			$callstr_extra = '/pop3/ssl/novalidate-cert';
-			$mail_port = 995;
 		}
 		elseif ($mail_server_type == 'pop3')
 		{
 			// POP3 normal connection, No SSL
 			$callstr_extra = '/pop3/notls';
-			$mail_port = 110;
 		}
 		elseif ($mail_server_type == 'imap')
 		{
 			// IMAP normal connection, No SSL
 			$callstr_extra = '/imap/notls';
-			$mail_port = $profile_imap_port ?: 143;
 		}
 		elseif ($mail_server_type == 'nntp')
 		{
 			// NOT CURRENTLY USED 
 			// NNTP news server port
 			$callstr_extra = '/nntp';
-			$port_number = 119;
 		}
 		else
 		{
@@ -2340,7 +2318,6 @@ HTML;
 			// return a default value that is likely to work
 			// probably should raise some kind of error here
 			$callstr_extra = '';
-			$mail_port = 143;
 		}
 
 		$mail_port = (string)$mail_port;

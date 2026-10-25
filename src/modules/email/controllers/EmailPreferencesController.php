@@ -95,6 +95,11 @@ class EmailPreferencesController
 				if (!is_scalar($values[$id])) return $this->json($response, ['error' => lang('Invalid preference value')], 422);
 				$value = (string) $values[$id];
 				if (strlen($value) > 8192) return $this->json($response, ['error' => lang('Preference value is too long')], 422);
+				if ($id === 'mail_server_port' && $value !== ''
+					&& filter_var($value, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1, 'max_range' => 65535]]) === false)
+				{
+					return $this->json($response, ['error' => lang('Invalid preference value')], 422);
+				}
 				if (($field['widget'] ?? '') === 'combobox' && !array_key_exists($value, (array) ($field['values'] ?? [])))
 				{
 					return $this->json($response, ['error' => lang('Invalid preference value')], 422);
@@ -252,6 +257,11 @@ class EmailPreferencesController
 				if (!is_scalar($values[$id])) return $this->json($response, ['error' => lang('Invalid preference value')], 422);
 				$value = (string) $values[$id];
 				if (strlen($value) > 8192) return $this->json($response, ['error' => lang('Preference value is too long')], 422);
+				if ($id === 'mail_server_port' && $value !== ''
+					&& filter_var($value, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1, 'max_range' => 65535]]) === false)
+				{
+					return $this->json($response, ['error' => lang('Invalid preference value')], 422);
+				}
 				if (($field['widget'] ?? '') === 'combobox' && !array_key_exists($value, (array) ($field['values'] ?? []))) return $this->json($response, ['error' => lang('Invalid preference value')], 422);
 				$normalizedValues[$id] = $value;
 			}

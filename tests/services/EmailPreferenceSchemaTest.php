@@ -29,6 +29,8 @@ namespace Tests\Services
 			$this->assertArrayHasKey('passwd', $custom);
 			$this->assertStringContainsString('encrypted', $custom['passwd']['write_props']);
 			$this->assertArrayHasKey('mail_server', $custom);
+			$this->assertSame('default, extra_accounts', $custom['mail_server_port']['accts_usage']);
+			$this->assertSame('string,', $custom['mail_server_port']['init_default']);
 			$this->assertArrayHasKey('mail_folder', $custom);
 		}
 

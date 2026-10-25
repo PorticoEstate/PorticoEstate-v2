@@ -401,6 +401,20 @@ namespace Tests\Controllers
 			$this->assertSame(1, $mail->initializations);
 		}
 
+		public function testBootstrapDebugLevelIsNotPassedAsAnAccount(): void
+		{
+			$mail = $this->mailDouble();
+			$bootstrap = new \email_msg_bootstrap();
+			$bootstrap->set_do_login(false);
+			$bootstrap->ensure_mail_msg_exists('unit-test', 3);
+			$this->assertSame(3, $bootstrap->debug_level);
+			$this->assertSame([[
+				'do_login' => false,
+				'do_login_ex' => \email_msg_bootstrap::LOGIN_NEVER,
+				'api_request' => false,
+			]], $mail->requests);
+		}
+
 		public function testApiMissingCredentialsBecomeStructuredConfigurationException(): void
 		{
 			$originalRequestUri = $_SERVER['REQUEST_URI'] ?? null;

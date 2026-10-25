@@ -13,18 +13,12 @@
  */
 
 /**
- * Utility class shared throught out the email app which ensures the GLOBALS->msg exists and is logged in
+ * Starts the shared MailMessage request with the configured login policy.
  *
- * Processes client side requests for actions like deleting or moving mail, 
- * getting attachments and for viewing html mail. Also contains code for an 
- * alternative to the redirect as a way to go to the next page view. 
- * Only has one function which bootstraps the GLOBALS->msg  (if necessary). 
- * It should be safe to call CreateObject on this class at any time for object 
- * $GLOBALS[phpgw]->msg_bootstrap because api is smart enough to not re-create 
- * it and theres nothing in the constructor, so this bootstrap capability should 
- * be available at any time to any code file. If there is a problem logging in, 
- * function GLOBALS["phpgw"]->msg->login_error() is called, giving an error 
- * message, and the script exits.
+ * Repeated calls reuse the initialized request. Account selection is handled
+ * by MailMessage::begin_request() using request data. API login failures throw
+ * EmailMailConfigurationException; browser failures use the mail error renderer.
+ * The constructor registers legacy BS_LOGIN_* aliases for existing callers.
  * @package email
  */
 class email_msg_bootstrap
@@ -33,7 +27,6 @@ class email_msg_bootstrap
 	public const LOGIN_NEVER = 1;
 	public const LOGIN_ONLY_IF_NEEDED = 2;
 	public const LOGIN_YES = 3;
-	private ?object $widgets = null;
 
 	/**
 	 * @var boolean $do_login Defaults to True, most often you do not need to change this.
@@ -157,16 +150,12 @@ class email_msg_bootstrap
 		return $this->ensure_mail_msg_exists('whatever called msg_bootstrap->login', 0);
 	}
 
-	/*!
-		@function ensure_mail_msg_exists
-		@abstract standard function to make sure a mail_msg object exists and is logged into the mailserver
-		@param $called_by (string) used for debug output
-		@param $debug_level (int) value 0 to 3, the prevailing debug level for the calling function. 
-		@author Angles
-		@discussion This process os the same for any email related code that needs the mail_msg object and 
-		an open stream. This function calls msg->begin_request and thus all the complicated logic 
-		associated with multiple accounts is handled there.
-		*/
+	/**
+	 * Initializes the shared request unless it has already started.
+	 *
+	 * @param string $called_by Caller context included in browser login errors.
+	 * @param int $debug_level Legacy diagnostic level, not an account number.
+	 */
 	function ensure_mail_msg_exists($called_by = 'not_provided', $debug_level = 0)
 	{
 		if ($debug_level > $this->debug_level)

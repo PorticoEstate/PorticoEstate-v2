@@ -288,7 +288,7 @@ class EmailInboxController
 		try
 		{
 			$bootstrap = \CreateObject('email.msg_bootstrap');
-			$bootstrap->ensure_mail_msg_exists('email.api.message', (int) $account);
+			$bootstrap->ensure_mail_msg_exists('email.api.message');
 			$mail = \App\modules\email\services\MailMessage::getInstance();
 			$activeMsgball = (array) $mail->get_arg_value('msgball');
 			$headers = $mail->phpgw_header($activeMsgball);
@@ -376,7 +376,7 @@ class EmailInboxController
 		try
 		{
 			$bootstrap = \CreateObject('email.msg_bootstrap');
-			$bootstrap->ensure_mail_msg_exists('email.api.folders', $account);
+			$bootstrap->ensure_mail_msg_exists('email.api.folders');
 			$mail = \App\modules\email\services\MailMessage::getInstance();
 			$folders = [];
 			foreach ((array) $mail->get_folder_list($account, true) as $folder)
@@ -457,7 +457,7 @@ class EmailInboxController
 		try
 		{
 			$bootstrap = \CreateObject('email.msg_bootstrap');
-			$bootstrap->ensure_mail_msg_exists('email.api.folders.action', $account);
+			$bootstrap->ensure_mail_msg_exists('email.api.folders.action');
 			$mail = \App\modules\email\services\MailMessage::getInstance();
 			$result = (new \App\modules\email\services\EmailFolderActions())->execute($mail, $input);
 			return $this->json($response, $result + ['message' => lang('Folder updated')]);
@@ -511,7 +511,7 @@ class EmailInboxController
 		try
 		{
 			$bootstrap = \CreateObject('email.msg_bootstrap');
-			$bootstrap->ensure_mail_msg_exists('email.api.attachment', (int) $account);
+			$bootstrap->ensure_mail_msg_exists('email.api.attachment');
 			$mail = \App\modules\email\services\MailMessage::getInstance();
 			$activeMsgball = (array) $mail->get_arg_value('msgball');
 			if ((int) ($activeMsgball['acctnum'] ?? -1) !== (int) $account || (string) ($activeMsgball['folder'] ?? '') !== $folder || (int) ($activeMsgball['msgnum'] ?? -1) !== (int) $messageNumber)

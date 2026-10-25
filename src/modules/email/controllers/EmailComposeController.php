@@ -198,7 +198,7 @@ class EmailComposeController
 		try
 		{
 			$bootstrap = \CreateObject('email.msg_bootstrap');
-			$bootstrap->ensure_mail_msg_exists('email.api.send', $account);
+			$bootstrap->ensure_mail_msg_exists('email.api.send');
 			$mail = \App\modules\email\services\MailMessage::getInstance();
 			$enabledAccounts = array_map('intval', array_column(array_filter((array) $mail->extra_and_default_acounts,
 				static fn($item) => ($item['status'] ?? '') === 'enabled'), 'acctnum'));

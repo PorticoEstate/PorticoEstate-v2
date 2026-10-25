@@ -6,6 +6,10 @@ This document began as a proposed plan. The execution record below supersedes th
 
 ## Execution Update
 
+- Added local POP3S/TLS checks: a trusted loopback certificate permits an encrypted login/STAT/QUIT session; an untrusted certificate and a trusted certificate with the wrong hostname reject the connection before authentication. Tests generate short-lived certificates/private keys in owner-only temporary files, set process-local OpenSSL trust, restore the environment, and delete the files. Production verification policy is unchanged; real-server and native-transport interoperability remain unverified.
+
+- Added real loopback TCP tests against a disposable scripted POP3 server. They cover login, STAT, TOP sorting, folded headers, RETR/dot unstuffing and long lines, cache command counts, DELE/QUIT, rejected authentication, failure disconnect without QUIT after DELE, and truncated-response cache rejection. The tests use synthetic credentials and an OS-assigned loopback port; they do not validate real-server deletion persistence, native POP3, IMAP/OAuth, or POP3S/TLS interoperability.
+
 - POP3 operational error handling now closes the local socket and throws without HTML rendering or process exit. It deliberately avoids QUIT on failure to avoid committing pending deletions. Sorting uses the validated TOP/header-array path, including unfolded case-insensitive fields, missing-field handling, and reuse of the existing single-message header cache.
 
 - Removed the unreferenced `class.mail_dcom_imap_sock.inc.php`, `class.mail_dcom_nntp.inc.php`, and `class.mail_dcom_nntp_sock.inc.php` implementations after checking repository loaders and callers. The active factory selects only IMAP/IMAPS and POP3/POP3S; the shared socket base remains required by POP3. Updated obsolete troubleshooting guidance. Residual news-mode compatibility branches and port defaults were not removed; external direct includes cannot be verified. Transport selection and POP3 dot-unstuffing are now complete in automated checks; live-server/TLS validation remains pending.

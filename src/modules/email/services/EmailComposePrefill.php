@@ -26,7 +26,8 @@ final class EmailComposePrefill
 		$headers = $this->mail->phpgw_header($active, false);
 		if (!$headers) throw new \InvalidArgumentException('The source message no longer exists');
 		$structure = $this->mail->phpgw_fetchstructure($active, false);
-		$parts = $structure ? (array) $this->mail->get_flat_pgw_struct($structure) : [];
+		if (!$structure) throw new \RuntimeException('Unable to fetch source message MIME structure');
+		$parts = (array) $this->mail->get_flat_pgw_struct($structure);
 		$firstPart = $this->firstPresentable($parts);
 
 		switch ($action)
@@ -45,6 +46,7 @@ final class EmailComposePrefill
 			case 'forward':
 				$prefill['subject'] = $this->subject($headers, 'Fw: ');
 				$prefill['body'] = $this->forwardBody($headers, $active, $firstPart);
+				$this->restoreAttachments($active, $parts);
 				break;
 			case 'edit':
 				if (trim((string) ($headers->Draft ?? '')) === '') throw new \InvalidArgumentException('The selected message is not a draft');

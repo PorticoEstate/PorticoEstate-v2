@@ -7,6 +7,11 @@ require_once __DIR__ . '/../../vendor/autoload.php';
 use App\modules\email\services\EmailComposePrefill;
 use PHPUnit\Framework\TestCase;
 
+class ComposePrefillCommon
+{
+	public function show_date($timestamp): string { return '2026-10-26'; }
+}
+
 class EmailComposePrefillTest extends TestCase
 {
 	private string $directory;
@@ -46,6 +51,7 @@ class EmailComposePrefillTest extends TestCase
 		$this->assertStringContainsString('reply@example.test', $replyAll['to']);
 		$this->assertStringContainsString('team@example.test', $replyAll['to']);
 		$this->assertSame('copy@example.test', $replyAll['cc']);
+		$this->assertSame([], (new \App\modules\email\services\EmailAttachmentStorage($this->directory))->list());
 	}
 
 	public function testEditingDraftRestoresAddressesBodyAndAttachments(): void
@@ -69,6 +75,30 @@ class EmailComposePrefillTest extends TestCase
 		$mail->headers->Draft = '';
 		$this->expectException(\InvalidArgumentException::class);
 		(new EmailComposePrefill($mail))->build($this->context('edit'));
+	}
+
+	public function testForwardRestoresAttachmentsAndIncludesThemInSavedDraft(): void
+	{
+		if (!class_exists('phpgwapi_common', false)) class_alias(ComposePrefillCommon::class, 'phpgwapi_common');
+		$mail = $this->mail(true);
+		$mail->headers->Draft = '';
+		$mail->parts[1]['encoding'] = 'base64';
+		$prefill = (new EmailComposePrefill($mail))->build($this->context('forward'));
+		$this->assertSame('Fw: Saved message', $prefill['subject']);
+		$files = (new \App\modules\email\services\EmailAttachmentStorage($this->directory))->list();
+		$this->assertCount(1, $files);
+		$this->assertSame('notes.txt', $files[0]['name']);
+		$path = $this->directory . '/' . $files[0]['id'];
+		$this->assertSame("draft\r\nattachment\0bytes", file_get_contents($path));
+
+		$raw = \App\modules\email\services\EmailDraftMessage::build($prefill, 'sender@example.test', 'Sender',
+			[['path' => $path, 'name' => $files[0]['name']]]);
+		$draft = (new \ZBateson\MailMimeParser\MailMimeParser())->parse($raw, false);
+		$this->assertSame('Fw: Saved message', $draft->getHeaderValue('Subject'));
+		$this->assertCount(1, $draft->getAllAttachmentParts());
+		$attachment = $draft->getAllAttachmentParts()[0];
+		$this->assertSame('notes.txt', $attachment->getFilename());
+		$this->assertSame("draft\r\nattachment\0bytes", $attachment->getContent());
 	}
 
 	private function context(string $action): array
@@ -105,7 +135,14 @@ class EmailComposePrefillTest extends TestCase
 			public function make_rfc2822_address($address, $html = false) { return empty($address->personal) ? $address->mailbox . '@' . $address->host : '"' . $address->personal . '" <' . $address->mailbox . '@' . $address->host . '>'; }
 			public function get_subject($headers, $prefix = '') { $subject = (string) $headers->Subject; return $prefix !== '' && stripos($subject, trim($prefix)) !== 0 ? $prefix . $subject : $subject; }
 			public function decode_header_string($value) { return $value; }
-			public function phpgw_fetchbody($msgball) { return ($msgball['part_no'] ?? '') === '2' ? "draft\r\nattachment\0bytes" : ($this->draft ? 'Draft body' : "Please review\r\nthe updated plan"); }
+			public function phpgw_fetchbody($msgball) {
+				if (($msgball['part_no'] ?? '') === '2')
+				{
+					$content = "draft\r\nattachment\0bytes";
+					return $this->parts[1]['encoding'] === 'base64' ? base64_encode($content) : $content;
+				}
+				return $this->draft ? 'Draft body' : "Please review\r\nthe updated plan";
+			}
 			public function normalize_crlf($body) { return str_replace(["\r\n", "\r", "\n"], "\r\n", $body); }
 			public function body_hard_wrap($body, $width) { return wordwrap($body, $width, "\r\n"); }
 			public function qprint($body) { return quoted_printable_decode($body); }

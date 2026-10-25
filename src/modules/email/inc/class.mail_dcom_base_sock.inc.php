@@ -631,6 +631,7 @@ class mail_dcom_base_sock extends phpgwapi_network
 		@function read_port_glob
 		@abstract used with POP3, reads data from port until we encounted param $end
 		@param $end (string) is the flag to look for that tells us when to stop reading the port's data
+		@param $unstuff_dots (boolean) remove POP3's extra leading dot after checking the terminator
 		@result raw string of data (glob) as received from the server
 		@throws \RuntimeException if the response ends before its terminator.
 		@discussion POP3 servers data typically ends with special charactor(s),
@@ -639,7 +640,7 @@ class mail_dcom_base_sock extends phpgwapi_network
 		@author Angles, skeeter
 		@access private
 		*/
-	function read_port_glob($end = '.')
+	function read_port_glob($end = '.', $unstuff_dots = false)
 	{
 		$glob_response = '';
 		while ($line = $this->read_port())
@@ -648,7 +649,7 @@ class mail_dcom_base_sock extends phpgwapi_network
 			{
 				return $glob_response;
 			}
-			$glob_response .= $line;
+			$glob_response .= $unstuff_dots && str_starts_with($line, '..') ? substr($line, 1) : $line;
 		}
 		$this->incomplete_response();
 	}
@@ -1097,7 +1098,7 @@ class mail_dcom_base_sock extends phpgwapi_network
 		@abstract ?
 		@author unknown, maybe Skeeter ? Rehberg ? Engo ?
 		*/
-	function read_and_load($end)
+	function read_and_load($end, $unstuff_dots = false)
 	{
 		$this->header = array();
 		while ($line = $this->read_port())
@@ -1105,6 +1106,10 @@ class mail_dcom_base_sock extends phpgwapi_network
 			if (rtrim($line, "\r\n") === $end)
 			{
 				return 1;
+			}
+			if ($unstuff_dots && str_starts_with($line, '..'))
+			{
+				$line = substr($line, 1);
 			}
 			$this->create_header($line, $this->header, "True");
 		}

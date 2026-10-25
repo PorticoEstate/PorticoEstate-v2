@@ -308,4 +308,147 @@ class EmailSocketBaseTest extends TestCase
 	{
 		return [['/pop3/notls', 'test'], ['/pop3/ssl/novalidate-cert', 'ssl://test']];
 	}
+
+	/**
+	 * @dataProvider pop3LoginResponses
+	 */
+	public function testPop3LoginFailuresReturnWithoutOutputAndCloseSocket(string $stage): void
+	{
+		require_once __DIR__ . '/../../src/modules/email/inc/class.mail_dcom_pop3_sock.inc.php';
+		$mail = $this->getMockBuilder(\mail_dcom_pop3_sock::class)->disableOriginalConstructor()
+			->onlyMethods(['open_port', 'read_port', 'msg2socket', 'error'])->getMock();
+		$socket = fopen('php://memory', 'r+');
+		$mail->expects($this->never())->method('error');
+		$mail->method('open_port')->willReturnCallback(static function () use ($mail, $socket, $stage)
+		{
+			$mail->socket = $socket;
+			if ($stage === 'connect')
+			{
+				$mail->set_error('Error', 'Connection Failed', 'could not connect');
+				return 0;
+			}
+			return 1;
+		});
+		$mail->method('read_port')->willReturnCallback(static function () use ($mail, $stage)
+		{
+			if ($stage === 'timeout')
+			{
+				$mail->set_error('Error', 'Read Timeout', 'Timed out.');
+				return false;
+			}
+			return match ($stage) {
+				'greeting' => "-ERR unavailable\r\n",
+				'prefix' => "+OKAY invalid\r\n",
+				default => "+OK ready\r\n",
+			};
+		});
+		$commands = [];
+		$mail->method('msg2socket')->willReturnCallback(static function ($command) use (&$commands, $mail, $stage)
+		{
+			$commands[] = $command;
+			if ($stage === 'user' || ($stage === 'pass' && str_starts_with($command, 'PASS ')))
+			{
+				$mail->set_error('550', '', '');
+				return 0;
+			}
+			return 1;
+		});
+		$this->expectOutputString('');
+		$this->assertFalse($mail->open('{test:110/pop3/notls}INBOX', 'user', 'secret'));
+		$this->assertNull($mail->socket);
+		$this->assertFalse(is_resource($socket));
+		$this->assertSame(match ($stage) {
+			'user' => ['USER user'],
+			'pass' => ['USER user', 'PASS secret'],
+			default => [],
+		}, $commands);
+		$this->assertNotSame('', $mail->server_last_error());
+		$this->assertStringNotContainsString('secret', $mail->server_last_error());
+	}
+
+	public static function pop3LoginResponses(): array
+	{
+		return [['connect'], ['timeout'], ['greeting'], ['prefix'], ['user'], ['pass']];
+	}
+
+	/**
+	 * @dataProvider quitResults
+	 */
+	public function testPop3QuitAlwaysClosesLocalSocket(string $result): void
+	{
+		require_once __DIR__ . '/../../src/modules/email/inc/class.mail_dcom_pop3_sock.inc.php';
+		$mail = $this->getMockBuilder(\mail_dcom_pop3_sock::class)->disableOriginalConstructor()
+			->onlyMethods(['msg2socket', 'error'])->getMock();
+		$mail->expects($this->never())->method('error');
+		$mail->socket = fopen('php://memory', 'r+');
+		$socket = $mail->socket;
+		$mail->expects($this->once())->method('msg2socket')
+			->with('QUIT', $this->anything(), $this->anything())
+			->willReturnCallback(static function () use ($result)
+			{
+				if ($result === 'exception')
+				{
+					throw new \RuntimeException('write-error');
+				}
+				return $result === 'success' ? 1 : 0;
+			});
+		try
+		{
+			$this->assertSame($result === 'success', $mail->close($socket));
+		}
+		catch (\RuntimeException $exception)
+		{
+			$this->assertSame('exception', $result);
+			$this->assertSame('write-error', $exception->getMessage());
+		}
+		$this->assertNull($mail->socket);
+		$this->assertFalse(is_resource($socket));
+		$this->assertTrue($mail->close());
+	}
+
+	public static function quitResults(): array
+	{
+		return [['success'], ['failure'], ['exception']];
+	}
+
+	public function testPop3RetrievalUnstuffsDotsExactlyOnceIncludingCachedReads(): void
+	{
+		require_once __DIR__ . '/../../src/modules/email/inc/class.mail_dcom_pop3_sock.inc.php';
+		$mail = $this->getMockBuilder(\mail_dcom_pop3_sock::class)->disableOriginalConstructor()
+			->onlyMethods(['msg2socket', 'read_port'])->getMock();
+		$mail->expects($this->once())->method('msg2socket')->willReturn(1);
+		$mail->expects($this->exactly(9))->method('read_port')->willReturnOnConsecutiveCalls(
+			"..Header: value\r\n", "\r\n", "..\r\n", "...two\r\n", "..leading\r\n",
+			". \r\n", "ordinary..dots\r\n", "\r\n", ".\r\n"
+		);
+		$header = ".Header: value\r\n";
+		$body = ".\r\n..two\r\n.leading\r\n. \r\nordinary..dots\r\n\r\n";
+		$this->assertSame($body, $mail->get_body('', 42, '', false));
+		$this->assertSame($header . "\r\n" . $body, $mail->get_body('', 42));
+		$this->assertSame($header, $mail->get_header_raw('', 42));
+		$this->assertSame($body, $mail->get_body('', 42, '', false));
+	}
+
+	public function testPop3TopUnstuffsHeadersBeforeCaching(): void
+	{
+		require_once __DIR__ . '/../../src/modules/email/inc/class.mail_dcom_pop3_sock.inc.php';
+		$mail = $this->getMockBuilder(\mail_dcom_pop3_sock::class)->disableOriginalConstructor()
+			->onlyMethods(['msg2socket', 'read_port'])->getMock();
+		$mail->expects($this->once())->method('msg2socket')->willReturn(1);
+		$mail->expects($this->exactly(2))->method('read_port')
+			->willReturnOnConsecutiveCalls("..Header: value\r\n", ".\r\n");
+		$this->assertSame(".Header: value\r\n", $mail->get_header_raw('', 42));
+		$this->assertSame(".Header: value\r\n", $mail->get_header_raw('', 42));
+	}
+
+	public function testSortingHeaderReaderUnstuffsBeforeParsing(): void
+	{
+		$mail = $this->getMockBuilder(\mail_dcom_base_sock::class)->disableOriginalConstructor()
+			->onlyMethods(['read_port', 'create_header'])->getMock();
+		$mail->expects($this->exactly(2))->method('read_port')
+			->willReturnOnConsecutiveCalls("..Header: value\r\n", ".\r\n");
+		$mail->expects($this->once())->method('create_header')
+			->with(".Header: value\r\n", [], 'True');
+		$this->assertSame(1, $mail->read_and_load('.', true));
+	}
 }

@@ -149,12 +149,13 @@ class mail_dcom_pop3_sock extends mail_dcom_base_sock
 	}
 	/*!
 		@function server_last_error
-		@abstract function NOT YET IMPLEMENTED in pop3 sockets
+		@abstract returns the latest socket failure diagnostic
 		*/
 	function server_last_error()
 	{
-		// not yet implemented
-		return '';
+		return implode(' ', array_filter([
+			$this->error['msg'] ?? '', $this->error['desc'] ?? '',
+		]));
 	}
 
 	/**************************************************************************\
@@ -174,6 +175,9 @@ class mail_dcom_pop3_sock extends mail_dcom_base_sock
 		*/
 	function open($fq_folder, $user, $pass, $flags = '')
 	{
+		$this->close_port();
+		$this->errorset = 0;
+		$this->error = array();
 		$this->header_glob = '';
 		$this->header_glob_msgnum = '';
 		$this->header_array = array();
@@ -197,20 +201,40 @@ class mail_dcom_pop3_sock extends mail_dcom_base_sock
 		//$port = 110;
 		if (!$this->open_port($server, $port, 15))
 		{
-			echo '<p><center><b>' . lang('There was an error trying to connect to your POP3 server.<br />Please contact your admin to check the servername, username or password.') . '</b></center>';
-			echo ('<CENTER><A HREF="' . phpgw::link('/home/') . '">' . lang('Click here to continue') . '...</A></CENTER>'); //cbsman			
-			(new \phpgwapi_common())->phpgw_exit(False);
+			$this->close_port();
+			return false;
 		}
-		$this->read_port();
-		if (!$this->msg2socket('USER ' . $user, "^\+ok", $response) || !$this->msg2socket('PASS ' . $pass, "^\+ok", $response))
+		$authenticated = false;
+		try
 		{
-			$this->error();
-			return False;
-		}
-		else
-		{
-			//echo "Successful POP3 Login.<br />\n";
+			$greeting = $this->read_port();
+			if ($greeting === false)
+			{
+				return false;
+			}
+			if (!preg_match('/^\+OK(?:[ \t\r\n]|$)/i', $greeting))
+			{
+				$this->set_error('Error', 'Invalid POP3 Greeting', 'POP3 server did not send a positive greeting.');
+				return false;
+			}
+			if (!$this->msg2socket('USER ' . $user, '^\+ok(?:[ \t\r\n]|$)', $response)
+				|| !$this->msg2socket('PASS ' . $pass, '^\+ok(?:[ \t\r\n]|$)', $response))
+			{
+				if (empty($this->error['msg']))
+				{
+					$this->set_error('550', 'Authentication Failed', 'POP3 server rejected authentication.');
+				}
+				return false;
+			}
+			$authenticated = true;
 			return $this->socket;
+		}
+		finally
+		{
+			if (!$authenticated)
+			{
+				$this->close_port();
+			}
 		}
 	}
 
@@ -226,14 +250,17 @@ class mail_dcom_pop3_sock extends mail_dcom_base_sock
 		*/
 	function close($flags = '')
 	{
-		if (!$this->msg2socket('QUIT', "^\+ok", $response))
+		if (!is_resource($this->socket))
 		{
-			$this->error();
-			return False;
+			return $this->close_port();
 		}
-		else
+		try
 		{
-			return True;
+			return (bool) $this->msg2socket('QUIT', '^\+ok(?:[ \t\r\n]|$)', $response);
+		}
+		finally
+		{
+			$this->close_port();
 		}
 	}
 
@@ -394,7 +421,7 @@ class mail_dcom_pop3_sock extends mail_dcom_base_sock
 				{
 					$this->error();
 				}
-				$response = $this->read_port_glob('.');
+				$response = $this->read_port_glob('.', true);
 				// expected array should NOT start at element 0, instead start it at element 1
 				$field_list = $this->glob_to_array($response, False, ' ', True, 1);
 				break;
@@ -463,7 +490,7 @@ class mail_dcom_pop3_sock extends mail_dcom_base_sock
 			{
 				$this->error();
 			}
-			$this->read_and_load('.');
+			$this->read_and_load('.', true);
 			if ($this->header[$element])
 			{
 				$field_element[$i] = $this->phpGW_quoted_printable_decode2($this->header[$element]);
@@ -1967,7 +1994,7 @@ class mail_dcom_pop3_sock extends mail_dcom_base_sock
 			$this->error();
 			return False;
 		}
-		$glob = $this->read_port_glob('.');
+		$glob = $this->read_port_glob('.', true);
 		// save this info for future ues
 		$this->header_glob = $glob;
 		$this->header_glob_msgnum = (int)$msg_num;
@@ -2154,12 +2181,12 @@ class mail_dcom_pop3_sock extends mail_dcom_base_sock
 				{
 					break;
 				}
-				$header_glob .= $line;
+				$header_glob .= str_starts_with($line, '..') ? substr($line, 1) : $line;
 			}
 			// ---  Get Body  ---
 			// we know we have passed the headers because we did that above
 			$body_glob = '';
-			$body_glob = $this->read_port_glob('.');
+			$body_glob = $this->read_port_glob('.', true);
 			$this->header_glob = $header_glob;
 			$this->header_glob_msgnum = (int)$msg_num;
 			$this->header_array = array();

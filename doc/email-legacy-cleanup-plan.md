@@ -6,6 +6,10 @@ This document began as a proposed plan. The execution record below supersedes th
 
 ## Execution Update
 
+- POP3 multiline paths now remove exactly one transport-added leading dot after checking the terminator. RETR headers/bodies, TOP headers, and sorting reads opt in; shared reader defaults remain unchanged. Cached content is already unstuffed and is not decoded again. Byte-exact regression tests cover leading dots, whitespace, blank lines, and repeated reads.
+
+- POP3 socket login now validates the positive greeting, returns connection/authentication failures without rendering HTML or exiting, and retains diagnostics for the mail core. Failed logins close their socket; QUIT always closes locally, including failed/throwing commands, and repeated close is safe. Live POP3/TLS verification and dot-unstuffing remain pending.
+
 - Added email-specific object-factory routing so transport selection uses each account's explicit protocol rather than include-time default preferences. IMAP always uses the IMAPManager adapter (modern/OAuth with native fallback); POP3 retains native support when available and the socket fallback otherwise. Distinct POP3/socket-base class names allow mixed-protocol accounts. Native POP3 opens directly through the native wrapper; socket POP3S uses an SSL connection. Unsupported protocols now fail explicitly rather than falling through to IMAP; NNTP implementation files remain untouched except the socket parent-class reference.
 
 - POP3 body retrieval now caches the raw headers together with the completed body, avoiding repeat RETR requests while preserving folded header bytes. Reopening clears message caches; incomplete headers/bodies are rejected before cache publication. Transport selection remains pending.

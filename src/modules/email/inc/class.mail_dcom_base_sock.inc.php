@@ -436,7 +436,7 @@ class hdr_info_envelope
  * @package email
  * @ignore
  */
-class mail_dcom_base extends phpgwapi_network
+class mail_dcom_base_sock extends phpgwapi_network
 {
 	// OBSOLETED "folder_list_changed" by the newer function "folder_list_did_change"
 	var $folder_list_changed = False;

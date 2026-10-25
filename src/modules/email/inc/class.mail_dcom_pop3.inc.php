@@ -21,9 +21,9 @@ defined('PE_IMAP_SE_UID') || define('PE_IMAP_SE_UID', 1);
 	* @package email
 	* @ignore
 	*/	
-	class mail_dcom extends mail_dcom_base
+	class mail_dcom_pop3 extends mail_dcom_base
 	{
-		function append($stream, $folder = 'Sent', $header, $body, $flags=0)
+		function append($stream, $folder, $header, $body, $flags=0)
 		{
 			// N/A for pop3
 			return False;
@@ -183,7 +183,7 @@ defined('PE_IMAP_SE_UID') || define('PE_IMAP_SE_UID', 1);
 
 		function open($mailbox,$username,$password,$flags=0)
 		{
-			return IMAPManager::imap_open($mailbox,$username,$password,$flags);
+			return LegacyIMAPWrapper::imap_open($mailbox,$username,$password,$flags);
 		}
 
 		function qprint($message)
@@ -203,7 +203,7 @@ defined('PE_IMAP_SE_UID') || define('PE_IMAP_SE_UID', 1);
 		{
 			// supported in PHP >= 3.0.12
 			//UNKNOWN if POP3 server errors also get put here
-			return IMAPManager::imap_last_error();
+			return LegacyIMAPWrapper::imap_last_error();
 		}
 
 		// does this work for pop3?

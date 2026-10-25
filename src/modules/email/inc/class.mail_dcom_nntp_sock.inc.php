@@ -26,7 +26,7 @@ defined('PE_IMAP_SORTTO') || define('PE_IMAP_SORTTO', 4);
 defined('PE_IMAP_SORTCC') || define('PE_IMAP_SORTCC', 5);
 defined('PE_IMAP_SORTSIZE') || define('PE_IMAP_SORTSIZE', 6);
 
-class mail_dcom extends mail_dcom_base
+class mail_dcom extends mail_dcom_base_sock
 {
 	var $db;
 	var $folder;

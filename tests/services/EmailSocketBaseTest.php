@@ -58,7 +58,7 @@ class EmailSocketBaseTest extends TestCase
 		});
 		try
 		{
-			$mail = new \mail_dcom_base();
+			$mail = new \mail_dcom_base_sock();
 			$this->assertTrue($mail->addcrlf);
 			$this->assertSame(0, $mail->errorset);
 			$this->assertSame(['temp_dir' => '/tmp/mail-test'], $mail->serverSettings);
@@ -78,7 +78,7 @@ class EmailSocketBaseTest extends TestCase
 	 */
 	public function testHeaderDecodingUsesPayloadAndPreservesSurroundingText(string $method, string $input, string $expected): void
 	{
-		$mail = (new \ReflectionClass(\mail_dcom_base::class))->newInstanceWithoutConstructor();
+		$mail = (new \ReflectionClass(\mail_dcom_base_sock::class))->newInstanceWithoutConstructor();
 		$this->assertSame($expected, $mail->$method($input));
 	}
 
@@ -105,7 +105,7 @@ class EmailSocketBaseTest extends TestCase
 	 */
 	public function testDecodedAuthorReachesAddressParser(string $header, string $expectedEmail, string $expectedName): void
 	{
-		$mail = (new \ReflectionClass(\mail_dcom_base::class))->newInstanceWithoutConstructor();
+		$mail = (new \ReflectionClass(\mail_dcom_base_sock::class))->newInstanceWithoutConstructor();
 		$email = '';
 		$name = '';
 		$mail->decode_author($header, $email, $name);
@@ -128,7 +128,7 @@ class EmailSocketBaseTest extends TestCase
 	 */
 	public function testMultilineResponseRequiresExactTerminator(array $lines, string $expected): void
 	{
-		$mail = $this->getMockBuilder(\mail_dcom_base::class)->disableOriginalConstructor()
+		$mail = $this->getMockBuilder(\mail_dcom_base_sock::class)->disableOriginalConstructor()
 			->onlyMethods(['read_port'])->getMock();
 		$mail->method('read_port')->willReturnOnConsecutiveCalls(...$lines);
 		$this->assertSame($expected, $mail->read_port_glob('.'));
@@ -148,7 +148,7 @@ class EmailSocketBaseTest extends TestCase
 	 */
 	public function testInterruptedResponseThrowsAndDiscardsPartialHeaders(string $method, bool $existingError): void
 	{
-		$mail = $this->getMockBuilder(\mail_dcom_base::class)->disableOriginalConstructor()
+		$mail = $this->getMockBuilder(\mail_dcom_base_sock::class)->disableOriginalConstructor()
 			->onlyMethods(['read_port', 'create_header'])->getMock();
 		$mail->method('read_port')->willReturnOnConsecutiveCalls("Subject: partial\r\n", false);
 		$mail->method('create_header')->willReturnCallback(static function ($line, &$headers)
@@ -182,7 +182,7 @@ class EmailSocketBaseTest extends TestCase
 
 	public function testHeaderLoadingStopsAtTerminatorWithoutConsumingNextResponse(): void
 	{
-		$mail = $this->getMockBuilder(\mail_dcom_base::class)->disableOriginalConstructor()
+		$mail = $this->getMockBuilder(\mail_dcom_base_sock::class)->disableOriginalConstructor()
 			->onlyMethods(['read_port', 'create_header'])->getMock();
 		$mail->expects($this->exactly(2))->method('read_port')
 			->willReturnOnConsecutiveCalls("Subject: complete\r\n", ".\r\n");
@@ -197,7 +197,7 @@ class EmailSocketBaseTest extends TestCase
 	public function testPop3DoesNotCacheAnInterruptedResponse(string $method, array $lines): void
 	{
 		require_once __DIR__ . '/../../src/modules/email/inc/class.mail_dcom_pop3_sock.inc.php';
-		$mail = $this->getMockBuilder(\mail_dcom::class)->disableOriginalConstructor()
+		$mail = $this->getMockBuilder(\mail_dcom_pop3_sock::class)->disableOriginalConstructor()
 			->onlyMethods(['msg2socket', 'read_port'])->getMock();
 		$mail->method('msg2socket')->willReturn(1);
 		$mail->method('read_port')->willReturnOnConsecutiveCalls(...$lines);
@@ -226,7 +226,7 @@ class EmailSocketBaseTest extends TestCase
 	public function testPop3BodyCachePreservesRawFoldedHeadersAndAvoidsRepeatedRetrieval(): void
 	{
 		require_once __DIR__ . '/../../src/modules/email/inc/class.mail_dcom_pop3_sock.inc.php';
-		$mail = $this->getMockBuilder(\mail_dcom::class)->disableOriginalConstructor()
+		$mail = $this->getMockBuilder(\mail_dcom_pop3_sock::class)->disableOriginalConstructor()
 			->onlyMethods(['msg2socket', 'read_port'])->getMock();
 		$mail->expects($this->exactly(2))->method('msg2socket')
 			->withConsecutive(['RETR 42', $this->anything(), $this->anything()],
@@ -251,7 +251,7 @@ class EmailSocketBaseTest extends TestCase
 	public function testPop3RejectsMissingHeaderSeparator(array $lines): void
 	{
 		require_once __DIR__ . '/../../src/modules/email/inc/class.mail_dcom_pop3_sock.inc.php';
-		$mail = $this->getMockBuilder(\mail_dcom::class)->disableOriginalConstructor()
+		$mail = $this->getMockBuilder(\mail_dcom_pop3_sock::class)->disableOriginalConstructor()
 			->onlyMethods(['msg2socket', 'read_port'])->getMock();
 		$mail->method('msg2socket')->willReturn(1);
 		$mail->method('read_port')->willReturnOnConsecutiveCalls(...$lines);
@@ -273,13 +273,18 @@ class EmailSocketBaseTest extends TestCase
 		return [[["Subject: partial\r\n", false]], [["Subject: partial\r\n", ".\r\n"]]];
 	}
 
-	public function testPop3OpenClearsCachesFromPreviousConnection(): void
+	/**
+	 * @dataProvider pop3Connections
+	 */
+	public function testPop3OpenClearsCachesFromPreviousConnection(string $options, string $server): void
 	{
 		require_once __DIR__ . '/../../src/modules/email/inc/class.mail_dcom_pop3_sock.inc.php';
-		$mail = $this->getMockBuilder(\mail_dcom::class)->disableOriginalConstructor()
+		$mail = $this->getMockBuilder(\mail_dcom_pop3_sock::class)->disableOriginalConstructor()
 			->onlyMethods(['distill_fq_folder', 'open_port', 'read_port', 'msg2socket'])->getMock();
-		$mail->method('distill_fq_folder')->willReturn(['folder' => 'INBOX', 'server' => 'test', 'port' => 110]);
-		$mail->method('open_port')->willReturn(1);
+		$mail->method('distill_fq_folder')->willReturn([
+			'folder' => 'INBOX', 'server' => 'test', 'port' => 110, 'port_with_junk' => '110' . $options,
+		]);
+		$mail->expects($this->once())->method('open_port')->with($server, 110, 15)->willReturn(1);
 		$mail->method('read_port')->willReturn("+OK\r\n");
 		$mail->method('msg2socket')->willReturn(1);
 		foreach (['header_glob_msgnum', 'header_array_msgnum', 'body_array_msgnum', 'msg_structure_msgnum'] as $key)
@@ -297,5 +302,10 @@ class EmailSocketBaseTest extends TestCase
 		}
 		$this->assertSame([], $mail->body_array);
 		$this->assertSame([], $mail->header_array);
+	}
+
+	public static function pop3Connections(): array
+	{
+		return [['/pop3/notls', 'test'], ['/pop3/ssl/novalidate-cert', 'ssl://test']];
 	}
 }

@@ -1380,7 +1380,7 @@ class mail_msg_base
 			// ----  php3 compatibility  ----
 			// make a "new" holder object to hold the dcom object
 			// remember, by now we have determined an acctnum
-			$this_server_type = $this->mail_msg_wrappers->get_pref_value('mail_server_type');
+			$this_server_type = $this->mail_msg_wrappers->get_pref_value('mail_server_type', $acctnum);
 			// ok, now put that object into the array
 			//$this_acctnum = $this->mail_msg_wrappers->get_acctnum();
 

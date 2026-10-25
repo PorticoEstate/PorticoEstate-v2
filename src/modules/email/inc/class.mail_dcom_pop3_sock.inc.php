@@ -49,7 +49,7 @@ defined('PE_IMAP_ENCOTHER') || define('PE_IMAP_ENCOTHER', 5);
 defined('PE_IMAP_FT_PREFETCHTEXT') || define('PE_IMAP_FT_PREFETCHTEXT', 16);
 defined('PE_IMAP_FT_NOT') || define('PE_IMAP_FT_NOT', 1);
 
-class mail_dcom extends mail_dcom_base
+class mail_dcom_pop3_sock extends mail_dcom_base_sock
 {
 	/**************************************************************************\
 	 *	Functions that DO NOTHING in POP3  
@@ -189,6 +189,10 @@ class mail_dcom extends mail_dcom_base
 		$folder = $svr_data['folder'];
 		$server = $svr_data['server'];
 		$port = $svr_data['port'];
+		if (str_contains($svr_data['port_with_junk'], '/ssl'))
+		{
+			$server = 'ssl://' . $server;
+		}
 
 		//$port = 110;
 		if (!$this->open_port($server, $port, 15))

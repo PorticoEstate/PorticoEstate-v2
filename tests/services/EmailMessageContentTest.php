@@ -88,4 +88,77 @@ class EmailMessageContentTest extends TestCase
 			static fn($part, $inline) => '', static fn($timestamp) => '');
 		$this->assertSame('', $content['parts'][0]['d_instructions'] ?? '');
 	}
+
+	public function testMissingStructureFailsInsteadOfReturningAnEmptyMessage(): void
+	{
+		$mail = new class {
+			public function phpgw_fetchstructure($msgball, $display) { return false; }
+		};
+		$this->expectException(\RuntimeException::class);
+		$this->expectExceptionMessage('Unable to fetch message MIME structure');
+		(new EmailMessageContent())->build($mail, ['acctnum' => 0, 'folder' => 'INBOX.Drafts', 'msgnum' => 1],
+			(object) [], static fn($part, $inline) => '');
+	}
+
+	public function testDraftBodyAndAttachmentRoundTripAgainstGreenMail(): void
+	{
+		if (getenv('GREENMAIL_TEST') !== '1') $this->markTestSkipped('Set GREENMAIL_TEST=1 to use the local GreenMail fixture.');
+		require_once __DIR__ . '/../../src/modules/email/inc/ModernIMAPWrapper.php';
+		require_once __DIR__ . '/../../src/modules/email/inc/class.mail_msg_base.inc.php';
+		require_once __DIR__ . '/../../src/modules/email/inc/class.mail_msg_wrappers.inc.php';
+		require_once __DIR__ . '/../../src/modules/email/inc/class.mail_msg_display.inc.php';
+		$prefix = '{127.0.0.1:1993/imap/ssl/novalidate-cert}';
+		$folder = 'message-content-' . bin2hex(random_bytes(8));
+		$stream = \ModernIMAPWrapper::imap_open($prefix . 'INBOX', 'outlook-test', 'local-test-password');
+		$this->assertNotFalse($stream, (string) \ModernIMAPWrapper::imap_last_error());
+		$created = false;
+		$file = tmpfile();
+		try
+		{
+			fwrite($file, 'Attachment content');
+			$raw = \App\modules\email\services\EmailDraftMessage::build(
+				['subject' => 'Draft content regression', 'body' => 'Draft body survives MIME parsing'],
+				'sender@example.test', 'Sender',
+				[['path' => stream_get_meta_data($file)['uri'], 'name' => 'report.txt']]
+			);
+			$this->assertTrue(\ModernIMAPWrapper::imap_createmailbox($stream, $prefix . $folder));
+			$created = true;
+			$this->assertTrue(\ModernIMAPWrapper::imap_append($stream, $prefix . $folder, $raw, '\\Draft'));
+			$this->assertTrue(\ModernIMAPWrapper::imap_reopen($stream, $prefix . $folder));
+			$uids = \ModernIMAPWrapper::imap_search($stream, 'ALL', 1);
+			$this->assertCount(1, $uids);
+			$mail = $this->getMockBuilder(\mail_msg::class)->disableOriginalConstructor()
+				->onlyMethods(['phpgw_fetchstructure', 'phpgw_fetchbody', 'make_part_clickable', 'get_subject', 'make_clickable', 'get_arg_value'])->getMock();
+			$mail->method('phpgw_fetchstructure')->willReturnCallback(
+				static fn($ball) => \ModernIMAPWrapper::imap_fetchstructure($stream, $ball['msgnum'], 1));
+			$mail->method('phpgw_fetchbody')->willReturnCallback(
+				static fn($ball) => \ModernIMAPWrapper::imap_fetchbody($stream, $ball['msgnum'], $ball['part_no'], 3));
+			$mail->method('make_part_clickable')->willReturn(['part_href' => '', 'part_clickable' => '']);
+			$mail->method('get_arg_value')->willReturn([]);
+			$mail->method('get_subject')->willReturn('Draft content regression');
+			$mail->method('make_clickable')->willReturnArgument(0);
+			$content = (new EmailMessageContent())->build($mail,
+				['acctnum' => 0, 'folder' => $folder, 'msgnum' => $uids[0]], (object) ['udate' => 0],
+				static fn($part, $inline) => '/attachment/' . $part, static fn($time) => '');
+			$item = EmailMessageSerializer::serialize($content['data'], $content['parts']);
+			$this->assertCount(1, $item['bodyParts']);
+			$this->assertStringContainsString('Draft body survives MIME parsing', $item['bodyParts'][0]['text']);
+			$this->assertCount(1, $item['attachments']);
+			$this->assertSame('report.txt', $item['attachments'][0]['fileName']);
+			$this->assertSame($uids, \ModernIMAPWrapper::imap_search($stream, 'UNSEEN', 1));
+		}
+		finally
+		{
+			fclose($file);
+			try
+			{
+				$this->assertTrue(\ModernIMAPWrapper::imap_reopen($stream, $prefix . 'INBOX'));
+				if ($created) $this->assertTrue(\ModernIMAPWrapper::imap_deletemailbox($stream, $prefix . $folder));
+			}
+			finally
+			{
+				$this->assertTrue(\ModernIMAPWrapper::imap_close($stream));
+			}
+		}
+	}
 }

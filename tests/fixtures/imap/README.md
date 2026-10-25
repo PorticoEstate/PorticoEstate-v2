@@ -60,6 +60,8 @@ The close-expunge flow verifies that ordinary logout preserves deletion marks an
 
 The PEEK flow verifies that whole-body and MIME-section reads preserve unread state with FT_PEEK and mark Seen without it, including refresh of prefetched header flags.
 
+`GREENMAIL_TEST=1 vendor/bin/phpunit tests/services/EmailMessageContentTest.php` additionally creates an isolated draft with an attachment, fetches its MIME structure by UID, passes it through the legacy part classifier and message JSON serializer, and verifies nonempty body text, attachment metadata, and unchanged unread state. The temporary folder is removed afterward. Structure-only FETCH parsing handles quoted charset/filename values immediately followed by closing parentheses without downloading the entire message.
+
 The search-criteria flow uses the application's criteria builder for combined body/subject/flag/date filtering, verifies nonmatching body/date restrictions, and checks explicit rejection of unsupported criteria. The wrapper supports the application's conjunction-based search fields, not arbitrary IMAP boolean/group expressions.
 
 ## Configure the email client

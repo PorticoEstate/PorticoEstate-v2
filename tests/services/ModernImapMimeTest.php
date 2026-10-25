@@ -560,26 +560,31 @@ class ModernImapMimeTest extends TestCase
 		return [[0], [1], [2], [3]];
 	}
 
-	public function testFetchStructureUsesBodyStructureInsteadOfFetchingMessageBody(): void
+	/**
+	 * @dataProvider structureIdentifierModes
+	 */
+	public function testFetchStructureUsesBodyStructureInsteadOfFetchingMessageBody(int $flags): void
 	{
 		$property = new \ReflectionProperty(\ModernIMAPWrapper::class, 'connections');
 		$property->setAccessible(true);
 		$original = $property->getValue();
-		$protocol = $this->getMockBuilder(\stdClass::class)->addMethods(['fetch'])->getMock();
-		$response = new class {
-			public function validatedData(): array
+		$protocol = $this->getMockBuilder(\stdClass::class)->addMethods(['requestAndResponse'])->getMock();
+		$response = new class($flags) {
+			public function __construct(private int $flags) {}
+			public function validate(): self
 			{
-				return [42 => ['UID' => 42, 'BODYSTRUCTURE' => [
-					'APPLICATION', 'PDF', [['NAME', 'report.pdf']], null, null, 'BASE64', 256, null,
-					['ATTACHMENT', [['FILENAME', 'report.pdf']]], null, null, null,
-				]]];
+				return $this;
+			}
+			public function getResponse(): array
+			{
+				$sequence = $this->flags ? 7 : 42;
+				return ["* 9 FETCH (FLAGS (\\Seen))\r\n", "* " . $sequence . " FETCH (BODYSTRUCTURE (\"APPLICATION\" \"PDF\" (\"NAME\" \"report.pdf\") NIL NIL \"BASE64\" 256 NIL (\"ATTACHMENT\" (\"FILENAME\" \"report.pdf\")) NIL NIL NIL) UID 42)\r\n", "TAG OK FETCH completed.\r\n"];
 			}
 		};
-		$protocol->expects($this->once())->method('fetch')->with(
-			['BODYSTRUCTURE', 'UID'],
-			[42],
-			null,
-			\Webklex\PHPIMAP\IMAP::ST_UID
+		$protocol->expects($this->once())->method('requestAndResponse')->with(
+			$flags ? 'UID FETCH' : 'FETCH',
+			['42:42', '(BODYSTRUCTURE UID)'],
+			true
 		)->willReturn($response);
 		$client = $this->getMockBuilder(\stdClass::class)->addMethods(['openFolder', 'getConnection'])->getMock();
 		$client->expects($this->once())->method('openFolder')->with('INBOX');
@@ -590,15 +595,60 @@ class ModernImapMimeTest extends TestCase
 		]]);
 		try
 		{
-			$structure = \ModernIMAPWrapper::imap_fetchstructure('structure-test', 42, 1);
+			$structure = \ModernIMAPWrapper::imap_fetchstructure('structure-test', 42, $flags);
 			$this->assertSame(3, $structure->type);
 			$this->assertSame('ATTACHMENT', $structure->disposition);
 			$this->assertSame('report.pdf', $structure->dparameters[0]->value);
+			$this->assertSame('report.pdf', $structure->parameters[0]->value);
 		}
 		finally
 		{
 			$property->setValue(null, $original);
 		}
+	}
+
+	public static function structureIdentifierModes(): array
+	{
+		return [[0], [1]];
+	}
+
+	/**
+	 * @dataProvider rawStructureValues
+	 */
+	public function testStructureTokenizerHandlesQuotedBoundariesAndLiterals(string $raw, array $expected): void
+	{
+		$parse = new \ReflectionMethod(\ModernIMAPWrapper::class, 'parseStructureResponseValue');
+		$parse->setAccessible(true);
+		$offset = 0;
+		$this->assertSame($expected, $parse->invokeArgs(null, [$raw, &$offset]));
+		$this->assertSame(strlen($raw), $offset);
+	}
+
+	public static function rawStructureValues(): array
+	{
+		return [
+			'quoted charset followed by closing bracket' => ['("text" "plain" ("charset" "UTF-8") NIL NIL "7BIT" 664 20 NIL NIL NIL)', ['text', 'plain', ['charset', 'UTF-8'], null, null, '7BIT', '664', '20', null, null, null]],
+			'escaped quote and backslash' => ['("a\\"b" "c\\\\d")', ['a"b', 'c\\d']],
+			'literal with brackets and newline' => ["({6}\r\na(b)\r\n NIL)", ["a(b)\r\n", null]],
+			'nested multipart' => ['(("TEXT" "PLAIN") ("TEXT" "HTML") "ALTERNATIVE")', [['TEXT', 'PLAIN'], ['TEXT', 'HTML'], 'ALTERNATIVE']],
+		];
+	}
+
+	/**
+	 * @dataProvider invalidRawStructureValues
+	 */
+	public function testStructureTokenizerRejectsTruncatedResponses(string $raw): void
+	{
+		$parse = new \ReflectionMethod(\ModernIMAPWrapper::class, 'parseStructureResponseValue');
+		$parse->setAccessible(true);
+		$offset = 0;
+		$this->expectException(\RuntimeException::class);
+		$parse->invokeArgs(null, [$raw, &$offset]);
+	}
+
+	public static function invalidRawStructureValues(): array
+	{
+		return [['("UTF-8"'], ['("unfinished)'], ["({20}\r\nshort)"], ['({invalid})']];
 	}
 
 	public function testMetadataPrefetchCachesHeadersAndStructuresForUidRows(): void

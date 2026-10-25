@@ -670,27 +670,96 @@ class ModernIMAPWrapper
             $client = $connection['client'];
             $client->openFolder($connection['folder']->path);
             $mode = ($flags & 1) ? \Webklex\PHPIMAP\IMAP::ST_UID : \Webklex\PHPIMAP\IMAP::ST_MSGN;
-            $data = $client->getConnection()->fetch(
-                ['BODYSTRUCTURE', 'UID'],
-                [(int) $msgNum],
-                null,
-                $mode
-            )->validatedData();
-            $attributes = $data[(int) $msgNum] ?? (is_array($data) ? reset($data) : []);
-            if (is_array($attributes['BODYSTRUCTURE'] ?? null)) {
-                return self::convertBodyStructure($attributes['BODYSTRUCTURE']);
+            // Read raw tokens: the library misparses quoted strings immediately followed by ")".
+            $response = $client->getConnection()->requestAndResponse(
+                ($mode === \Webklex\PHPIMAP\IMAP::ST_UID ? 'UID FETCH' : 'FETCH'),
+                [(int) $msgNum . ':' . (int) $msgNum, '(BODYSTRUCTURE UID)'],
+                true
+            );
+            $response->validate();
+            $raw = implode('', $response->getResponse());
+            if (preg_match_all('/^\* (\d+) FETCH /mi', $raw, $matches, PREG_OFFSET_CAPTURE)) {
+                foreach ($matches[0] as $index => $match) {
+                    $offset = $match[1] + strlen($match[0]);
+                    $attributes = self::parseStructureResponseValue($raw, $offset);
+                    if (!is_array($attributes) || count($attributes) % 2 !== 0) {
+                        throw new \RuntimeException('Invalid IMAP structure response attributes.');
+                    }
+                    $attributes = array_chunk($attributes, 2);
+                    $fields = [];
+                    foreach ($attributes as [$key, $value]) {
+                        if (!is_string($key)) {
+                            throw new \RuntimeException('Invalid IMAP structure response field.');
+                        }
+                        $fields[strtoupper($key)] = $value;
+                    }
+                    $identifier = ($flags & 1) ? ($fields['UID'] ?? 0) : $matches[1][$index][0];
+                    if ((int) $identifier === (int) $msgNum && is_array($fields['BODYSTRUCTURE'] ?? null)) {
+                        return self::convertBodyStructure($fields['BODYSTRUCTURE']);
+                    }
+                }
             }
 
-            $message = self::getMessage($stream, $msgNum, $flags);
-            if (!$message) return false;
-            $parser = new \ZBateson\MailMimeParser\MailMimeParser();
-            $parsed = $parser->parse($message->getHeader()->raw . "\r\n\r\n" . $message->getRawBody(), false);
-            return self::convertMimeStructure($parsed);
+            throw new \RuntimeException('IMAP server did not return the requested message structure.');
             
         } catch (Exception $e) {
             self::$lastError = $e->getMessage();
             return false;
         }
+    }
+
+    private static function parseStructureResponseValue(string $raw, int &$offset, int $depth = 0): array|string|null
+    {
+        if ($depth > 100) {
+            throw new \RuntimeException('IMAP structure response is nested too deeply.');
+        }
+        $length = strlen($raw);
+        while ($offset < $length && ctype_space($raw[$offset])) $offset++;
+        if ($offset >= $length) {
+            throw new \RuntimeException('Incomplete IMAP structure response.');
+        }
+        $character = $raw[$offset++];
+        if ($character === '(') {
+            $values = [];
+            while ($offset < $length) {
+                while ($offset < $length && ctype_space($raw[$offset])) $offset++;
+                if ($offset < $length && $raw[$offset] === ')') {
+                    $offset++;
+                    return $values;
+                }
+                $values[] = self::parseStructureResponseValue($raw, $offset, $depth + 1);
+            }
+            throw new \RuntimeException('Unclosed IMAP structure response list.');
+        }
+        if ($character === '"') {
+            $value = '';
+            while ($offset < $length) {
+                $character = $raw[$offset++];
+                if ($character === '"') return $value;
+                if ($character === '\\') {
+                    if ($offset >= $length) break;
+                    $character = $raw[$offset++];
+                }
+                $value .= $character;
+            }
+            throw new \RuntimeException('Unclosed IMAP structure response string.');
+        }
+        $offset--;
+        if ($character === '{' && preg_match('/\G\{(\d+)\+?\}\r\n/', $raw, $literal, 0, $offset)) {
+            $offset += strlen($literal[0]);
+            $size = (int) $literal[1];
+            if ($size > $length - $offset) {
+                throw new \RuntimeException('Incomplete IMAP structure response literal.');
+            }
+            $value = substr($raw, $offset, $size);
+            $offset += $size;
+            return $value;
+        }
+        if (preg_match('/\G[^\s(){}"]+/', $raw, $atom, 0, $offset)) {
+            $offset += strlen($atom[0]);
+            return strtoupper($atom[0]) === 'NIL' ? null : $atom[0];
+        }
+        throw new \RuntimeException('Invalid IMAP structure response token.');
     }
 
     private static function convertBodyStructure(array $bodyStructure): stdClass
@@ -754,6 +823,13 @@ class ModernIMAPWrapper
     {
         if (!is_array($parameters)) {
             return [];
+        }
+
+        if ($parameters && !is_array(reset($parameters))) {
+            if (count($parameters) % 2 !== 0) {
+                throw new \RuntimeException('Invalid IMAP body parameter pairs.');
+            }
+            $parameters = array_chunk($parameters, 2);
         }
 
         $result = [];

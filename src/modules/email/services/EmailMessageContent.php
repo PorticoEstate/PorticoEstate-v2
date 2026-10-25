@@ -7,7 +7,8 @@ final class EmailMessageContent
 	public function build(object $mail, array $msgball, object $headers, callable $attachmentUrl, ?callable $formatDate = null): array
 	{
 		$structure = $mail->phpgw_fetchstructure($msgball, false);
-		$parts = $structure ? (array) $mail->get_flat_pgw_struct($structure) : [];
+		if (!$structure) throw new \RuntimeException('Unable to fetch message MIME structure');
+		$parts = (array) $mail->get_flat_pgw_struct($structure);
 		$imageUrls = [];
 		foreach ($parts as $index => $part)
 		{

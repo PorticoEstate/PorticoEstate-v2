@@ -244,7 +244,8 @@ select your screensize for propper showing of the javascript addressbook	email	n
 select your style for the addressbook. the traditional, simple style. or the new javascript enabled complex addressbook	email	no	Velg stil for adresseboken: den tradisjonelle, enkle stilen eller den nye, avanserte JavaScript-adresseboken.
 selected	email	no	Valgt
 send	email	no	Send
-send forwarded mail as quoted attachment	email	no	Send videresendt e-post som sitert vedlegg
+quote forwarded message body inline	email	no	Siter den videresendte meldingsteksten i meldingen
+the original message body is included as quoted text in the message body. the original email is also attached separately.	email	no	Den opprinnelige meldingsteksten legges inn som sitert tekst. Den opprinnelige e-posten legges også ved separat.
 sent	email	no	sendt
 sent folder	email	no	mappe for sendte meldinger
 sent messages folder	common	no	Mappe for sendte meldinger

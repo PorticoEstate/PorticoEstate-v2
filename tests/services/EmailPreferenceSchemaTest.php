@@ -25,6 +25,8 @@ namespace Tests\Services
 			$this->assertSame(['old_new', 'new_old'], array_keys($standard['default_sorting']['values']));
 			$this->assertArrayHasKey('email_sig', $standard);
 			$this->assertStringContainsString('empty_string_ok', $standard['email_sig']['write_props']);
+			$this->assertSame('Quote forwarded message body inline', $standard['fwd_inline_text']['lang_blurb']);
+			$this->assertStringContainsString('attached separately', strtolower($standard['fwd_inline_text']['long_desc']));
 			$this->assertArrayHasKey('use_custom_settings', $custom);
 			$this->assertArrayHasKey('passwd', $custom);
 			$this->assertStringContainsString('encrypted', $custom['passwd']['write_props']);

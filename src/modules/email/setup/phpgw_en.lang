@@ -244,7 +244,8 @@ select your screensize for propper showing of the javascript addressbook	email	e
 select your style for the addressbook. the traditional, simple style. or the new javascript enabled complex addressbook	email	en	Select your style for the addressbook. The traditional, simple style. Or the new javascript enabled complex addressbook
 selected	email	en	Selected
 send	email	en	Send
-send forwarded mail as quoted attachment	email	en	Send forwarded mail as quoted attachment
+quote forwarded message body inline	email	en	Quote forwarded message body inline
+the original message body is included as quoted text in the message body. the original email is also attached separately.	email	en	The original message body is included as quoted text in the message body. The original email is also attached separately.
 sent	email	en	sent
 sent folder	email	en	sent folder
 sent messages folder	common	en	Sent messages folder

@@ -360,10 +360,10 @@ final class EmailPreferenceSchema
 			'widget'	=> 'checkbox',
 			'accts_usage'	=> 'default,extra_accounts',
 			// NOTE: write_props value of "group_master" is DEPRECIATED, not used anywhere 
-			'lang_blurb'	=> lang('Send forwarded mail as quoted attachment'),
+			'lang_blurb'	=> lang('Quote forwarded message body inline'),
 			'init_default'	=> 'set_or_not,not_set',
 			'values'	=> array(),
-			'long_desc' 	=> lang('Select this box if you want the text body of the message you are forwarding to appear inline in the body of your sent message')
+			'long_desc' 	=> lang('The original message body is included as quoted text in the message body. The original email is also attached separately.')
 		);
 		$i++;
 		$this->std_prefs[$i] = array(

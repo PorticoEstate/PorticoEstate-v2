@@ -20,8 +20,7 @@ class EmailGoogleOAuthController
 
 		try
 		{
-			$userSettings = (array) Settings::getInstance()->get('user');
-			$emailPreferences = (array) ($userSettings['preferences']['email'] ?? []);
+			$emailPreferences = (array) (Preferences::getInstance()->read()['email'] ?? []);
 			if ($account > 0 && !isset($emailPreferences['ex_accounts'][$account]))
 			{
 				return $this->error($response, 'Email account not found', 404);
@@ -51,8 +50,7 @@ class EmailGoogleOAuthController
 			$tokens = GoogleMailOAuth::completeAuthorization((string) ($query['code'] ?? ''), (string) ($query['state'] ?? ''), $this->resolvedProfile());
 			$account = (int) $tokens['account'];
 			$preferences = Preferences::getInstance();
-			$userSettings = (array) Settings::getInstance()->get('user');
-			$emailPreferences = (array) ($userSettings['preferences']['email'] ?? []);
+			$emailPreferences = (array) ($preferences->read()['email'] ?? []);
 			if ($account > 0 && !isset($emailPreferences['ex_accounts'][$account]))
 			{
 				return $this->error($response, 'Email account no longer exists', 404);
@@ -106,7 +104,7 @@ class EmailGoogleOAuthController
 		$profile = is_array($profile) ? $profile : [];
 		if (trim((string) ($profile['google_redirect_uri'] ?? '')) === '')
 		{
-			$profile['google_redirect_uri'] = \phpgw::link('/email/oauth/google/callback', [], true);
+			$profile['google_redirect_uri'] = \phpgw::link('/email/oauth/google/callback', [], false, true, true, true);
 		}
 		return $profile;
 	}

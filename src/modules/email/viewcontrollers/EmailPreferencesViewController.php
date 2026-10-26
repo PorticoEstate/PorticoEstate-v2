@@ -4,6 +4,7 @@ namespace App\modules\email\viewcontrollers;
 
 use App\modules\phpgwapi\helpers\LegacyViewHelper;
 use App\modules\phpgwapi\helpers\TwigHelper;
+use App\modules\phpgwapi\services\Preferences;
 use App\modules\phpgwapi\services\Settings;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
@@ -48,8 +49,7 @@ class EmailPreferencesViewController
 	public function account(Request $request, Response $response): Response
 	{
 		$account = (string) ($request->getQueryParams()['ex_acctnum'] ?? 'add_new');
-		$userSettings = (array) Settings::getInstance()->get('user');
-		$emailPreferences = (array) ($userSettings['preferences']['email'] ?? []);
+		$emailPreferences = (array) (Preferences::getInstance()->read()['email'] ?? []);
 		$accountPreferences = ctype_digit($account) ? (array) ($emailPreferences['ex_accounts'][(int) $account] ?? []) : [];
 		return $this->render($request, $response, '@views/email-account-edit.twig', [
 			'api_url' => \phpgw::link('/email/api/preferences/account', ['ex_acctnum' => $account], true),
@@ -103,7 +103,7 @@ class EmailPreferencesViewController
 		if (!is_array($profile)) return false;
 		if (trim((string) ($profile['google_redirect_uri'] ?? '')) === '')
 		{
-			$profile['google_redirect_uri'] = \phpgw::link('/email/oauth/google/callback', [], true);
+			$profile['google_redirect_uri'] = \phpgw::link('/email/oauth/google/callback', [], false, true, true, true);
 		}
 		return \App\modules\email\services\GoogleMailOAuth::isConfigured($profile, $accountPreferences);
 	}

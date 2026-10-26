@@ -29,4 +29,21 @@ class EmailAccountsSerializerTest extends TestCase
 			3 => ['acctnum' => 3, 'status' => 'disabled', 'fullname' => 'backup@example.test'],
 		]));
 	}
+
+	public function testDerivesStatusFromRawStoredAccountPreferences(): void
+	{
+		$this->assertSame([
+			['id' => 1, 'name' => '[1] (disabled) Gmail, Sigurd', 'status' => 'disabled'],
+		], EmailAccountsSerializer::serialize([
+			1 => [
+				'layout' => '2',
+				'email_sig' => '',
+				'fullname' => 'Sigurd Nes',
+				'account_name' => 'Gmail, Sigurd',
+				'imap_auth_type' => 'google_oauth',
+				'google_client_id' => 'client.apps.example',
+			],
+			2 => ['google_client_id' => 'incomplete.apps.example'],
+		]));
+	}
 }

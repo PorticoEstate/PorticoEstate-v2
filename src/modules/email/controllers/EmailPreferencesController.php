@@ -157,8 +157,8 @@ class EmailPreferencesController
 	{
 		try
 		{
-			$userSettings = Settings::getInstance()->get('user');
-			$stored = (array) ($userSettings['preferences']['email']['ex_accounts'] ?? []);
+			$emailPreferences = (array) (Preferences::getInstance()->read()['email'] ?? []);
+			$stored = (array) ($emailPreferences['ex_accounts'] ?? []);
 			$accounts = \App\modules\email\services\EmailAccountsSerializer::serialize($stored);
 			return $this->json($response, ['items' => $accounts]);
 		}
@@ -188,7 +188,8 @@ class EmailPreferencesController
 		{
 			$schema = (new \App\modules\email\services\EmailPreferenceSchema())->fields();
 			$userSettings = Settings::getInstance()->get('user');
-			$storedAccounts = (array) ($userSettings['preferences']['email']['ex_accounts'] ?? []);
+			$emailPreferences = (array) (Preferences::getInstance()->read()['email'] ?? []);
+			$storedAccounts = (array) ($emailPreferences['ex_accounts'] ?? []);
 			$account = $accountValue === 'add_new'
 				? \App\modules\email\services\EmailPreferencesWriter::nextAccountNumber($storedAccounts)
 				: (int) $accountValue;
@@ -263,7 +264,8 @@ class EmailPreferencesController
 			$bootstrap->ensure_mail_msg_exists('email.api.preferences.account.save');
 			$schema = (new \App\modules\email\services\EmailPreferenceSchema())->fields();
 			$userSettings = Settings::getInstance()->get('user');
-			$storedAccounts = (array) ($userSettings['preferences']['email']['ex_accounts'] ?? []);
+			$emailPreferences = (array) (Preferences::getInstance()->read()['email'] ?? []);
+			$storedAccounts = (array) ($emailPreferences['ex_accounts'] ?? []);
 			if (!array_key_exists($account, $storedAccounts)
 				&& $account !== \App\modules\email\services\EmailPreferencesWriter::nextAccountNumber($storedAccounts))
 			{

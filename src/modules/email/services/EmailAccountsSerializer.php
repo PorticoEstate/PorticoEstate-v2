@@ -20,7 +20,9 @@ final class EmailAccountsSerializer
 		foreach ($accounts as $key => $account)
 		{
 			if (!is_array($account)) continue;
-			$status = (string) ($account['status'] ?? 'empty');
+			$status = array_key_exists('status', $account)
+				? (string) $account['status']
+				: self::storedAccountStatus($account);
 			if ($status === 'empty') continue;
 			$id = (int) ($account['acctnum'] ?? $key);
 			$name = self::accountName($account);
@@ -33,5 +35,15 @@ final class EmailAccountsSerializer
 			];
 		}
 		return $result;
+	}
+
+	private static function storedAccountStatus(array $account): string
+	{
+		foreach (['fullname', 'email_sig', 'layout'] as $required)
+		{
+			if (!isset($account[$required])) return 'empty';
+		}
+		$enabled = $account['ex_account_enabled'] ?? null;
+		return $enabled !== null && (string) $enabled !== '' ? 'enabled' : 'disabled';
 	}
 }

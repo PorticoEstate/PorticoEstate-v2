@@ -22,11 +22,16 @@ class EmailPreferencesViewController
 
 	public function index(Request $request, Response $response): Response
 	{
+		$userSettings = (array) Settings::getInstance()->get('user');
+		$emailPreferences = (array) ($userSettings['preferences']['email'] ?? []);
 		return $this->render($request, $response, '@views/preferences.twig', [
 			'api_url' => \phpgw::link('/email/api/preferences', [], true),
 			'save_url' => \phpgw::link('/email/api/preferences', [], true),
 			'oauth_url' => $this->oauthConfigured()
 				? \phpgw::link('/email/oauth/microsoft/authorize', ['acctnum' => 0])
+				: '',
+			'google_oauth_url' => $this->googleOauthConfigured($emailPreferences)
+				? \phpgw::link('/email/oauth/google/authorize', ['acctnum' => 0])
 				: '',
 		]);
 	}
@@ -43,6 +48,9 @@ class EmailPreferencesViewController
 	public function account(Request $request, Response $response): Response
 	{
 		$account = (string) ($request->getQueryParams()['ex_acctnum'] ?? 'add_new');
+		$userSettings = (array) Settings::getInstance()->get('user');
+		$emailPreferences = (array) ($userSettings['preferences']['email'] ?? []);
+		$accountPreferences = ctype_digit($account) ? (array) ($emailPreferences['ex_accounts'][(int) $account] ?? []) : [];
 		return $this->render($request, $response, '@views/email-account-edit.twig', [
 			'api_url' => \phpgw::link('/email/api/preferences/account', ['ex_acctnum' => $account], true),
 			'save_url' => \phpgw::link('/email/api/preferences/account', [], true),
@@ -50,6 +58,9 @@ class EmailPreferencesViewController
 			'account_mode' => true,
 			'oauth_url' => ctype_digit($account) && (int) $account > 0 && $this->oauthConfigured()
 				? \phpgw::link('/email/oauth/microsoft/authorize', ['acctnum' => (int) $account])
+				: '',
+			'google_oauth_url' => ctype_digit($account) && (int) $account > 0 && $this->googleOauthConfigured($accountPreferences)
+				? \phpgw::link('/email/oauth/google/authorize', ['acctnum' => (int) $account])
 				: '',
 		]);
 	}
@@ -84,5 +95,16 @@ class EmailPreferencesViewController
 	{
 		$profile = \CreateObject('emailadmin.emailadmin_bo', true)->getResolvedProfileData('email');
 		return is_array($profile) && \App\modules\email\services\MicrosoftImapOAuth::isConfigured($profile);
+	}
+
+	private function googleOauthConfigured(array $accountPreferences): bool
+	{
+		$profile = \CreateObject('emailadmin.emailadmin_bo', true)->getResolvedProfileData('email');
+		if (!is_array($profile)) return false;
+		if (trim((string) ($profile['google_redirect_uri'] ?? '')) === '')
+		{
+			$profile['google_redirect_uri'] = \phpgw::link('/email/oauth/google/callback', [], true);
+		}
+		return \App\modules\email\services\GoogleMailOAuth::isConfigured($profile, $accountPreferences);
 	}
 }

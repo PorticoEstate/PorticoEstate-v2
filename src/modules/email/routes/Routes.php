@@ -8,6 +8,7 @@ use App\modules\email\controllers\EmailSearchController;
 use App\modules\email\controllers\EmailFilterController;
 use App\modules\email\controllers\EmailPreferencesController;
 use App\modules\email\controllers\EmailMicrosoftOAuthController;
+use App\modules\email\controllers\EmailGoogleOAuthController;
 use App\modules\email\viewcontrollers\EmailComposeViewController;
 use App\modules\email\viewcontrollers\EmailInboxViewController;
 use App\modules\email\viewcontrollers\EmailSearchViewController;
@@ -81,6 +82,8 @@ $app->group('/email', function (RouteCollectorProxy $group) use ($emailCsrf)
 	$group->post('/api/preferences/accounts/delete', EmailPreferencesController::class . ':deleteAccount')->add($emailCsrf);
 	$group->get('/oauth/microsoft/authorize', EmailMicrosoftOAuthController::class . ':authorize');
 	$group->get('/oauth/microsoft/callback', EmailMicrosoftOAuthController::class . ':callback');
+	$group->get('/oauth/google/authorize', EmailGoogleOAuthController::class . ':authorize');
+	$group->get('/oauth/google/callback', EmailGoogleOAuthController::class . ':callback');
 	$group->get('/view/compose', EmailComposeViewController::class . ':index');
 	$group->get('/view/inbox', EmailInboxViewController::class . ':index');
 	$group->get('/view/message', EmailInboxViewController::class . ':message');

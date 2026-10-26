@@ -51,6 +51,7 @@
 			<legend>{{ lang('IMAP settings') }}</legend>
 			<label>{{ lang('Select type of IMAP server') }}<select id="emailadmin-imap-type" name="imapsettings[imapType]"></select></label>
 			<p>{{ lang('The Microsoft Outlook IMAP option sets the server endpoint. OAuth2 authorization is configured per mailbox in Email Preferences. Leave the client secret blank when editing to keep the saved secret.') }}</p>
+			<p>{{ lang('The Google Gmail OAuth IMAP option sets the Gmail server endpoint. Configure a default Google OAuth client here or override the client ID and secret for each mailbox in Email Preferences. The redirect URI must match the application callback. Leave the client secret blank when editing to keep the saved secret.') }}</p>
 			<div id="emailadmin-imap-fields" class="emailadmin-grid"></div>
 		</fieldset>
 		<div class="emailadmin-actions">

@@ -66,6 +66,16 @@
 		control.appendChild(input);
 		row.appendChild(label);
 		row.appendChild(control);
+		if (field.id === 'imap_auth_type' && field.google_help)
+		{
+			const help = document.createElement('p');
+			help.className = 'email-preference-description email-preference-google-help';
+			help.setAttribute('role', 'note');
+			help.textContent = field.google_help;
+			help.hidden = input.value !== 'google_oauth';
+			input.addEventListener('change', () => { help.hidden = input.value !== 'google_oauth'; });
+			row.appendChild(help);
+		}
 		parent.appendChild(row);
 	}
 

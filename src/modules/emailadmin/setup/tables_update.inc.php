@@ -50,3 +50,21 @@ function emailadmin_upgrade1_5_003($oProc)
 		return	'1.5.004';
 	}
 }
+
+$test[] = '1.5.004';
+function emailadmin_upgrade1_5_004($oProc)
+{
+	$oProc->m_odb->transaction_begin();
+	foreach (['google_client_id', 'google_client_secret', 'google_redirect_uri'] as $field)
+	{
+		$oProc->AddColumn('egw_emailadmin', $field, array(
+			'type' => 'varchar',
+			'precision' => 255,
+			'nullable' => True
+		));
+	}
+	if ($oProc->m_odb->transaction_commit())
+	{
+		return '1.5.005';
+	}
+}

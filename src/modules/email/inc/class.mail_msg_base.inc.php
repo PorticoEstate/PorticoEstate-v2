@@ -712,7 +712,7 @@ class mail_msg_base
 	function resolve_imap_credentials($acctnum, $password)
 	{
 		$authentication = (string) $this->mail_msg_wrappers->get_pref_value('imap_auth_type', $acctnum);
-		if ($authentication !== 'microsoft_oauth')
+		if (!in_array($authentication, ['microsoft_oauth', 'google_oauth'], true))
 		{
 			return ['password' => $password, 'authentication' => 'login'];
 		}
@@ -720,11 +720,23 @@ class mail_msg_base
 		$serverType = (string) $this->mail_msg_wrappers->get_pref_value('mail_server_type', $acctnum);
 		if (!in_array($serverType, ['imap', 'imaps'], true))
 		{
-			throw new \RuntimeException('Microsoft OAuth2 requires an IMAP or IMAPS account');
+			throw new \RuntimeException('OAuth2 requires an IMAP or IMAPS account');
 		}
 
 		$profile = \CreateObject('emailadmin.emailadmin_bo', true)->getResolvedProfileData('email');
-		$tokens = \App\modules\email\services\MicrosoftImapOAuth::refreshAccessToken((string) $password, is_array($profile) ? $profile : []);
+		$profile = is_array($profile) ? $profile : [];
+		if ($authentication === 'google_oauth')
+		{
+			$googlePreferences = [
+				'google_client_id' => $this->mail_msg_wrappers->get_pref_value('google_client_id', $acctnum),
+				'google_client_secret' => $this->mail_msg_wrappers->get_pref_value('google_client_secret', $acctnum),
+			];
+			$tokens = \App\modules\email\services\GoogleMailOAuth::refreshAccessToken((string) $password, $profile, $googlePreferences);
+		}
+		else
+		{
+			$tokens = \App\modules\email\services\MicrosoftImapOAuth::refreshAccessToken((string) $password, $profile);
+		}
 		$refreshToken = (string) ($tokens['refresh_token'] ?? $password);
 		if ($refreshToken !== (string) $password)
 		{
@@ -857,6 +869,7 @@ class mail_msg_base
 			$defang_these[6] = 'mail_folder';
 			$defang_these[7] = 'fullname';
 			$defang_these[8] = 'account_name';
+			$defang_these[9] = 'google_client_secret';
 			$loops = count($cached_prefs['extra_and_default_acounts']);
 			for ($i = 0; $i < $loops; $i++)
 			{
@@ -1123,7 +1136,8 @@ class mail_msg_base
 				'address',
 				'mail_folder',
 				'fullname',
-				'account_name'
+				'account_name',
+				'google_client_secret'
 			);
 
 			$loops = count($this->extra_and_default_acounts);

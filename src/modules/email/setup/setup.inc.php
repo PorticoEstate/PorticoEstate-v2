@@ -57,7 +57,7 @@ $setup_info['email']['depends'][] = array(
 
 $setup_info['email']['depends'][] = array(
 	'appname' => 'emailadmin',
-	'versions' => array('1.5.004')
+	'versions' => array('1.5.005')
 );
 
 $setup_info['email']['depends'][] = array(

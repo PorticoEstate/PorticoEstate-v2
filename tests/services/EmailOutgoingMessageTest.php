@@ -10,6 +10,7 @@ require_once __DIR__ . '/../../src/modules/email/inc/class.mail_msg.inc.php';
 
 use App\modules\email\services\EmailAttachmentStorage;
 use App\modules\email\services\EmailOutgoingMessage;
+use App\modules\email\services\GoogleSmtpOAuthTokenProvider;
 use App\modules\phpgwapi\services\MailerSmtp;
 use App\modules\phpgwapi\services\Settings;
 use PHPUnit\Framework\TestCase;
@@ -106,6 +107,51 @@ class EmailOutgoingMessageTest extends TestCase
 		$this->assertSame('tls', $mailer->SMTPSecure);
 		$this->assertTrue($mailer->SMTPAuth);
 		$this->assertSame('environment-user', $mailer->Username);
+	}
+
+	public function testGoogleOauthUsesGmailSmtpAndXoauth2ForSelectedMailbox(): void
+	{
+		$mail = new class($this->directory)
+		{
+			public string $att_files_dir;
+			public function __construct(string $directory) { $this->att_files_dir = $directory; }
+			public function set_acctnum(int $account): void {}
+			public function get_pref_value(string $key, int $account): string
+			{
+				return match ($key) {
+					'address', 'userid' => 'gmail@example.test',
+					'fullname' => 'Gmail User',
+					'imap_auth_type' => 'google_oauth',
+					'passwd' => 'encrypted-refresh-token',
+					default => '',
+				};
+			}
+			public function decrypt_email_passwd(string $value): string { return 'refresh-token'; }
+			public function resolve_imap_credentials(int $account, string $refreshToken): array
+			{
+				if ($refreshToken !== 'refresh-token') throw new \RuntimeException('Unexpected refresh token');
+				return ['password' => 'google-access-token', 'authentication' => 'oauth'];
+			}
+			public function body_hard_wrap(string $body, int $width): string { return $body; }
+		};
+		$sender = new EmailOutgoingMessage(static fn() => new PHPMailer(true));
+		$mailer = $sender->prepare(['to' => 'recipient@example.test', 'subject' => 'Gmail', 'body' => 'Body'], $mail);
+
+		$this->assertSame('smtp.gmail.com', $mailer->Host);
+		$this->assertSame(587, $mailer->Port);
+		$this->assertSame(PHPMailer::ENCRYPTION_STARTTLS, $mailer->SMTPSecure);
+		$this->assertTrue($mailer->SMTPAuth);
+		$this->assertSame('XOAUTH2', $mailer->AuthType);
+		$this->assertSame('gmail@example.test', $mailer->Username);
+	}
+
+	public function testGoogleSmtpTokenProviderFormatsXoauth2Payload(): void
+	{
+		$provider = new GoogleSmtpOAuthTokenProvider('gmail@example.test', 'access-token');
+		$this->assertSame(
+			'user=gmail@example.test' . "\001auth=Bearer access-token\001\001",
+			base64_decode($provider->getOauth64(), true)
+		);
 	}
 
 	public function testLegacyMailerFactoryResolvesToMailerSmtp(): void

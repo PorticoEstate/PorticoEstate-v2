@@ -30,6 +30,8 @@
 		imapAuthPassword: 'IMAP password', imapEnableCyrusAdmin: 'Enable Cyrus administration',
 		microsoft_tenant_id: 'Microsoft tenant ID', microsoft_client_id: 'Microsoft client ID',
 		microsoft_client_secret: 'Microsoft client secret', microsoft_redirect_uri: 'Microsoft redirect URI',
+		google_client_id: 'Google client ID', google_client_secret: 'Google client secret',
+		google_redirect_uri: 'Google redirect URI',
 		imapAdminUsername: 'Admin username', imapAdminPW: 'Admin password', imapEnableSieve: 'Enable Sieve',
 		imapSieveServer: 'Sieve server', imapSievePort: 'Sieve port'
 	};
@@ -136,7 +138,7 @@
 		} else
 		{
 			const input = document.createElement('input');
-			input.type = /password|PW$/.test(key) || key === 'microsoft_client_secret' ? 'password' : 'text';
+			input.type = /password|PW$/.test(key) || key === 'microsoft_client_secret' || key === 'google_client_secret' ? 'password' : 'text';
 			input.name = name;
 			input.value = input.type === 'password' ? '' : (value == null ? '' : String(value));
 			if (input.type === 'password') input.autocomplete = 'new-password';
@@ -162,6 +164,10 @@
 			if (server === 'imap' && type === '7')
 			{
 				Object.assign(defaults, { imapServer: 'outlook.office365.com', imapPort: '993', imapTLSEncryption: 3 });
+			}
+			if (server === 'imap' && type === '8')
+			{
+				Object.assign(defaults, { imapServer: 'imap.gmail.com', imapPort: '993', imapTLSEncryption: 3 });
 			}
 			fields.filter(key => key !== typeField).forEach(key => makeInput(container, server + 'settings', type, key, profile[key] == null ? defaults[key] : profile[key]));
 		};

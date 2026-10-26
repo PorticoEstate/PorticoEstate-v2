@@ -11,6 +11,7 @@
 .email-preference { display: grid; grid-template-columns: minmax(14rem, 1fr) minmax(18rem, 1.3fr); gap: 1rem; padding: .75rem 0; border-bottom: 1px solid var(--mail-line); }
 .email-preference-label { display: grid; align-content: start; gap: .3rem; font-weight: 600; }
 .email-preference-description { color: var(--mail-muted); font-size: .86rem; font-weight: 400; }
+.email-preference-google-help { grid-column: 1 / -1; margin: 0; }
 .email-preference-control input:not([type="checkbox"]), .email-preference-control select, .email-preference-control textarea { box-sizing: border-box; width: 100%; min-height: 2.35rem; padding: .4rem .55rem; border: 1px solid #9aa9af; border-radius: 3px; background: #fff; color: var(--mail-ink); font: inherit; }
 .email-preference-control textarea { min-height: 6rem; resize: vertical; }
 .email-preference-control input[type="checkbox"], .email-preferences-toggle input { width: 1rem; height: 1rem; accent-color: var(--mail-accent); }

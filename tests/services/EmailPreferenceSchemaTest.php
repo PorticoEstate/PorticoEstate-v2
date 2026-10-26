@@ -31,6 +31,10 @@ namespace Tests\Services
 			$this->assertArrayHasKey('passwd', $custom);
 			$this->assertStringContainsString('encrypted', $custom['passwd']['write_props']);
 			$this->assertArrayHasKey('mail_server', $custom);
+			$this->assertStringContainsString('Connect Gmail with Google OAuth2', $custom['imap_auth_type']['google_help']);
+			$this->assertSame('default, extra_accounts', $custom['google_client_id']['accts_usage']);
+			$this->assertStringContainsString('encrypted', $custom['google_client_secret']['write_props']);
+			$this->assertStringContainsString('hidden', $custom['google_client_secret']['write_props']);
 			$this->assertSame('default, extra_accounts', $custom['mail_server_port']['accts_usage']);
 			$this->assertSame('string,', $custom['mail_server_port']['init_default']);
 			$this->assertArrayHasKey('mail_folder', $custom);

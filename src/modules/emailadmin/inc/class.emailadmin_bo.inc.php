@@ -240,6 +240,23 @@ class emailadmin_bo
 				'protocol'	=> 'imap',
 				'classname'	=> 'defaultimap'
 			),
+			'8' 	=> array(
+				'fieldNames'	=> array(
+					'imapServer',
+					'imapPort',
+					'imapType',
+					'imapLoginType',
+					'imapTLSEncryption',
+					'imapTLSAuthentication',
+					'imapoldcclient',
+					'google_client_id',
+					'google_client_secret',
+					'google_redirect_uri'
+				),
+				'description'	=> 'Google Gmail OAuth IMAP',
+				'protocol'	=> 'imap',
+				'classname'	=> 'defaultimap'
+			),
 		);
 
 		if ($_restoreSesssion) $this->restoreSessionData();

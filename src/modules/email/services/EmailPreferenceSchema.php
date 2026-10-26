@@ -472,8 +472,34 @@ final class EmailPreferenceSchema
 			'values' => array(
 				'password' => lang('Password'),
 				'microsoft_oauth' => lang('Microsoft Outlook OAuth2'),
+				'google_oauth' => lang('Google Gmail OAuth2'),
 			),
-			'long_desc' => lang('Choose password authentication or Microsoft OAuth2 for an Outlook IMAP account. OAuth2 requires the server administrator to configure a Microsoft application.')
+			'google_help' => lang('Use the full Gmail address as the account name. Enter the Google OAuth client ID and secret below or use the emailadmin profile credentials. Save the settings, reload this page if you entered account credentials, and then choose Connect Gmail with Google OAuth2. For a new extra account, save and reopen it first. Workspace IMAP must be enabled by an administrator.'),
+			'long_desc' => lang('Choose password authentication or OAuth2 for Microsoft Outlook or Google Gmail. OAuth2 requires the server administrator to configure the matching mail profile.')
+		);
+		$i++;
+		$this->cust_prefs[$i] = array(
+			'id' => 'google_client_id',
+			'type' => 'user_string',
+			'widget' => 'textbox',
+			'accts_usage' => 'default, extra_accounts',
+			'write_props' => 'no_db_defang',
+			'lang_blurb' => lang('Google OAuth client ID'),
+			'init_default' => 'string,',
+			'values' => array(),
+			'long_desc' => lang('Optional per-account Google OAuth client ID. Leave blank to use the Google OAuth client configured on the assigned emailadmin profile. Register the application callback URI shown in the emailadmin profile or provided by the application.')
+		);
+		$i++;
+		$this->cust_prefs[$i] = array(
+			'id' => 'google_client_secret',
+			'type' => 'user_string',
+			'widget' => 'passwordbox',
+			'accts_usage' => 'default, extra_accounts',
+			'write_props' => 'password, hidden, encrypted, empty_no_delete',
+			'lang_blurb' => lang('Google OAuth client secret'),
+			'init_default' => 'init_no_fill',
+			'values' => array(),
+			'long_desc' => lang('Optional per-account Google OAuth client secret. Stored encrypted and never displayed after saving. Leave blank to use the assigned emailadmin profile secret.')
 		);
 		$i++;
 		$this->cust_prefs[$i] = array(

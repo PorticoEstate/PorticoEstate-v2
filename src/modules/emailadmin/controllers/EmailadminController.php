@@ -53,7 +53,7 @@ class EmailadminController
 
 	private function safeProfile(array $profile): array
 	{
-		foreach (['ea_smtp_auth_password', 'smtpLDAPAdminPW', 'imapAuthPassword', 'imapAdminPW', 'microsoft_client_secret'] as $secret)
+		foreach (['ea_smtp_auth_password', 'smtpLDAPAdminPW', 'imapAuthPassword', 'imapAdminPW', 'microsoft_client_secret', 'google_client_secret'] as $secret)
 		{
 			unset($profile[$secret]);
 		}
@@ -164,6 +164,7 @@ class EmailadminController
 		$smtpSettings = $this->serverSettings((array) ($smtp[$smtpType] ?? []), $smtpFields, $smtpType, 'smtp');
 		$imapSettings = $this->serverSettings((array) ($imap[$imapType] ?? []), $imapFields, $imapType, 'imap');
 		$submittedMicrosoftSecret = trim((string) (($imap[$imapType] ?? [])['microsoft_client_secret'] ?? ''));
+		$submittedGoogleSecret = trim((string) (($imap[$imapType] ?? [])['google_client_secret'] ?? ''));
 		if ($id)
 		{
 			$current = [];
@@ -183,10 +184,18 @@ class EmailadminController
 			{
 				$imapSettings['microsoft_client_secret'] = $current['microsoft_client_secret'] ?? '';
 			}
+			if (isset($imapSettings['google_client_secret']) && $imapSettings['google_client_secret'] === '')
+			{
+				$imapSettings['google_client_secret'] = $current['google_client_secret'] ?? '';
+			}
 		}
 		if ($submittedMicrosoftSecret !== '')
 		{
 			$imapSettings['microsoft_client_secret'] = \App\modules\email\services\MailMessage::getInstance()->encrypt_email_passwd($submittedMicrosoftSecret);
+		}
+		if ($submittedGoogleSecret !== '')
+		{
+			$imapSettings['google_client_secret'] = \App\modules\email\services\MailMessage::getInstance()->encrypt_email_passwd($submittedGoogleSecret);
 		}
 
 		if ($globalSettings['description'] === '')

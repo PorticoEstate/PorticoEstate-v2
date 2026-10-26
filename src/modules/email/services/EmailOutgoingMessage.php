@@ -87,6 +87,7 @@ final class EmailOutgoingMessage
 		{
 			$mailer->addStringAttachment($this->forwardedMessage($mail, (array) $payload['msgball']), lang('forwarded_message'), '7bit', 'message/rfc822');
 		}
+		$this->configureGoogleSmtp($mailer, $mail, $account);
 		$this->attachmentDescriptors = $attachmentDescriptors;
 		$this->captureEnvelope = ['to' => $to, 'cc' => $cc, 'bcc' => $bcc, 'subject' => $subject, 'from' => $from];
 		return $mailer;
@@ -155,6 +156,35 @@ final class EmailOutgoingMessage
 		$header = preg_replace('/^.{0,3}Return-Path.*\r\n/im', '', $header) ?? $header;
 		$body = $mail->normalize_crlf(trim((string) $body));
 		return trim($header) . "\r\n\r\n" . $body;
+	}
+
+	private function configureGoogleSmtp(PHPMailer $mailer, object $mail, int $account): void
+	{
+		if ((string) $mail->get_pref_value('imap_auth_type', $account) !== 'google_oauth') return;
+		$emailAddress = trim((string) $mail->get_pref_value('userid', $account));
+		$encryptedRefreshToken = (string) $mail->get_pref_value('passwd', $account);
+		$refreshToken = $mail->decrypt_email_passwd($encryptedRefreshToken);
+		$credentials = $mail->resolve_imap_credentials($account, (string) $refreshToken);
+		if (($credentials['authentication'] ?? '') !== 'oauth' || empty($credentials['password']))
+		{
+			throw new \RuntimeException('Unable to obtain Gmail SMTP OAuth credentials');
+		}
+
+		$mailer->Host = 'smtp.gmail.com';
+		$mailer->Port = 587;
+		$mailer->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+		$mailer->SMTPAuth = true;
+		$mailer->AuthType = 'XOAUTH2';
+		$mailer->Username = $emailAddress;
+		$mailer->Password = '';
+		$mailer->SMTPOptions = [
+			'ssl' => [
+				'verify_peer' => true,
+				'verify_peer_name' => true,
+				'allow_self_signed' => false,
+			],
+		];
+		$mailer->setOAuth(new GoogleSmtpOAuthTokenProvider($emailAddress, (string) $credentials['password']));
 	}
 
 	private function originatingIp(): string

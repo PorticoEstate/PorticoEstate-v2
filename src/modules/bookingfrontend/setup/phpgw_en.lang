@@ -1124,3 +1124,19 @@ repeating_direct_booking_warning	bookingfrontend	en	This resource uses direct bo
 withdraw_timeslot	bookingfrontend	en	Withdraw
 confirm_withdraw_timeslot_description	bookingfrontend	en	Are you sure you want to withdraw this single timeslot? The case officer will be notified of the withdrawal.
 withdraw_timeslot_comment_label	bookingfrontend	en	Comment to the case officer (optional)
+catering_overview_empty	bookingfrontend	en	No catering has been ordered for this application.
+catering_order_no_lines	bookingfrontend	en	No items in this order.
+catering_col_article	bookingfrontend	en	Item
+catering_change_until	bookingfrontend	en	Can be changed until %1
+catering_change_locked	bookingfrontend	en	The deadline for changing the catering has passed.
+catering_cancel_locked	bookingfrontend	en	The deadline for cancelling the catering has passed.
+catering_change_cancel_locked	bookingfrontend	en	The deadlines for changing and cancelling the catering have passed.
+catering_contact_officer	bookingfrontend	en	Contact the case officer via the comments on this application.
+catering_kitchen_contact	bookingfrontend	en	Kitchen contact information
+catering_cancel_order	bookingfrontend	en	Cancel order
+catering_confirm_cancel_order	bookingfrontend	en	Do you want to cancel this catering order?
+catering_order_locked	bookingfrontend	en	This order can no longer be changed here.
+catering_order_cutoff_passed	bookingfrontend	en	The deadline for ordering or changing catering has passed.
+catering_cancellation_deadline_passed	bookingfrontend	en	The deadline for changing or cancelling the catering has passed.
+catering_serving_time_passed	bookingfrontend	en	The serving time has passed.
+catering_application_closed	bookingfrontend	en	The application is closed, so the catering can no longer be changed.

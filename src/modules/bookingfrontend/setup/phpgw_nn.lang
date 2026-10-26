@@ -1124,3 +1124,19 @@ repeating_direct_booking_warning	bookingfrontend	nn	Denne ressursen har direkte 
 withdraw_timeslot	bookingfrontend	nn	Trekk tilbake
 confirm_withdraw_timeslot_description	bookingfrontend	nn	Er du sikker på at du vil trekkje tilbake denne enkelttimen? Saksbehandlar vil bli varsla om trekkinga.
 withdraw_timeslot_comment_label	bookingfrontend	nn	Kommentar til saksbehandlar (valfritt)
+catering_overview_empty	bookingfrontend	nn	Ingen bevertning er bestilt for denne søknaden.
+catering_order_no_lines	bookingfrontend	nn	Ingen artiklar i denne bestillinga.
+catering_col_article	bookingfrontend	nn	Artikkel
+catering_change_until	bookingfrontend	nn	Kan endrast innan %1
+catering_change_locked	bookingfrontend	nn	Fristen for å endre bevertninga er ute.
+catering_cancel_locked	bookingfrontend	nn	Fristen for å avbestille bevertninga er ute.
+catering_change_cancel_locked	bookingfrontend	nn	Fristane for å endre og avbestille bevertninga er ute.
+catering_contact_officer	bookingfrontend	nn	Kontakt saksbehandlar via kommentarane på denne søknaden.
+catering_kitchen_contact	bookingfrontend	nn	Kontaktinformasjon for kjøkkenet
+catering_cancel_order	bookingfrontend	nn	Avbestill
+catering_confirm_cancel_order	bookingfrontend	nn	Vil du avbestille denne bevertninga?
+catering_order_locked	bookingfrontend	nn	Bestillinga kan ikkje lenger endrast her.
+catering_order_cutoff_passed	bookingfrontend	nn	Fristen for å bestille eller endre bevertning er ute.
+catering_cancellation_deadline_passed	bookingfrontend	nn	Fristen for å endre eller avbestille bevertninga er ute.
+catering_serving_time_passed	bookingfrontend	nn	Serveringstidspunktet er passert.
+catering_application_closed	bookingfrontend	nn	Søknaden er avslutta, så bevertninga kan ikkje endrast.

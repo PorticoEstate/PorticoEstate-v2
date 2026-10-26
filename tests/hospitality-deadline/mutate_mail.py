@@ -25,6 +25,7 @@ FILES = [
     "src/modules/booking/services/HospitalityOrderDiff.php",
     "src/modules/booking/services/CateringLangSwitch.php",
     "src/modules/booking/services/TranslationLangSwitch.php",
+    "src/modules/booking/repositories/HospitalityOrderRepository.php",
     "src/modules/booking/services/CateringMailRenderer.php",
     "src/modules/booking/html/base/emails/catering_changed_by_applicant.twig",
     "src/modules/bookingfrontend/services/applications/CateringChangeNotifier.php",
@@ -37,6 +38,7 @@ D = "src/modules/booking/services/HospitalityOrderDiff.php"
 N = "src/modules/bookingfrontend/services/applications/CateringChangeNotifier.php"
 TW = "src/modules/booking/html/base/emails/catering_changed_by_applicant.twig"
 C = "src/modules/bookingfrontend/controllers/applications/HospitalityOrderController.php"
+REPO = "src/modules/booking/repositories/HospitalityOrderRepository.php"
 
 # (id, file, description, old, new)
 MUTATIONS = [
@@ -91,6 +93,13 @@ MUTATIONS = [
     ("Mm23", N, "the notifier's default renderer is not on the real Translation switch",
      "$this->renderer = $renderer ?? new CateringMailRenderer(new TranslationLangSwitch());",
      "$this->renderer = $renderer ?? new CateringMailRenderer(new class implements \\App\\modules\\booking\\services\\CateringLangSwitch { public function current(): string { return 'no'; } public function set(string $lang): void {} });"),
+    ("Mm24", REPO, "a case entry's time is handed to the browser as stored (naive UTC), one hour early",
+     "                ->setTimezone(new \\DateTimeZone('Europe/Oslo'))\n                ->format('c');",
+     "                ->setTimezone(new \\DateTimeZone('UTC'))\n                ->format('c');"),
+    ("Mm25", REPO, "the order page's changelog no longer converts changed_at",
+     "            $row['changed_at'] = self::utcToVenueIso($row['changed_at']);\n", ""),
+    ("Mm26", REPO, "the application list's marker no longer converts changed_at",
+     "$out[(int)$row['order_id']] = self::utcToVenueIso($row['changed_at']);", "$out[(int)$row['order_id']] = $row['changed_at'];"),
     ("Mm17", D, "a new order shows a 'status' row",
      "            if ($before === null && $key === 'status') {\n                continue;\n            }\n", ""),
 ]

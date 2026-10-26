@@ -35,6 +35,7 @@ foreach ([
     'booking/services/CateringLangSwitch.php',
     'booking/services/CateringMailRenderer.php',
     'booking/services/TranslationLangSwitch.php',
+    'booking/repositories/HospitalityOrderRepository.php',
     'bookingfrontend/services/applications/CateringChangeNotifier.php',
     'bookingfrontend/controllers/applications/HospitalityOrderController.php',
 ] as $file) {
@@ -412,6 +413,22 @@ try {
 }
 $check('containment: the send throws a TypeError: notify does not throw', !$threw);
 $contains('...and the failure is logged, not lost', $logTail(), 'failed: smtp');
+
+// ======================================================================================================
+// 4b. The time the officer reads on a case entry (found live: the admin pages showed it one hour early)
+//     changed_at is naive UTC; it must reach the browser as an instant in venue time.
+// ======================================================================================================
+$same('case entry time: winter (UTC+1)', HospitalityOrderRepository::utcToVenueIso('2026-10-26 12:15:08.245654'), '2026-10-26T13:15:08+01:00');
+$same('case entry time: summer (UTC+2)', HospitalityOrderRepository::utcToVenueIso('2026-07-01 10:00:00'), '2026-07-01T12:00:00+02:00');
+$same('case entry time: the DST night', HospitalityOrderRepository::utcToVenueIso('2026-03-29 00:30:00'), '2026-03-29T01:30:00+01:00');
+$same('case entry time: null stays null', HospitalityOrderRepository::utcToVenueIso(null), null);
+$same('case entry time: unparseable is left as it was', HospitalityOrderRepository::utcToVenueIso('not a time'), 'not a time');
+$same('case entry time: the instant is unchanged, only the zone is', (new \DateTimeImmutable(HospitalityOrderRepository::utcToVenueIso('2026-10-26 12:15:08')))->getTimestamp(), (new \DateTimeImmutable('2026-10-26 12:15:08', new \DateTimeZone('UTC')))->getTimestamp());
+
+// The two DB-bound readers of changed_at must both go through the conversion (static: they need a database to run).
+$repoSource = (string)file_get_contents($root . '/src/modules/booking/repositories/HospitalityOrderRepository.php');
+$same('both readers of changed_at convert it (getChangelog, getLastApplicantChanges)', preg_match_all('/self::utcToVenueIso\(\$row\[\'changed_at\'\]\)/', $repoSource), 2);
+$check('control: the pattern is specific (it does not match a raw changed_at assignment)', preg_match_all('/self::utcToVenueIso\(\$row\[\'changed_at\'\]\)/', "\$out[1] = \$row['changed_at'];") === 0);
 
 // ======================================================================================================
 // 5. The CONTROLLER's own path (pe-pm 34084 (b)): the real recordApplicantChange(), driven with the

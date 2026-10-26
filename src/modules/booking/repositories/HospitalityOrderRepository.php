@@ -29,6 +29,27 @@ class HospitalityOrderRepository
      * Idempotent: a value that is already naive UTC is parsed as UTC and returned unchanged,
      * so callers that normalise before handing data over are unaffected.
      */
+    /**
+     * The changelog's changed_at is `timestamp DEFAULT NOW()` on a UTC database session, i.e. a
+     * NAIVE UTC value, and was handed to the browser as it stands — so the admin pages read it as
+     * local time and every case entry showed one hour early (two in summer). Return it as an
+     * ISO-8601 instant in venue time, the way the order model's own timestamps are serialised
+     * (@Timestamp(sourceTimezone="UTC")), which `new Date()` in the browser reads correctly.
+     */
+    public static function utcToVenueIso(?string $naiveUtc): ?string
+    {
+        if ($naiveUtc === null || $naiveUtc === '') {
+            return $naiveUtc;
+        }
+        try {
+            return (new \DateTimeImmutable($naiveUtc, new \DateTimeZone('UTC')))
+                ->setTimezone(new \DateTimeZone('Europe/Oslo'))
+                ->format('c');
+        } catch (\Exception $e) {
+            return $naiveUtc; // leave anything unparseable as it was
+        }
+    }
+
     public static function toStorageTimestamp(?string $servingTime): ?string
     {
         if ($servingTime === null || $servingTime === '') {
@@ -353,6 +374,7 @@ class HospitalityOrderRepository
         $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         foreach ($rows as &$row) {
+            $row['changed_at'] = self::utcToVenueIso($row['changed_at']);
             if ($row['old_value']) {
                 $row['old_value'] = json_decode($row['old_value'], true);
             }
@@ -367,8 +389,8 @@ class HospitalityOrderRepository
      * The newest "changed by the applicant" entry per order, for the admin catering list (GH #1425).
      *
      * @param int[] $orderIds
-     * @return array<int, string> order id => changed_at (as stored); orders never changed by the
-     *                            applicant are absent
+     * @return array<int, string> order id => changed_at as an ISO-8601 instant in venue time;
+     *                            orders never changed by the applicant are absent
      */
     public function getLastApplicantChanges(array $orderIds): array
     {
@@ -386,7 +408,7 @@ class HospitalityOrderRepository
         $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
         $out = [];
         foreach ($rows as $row) {
-            $out[(int)$row['order_id']] = $row['changed_at'];
+            $out[(int)$row['order_id']] = self::utcToVenueIso($row['changed_at']);
         }
         return $out;
     }

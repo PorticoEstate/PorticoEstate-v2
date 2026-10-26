@@ -71,7 +71,13 @@
 			const help = document.createElement('p');
 			help.className = 'email-preference-description email-preference-google-help';
 			help.setAttribute('role', 'note');
-			help.textContent = field.google_help;
+			help.append(document.createTextNode(field.google_help + ' '));
+			const consoleLink = document.createElement('a');
+			consoleLink.href = 'https://console.cloud.google.com/auth/clients';
+			consoleLink.target = '_blank';
+			consoleLink.rel = 'noopener noreferrer';
+			consoleLink.textContent = 'Google Cloud Console';
+			help.append(consoleLink);
 			help.hidden = input.value !== 'google_oauth';
 			input.addEventListener('change', () => { help.hidden = input.value !== 'google_oauth'; });
 			row.appendChild(help);

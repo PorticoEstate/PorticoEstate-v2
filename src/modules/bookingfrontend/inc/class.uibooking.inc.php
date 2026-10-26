@@ -69,6 +69,24 @@ class bookingfrontend_uibooking extends booking_uibooking
 		}));
 	}
 
+	/**
+	 * The citizen who is making a booking: the bb_user of the logged-in person (UserHelper::ssn),
+	 * or null when there is none. Every citizen request runs as the shared bookingguest account, so
+	 * the phpgw account would name nobody; it is deliberately not recorded here.
+	 *
+	 * @return int|null
+	 */
+	private function creator_user_id()
+	{
+		$bouser = new UserHelper();
+		if (!$bouser->ssn)
+		{
+			return null;
+		}
+
+		return $bouser->get_user_id($bouser->ssn) ?: null;
+	}
+
 	public function get_freetime()
 	{
 		$building_id = Sanitizer::get_var('building_id', 'int');
@@ -497,6 +515,7 @@ class bookingfrontend_uibooking extends booking_uibooking
 			$booking['completed'] = '0';
 			$booking['reminder'] = '1';
 			$booking['secret'] = $this->generate_secret();
+			$booking['created_by_user_id'] = $this->creator_user_id();
 			$booking['audience'] = $this->without_blank_audience($booking['audience'] ?? array());
 			array_set_default($booking, 'agegroups', array());
 			array_set_default($_POST, 'resources', array());
@@ -1889,6 +1908,8 @@ class bookingfrontend_uibooking extends booking_uibooking
 			{
 				continue;
 			}
+			// Served to anyone: who made the booking is for the case officer, not the public calendar.
+			unset($booking['created_by_user_id'], $booking['created_by_account_id']);
 			$booking['info_group'] = $this->group_bo->read_single($booking['group_id']);
 			$booking['info_resource_info'] = $this->calculate_resource_info($booking['resources']);
 			$booking['info_building_link'] = self::link([

@@ -3,6 +3,7 @@
 use App\modules\phpgwapi\services\Settings;
 use App\modules\phpgwapi\services\Translation;
 use App\modules\phpgwapi\controllers\Locations;
+use App\modules\phpgwapi\services\Cache;
 
 phpgw::import_class('phpgwapi.uicommon_jquery');
 phpgw::import_class('phpgwapi.datetime');
@@ -277,6 +278,151 @@ abstract class booking_uicommon extends phpgwapi_uicommon_jquery
 		$common			 = $sms_config['common'] ?? array();
 
 		return !empty($common['gateway_module_send']) || !empty($common['gateway_module_get']);
+	}
+
+	/**
+	 * Sends the SMS typed in the "send SMS" box on a reservation's show page to the people the
+	 * reservation's SMS resolver finds, and tells the officer who was reached and who could not be
+	 * contacted (see sms_result_messages). Does nothing unless the box was ticked and filled in;
+	 * when it was, the officer is redirected back to the reservation. A recipient whose send fails,
+	 * whether the gateway says so or throws, is reported as not reached and the others are still sent.
+	 * That includes the creator, the applicant or the contact an interntildeling's SMS went to: a failed
+	 * send is reported as failed and the next step is NOT tried instead; only a step without a usable
+	 * number moves on to the next (see booking_soparticipant::SMS_BOOKING_CHAIN).
+	 *
+	 * @param int $id the reservation
+	 * @param string $type 'allocation' or 'booking'
+	 */
+	protected function send_reservation_sms( $id, $type )
+	{
+		$send_sms = Sanitizer::get_var('send_sms', 'bool');
+		$sms_content = Sanitizer::get_var('sms_content', 'string');
+
+		if ($send_sms && $sms_content)
+		{
+			$resolved = createObject('booking.soparticipant')->get_sms_recipients($type, $id);
+			$recipients = $resolved['recipients'];
+			$reached = array();
+
+			if ($recipients)
+			{
+				if (!$this->sms_is_configured())
+				{
+					Cache::message_set(lang('sms_not_configured'), 'error');
+					self::redirect(array('menuaction' => "booking.ui{$type}.show", 'id' => $id));
+				}
+
+				$sms_service = CreateObject('sms.sms');
+				$account_id = $this->current_account_id();
+				foreach ($recipients as $index => $recipient)
+				{
+					try
+					{
+						$sms_res = $sms_service->websend2pv($account_id, $recipient['phone'], $sms_content);
+						$reached[$index] = !empty($sms_res[0][0]);
+					}
+					catch (Throwable $ex)
+					{
+						// A gateway Error (a PHP 8 TypeError) leaves websend2pv's transaction open, and while one is
+						// open the next recipient's send is never committed. Close it, so the failed recipient leaves
+						// no row, the ones before it stay, and the ones after it are sent as usual.
+						$db = \App\Database\Db::getInstance();
+						if ($db->get_transaction())
+						{
+							$db->transaction_abort();
+						}
+						$reached[$index] = false;
+					}
+				}
+			}
+
+			foreach (self::sms_result_messages($recipients, $reached, $resolved['applicant_skipped'], $resolved['creator_skipped'], $type) as $message)
+			{
+				Cache::message_set(lang($message['key'], $message['phone']), $message['type']);
+			}
+
+			self::redirect(array('menuaction' => "booking.ui{$type}.show", 'id' => $id));
+		}
+	}
+
+	/**
+	 * What the officer is told after an SMS from a reservation's page: one line per recipient, saying
+	 * whether it was sent to them or could not be, with their role (participant, applicant, creator of
+	 * the interntildeling or contact of its group), and a line when the creator or the applicant could
+	 * not be contacted at all. Those lines come, creator first, before the line of the applicant or
+	 * contact that took their place, and after the last line when nobody did (an allocation's applicant
+	 * line is always last). Gives lang keys, not texts, so the cases can be checked without a translation
+	 * installed.
+	 *
+	 * @param array $recipients as returned by booking_soparticipant::get_sms_recipients()
+	 * @param array $reached recipient index => whether the gateway accepted the message
+	 * @param string|null $applicant_skipped as returned by booking_soparticipant::get_sms_recipients()
+	 * @param string|null $creator_skipped as returned by booking_soparticipant::get_sms_recipients()
+	 * @param string $type 'allocation' or 'booking': a booking's nobody-line names its creator and contacts too
+	 * @return array list of array('type' => 'message'|'error', 'key' => string, 'phone' => string)
+	 */
+	protected static function sms_result_messages( $recipients, $reached, $applicant_skipped, $creator_skipped = null, $type = 'allocation' )
+	{
+		$roles = array(
+			'participant' => 'participant',
+			'creator' => 'creator',
+			'group_contact' => 'group_contact'
+		);
+		$sent_keys = array(
+			'participant' => 'sms_sent_to_participant',
+			'applicant' => 'sms_sent_to_applicant',
+			'creator' => 'sms_sent_to_creator',
+			'group_contact' => 'sms_sent_to_group_contact'
+		);
+		$failed_keys = array(
+			'participant' => 'sms_failed_to_participant',
+			'applicant' => 'sms_failed_to_applicant',
+			'creator' => 'sms_failed_to_creator',
+			'group_contact' => 'sms_failed_to_group_contact'
+		);
+
+		$messages = array();
+		if (!$recipients)
+		{
+			$messages[] = array(
+				'type' => 'error',
+				'key' => $type == 'booking' ? 'sms_no_recipients_booking_chain' : 'sms_no_recipients',
+				'phone' => ''
+			);
+		}
+
+		$pending = array();
+		if ($creator_skipped)
+		{
+			$pending[] = array('type' => 'error', 'key' => 'sms_creator_no_valid_phone', 'phone' => '');
+		}
+		if ($applicant_skipped)
+		{
+			$pending[] = array('type' => 'error', 'key' => 'sms_applicant_no_valid_phone', 'phone' => '');
+		}
+
+		foreach ($recipients as $index => $recipient)
+		{
+			// Any other source is the applicant: the number on the application or on the applicant's account.
+			$role = isset($roles[$recipient['source']]) ? $roles[$recipient['source']] : 'applicant';
+			if ($pending && ($role == 'applicant' || $role == 'group_contact'))
+			{
+				// This one took the place of the steps before it: say first why they were not texted.
+				$messages = array_merge($messages, $pending);
+				$pending = array();
+			}
+
+			if (!empty($reached[$index]))
+			{
+				$messages[] = array('type' => 'message', 'key' => $sent_keys[$role], 'phone' => $recipient['phone']);
+			}
+			else
+			{
+				$messages[] = array('type' => 'error', 'key' => $failed_keys[$role], 'phone' => $recipient['phone']);
+			}
+		}
+
+		return array_merge($messages, $pending);
 	}
 
 	/**

@@ -191,8 +191,8 @@ final class GoogleMailOAuth
 		else
 		{
 			$options[CURLOPT_PROXY] = $proxy;
-			$options[CURLOPT_PROXYPORT] = $port;
 		}
+		$options[CURLOPT_PROXYPORT] = $port;
 		$options[CURLOPT_PROXYTYPE] = CURLPROXY_HTTP;
 		$options[CURLOPT_HTTPPROXYTUNNEL] = true;
 		return $options;

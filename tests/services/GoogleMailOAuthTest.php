@@ -28,7 +28,7 @@ class GoogleMailOAuthTest extends TestCase
 					'install_id' => 'google-oauth-test',
 					'encryptkey' => '',
 					'mcrypt_iv' => '',
-					'httpproxy_server' => 'proxy.example.test',
+					'httpproxy_server' => 'http://proxy.example.test:1080',
 					'httpproxy_port' => 8080,
 				] : [];
 			}
@@ -122,7 +122,7 @@ class GoogleMailOAuthTest extends TestCase
 		$method->setAccessible(true);
 		$options = $method->invoke(null, [CURLOPT_TIMEOUT => 12]);
 
-		$this->assertSame('proxy.example.test', $options[CURLOPT_PROXY]);
+		$this->assertSame('http://proxy.example.test:1080', $options[CURLOPT_PROXY]);
 		$this->assertSame(8080, $options[CURLOPT_PROXYPORT]);
 		$this->assertSame(CURLPROXY_HTTP, $options[CURLOPT_PROXYTYPE]);
 		$this->assertTrue($options[CURLOPT_HTTPPROXYTUNNEL]);

@@ -13,6 +13,21 @@ final class GoogleMailOAuth
 	private const TOKEN_ENDPOINT = 'https://oauth2.googleapis.com/token';
 	private const USERINFO_ENDPOINT = 'https://openidconnect.googleapis.com/v1/userinfo';
 
+	public static function defaultRedirectUri(string $generatedLink, string $scheme, string $hostHeader): string
+	{
+		$path = (string) parse_url($generatedLink, PHP_URL_PATH);
+		$generatedPort = parse_url($generatedLink, PHP_URL_PORT);
+		if (!preg_match('/^[A-Za-z0-9.-]+(:\d{1,5})?$/', $hostHeader) || !in_array($scheme, ['http', 'https'], true))
+		{
+			return strtok($generatedLink, '?');
+		}
+		if (strpos($hostHeader, ':') === false && $generatedPort !== null)
+		{
+			$hostHeader .= ':' . $generatedPort;
+		}
+		return $scheme . '://' . $hostHeader . $path;
+	}
+
 	public static function isConfigured(array $profile, array $accountPreferences = []): bool
 	{
 		$config = self::configuration($profile, $accountPreferences);

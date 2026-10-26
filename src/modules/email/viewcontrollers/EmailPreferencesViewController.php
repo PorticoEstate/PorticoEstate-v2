@@ -103,7 +103,7 @@ class EmailPreferencesViewController
 		if (!is_array($profile)) return false;
 		if (trim((string) ($profile['google_redirect_uri'] ?? '')) === '')
 		{
-			$profile['google_redirect_uri'] = \phpgw::link('/email/oauth/google/callback', [], false, true, true, true);
+			$profile['google_redirect_uri'] = strtok(\phpgw::link('/email/oauth/google/callback', [], false, true, true, true), '?');
 		}
 		return \App\modules\email\services\GoogleMailOAuth::isConfigured($profile, $accountPreferences);
 	}

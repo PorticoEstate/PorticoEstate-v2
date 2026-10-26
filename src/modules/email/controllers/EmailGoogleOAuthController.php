@@ -16,7 +16,7 @@ class EmailGoogleOAuthController
 	{
 		$account = filter_var($request->getQueryParams()['acctnum'] ?? 0, FILTER_VALIDATE_INT);
 		if ($account === false || $account < 0) return $this->error($response, 'Invalid email account', 400);
-		$profile = $this->resolvedProfile();
+		$profile = $this->resolvedProfile($request);
 
 		try
 		{
@@ -47,7 +47,7 @@ class EmailGoogleOAuthController
 		}
 		try
 		{
-			$tokens = GoogleMailOAuth::completeAuthorization((string) ($query['code'] ?? ''), (string) ($query['state'] ?? ''), $this->resolvedProfile());
+			$tokens = GoogleMailOAuth::completeAuthorization((string) ($query['code'] ?? ''), (string) ($query['state'] ?? ''), $this->resolvedProfile($request));
 			$account = (int) $tokens['account'];
 			$preferences = Preferences::getInstance();
 			$emailPreferences = (array) ($preferences->read()['email'] ?? []);
@@ -98,13 +98,18 @@ class EmailGoogleOAuthController
 		}
 	}
 
-	private function resolvedProfile(): array
+	private function resolvedProfile(Request $request): array
 	{
 		$profile = \CreateObject('emailadmin.emailadmin_bo', true)->getResolvedProfileData('email');
 		$profile = is_array($profile) ? $profile : [];
 		if (trim((string) ($profile['google_redirect_uri'] ?? '')) === '')
 		{
-			$profile['google_redirect_uri'] = \phpgw::link('/email/oauth/google/callback', [], false, true, true, true);
+			$forwarded = strtolower(trim(explode(',', $request->getHeaderLine('X-Forwarded-Proto'))[0]));
+			$profile['google_redirect_uri'] = GoogleMailOAuth::defaultRedirectUri(
+				\phpgw::link('/email/oauth/google/callback', [], false, true, true, true),
+				$forwarded !== '' ? $forwarded : $request->getUri()->getScheme(),
+				trim($request->getHeaderLine('Host'))
+			);
 		}
 		return $profile;
 	}

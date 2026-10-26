@@ -103,6 +103,19 @@ class GoogleMailOAuthTest extends TestCase
 		$this->assertSame($profile['google_redirect_uri'], $query['redirect_uri']);
 	}
 
+	public function testDefaultRedirectUriUsesRequestHostWithoutQueryString(): void
+	{
+		$link = 'http://localhost:8088/portico/email/oauth/google/callback?';
+		$this->assertSame(
+			'http://127.0.0.1:8088/portico/email/oauth/google/callback',
+			GoogleMailOAuth::defaultRedirectUri($link, 'http', '127.0.0.1')
+		);
+		$this->assertSame(
+			'http://localhost:8088/portico/email/oauth/google/callback',
+			GoogleMailOAuth::defaultRedirectUri($link, 'http', "bad host\r\n")
+		);
+	}
+
 	public function testGoogleHttpRequestsUseConfiguredServerProxy(): void
 	{
 		$method = new \ReflectionMethod(GoogleMailOAuth::class, 'withHttpProxy');

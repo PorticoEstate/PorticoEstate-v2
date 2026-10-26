@@ -30,6 +30,40 @@ class HospitalityRepository
         return $row ?: null;
     }
 
+    /**
+     * Who to contact about a catering order once its deadlines have passed (GH #1423): the
+     * kitchen resource's own contact_info if it has one, otherwise the email/phone of the building
+     * that owns the kitchen — and, when the kitchen maps to no building, of $fallbackBuildingId
+     * (the application's building).
+     *
+     * contact_info is returned as stored (the client renders it the way the resource page does).
+     *
+     * @return array{contact_info: ?string, building_name: ?string, building_email: ?string, building_phone: ?string}
+     */
+    public function getContact(int $hospitalityId, int $fallbackBuildingId = 0): array
+    {
+        $sql = "SELECT r.contact_info,
+                       b.name AS building_name, b.email AS building_email, b.phone AS building_phone
+                FROM bb_hospitality h
+                LEFT JOIN bb_resource r ON r.id = h.resource_id
+                LEFT JOIN bb_building b ON b.id = COALESCE(
+                    (SELECT br.building_id FROM bb_building_resource br
+                      WHERE br.resource_id = h.resource_id ORDER BY br.building_id LIMIT 1),
+                    NULLIF(:fallback, 0))
+                WHERE h.id = :id";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([':id' => $hospitalityId, ':fallback' => $fallbackBuildingId]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
+
+        $text = static fn($v): ?string => ($v === null || trim((string)$v) === '') ? null : (string)$v;
+        return [
+            'contact_info' => $text($row['contact_info'] ?? null),
+            'building_name' => $text($row['building_name'] ?? null),
+            'building_email' => $text($row['building_email'] ?? null),
+            'building_phone' => $text($row['building_phone'] ?? null),
+        ];
+    }
+
     public function getAll(bool $activeOnly = false): array
     {
         $sql = "SELECT h.*, r.name AS resource_name,

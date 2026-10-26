@@ -363,6 +363,72 @@ class HospitalityOrderRepository
         return $rows;
     }
 
+    /**
+     * The newest "changed by the applicant" entry per order, for the admin catering list (GH #1425).
+     *
+     * @param int[] $orderIds
+     * @return array<int, string> order id => changed_at (as stored); orders never changed by the
+     *                            applicant are absent
+     */
+    public function getLastApplicantChanges(array $orderIds): array
+    {
+        if (empty($orderIds)) {
+            return [];
+        }
+        $placeholders = implode(',', array_map('intval', $orderIds));
+        $sql = "SELECT order_id, MAX(changed_at) AS changed_at
+                FROM bb_hospitality_order_changelog
+                WHERE change_type = 'applicant_change'
+                  AND order_id IN ({$placeholders})
+                GROUP BY order_id";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute();
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $out = [];
+        foreach ($rows as $row) {
+            $out[(int)$row['order_id']] = $row['changed_at'];
+        }
+        return $out;
+    }
+
+    /**
+     * Has this order already been paid for in checkout? True when its hospitality is part of the
+     * checkout payment AND the application has a live (not voided / refunded) Vipps payment.
+     * The same predicate create_purchase_orders_from_hospitality() uses to leave such orders out
+     * of invoicing (booking/inc/class.async_task_update_reservation_state.inc.php), so a Min-side
+     * change can never disagree with what billing believes.
+     */
+    public function isPaidAtCheckout(int $applicationId, int $hospitalityId): bool
+    {
+        $sql = "SELECT 1
+                FROM bb_hospitality h
+                WHERE h.id = :hospitality_id
+                  AND h.include_in_checkout_payment = 1
+                  AND EXISTS (
+                        SELECT 1 FROM bb_purchase_order po
+                        JOIN bb_payment p ON p.order_id = po.id
+                        WHERE po.application_id = :application_id
+                          AND p.payment_method_id = 1
+                          AND p.status NOT IN ('voided', 'refunded')
+                  )";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([':hospitality_id' => $hospitalityId, ':application_id' => $applicationId]);
+        return $stmt->fetchColumn() !== false;
+    }
+
+    /**
+     * The application's earliest requested start, as stored (naive Europe/Oslo wall clock).
+     * The anchor for an order that carries no serving time of its own — what the cart has always
+     * measured the cancellation deadline from.
+     */
+    public function getEarliestApplicationDate(int $applicationId): ?string
+    {
+        $stmt = $this->db->prepare("SELECT MIN(from_) FROM bb_application_date WHERE application_id = :id");
+        $stmt->execute([':id' => $applicationId]);
+        $value = $stmt->fetchColumn();
+        return ($value === false || $value === null) ? null : (string)$value;
+    }
+
     public function getOrderLineById(int $lineId): ?array
     {
         $sql = "SELECT ol.*,

@@ -37,6 +37,7 @@ import {getDocumentLink} from "@/service/api/building";
 import ApplicationCrud from "@/components/building-calendar/modules/event/edit/application-crud";
 import {FCallTempEvent} from "@/components/building-calendar/building-calendar.types";
 import ArticleTable from "@/components/article-table/article-table";
+import CateringOverview from "./catering-overview";
 import {ENABLE_COMBINED_APPLICATIONS} from '@/service/feature-flags';
 import {getStatusColor} from './status-utils';
 import {resolveParticipantLimit} from "@/components/building-calendar/util/participant-limit";
@@ -1132,6 +1133,9 @@ const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
                             </Details.Content>
                         </Details>
                     )}
+
+                    {/* Bevertning: what was ordered, change / cancel while the deadlines allow it */}
+                    <CateringOverview application={application}/>
 
                     {/* Dokumenter */}
                     <Details>

@@ -40,9 +40,12 @@ class HospitalityDeadlineCalculator
     /**
      * Compute the order deadline for an event.
      *
+     * The deadline is read in the zone of $eventTime: callers pass the serving time in
+     * Europe/Oslo (the venue), because "days" and the open-days weekdays are venue wall-clock.
+     *
      * @param \DateTimeInterface $eventTime When the catering is needed.
      * @param int|null           $value     order_by_time_value (lead time). Null / <= 0 → no deadline.
-     * @param string|null        $unit      "hours" | "days".
+     * @param string|null        $unit      "hours" | "days" | "weeks" (case-insensitive).
      * @param int                $openDays  Bitmask; bit (ISO weekday - 1) set = open. Default 127 (all open).
      * @param string[]           $holidays  Closed calendar dates as 'Y-m-d' strings.
      *
@@ -62,11 +65,20 @@ class HospitalityDeadlineCalculator
         }
 
         $unit = strtolower($unit);
-        if ($unit !== 'hours' && $unit !== 'days') {
+        if ($unit !== 'hours' && $unit !== 'days' && $unit !== 'weeks') {
             return null;
         }
 
         $cursor = \DateTimeImmutable::createFromInterface($eventTime);
+
+        // "weeks" is always plain calendar arithmetic: there is no working-week rule, so neither
+        // the open-days mask nor holidays apply (the client mirror has always done exactly this).
+        // This used to fall through to null here, i.e. "no deadline" — the server-side gap that
+        // made the two implementations disagree for any resource configured in weeks.
+        if ($unit === 'weeks') {
+            return $cursor->sub(new \DateInterval('P' . ($value * 7) . 'D'));
+        }
+
         $openDays = self::normalizeMask($openDays);
         $holidaySet = array_flip($holidays);
 
@@ -79,6 +91,16 @@ class HospitalityDeadlineCalculator
         return $unit === 'days'
             ? $this->subtractWorkingDays($cursor, $value, $openDays, $holidaySet)
             : $this->subtractWorkingHours($cursor, $value, $openDays, $holidaySet);
+    }
+
+    /**
+     * Is an action still allowed at $now, given its deadline? Open ⇔ now ≤ deadline: exactly AT the
+     * deadline is still open (the client's `Date.now() > cutoff` blocks only strictly after it).
+     * A null deadline ("none configured") closes nothing.
+     */
+    public static function isOpenAt(\DateTimeInterface $now, ?\DateTimeInterface $deadline): bool
+    {
+        return $deadline === null || $now <= $deadline;
     }
 
     /**
@@ -164,7 +186,11 @@ class HospitalityDeadlineCalculator
         $cursor = $eventTime;
         $remaining = $value;
         for ($guard = 0; $remaining > 0 && $guard < 24 * 366 * 5; $guard++) {
-            $prev = $cursor->modify('-1 hour');
+            // Step back ONE ELAPSED hour. modify('-1 hour') is wall-clock arithmetic: from 03:00 on
+            // the spring-forward Sunday it asks for the non-existent 02:00, is normalised straight
+            // back to 03:00, and the loop never advances (it then runs out the guard and returns a
+            // deadline days too late). Found by the parity harness against an independent oracle.
+            $prev = $cursor->setTimestamp($cursor->getTimestamp() - 3600);
             // The hour block [prev, cursor) counts toward the lead time only if it lies on an
             // open, non-holiday day; closed-day hours are skipped (rolled over).
             if ($this->isOpen($prev, $openDays, $holidaySet)) {

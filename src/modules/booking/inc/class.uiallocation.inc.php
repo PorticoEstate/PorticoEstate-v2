@@ -1732,65 +1732,6 @@
 			}
 		}
 
-		private function send_sms_participants($id, $type = 'allocation')
-		{
-			$send_sms = Sanitizer::get_var('send_sms', 'bool');
-			$sms_content = Sanitizer::get_var('sms_content', 'string');
-
-			if($send_sms && $sms_content)
-			{
-				$soparticipant = createObject('booking.soparticipant');
-				$recipients = $soparticipant->get_sms_recipients($type, $id);
-				if(!$recipients)
-				{
-					Cache::message_set(lang('sms_no_recipients'), 'error');
-					self::redirect(array('menuaction' => "booking.ui{$type}.show", 'id' => $id));
-				}
-
-				if(!$this->sms_is_configured())
-				{
-					Cache::message_set(lang('sms_not_configured'), 'error');
-					self::redirect(array('menuaction' => "booking.ui{$type}.show", 'id' => $id));
-				}
-
-				$sms_service = CreateObject('sms.sms');
-				$final_recipients = array_column($recipients, 'phone');
-
-				$account_id = $this->current_account_id();
-				$log_success = array();
-				$log_error = array();
-				foreach ($final_recipients as $final_recipient)
-				{
-					try
-					{
-						$sms_res = $sms_service->websend2pv($account_id, $final_recipient, $sms_content);
-						if (empty($sms_res[0][0]))
-						{
-							$error_message = 'SMS-melding feilet til ' . $final_recipient;
-							Cache::message_set($error_message, 'error');
-							$log_error[] = $final_recipient;
-						}
-						else
-						{
-							$comment = 'SMS-melding er sendt til ' . $final_recipient;
-							Cache::message_set($comment, 'message');
-							$log_success[] = $final_recipient;
-
-						}
-					}
-					catch (Exception $ex)
-					{
-						$error_message = 'SMS-melding feilet til ' . $final_recipient;
-						Cache::message_set($error_message, 'error');
-						$log_error[] = $final_recipient;
-					}
-
-				}
-
-				self::redirect(array('menuaction' => "booking.ui{$type}.show", 'id' => $id));
-			}
-		}
-
 		public function show()
 		{
 			$id = Sanitizer::get_var('id', 'int');
@@ -1800,7 +1741,7 @@
 				phpgw::no_access('booking', lang('missing id'));
 			}
 
-			$this->send_sms_participants($id, 'allocation');
+			$this->send_reservation_sms($id, 'allocation');
 
 			$allocation = $this->bo->read_single($id);
 

@@ -1323,6 +1323,8 @@ phpgw::import_class('booking.bocommon_authorized');
 				unset($booking['include_in_list']);
 				unset($booking['agegroups']);
 				unset($booking['audience']);
+				unset($booking['created_by_user_id']);
+				unset($booking['created_by_account_id']);
 			}
 
 			$allocations = $this->split_allocations($allocations, $bookings);
@@ -2194,6 +2196,8 @@ phpgw::import_class('booking.bocommon_authorized');
 				unset($booking['include_in_list']);
 				unset($booking['agegroups']);
 				unset($booking['audience']);
+				unset($booking['created_by_user_id']);
+				unset($booking['created_by_account_id']);
 			}
 
 			$allocations = $this->split_allocations($allocations, $bookings);

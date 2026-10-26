@@ -1356,6 +1356,8 @@ class ApplicationService
 			// uibooking::add sets every new booking to remind, whatever is posted.
 			'reminder'       => '1',
 			'secret'         => bin2hex(random_bytes(16)),
+			// Who made it, for audit: the case officer. Only recorded; nothing is sent to them.
+			'created_by_account_id' => $accountId,
 		];
 		$this->addCostHistory($booking, (float) $input['cost']);
 

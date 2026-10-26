@@ -34,7 +34,9 @@ foreach ([
     'booking/services/HospitalityOrderDiff.php',
     'booking/services/CateringLangSwitch.php',
     'booking/services/CateringMailRenderer.php',
+    'booking/services/TranslationLangSwitch.php',
     'bookingfrontend/services/applications/CateringChangeNotifier.php',
+    'bookingfrontend/controllers/applications/HospitalityOrderController.php',
 ] as $file) {
     require_once $root . '/src/modules/' . $file;
 }
@@ -44,6 +46,9 @@ use App\modules\booking\services\CateringMailRenderer;
 use App\modules\booking\services\CateringText;
 use App\modules\booking\services\HospitalityOrderDiff;
 use App\modules\bookingfrontend\services\applications\CateringChangeNotifier;
+use App\modules\booking\repositories\HospitalityOrderRepository;
+use App\modules\booking\services\TranslationLangSwitch;
+use App\modules\bookingfrontend\controllers\applications\HospitalityOrderController;
 
 // --- a stand-in for the global lang(), backed by the real .lang files --------------------------------
 $GLOBALS['__lang_now'] = 'no';
@@ -407,6 +412,177 @@ try {
 }
 $check('containment: the send throws a TypeError: notify does not throw', !$threw);
 $contains('...and the failure is logged, not lost', $logTail(), 'failed: smtp');
+
+// ======================================================================================================
+// 5. The CONTROLLER's own path (pe-pm 34084 (b)): the real recordApplicantChange(), driven with the
+//    repository and the notifier's outside-world seams stubbed. It proves that what the live write
+//    path calls is the officer-locale render (singleton pre-set to `en`, as a citizen with
+//    selected_lang=en leaves it), that the case entry is written BEFORE the mail, and that a mail
+//    failure of any kind leaves the entry in place and does not throw.
+// ======================================================================================================
+class StubOrderRepo extends HospitalityOrderRepository
+{
+    public array $entries = [];
+    public array $events = [];
+    public ?\Throwable $entryThrows = null;
+
+    public function __construct()
+    {
+    }
+
+    public function addChangelogEntry(array $data): int
+    {
+        $this->events[] = 'entry';
+        if ($this->entryThrows) {
+            throw $this->entryThrows;
+        }
+        $this->entries[] = $data;
+        return count($this->entries);
+    }
+
+    public function getEarliestApplicationDate(int $applicationId): ?string
+    {
+        return '2026-12-01 12:00:00';
+    }
+}
+
+class OrderingNotifier extends TestNotifier
+{
+    public StubOrderRepo $repo;
+
+    protected function deliver(string $to, string $subject, string $body): void
+    {
+        $this->repo->events[] = 'mail';
+        parent::deliver($to, $subject, $body);
+    }
+}
+
+class ThrowingNotifier extends CateringChangeNotifier
+{
+    public function notify(array $payload): bool
+    {
+        throw new \TypeError('a bug inside notify()');
+    }
+}
+
+$controllerRef = new \ReflectionClass(HospitalityOrderController::class);
+$record = $controllerRef->getMethod('recordApplicantChange');
+$makeController = static function (StubOrderRepo $repo, CateringChangeNotifier $notifier) use ($controllerRef): object {
+    $c = $controllerRef->newInstanceWithoutConstructor();
+    $controllerRef->getProperty('orderRepo')->setValue($c, $repo);
+    $controllerRef->getProperty('notifier')->setValue($c, $notifier);
+    return $c;
+};
+$application = static fn(int $officer = 5): array => [
+    'id' => 84091, 'status' => 'ACCEPTED', 'id_string' => '84091', 'name' => 'Sommerfest',
+    'building_name' => 'Bygg A', 'customer_organization_name' => null, 'case_officer_id' => $officer,
+];
+$before = $order([$line('Kaffe', '3', '45')]);
+$after = $order([$line('Kaffe', '4', '45')]);
+
+// (b) the live path -> the officer-locale render, whatever the acting session's language is
+$repo = new StubOrderRepo();
+$fakeSwitch = new FakeLangSwitch('en');
+$notifier = new OrderingNotifier(new CateringMailRenderer($fakeSwitch));
+$notifier->repo = $repo;
+$notifier->officer = ['email' => 'officer@example.test', 'lang' => null];
+$record->invoke($makeController($repo, $notifier), 'changed', $application(), $before, $after, 77);
+$same('controller path: a change writes ONE case entry', count($repo->entries), 1);
+$same('controller path: the entry is «Endret av søker» (applicant_change)', $repo->entries[0]['change_type'] ?? null, 'applicant_change');
+$same('controller path: the entry carries what changed from and to', [$repo->entries[0]['old_value']['line:Kaffe'] ?? null, $repo->entries[0]['new_value']['line:Kaffe'] ?? null], ['3 stk × 45.00 = 135.00', '4 stk × 45.00 = 180.00']);
+$same('controller path: the entry belongs to the booking user', $repo->entries[0]['booking_user_id'] ?? null, 77);
+$same('controller path: exactly one mail', count($notifier->delivered), 1);
+$same('controller path: the entry is written BEFORE the mail', $repo->events, ['entry', 'mail']);
+$same('controller path: acting session en, officer without preference -> the mail is Norwegian', $notifier->delivered[0][1] ?? null, 'Endret bevertning: Sommerfest, 10.11.2026');
+$same('controller path: the acting language is put back', $fakeSwitch->current(), 'en');
+
+// kinds
+foreach ([
+    ['added', null, $after, 'Ny bevertning: Sommerfest, 10.11.2026'],
+    ['cancelled', $before, $order([$line('Kaffe', '3', '45')], ['status' => 'cancelled']), 'Avbestilt bevertning: Sommerfest, 10.11.2026'],
+] as [$kind, $b, $a, $subject]) {
+    $repo = new StubOrderRepo();
+    $n = new OrderingNotifier(new CateringMailRenderer(new FakeLangSwitch('en')));
+    $n->repo = $repo;
+    $n->officer = ['email' => 'officer@example.test', 'lang' => null];
+    $record->invoke($makeController($repo, $n), $kind, $application(), $b, $a, 77);
+    $same("controller path ({$kind}): one entry and one mail", [count($repo->entries), count($n->delivered)], [1, 1]);
+    $same("controller path ({$kind}): the subject", $n->delivered[0][1] ?? null, $subject);
+}
+
+// a PUT that resends what the order already had: nothing to record, nobody to tell
+$repo = new StubOrderRepo();
+$n = new OrderingNotifier(new CateringMailRenderer(new FakeLangSwitch('no')));
+$n->repo = $repo;
+$record->invoke($makeController($repo, $n), 'changed', $application(), $before, $before, 77);
+$same('controller path: an unchanged PUT leaves no entry and sends no mail', [count($repo->entries), count($n->delivered)], [0, 0]);
+
+// no resolvable booking user (a hand-made ?secret= call): no entry (the table needs an author), still mailed
+$repo = new StubOrderRepo();
+$n = new OrderingNotifier(new CateringMailRenderer(new FakeLangSwitch('no')));
+$n->repo = $repo;
+$record->invoke($makeController($repo, $n), 'changed', $application(), $before, $after, null);
+$same('controller path: no booking user -> no entry, but the officer is told', [count($repo->entries), count($n->delivered)], [0, 1]);
+
+// no case officer: the entry is still written (ruling d), nothing is mailed
+$repo = new StubOrderRepo();
+$n = new OrderingNotifier(new CateringMailRenderer(new FakeLangSwitch('no')));
+$n->repo = $repo;
+$record->invoke($makeController($repo, $n), 'changed', $application(0), $before, $after, 77);
+$same('controller path: no case officer -> entry yes, mail no', [count($repo->entries), count($n->delivered)], [1, 0]);
+
+// FAILURE MUST NOT BREAK THE WRITE: the case entry stays, nothing throws
+foreach ([
+    'a TypeError inside notify()' => static fn(StubOrderRepo $r): CateringChangeNotifier => new ThrowingNotifier(),
+    'a TypeError in the send' => static function (StubOrderRepo $r): CateringChangeNotifier {
+        $n = new OrderingNotifier(new CateringMailRenderer(new FakeLangSwitch('en')));
+        $n->repo = $r;
+        $n->deliverThrows = new \TypeError('smtp');
+        return $n;
+    },
+] as $name => $build) {
+    $repo = new StubOrderRepo();
+    $notifier = $build($repo);
+    $threw = false;
+    try {
+        $record->invoke($makeController($repo, $notifier), 'changed', $application(), $before, $after, 77);
+    } catch (\Throwable $e) {
+        $threw = true;
+    }
+    $check("controller path: {$name}: does not throw", !$threw);
+    $same("controller path: {$name}: the case entry is still there", count($repo->entries), 1);
+}
+
+// ...and the other way round: if writing the entry fails, the officer is still told
+$repo = new StubOrderRepo();
+$repo->entryThrows = new \TypeError('changelog');
+$n = new OrderingNotifier(new CateringMailRenderer(new FakeLangSwitch('no')));
+$n->repo = $repo;
+$n->officer = ['email' => 'officer@example.test', 'lang' => 'no'];
+$threw = false;
+try {
+    $record->invoke($makeController($repo, $n), 'changed', $application(), $before, $after, 77);
+} catch (\Throwable $e) {
+    $threw = true;
+}
+$check('controller path: a failing case entry does not throw', !$threw);
+$same('controller path: ...and the officer is still told', count($n->delivered), 1);
+
+// The default wiring of the notifier the controller builds is the OFFICER-locale renderer on the real
+// Translation switch (not a raw render).
+$default = new CateringChangeNotifier();
+$rendererProp = (new \ReflectionClass($default))->getProperty('renderer')->getValue($default);
+$langProp = (new \ReflectionClass($rendererProp))->getProperty('lang')->getValue($rendererProp);
+$check('default wiring: the notifier renders through CateringMailRenderer', $rendererProp instanceof CateringMailRenderer);
+$check('default wiring: ...on the real Translation switch', $langProp instanceof TranslationLangSwitch);
+
+// And the controller reaches the mail ONLY through that notifier (static, with a control).
+$controllerSource = (string)file_get_contents($root . '/src/modules/bookingfrontend/controllers/applications/HospitalityOrderController.php');
+$same('the controller calls notifier->notify exactly once', preg_match_all('/\$this->notifier->notify\(/', $controllerSource), 1);
+$same('the controller builds the default notifier', preg_match_all('/\$this->notifier\s*=\s*new CateringChangeNotifier\(\)/', $controllerSource), 1);
+$same('the controller has no mail transport of its own', preg_match_all('/sendCateringChangeNotification|new EmailService|->msg\(|mail\(/', $controllerSource), 0);
+$check('control: that pattern DOES match the notifier, which owns the transport',
+    preg_match_all('/sendCateringChangeNotification|new EmailService/', (string)file_get_contents($root . '/src/modules/bookingfrontend/services/applications/CateringChangeNotifier.php')) > 0);
 
 // The notification boundary catches Throwable, never Exception alone (the PHP 8 Error trap):
 // CateringChangeNotifier is what stands between a mail failure and the committed catering write.

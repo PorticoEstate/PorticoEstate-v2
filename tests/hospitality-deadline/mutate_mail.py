@@ -24,6 +24,7 @@ FILES = [
     "src/modules/booking/services/CateringText.php",
     "src/modules/booking/services/HospitalityOrderDiff.php",
     "src/modules/booking/services/CateringLangSwitch.php",
+    "src/modules/booking/services/TranslationLangSwitch.php",
     "src/modules/booking/services/CateringMailRenderer.php",
     "src/modules/booking/html/base/emails/catering_changed_by_applicant.twig",
     "src/modules/bookingfrontend/services/applications/CateringChangeNotifier.php",
@@ -35,6 +36,7 @@ T = "src/modules/booking/services/CateringText.php"
 D = "src/modules/booking/services/HospitalityOrderDiff.php"
 N = "src/modules/bookingfrontend/services/applications/CateringChangeNotifier.php"
 TW = "src/modules/booking/html/base/emails/catering_changed_by_applicant.twig"
+C = "src/modules/bookingfrontend/controllers/applications/HospitalityOrderController.php"
 
 # (id, file, description, old, new)
 MUTATIONS = [
@@ -73,6 +75,22 @@ MUTATIONS = [
      "return $instant->setTimezone(new \\DateTimeZone(self::VENUE_TIMEZONE))->format('d.m.Y H:i');", "return $instant->format('d.m.Y H:i');"),
     ("Mm16", D, "an unchanged field is reported as changed",
      "            if ($from === $to) {\n                continue;\n            }\n", ""),
+    ("Mm18", C, "the case entry's catch only catches Exception: a TypeError from the changelog escapes the write path",
+     "\t\t} catch (\\Throwable $e) {\n\t\t\terror_log(\"Catering case entry failed",
+     "\t\t} catch (\\Exception $e) {\n\t\t\terror_log(\"Catering case entry failed"),
+    ("Mm19", C, "the notification's catch only catches Exception: a TypeError from notify() escapes the write path",
+     "\t\t} catch (\\Throwable $e) {\n\t\t\terror_log(\"Catering change notification failed for order",
+     "\t\t} catch (\\Exception $e) {\n\t\t\terror_log(\"Catering change notification failed for order"),
+    ("Mm20", C, "a PUT that changed nothing still leaves an entry and mails the officer",
+     "\t\tif ($kind === CateringMailRenderer::KIND_CHANGED && HospitalityOrderDiff::isEmpty($diff)) {\n\t\t\treturn;\n\t\t}\n", ""),
+    ("Mm21", C, "an entry is written even with no booking user (the table requires an author)",
+     "\t\t\tif ($bookingUserId) {\n\t\t\t\t$this->orderRepo->addChangelogEntry([\n\t\t\t\t\t'order_id' => (int)$after['id'],",
+     "\t\t\tif (true) {\n\t\t\t\t$this->orderRepo->addChangelogEntry([\n\t\t\t\t\t'order_id' => (int)$after['id'],"),
+    ("Mm22", C, "the controller no longer builds the officer-locale notifier",
+     "$this->notifier = new CateringChangeNotifier();", "$this->notifier = new class extends CateringChangeNotifier {};"),
+    ("Mm23", N, "the notifier's default renderer is not on the real Translation switch",
+     "$this->renderer = $renderer ?? new CateringMailRenderer(new TranslationLangSwitch());",
+     "$this->renderer = $renderer ?? new CateringMailRenderer(new class implements \\App\\modules\\booking\\services\\CateringLangSwitch { public function current(): string { return 'no'; } public function set(string $lang): void {} });"),
     ("Mm17", D, "a new order shows a 'status' row",
      "            if ($before === null && $key === 'status') {\n                continue;\n            }\n", ""),
 ]

@@ -349,8 +349,10 @@
 		}
 	});
 
-	Promise.all([loadCompose(), loadAttachments()]).catch(exception =>
-	{
-		showError(exception.message);
-	});
+	loadCompose()
+		.then(loadAttachments)
+		.catch(exception =>
+		{
+			showError(exception.message);
+		});
 })();

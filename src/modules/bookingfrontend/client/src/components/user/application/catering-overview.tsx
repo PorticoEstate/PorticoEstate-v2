@@ -226,9 +226,29 @@ const CateringOverview: FC<CateringOverviewProps> = ({application}) => {
                                         {t('bookingfrontend.delivery_location')}: {order.location_name}
                                     </Paragraph>
                                 </div>
-                                <Tag data-color={STATUS_COLOR[order.status]} data-size="sm">
-                                    {t(STATUS_LABEL_KEY[order.status])}
-                                </Tag>
+                                <div style={{display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap'}}>
+                                    <Tag data-color={STATUS_COLOR[order.status]} data-size="sm">
+                                        {t(STATUS_LABEL_KEY[order.status])}
+                                    </Tag>
+                                    {changeOpen && hospitality && (
+                                        <Button variant="secondary" data-size="sm" onClick={() => openEdit(order, hospitality)}>
+                                            <PencilIcon aria-hidden="true"/>
+                                            {t('bookingfrontend.edit')}
+                                        </Button>
+                                    )}
+                                    {cancelOpen && (
+                                        <Button
+                                            variant="tertiary"
+                                            data-color="danger"
+                                            data-size="sm"
+                                            onClick={() => handleCancel(order)}
+                                            disabled={deleteMutation.isPending}
+                                        >
+                                            <TrashIcon aria-hidden="true"/>
+                                            {t('bookingfrontend.catering_cancel_order')}
+                                        </Button>
+                                    )}
+                                </div>
                             </div>
 
                             {order.lines.length === 0 ? (
@@ -260,29 +280,6 @@ const CateringOverview: FC<CateringOverviewProps> = ({application}) => {
                                 <strong>{t('bookingfrontend.order_total')}</strong>
                                 <strong data-testid="catering-order-total">{formatCurrency(order.total_amount)}</strong>
                             </Paragraph>
-
-                            {handleable && (changeOpen || cancelOpen) && (
-                                <div style={{display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8}}>
-                                    {changeOpen && hospitality && (
-                                        <Button variant="secondary" data-size="sm" onClick={() => openEdit(order, hospitality)}>
-                                            <PencilIcon aria-hidden="true"/>
-                                            {t('bookingfrontend.edit')}
-                                        </Button>
-                                    )}
-                                    {cancelOpen && (
-                                        <Button
-                                            variant="tertiary"
-                                            data-color="danger"
-                                            data-size="sm"
-                                            onClick={() => handleCancel(order)}
-                                            disabled={deleteMutation.isPending}
-                                        >
-                                            <TrashIcon aria-hidden="true"/>
-                                            {t('bookingfrontend.catering_cancel_order')}
-                                        </Button>
-                                    )}
-                                </div>
-                            )}
 
                             {/* Which deadline governs each action that is still open, and until when. */}
                             {changeOpen && actions?.change.until && (

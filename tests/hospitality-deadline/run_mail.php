@@ -585,6 +585,34 @@ try {
 $check('controller path: a failing case entry does not throw', !$threw);
 $same('controller path: ...and the officer is still told', count($n->delivered), 1);
 
+// A Diff that fails with a PHP Error must not break the write either: the order is committed before
+// recordApplicantChange() runs and the handlers catch Exception only, so a TypeError escaping here would
+// turn a successful write into a 500. The failure is logged and the entry and the mail are skipped.
+// A serving_time_iso that is not a string makes the real Diff throw a TypeError (the control).
+$badAfter = $order([$line('Kaffe', '4', '45')], ['serving_time_iso' => ['not', 'a', 'string']]);
+$diffError = null;
+try {
+    HospitalityOrderDiff::between($before, $badAfter);
+} catch (\Throwable $e) {
+    $diffError = $e;
+}
+$check('control: that order makes HospitalityOrderDiff::between throw a TypeError', $diffError instanceof \TypeError);
+foreach (['added' => null, 'changed' => $before, 'cancelled' => $before] as $kind => $b) {
+    $repo = new StubOrderRepo();
+    $n = new OrderingNotifier(new CateringMailRenderer(new FakeLangSwitch('no')));
+    $n->repo = $repo;
+    $clearLog();
+    $threw = false;
+    try {
+        $record->invoke($makeController($repo, $n), $kind, $application(), $b, $badAfter, 77);
+    } catch (\Throwable $e) {
+        $threw = true;
+    }
+    $check("controller path ({$kind}): a Diff that throws a TypeError does not throw", !$threw);
+    $same("controller path ({$kind}): ...no entry and no mail", [count($repo->entries), count($n->delivered)], [0, 0]);
+    $contains("controller path ({$kind}): ...and the failure is logged", $logTail(), 'Catering change diff failed for order 7');
+}
+
 // The default wiring of the notifier the controller builds is the OFFICER-locale renderer on the real
 // Translation switch (not a raw render).
 $default = new CateringChangeNotifier();

@@ -317,9 +317,16 @@ class HospitalityOrderController
 			return;
 		}
 
-		$diff = HospitalityOrderDiff::between($before, $after);
-		// A PUT that resends the values it already had changed nothing: no entry, no mail.
-		if ($kind === CateringMailRenderer::KIND_CHANGED && HospitalityOrderDiff::isEmpty($diff)) {
+		// The order is already committed, and the handlers catch Exception only: a PHP Error from the
+		// Diff must not turn this successful write into a 500. Log it and skip the entry and the mail.
+		try {
+			$diff = HospitalityOrderDiff::between($before, $after);
+			// A PUT that resends the values it already had changed nothing: no entry, no mail.
+			if ($kind === CateringMailRenderer::KIND_CHANGED && HospitalityOrderDiff::isEmpty($diff)) {
+				return;
+			}
+		} catch (\Throwable $e) {
+			error_log("Catering change diff failed for order {$after['id']}: " . $e->getMessage());
 			return;
 		}
 

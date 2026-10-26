@@ -1355,3 +1355,4 @@ sms_sent_to_group_contact	booking	no	Sendt til lagkontakt %1
 sms_failed_to_group_contact	booking	no	Kunne ikke sende til lagkontakt %1 (feilet)
 sms_creator_no_valid_phone	booking	no	Oppretter har ikke gyldig telefonnummer – ikke kontaktet
 sms_no_recipients_booking	booking	no	Ingen deltakere, oppretter eller lagkontakter med telefonnummer er registrert – SMS ble ikke sendt.
+sms_no_recipients_booking_chain	booking	no	Ingen deltakere, oppretter, søker eller lagkontakter med telefonnummer er registrert – SMS ble ikke sendt.

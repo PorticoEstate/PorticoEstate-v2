@@ -1329,3 +1329,4 @@ sms_sent_to_group_contact	booking	nn	Sendt til lagkontakt %1
 sms_failed_to_group_contact	booking	nn	Kunne ikkje sende til lagkontakt %1 (feila)
 sms_creator_no_valid_phone	booking	nn	Opprettar har ikkje gyldig telefonnummer – ikkje kontakta
 sms_no_recipients_booking	booking	nn	Ingen deltakarar, opprettar eller lagkontaktar med telefonnummer er registrerte – SMS vart ikkje sendt.
+sms_no_recipients_booking_chain	booking	nn	Ingen deltakarar, opprettar, søkjar eller lagkontaktar med telefonnummer er registrerte – SMS vart ikkje sendt.

@@ -1354,3 +1354,4 @@ sms_sent_to_group_contact	booking	en	Sent to team contact %1
 sms_failed_to_group_contact	booking	en	Could not send to team contact %1 (failed)
 sms_creator_no_valid_phone	booking	en	The creator has no valid phone number – not contacted
 sms_no_recipients_booking	booking	en	No participants, creator or team contacts with a phone number are registered – no SMS was sent.
+sms_no_recipients_booking_chain	booking	en	No participants, creator, applicant or team contacts with a phone number are registered – no SMS was sent.

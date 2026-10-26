@@ -227,9 +227,11 @@ const CateringOverview: FC<CateringOverviewProps> = ({application}) => {
                                     </Paragraph>
                                 </div>
                                 <div style={{display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap'}}>
-                                    <Tag data-color={STATUS_COLOR[order.status]} data-size="sm">
-                                        {t(STATUS_LABEL_KEY[order.status])}
-                                    </Tag>
+                                    {order.status !== 'pending' && (
+                                        <Tag data-color={STATUS_COLOR[order.status]} data-size="sm">
+                                            {t(STATUS_LABEL_KEY[order.status])}
+                                        </Tag>
+                                    )}
                                     {changeOpen && hospitality && (
                                         <Button variant="secondary" data-size="sm" onClick={() => openEdit(order, hospitality)}>
                                             <PencilIcon aria-hidden="true"/>

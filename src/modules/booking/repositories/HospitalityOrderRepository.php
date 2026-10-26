@@ -29,6 +29,25 @@ class HospitalityOrderRepository
      * Idempotent: a value that is already naive UTC is parsed as UTC and returned unchanged,
      * so callers that normalise before handing data over are unaffected.
      */
+    public static function toStorageTimestamp(?string $servingTime): ?string
+    {
+        if ($servingTime === null || $servingTime === '') {
+            return null;
+        }
+
+        try {
+            // The fallback zone applies only to strings carrying no offset of their own — i.e.
+            // values already in the column's naive-UTC form.
+            $dt = new \DateTimeImmutable($servingTime, new \DateTimeZone('UTC'));
+        } catch (\Exception $e) {
+            // Format is validated by the controllers; pass anything still unparseable through
+            // untouched rather than silently discarding a serving time here.
+            return $servingTime;
+        }
+
+        return $dt->setTimezone(new \DateTimeZone('UTC'))->format('Y-m-d H:i:s');
+    }
+
     /**
      * The changelog's changed_at is `timestamp DEFAULT NOW()` on a UTC database session, i.e. a
      * NAIVE UTC value, and was handed to the browser as it stands — so the admin pages read it as
@@ -48,25 +67,6 @@ class HospitalityOrderRepository
         } catch (\Exception $e) {
             return $naiveUtc; // leave anything unparseable as it was
         }
-    }
-
-    public static function toStorageTimestamp(?string $servingTime): ?string
-    {
-        if ($servingTime === null || $servingTime === '') {
-            return null;
-        }
-
-        try {
-            // The fallback zone applies only to strings carrying no offset of their own — i.e.
-            // values already in the column's naive-UTC form.
-            $dt = new \DateTimeImmutable($servingTime, new \DateTimeZone('UTC'));
-        } catch (\Exception $e) {
-            // Format is validated by the controllers; pass anything still unparseable through
-            // untouched rather than silently discarding a serving time here.
-            return $servingTime;
-        }
-
-        return $dt->setTimezone(new \DateTimeZone('UTC'))->format('Y-m-d H:i:s');
     }
 
     // -- Orders --

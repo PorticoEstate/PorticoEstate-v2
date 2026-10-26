@@ -48,6 +48,27 @@ class HospitalityOrderRepository
         return $dt->setTimezone(new \DateTimeZone('UTC'))->format('Y-m-d H:i:s');
     }
 
+    /**
+     * The changelog's changed_at is `timestamp DEFAULT NOW()` on a UTC database session, i.e. a
+     * NAIVE UTC value, and was handed to the browser as it stands — so the admin pages read it as
+     * local time and every case entry showed one hour early (two in summer). Return it as an
+     * ISO-8601 instant in venue time, the way the order model's own timestamps are serialised
+     * (@Timestamp(sourceTimezone="UTC")), which `new Date()` in the browser reads correctly.
+     */
+    public static function utcToVenueIso(?string $naiveUtc): ?string
+    {
+        if ($naiveUtc === null || $naiveUtc === '') {
+            return $naiveUtc;
+        }
+        try {
+            return (new \DateTimeImmutable($naiveUtc, new \DateTimeZone('UTC')))
+                ->setTimezone(new \DateTimeZone('Europe/Oslo'))
+                ->format('c');
+        } catch (\Exception $e) {
+            return $naiveUtc; // leave anything unparseable as it was
+        }
+    }
+
     // -- Orders --
 
     public function getById(int $id): ?array
@@ -353,6 +374,7 @@ class HospitalityOrderRepository
         $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         foreach ($rows as &$row) {
+            $row['changed_at'] = self::utcToVenueIso($row['changed_at']);
             if ($row['old_value']) {
                 $row['old_value'] = json_decode($row['old_value'], true);
             }
@@ -361,6 +383,72 @@ class HospitalityOrderRepository
             }
         }
         return $rows;
+    }
+
+    /**
+     * The newest "changed by the applicant" entry per order, for the admin catering list (GH #1425).
+     *
+     * @param int[] $orderIds
+     * @return array<int, string> order id => changed_at as an ISO-8601 instant in venue time;
+     *                            orders never changed by the applicant are absent
+     */
+    public function getLastApplicantChanges(array $orderIds): array
+    {
+        if (empty($orderIds)) {
+            return [];
+        }
+        $placeholders = implode(',', array_map('intval', $orderIds));
+        $sql = "SELECT order_id, MAX(changed_at) AS changed_at
+                FROM bb_hospitality_order_changelog
+                WHERE change_type = 'applicant_change'
+                  AND order_id IN ({$placeholders})
+                GROUP BY order_id";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute();
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $out = [];
+        foreach ($rows as $row) {
+            $out[(int)$row['order_id']] = self::utcToVenueIso($row['changed_at']);
+        }
+        return $out;
+    }
+
+    /**
+     * Has this order already been paid for in checkout? True when its hospitality is part of the
+     * checkout payment AND the application has a live (not voided / refunded) Vipps payment.
+     * The same predicate create_purchase_orders_from_hospitality() uses to leave such orders out
+     * of invoicing (booking/inc/class.async_task_update_reservation_state.inc.php), so a Min-side
+     * change can never disagree with what billing believes.
+     */
+    public function isPaidAtCheckout(int $applicationId, int $hospitalityId): bool
+    {
+        $sql = "SELECT 1
+                FROM bb_hospitality h
+                WHERE h.id = :hospitality_id
+                  AND h.include_in_checkout_payment = 1
+                  AND EXISTS (
+                        SELECT 1 FROM bb_purchase_order po
+                        JOIN bb_payment p ON p.order_id = po.id
+                        WHERE po.application_id = :application_id
+                          AND p.payment_method_id = 1
+                          AND p.status NOT IN ('voided', 'refunded')
+                  )";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([':hospitality_id' => $hospitalityId, ':application_id' => $applicationId]);
+        return $stmt->fetchColumn() !== false;
+    }
+
+    /**
+     * The application's earliest requested start, as stored (naive Europe/Oslo wall clock).
+     * The anchor for an order that carries no serving time of its own — what the cart has always
+     * measured the cancellation deadline from.
+     */
+    public function getEarliestApplicationDate(int $applicationId): ?string
+    {
+        $stmt = $this->db->prepare("SELECT MIN(from_) FROM bb_application_date WHERE application_id = :id");
+        $stmt->execute([':id' => $applicationId]);
+        $value = $stmt->fetchColumn();
+        return ($value === false || $value === null) ? null : (string)$value;
     }
 
     public function getOrderLineById(int $lineId): ?array

@@ -10,6 +10,11 @@ use App\modules\booking\repositories\HospitalityRepository;
 use App\modules\booking\repositories\HospitalityArticleRepository;
 use App\modules\booking\repositories\HospitalityOrderRepository;
 use App\modules\booking\services\HospitalityDeadlineCalculator;
+use App\modules\booking\services\HospitalityOrderGuard;
+use App\modules\booking\services\HospitalityOrderDiff;
+use App\modules\booking\services\CateringMailRenderer;
+use App\modules\bookingfrontend\models\User;
+use App\modules\bookingfrontend\services\applications\CateringChangeNotifier;
 use App\modules\booking\models\Hospitality;
 use App\modules\booking\models\HospitalityArticleGroup;
 use App\modules\booking\models\HospitalityArticle;
@@ -34,6 +39,15 @@ class HospitalityOrderController
 	private HospitalityRepository $hospitalityRepo;
 	private HospitalityArticleRepository $articleRepo;
 	private HospitalityOrderRepository $orderRepo;
+	private HospitalityOrderGuard $guard;
+	private CateringChangeNotifier $notifier;
+
+	/** @var array<int, ?array> hospitality rows by id, for the duration of one request */
+	private array $hospitalityCache = [];
+	/** @var array<int, array> kitchen contact by hospitality id, for the duration of one request */
+	private array $contactCache = [];
+	/** @var array<string, bool> "application:hospitality" => paid at checkout, for one request */
+	private array $paidCache = [];
 
 	public function __construct()
 	{
@@ -43,6 +57,8 @@ class HospitalityOrderController
 		$this->hospitalityRepo = new HospitalityRepository();
 		$this->articleRepo = new HospitalityArticleRepository();
 		$this->orderRepo = new HospitalityOrderRepository();
+		$this->guard = new HospitalityOrderGuard();
+		$this->notifier = new CateringChangeNotifier();
 	}
 
 	/**
@@ -105,6 +121,263 @@ class HospitalityOrderController
 		// recognised as the same moment and the order is not falsely treated as moved.
 		return HospitalityOrderRepository::toStorageTimestamp($incomingIso)
 			!== HospitalityOrderRepository::toStorageTimestamp($storedUtc);
+	}
+
+	/**
+	 * A serving time (the client's offset-aware ISO-8601, or a stored naive-UTC value) in venue
+	 * wall-clock. A value that carries no offset is read as UTC — the convention the storage layer
+	 * applies (HospitalityOrderRepository::toStorageTimestamp). Null when empty or unparseable.
+	 */
+	private function toVenueTime(?string $value): ?\DateTimeImmutable
+	{
+		if ($value === null || $value === '') {
+			return null;
+		}
+		try {
+			return (new \DateTimeImmutable($value, new \DateTimeZone('UTC')))
+				->setTimezone(new \DateTimeZone(self::LOCAL_TIMEZONE));
+		} catch (Exception $e) {
+			return null;
+		}
+	}
+
+	/** The application's earliest requested start (stored as venue wall-clock), or null. */
+	private function earliestApplicationDate(int $applicationId): ?\DateTimeImmutable
+	{
+		$naive = $this->orderRepo->getEarliestApplicationDate($applicationId);
+		if ($naive === null) {
+			return null;
+		}
+		try {
+			return new \DateTimeImmutable($naive, new \DateTimeZone(self::LOCAL_TIMEZONE));
+		} catch (Exception $e) {
+			return null;
+		}
+	}
+
+	private function paidAtCheckout(int $applicationId, int $hospitalityId): bool
+	{
+		$key = $applicationId . ':' . $hospitalityId;
+		if (!isset($this->paidCache[$key])) {
+			$this->paidCache[$key] = $this->orderRepo->isPaidAtCheckout($applicationId, $hospitalityId);
+		}
+		return $this->paidCache[$key];
+	}
+
+	private function hospitalityRow(int $hospitalityId): ?array
+	{
+		if (!array_key_exists($hospitalityId, $this->hospitalityCache)) {
+			$this->hospitalityCache[$hospitalityId] = $this->hospitalityRepo->getById($hospitalityId);
+		}
+		return $this->hospitalityCache[$hospitalityId];
+	}
+
+	/**
+	 * Ask the guard (GH #1423) whether $action is allowed right now. The server is the
+	 * enforcement point; the client only mirrors the answer so it can hide what would be refused.
+	 *
+	 * @param array|null $order       the stored order (change / cancel), null when adding
+	 * @param array|null $hospitality row from HospitalityRepository (deadlines + open_days)
+	 * @param \DateTimeImmutable|null $anchor S: the stored serving time, else the application's
+	 *                                earliest date; when adding, the serving time being ordered
+	 * @return array{allowed: bool, reason: ?string, until: ?\DateTimeImmutable}
+	 */
+	private function verdict(
+		string $action,
+		array $application,
+		?array $order,
+		?array $hospitality,
+		?\DateTimeImmutable $anchor,
+		?\DateTimeImmutable $movedTo = null
+	): array {
+		$isDraft = $application['status'] === HospitalityOrderGuard::DRAFT_STATUS;
+		$hospitality = $hospitality ?? [];
+
+		$ctx = [
+			'application_status' => (string)$application['status'],
+			'order_status' => $order['status'] ?? null,
+			'billed' => !empty($order['billed']),
+			// A draft has had no checkout: nothing can have been paid.
+			'paid_at_checkout' => $order !== null && !$isDraft
+				&& $this->paidAtCheckout((int)$application['id'], (int)$order['hospitality_id']),
+			'anchor' => $anchor,
+			'moved_to' => $movedTo,
+			'order_by_value' => $hospitality['order_by_time_value'] ?? null,
+			'order_by_unit' => $hospitality['order_by_time_unit'] ?? null,
+			'cancel_value' => $hospitality['resource_cancellation_deadline_value'] ?? null,
+			'cancel_unit' => $hospitality['resource_cancellation_deadline_unit'] ?? null,
+			'open_days' => isset($hospitality['open_days']) && $hospitality['open_days'] !== null
+				? (int)$hospitality['open_days']
+				: HospitalityDeadlineCalculator::ALL_DAYS_OPEN,
+		];
+
+		return $this->guard->evaluate($action, $ctx, new \DateTimeImmutable('now', new \DateTimeZone(self::LOCAL_TIMEZONE)));
+	}
+
+	/**
+	 * 409 for a refusal by the guard. 403 stays authz and runs first, so a caller who may not touch
+	 * the application never learns anything about its deadlines.
+	 *
+	 * @param array{allowed: bool, reason: ?string, until: ?\DateTimeImmutable} $verdict
+	 */
+	private function refuse(ResponseInterface $response, array $verdict): ResponseInterface
+	{
+		$reason = (string)$verdict['reason'];
+		$keys = [
+			HospitalityOrderGuard::REASON_ORDER_CUTOFF => 'catering_order_cutoff_passed',
+			HospitalityOrderGuard::REASON_CANCEL_DEADLINE => 'catering_cancellation_deadline_passed',
+			HospitalityOrderGuard::REASON_SERVING_PASSED => 'catering_serving_time_passed',
+			HospitalityOrderGuard::REASON_APPLICATION_CLOSED => 'catering_application_closed',
+		];
+		$payload = [
+			'error' => lang($keys[$reason] ?? 'catering_order_locked'),
+			'code' => $reason,
+		];
+		if ($verdict['until'] !== null) {
+			$payload['until'] = $verdict['until']->format(\DateTimeInterface::ATOM);
+		}
+		return ResponseHelper::sendErrorResponse($payload, 409, $response);
+	}
+
+	/**
+	 * What the applicant may do with an existing order right now, for GET /hospitality-orders. The
+	 * client shows exactly this and offers nothing else; the write endpoints re-check it.
+	 *
+	 * @return array{change: array, cancel: array}
+	 */
+	private function actionsFor(array $application, array $order): array
+	{
+		$hospitality = $this->hospitalityRow((int)$order['hospitality_id']);
+		$anchor = $this->toVenueTime($order['serving_time_iso'] ?? null)
+			?? $this->earliestApplicationDate((int)$application['id']);
+
+		$out = [];
+		foreach ([HospitalityOrderGuard::ACTION_CHANGE, HospitalityOrderGuard::ACTION_CANCEL] as $action) {
+			$v = $this->verdict($action, $application, $order, $hospitality, $anchor);
+			$out[$action] = [
+				'allowed' => $v['allowed'],
+				'reason' => $v['reason'],
+				'until' => $v['until']?->format(\DateTimeInterface::ATOM),
+			];
+		}
+		return $out;
+	}
+
+	/**
+	 * Who to contact about this order once it is locked: the kitchen's contact_info, else the
+	 * building's email / phone (the kitchen's building, else the application's).
+	 */
+	private function contactFor(int $hospitalityId, array $application): array
+	{
+		if (!isset($this->contactCache[$hospitalityId])) {
+			$c = $this->hospitalityRepo->getContact($hospitalityId, (int)($application['building_id'] ?? 0));
+			$this->contactCache[$hospitalityId] = [
+				'info' => $c['contact_info'],
+				'building_name' => $c['building_name'],
+				'building_email' => $c['building_email'],
+				'building_phone' => $c['building_phone'],
+			];
+		}
+		return $this->contactCache[$hospitalityId];
+	}
+
+	private function actorName(): string
+	{
+		try {
+			return (string)((new User($this->userHelper))->name ?? '');
+		} catch (\Throwable $e) {
+			return '';
+		}
+	}
+
+	private function activityName(?int $activityId): string
+	{
+		if (!$activityId) {
+			return '';
+		}
+		$stmt = \App\Database\Db::getInstance()->prepare("SELECT name FROM bb_activity WHERE id = :id");
+		$stmt->execute([':id' => $activityId]);
+		return (string)($stmt->fetchColumn() ?: '');
+	}
+
+	/**
+	 * GH #1425 — the applicant added, changed or cancelled an order on a SUBMITTED application:
+	 * leave the case entry («Endret av søker», with what changed from and to) and tell the case
+	 * officer. Called after the write has gone through; neither part can fail the request.
+	 *
+	 * No bb_application row is touched (the application process is frozen) and no application
+	 * comment is written (that path mails the whole group and bumps frontend_modified).
+	 *
+	 * @param array|null $before the order before the change; null when it was just added
+	 * @param array|null $after  the order after the change
+	 */
+	private function recordApplicantChange(string $kind, array $application, ?array $before, ?array $after, ?int $bookingUserId): void
+	{
+		if ($after === null) {
+			return;
+		}
+
+		// The order is already committed, and the handlers catch Exception only: a PHP Error from the
+		// Diff must not turn this successful write into a 500. Log it and skip the entry and the mail.
+		try {
+			$diff = HospitalityOrderDiff::between($before, $after);
+			// A PUT that resends the values it already had changed nothing: no entry, no mail.
+			if ($kind === CateringMailRenderer::KIND_CHANGED && HospitalityOrderDiff::isEmpty($diff)) {
+				return;
+			}
+		} catch (\Throwable $e) {
+			error_log("Catering change diff failed for order {$after['id']}: " . $e->getMessage());
+			return;
+		}
+
+		$comments = [
+			CateringMailRenderer::KIND_ADDED => 'Order added by applicant via Min side',
+			CateringMailRenderer::KIND_CHANGED => 'Order changed by applicant via Min side',
+			CateringMailRenderer::KIND_CANCELLED => 'Order cancelled by applicant via Min side',
+		];
+
+		// The table requires an author, so a call with no resolvable booking user (a hand-made
+		// ?secret= request) leaves no entry — as before — but the officer is still told.
+		try {
+			if ($bookingUserId) {
+				$this->orderRepo->addChangelogEntry([
+					'order_id' => (int)$after['id'],
+					'booking_user_id' => $bookingUserId,
+					'change_type' => 'applicant_change',
+					'old_value' => $diff['old'] ?: null,
+					'new_value' => $diff['new'] ?: null,
+					'comment' => $comments[$kind],
+				]);
+			}
+		} catch (\Throwable $e) {
+			error_log("Catering case entry failed for order {$after['id']}: " . $e->getMessage());
+		}
+
+		try {
+			$applicationId = (int)$application['id'];
+			$this->notifier->notify([
+				'kind' => $kind,
+				'actor' => $this->actorName(),
+				'application' => [
+					'id' => $applicationId,
+					'id_string' => $application['id_string'] ?? '',
+					'name' => $application['name'] ?? '',
+					'building_name' => $application['building_name'] ?? '',
+					'activity_name' => $this->activityName(isset($application['activity_id']) ? (int)$application['activity_id'] : null),
+					'organization_name' => $application['customer_organization_name'] ?? null,
+					'case_officer_id' => (int)($application['case_officer_id'] ?? 0),
+				],
+				'order' => [
+					'id' => (int)$after['id'],
+					'serving_time_iso' => $after['serving_time_iso'] ?? null,
+				],
+				'fallback_date' => $this->orderRepo->getEarliestApplicationDate($applicationId),
+				'diff' => $diff,
+				'summary' => $kind === CateringMailRenderer::KIND_CHANGED ? [] : HospitalityOrderDiff::summary($after),
+			]);
+		} catch (\Throwable $e) {
+			error_log("Catering change notification failed for order {$after['id']}: " . $e->getMessage());
+		}
 	}
 
 	/**
@@ -250,10 +523,17 @@ class HospitalityOrderController
 
 			$orders = $this->orderRepo->getOrdersWithLinesByApplication($applicationId);
 
-			$serialized = array_map(
-				fn($order) => (new HospitalityOrder($order))->serialize(),
-				$orders
-			);
+			$serialized = array_map(function ($order) use ($application) {
+				$data = (new HospitalityOrder($order))->serialize();
+				// serialize() drops empty arrays, so an order with no lines used to come back with no
+				// `lines` key although the client types it as always present.
+				if (!isset($data['lines'])) {
+					$data['lines'] = [];
+				}
+				$data['actions'] = $this->actionsFor($application, $order);
+				$data['contact'] = $this->contactFor((int)$order['hospitality_id'], $application);
+				return $data;
+			}, $orders);
 
 			return ResponseHelper::sendJSONResponse($serialized, 200, $response);
 		} catch (Exception $e) {
@@ -326,6 +606,20 @@ class HospitalityOrderController
 				}
 			}
 
+			// The deadlines (GH #1423): the order cutoff of the serving time being ordered, the serving
+			// time itself, and the application's state — all before anything is written.
+			$requestedServing = !empty($body['serving_time_iso']) ? $this->toVenueTime($body['serving_time_iso']) : null;
+			$verdict = $this->verdict(
+				HospitalityOrderGuard::ACTION_ADD,
+				$application,
+				null,
+				$hospitality,
+				$requestedServing ?? $this->earliestApplicationDate($applicationId)
+			);
+			if (!$verdict['allowed']) {
+				return $this->refuse($response, $verdict);
+			}
+
 			// Validate each line and resolve pricing
 			$resolvedLines = [];
 			foreach ($body['lines'] as $i => $line) {
@@ -382,22 +676,27 @@ class HospitalityOrderController
 				$this->orderRepo->addOrderLine($lineData);
 			}
 
-			// Add changelog entry (only if we have a user ID)
-			if ($bookingUserId) {
-				$this->orderRepo->addChangelogEntry([
-					'order_id' => $orderId,
-					'booking_user_id' => $bookingUserId,
-					'change_type' => 'created',
-					'new_value' => [
-						'hospitality_id' => $hospitalityId,
-						'location_resource_id' => $locationResourceId,
-						'lines_count' => count($resolvedLines),
-					],
-					'comment' => 'Order created via checkout',
-				]);
-			}
-
 			$order = $this->orderRepo->getOrderWithLines($orderId);
+
+			if ($application['status'] === HospitalityOrderGuard::DRAFT_STATUS) {
+				// A draft in the cart: today's entry, and nothing to tell the officer yet.
+				// Add changelog entry (only if we have a user ID)
+				if ($bookingUserId) {
+					$this->orderRepo->addChangelogEntry([
+						'order_id' => $orderId,
+						'booking_user_id' => $bookingUserId,
+						'change_type' => 'created',
+						'new_value' => [
+							'hospitality_id' => $hospitalityId,
+							'location_resource_id' => $locationResourceId,
+							'lines_count' => count($resolvedLines),
+						],
+						'comment' => 'Order created via checkout',
+					]);
+				}
+			} else {
+				$this->recordApplicantChange(CateringMailRenderer::KIND_ADDED, $application, null, $order, $bookingUserId);
+			}
 
 			return ResponseHelper::sendJSONResponse((new HospitalityOrder($order))->serialize(), 201, $response);
 		} catch (Exception $e) {
@@ -440,6 +739,29 @@ class HospitalityOrderController
 			}
 
 			$bookingUserId = $this->getBookingUserId();
+
+			// The deadlines (GH #1423), judged on the STORED serving time — and, when the serving
+			// time moves, on the new one as well — before anything is written.
+			$isDraft = $application['status'] === HospitalityOrderGuard::DRAFT_STATUS;
+			$movedTo = null;
+			if (!empty($body['serving_time_iso'])
+				&& $this->servingTimeChanged($body['serving_time_iso'], $order['serving_time_iso'] ?? null)) {
+				$movedTo = $this->toVenueTime($body['serving_time_iso']);
+			}
+			$verdict = $this->verdict(
+				HospitalityOrderGuard::ACTION_CHANGE,
+				$application,
+				$order,
+				$this->hospitalityRow((int)$order['hospitality_id']),
+				$this->toVenueTime($order['serving_time_iso'] ?? null) ?? $this->earliestApplicationDate($applicationId),
+				$movedTo
+			);
+			if (!$verdict['allowed']) {
+				return $this->refuse($response, $verdict);
+			}
+
+			// What the order looked like BEFORE this request replaces its lines (GH #1425).
+			$before = $isDraft ? null : $this->orderRepo->getOrderWithLines($orderId);
 
 			// Update order fields
 			$updateData = [];
@@ -537,18 +859,23 @@ class HospitalityOrderController
 				}
 			}
 
-			// Add changelog entry (only if we have a user ID)
-			if ($bookingUserId) {
-				$this->orderRepo->addChangelogEntry([
-					'order_id' => $orderId,
-					'booking_user_id' => $bookingUserId,
-					'change_type' => 'updated',
-					'new_value' => array_keys($body),
-					'comment' => 'Order updated via checkout',
-				]);
-			}
-
 			$updatedOrder = $this->orderRepo->getOrderWithLines($orderId);
+
+			if ($isDraft) {
+				// A draft in the cart: today's entry, and nothing to tell the officer yet.
+				// Add changelog entry (only if we have a user ID)
+				if ($bookingUserId) {
+					$this->orderRepo->addChangelogEntry([
+						'order_id' => $orderId,
+						'booking_user_id' => $bookingUserId,
+						'change_type' => 'updated',
+						'new_value' => array_keys($body),
+						'comment' => 'Order updated via checkout',
+					]);
+				}
+			} else {
+				$this->recordApplicantChange(CateringMailRenderer::KIND_CHANGED, $application, $before, $updatedOrder, $bookingUserId);
+			}
 
 			return ResponseHelper::sendJSONResponse((new HospitalityOrder($updatedOrder))->serialize(), 200, $response);
 		} catch (Exception $e) {
@@ -587,6 +914,23 @@ class HospitalityOrderController
 
 			$bookingUserId = $this->getBookingUserId();
 
+			// Removing a draft from the cart is not a cancellation and is never refused. Cancelling a
+			// submitted order is judged on the kitchen's cancellation deadline (GH #1423).
+			$before = null;
+			if ($application['status'] !== HospitalityOrderGuard::DRAFT_STATUS) {
+				$verdict = $this->verdict(
+					HospitalityOrderGuard::ACTION_CANCEL,
+					$application,
+					$order,
+					$this->hospitalityRow((int)$order['hospitality_id']),
+					$this->toVenueTime($order['serving_time_iso'] ?? null) ?? $this->earliestApplicationDate($applicationId)
+				);
+				if (!$verdict['allowed']) {
+					return $this->refuse($response, $verdict);
+				}
+				$before = $this->orderRepo->getOrderWithLines($orderId);
+			}
+
 			// For NEWPARTIAL1 apps, hard-delete. For finalized apps, soft-cancel.
 			if ($application['status'] === 'NEWPARTIAL1') {
 				// Hard delete: lines first, then order
@@ -600,16 +944,13 @@ class HospitalityOrderController
 				// Soft cancel
 				$this->orderRepo->updateStatus($orderId, HospitalityOrder::STATUS_CANCELLED, $bookingUserId);
 
-				if ($bookingUserId) {
-					$this->orderRepo->addChangelogEntry([
-						'order_id' => $orderId,
-						'booking_user_id' => $bookingUserId,
-						'change_type' => 'cancelled',
-						'old_value' => ['status' => $order['status']],
-						'new_value' => ['status' => HospitalityOrder::STATUS_CANCELLED],
-						'comment' => 'Order cancelled via checkout',
-					]);
-				}
+				$this->recordApplicantChange(
+					CateringMailRenderer::KIND_CANCELLED,
+					$application,
+					$before,
+					$this->orderRepo->getOrderWithLines($orderId),
+					$bookingUserId
+				);
 			}
 
 			return ResponseHelper::sendJSONResponse(['message' => 'Order deleted'], 200, $response);

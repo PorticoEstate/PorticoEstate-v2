@@ -1202,12 +1202,16 @@
 		line_delete: 'delete'
 	};
 
+	// GH #1425: written when the applicant changes an order from Min side; shown as «Endret av søker».
+	var APPLICANT_CHANGE = 'applicant_change';
+
 	var CHANGE_TYPE_COLORS = {
 		field_update: 'info',
 		status_change: 'warning',
 		line_add: 'success',
 		line_update: 'info',
-		line_delete: 'danger'
+		line_delete: 'danger',
+		applicant_change: 'warning'
 	};
 
 	function renderChangelog()
@@ -1226,7 +1230,9 @@
 			entries.forEach(function (entry)
 			{
 				var author = entry.case_officer_name || entry.booking_user_name || '?';
-				var typeLabel = CHANGE_TYPE_LABELS[entry.change_type] || entry.change_type;
+				var typeLabel = entry.change_type === APPLICANT_CHANGE
+					? lang('changedByApplicant')
+					: (CHANGE_TYPE_LABELS[entry.change_type] || entry.change_type);
 				var typeColor = CHANGE_TYPE_COLORS[entry.change_type] || 'neutral';
 
 				bodyHtml += '<div class="order-show__changelog-entry">';

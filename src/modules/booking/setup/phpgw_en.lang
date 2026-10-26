@@ -1355,3 +1355,28 @@ sms_failed_to_group_contact	booking	en	Could not send to team contact %1 (failed
 sms_creator_no_valid_phone	booking	en	The creator has no valid phone number – not contacted
 sms_no_recipients_booking	booking	en	No participants, creator or team contacts with a phone number are registered – no SMS was sent.
 sms_no_recipients_booking_chain	booking	en	No participants, creator, applicant or team contacts with a phone number are registered – no SMS was sent.
+changed_by_applicant	booking	en	Changed by applicant
+catering_mail_subject_added	booking	en	New catering: %1, %2
+catering_mail_subject_changed	booking	en	Catering changed: %1, %2
+catering_mail_subject_cancelled	booking	en	Catering cancelled: %1, %2
+catering_mail_intro_added	booking	en	%1 has added a catering order to the application.
+catering_mail_intro_changed	booking	en	%1 has changed a catering order on the application.
+catering_mail_intro_cancelled	booking	en	%1 has cancelled a catering order on the application.
+catering_mail_the_applicant	booking	en	The applicant
+catering_mail_on_behalf_of	booking	en	(on behalf of %1)
+catering_mail_application	booking	en	Application
+catering_mail_building	booking	en	Building
+catering_mail_activity	booking	en	Activity
+catering_mail_field	booking	en	Field
+catering_mail_from	booking	en	From
+catering_mail_to	booking	en	To
+catering_mail_value	booking	en	Value
+catering_mail_open_case	booking	en	Open the case
+catering_mail_open_order	booking	en	View the order
+catering_mail_nothing	booking	en	—
+catering_field_hospitality	booking	en	Catering
+catering_field_serving_time	booking	en	Serving time
+catering_field_location	booking	en	Delivery location
+catering_field_comment	booking	en	Comment
+catering_field_special_requirements	booking	en	Special requirements
+catering_field_total	booking	en	Total

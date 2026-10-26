@@ -21,6 +21,7 @@ import {isWithinBusinessHours} from '@/service/utils/business-hours';
 import {formatCurrency} from '@/utils/cost-utils';
 import {
     computeHospitalityDeadline,
+    hospitalityActionWindow,
     isWorkingDaysMode,
     formatOpenDays,
     isServingDayOpen,
@@ -37,6 +38,16 @@ interface HospitalityOrderModalProps {
     onHospitalitySelect: (hospitality: IHospitality) => void;
     applications: IApplication[];
     existingOrder?: IHospitalityOrder;
+}
+
+/** The application's earliest requested start — the anchor for an order that has no serving time. */
+function earliestDate(application: IApplication | undefined): Date | null {
+    let earliest: Date | null = null;
+    for (const d of application?.dates ?? []) {
+        const from = new Date(d.from_);
+        if (!earliest || from < earliest) earliest = from;
+    }
+    return earliest;
 }
 
 /** Key of the synthetic option carrying a legacy order's stored serving time. */
@@ -120,6 +131,8 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
     const [comments, setComments] = useState<Record<number, string>>({});
     const [visibleComments, setVisibleComments] = useState<Set<number>>(new Set());
     const [editingQty, setEditingQty] = useState<number | null>(null);
+    // The server's refusal of a save (e.g. a deadline that passed while the dialog was open).
+    const [saveError, setSaveError] = useState<string | null>(null);
 
     const dateOptions = useMemo(() => buildDateOptions(applications), [applications]);
 
@@ -293,6 +306,19 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
         return new Date(existingOrder.serving_time_iso).getTime();
     }, [existingOrder]);
 
+    /** The application the existing order belongs to (an order cannot be re-parented). */
+    const orderApplication = useMemo(
+        () => existingOrder ? applications.find(a => a.id === existingOrder.application_id) : undefined,
+        [applications, existingOrder]
+    );
+
+    /**
+     * Editing an order of a SUBMITTED application is a "change" (judged on the stored serving time
+     * and both deadlines). An order still in the cart (a draft) is judged like a new one.
+     */
+    const changingSubmittedOrder = !!existingOrder && !!orderApplication
+        && orderApplication.status !== 'NEWPARTIAL1';
+
     /**
      * The option holding the existing order's serving day — kept selectable even if closed.
      * Scoped to the order's own application: matching across applications would keep another
@@ -323,36 +349,68 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
         return {valid: false, message: t('bookingfrontend.serving_day_closed')};
     }, [hospitality, servingInstant, storedServingMs, t]);
 
-    // Cutoff check — cutoff instant honours working days (mirrors the backend calc)
+    /**
+     * Is the chosen serving time still orderable? Mirrors the server's guard
+     * (HospitalityOrderGuard, via hospitalityActionWindow) so the dialog blocks exactly what the
+     * server would refuse:
+     *   - a new order, or a draft still in the cart: the order cutoff of the chosen serving time;
+     *   - a change to a SUBMITTED order: both the order cutoff and the kitchen's cancellation
+     *     deadline of the STORED serving time, and, when the time is moved, the cutoff of the new one.
+     * Nothing may be ordered or changed once the serving time itself has passed.
+     */
     const cutoffCheck = useMemo(() => {
         if (!servingInstant || !hospitality) return {valid: true, message: ''};
 
-        const cutoffDate = computeHospitalityDeadline(
-            servingInstant,
-            hospitality.order_by_time_value,
-            hospitality.order_by_time_unit,
-            hospitality.open_days_list
-        );
-        if (!cutoffDate) return {valid: true, message: ''};
+        const orderBy = {value: hospitality.order_by_time_value, unit: hospitality.order_by_time_unit};
+        const cancelBy = {
+            value: hospitality.resource_cancellation_deadline_value,
+            unit: hospitality.resource_cancellation_deadline_unit,
+        };
 
-        if (Date.now() > cutoffDate.getTime()) {
-            const workingDaysMode = isWorkingDaysMode(hospitality.open_days_list)
-                && hospitality.order_by_time_unit === 'days';
-            const unitLabel = hospitality.order_by_time_unit === 'hours'
-                ? t('bookingfrontend.hours').toLowerCase()
-                : workingDaysMode
-                    ? t('bookingfrontend.working_days').toLowerCase()
-                    : t('bookingfrontend.days').toLowerCase();
-            const msg = t('bookingfrontend.order_cutoff_warning')
-                .replace('%1', String(hospitality.order_by_time_value))
-                .replace('%2', unitLabel);
-            return {
-                valid: false,
-                message: msg,
-            };
+        let storedAnchor: Date | null = null;
+        if (changingSubmittedOrder && existingOrder) {
+            storedAnchor = existingOrder.serving_time_iso
+                ? new Date(existingOrder.serving_time_iso)
+                : earliestDate(orderApplication);
         }
-        return {valid: true, message: ''};
-    }, [servingInstant, hospitality, t]);
+
+        const deadlineVerdict = storedAnchor
+            ? hospitalityActionWindow('change', {
+                anchor: storedAnchor,
+                movedTo: storedServingMs !== null && servingInstant.getTime() === storedServingMs ? null : servingInstant,
+                orderBy,
+                cancelBy,
+                openDays: hospitality.open_days_list,
+            }, new Date())
+            : hospitalityActionWindow('add', {
+                anchor: servingInstant,
+                orderBy,
+                openDays: hospitality.open_days_list,
+            }, new Date());
+
+        if (deadlineVerdict.allowed) return {valid: true, message: ''};
+
+        if (deadlineVerdict.reason === 'cancellation_deadline_passed') {
+            return {valid: false, message: t('bookingfrontend.catering_cancellation_deadline_passed')};
+        }
+        if (deadlineVerdict.reason === 'serving_time_passed') {
+            return {valid: false, message: t('bookingfrontend.catering_serving_time_passed')};
+        }
+
+        const workingDaysMode = isWorkingDaysMode(hospitality.open_days_list)
+            && hospitality.order_by_time_unit === 'days';
+        const unitLabel = hospitality.order_by_time_unit === 'hours'
+            ? t('bookingfrontend.hours').toLowerCase()
+            : workingDaysMode
+                ? t('bookingfrontend.working_days').toLowerCase()
+                : t('bookingfrontend.days').toLowerCase();
+        return {
+            valid: false,
+            message: t('bookingfrontend.order_cutoff_warning')
+                .replace('%1', String(hospitality.order_by_time_value))
+                .replace('%2', unitLabel),
+        };
+    }, [servingInstant, hospitality, t, changingSubmittedOrder, existingOrder, orderApplication, storedServingMs]);
 
     // Cancellation deadline warning (informational, does not block ordering)
     const cancellationWarning = useMemo(() => {
@@ -378,6 +436,7 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
     // Initialize state on open / edit
     useEffect(() => {
         if (!open) return;
+        setSaveError(null);
         if (existingOrder) {
             setLocationId(existingOrder.location_resource_id);
             const qtyMap: Record<number, number> = {};
@@ -469,24 +528,31 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
                 ...(comments[parseInt(articleId)] ? {comment: comments[parseInt(articleId)]} : {}),
             }));
 
-        if (existingOrder) {
-            await updateMutation.mutateAsync({
-                orderId: existingOrder.id,
-                data: {
+        setSaveError(null);
+        try {
+            if (existingOrder) {
+                await updateMutation.mutateAsync({
+                    orderId: existingOrder.id,
+                    data: {
+                        location_resource_id: locationId,
+                        serving_time_iso: servingTimeIso,
+                        lines,
+                    },
+                });
+            } else {
+                await createMutation.mutateAsync({
+                    hospitality_id: hospitality.id,
                     location_resource_id: locationId,
                     serving_time_iso: servingTimeIso,
                     lines,
-                },
-            });
-        } else {
-            await createMutation.mutateAsync({
-                hospitality_id: hospitality.id,
-                location_resource_id: locationId,
-                serving_time_iso: servingTimeIso,
-                lines,
-            });
+                });
+            }
+            onClose();
+        } catch (error) {
+            // The server refuses what the deadlines no longer allow (409) and says why. Keep the
+            // dialog open and show it; an unhandled rejection here left the user with nothing.
+            setSaveError(error instanceof Error ? error.message : String(error));
         }
-        onClose();
     };
 
     const isSaving = createMutation.isPending || updateMutation.isPending;
@@ -750,6 +816,13 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
                     {selectedTime && !cutoffCheck.valid && (
                         <Alert data-color="danger" data-size="sm">
                             {cutoffCheck.message}
+                        </Alert>
+                    )}
+
+                    {/* The server refused the save (a deadline passed, the order was locked, ...) */}
+                    {saveError && (
+                        <Alert data-color="danger" data-size="sm" role="alert">
+                            {saveError}
                         </Alert>
                     )}
 

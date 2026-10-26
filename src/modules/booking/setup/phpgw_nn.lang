@@ -1330,3 +1330,28 @@ sms_failed_to_group_contact	booking	nn	Kunne ikkje sende til lagkontakt %1 (feil
 sms_creator_no_valid_phone	booking	nn	Opprettar har ikkje gyldig telefonnummer – ikkje kontakta
 sms_no_recipients_booking	booking	nn	Ingen deltakarar, opprettar eller lagkontaktar med telefonnummer er registrerte – SMS vart ikkje sendt.
 sms_no_recipients_booking_chain	booking	nn	Ingen deltakarar, opprettar, søkjar eller lagkontaktar med telefonnummer er registrerte – SMS vart ikkje sendt.
+changed_by_applicant	booking	nn	Endra av søkjar
+catering_mail_subject_added	booking	nn	Ny bevertning: %1, %2
+catering_mail_subject_changed	booking	nn	Endra bevertning: %1, %2
+catering_mail_subject_cancelled	booking	nn	Avbestilt bevertning: %1, %2
+catering_mail_intro_added	booking	nn	%1 har lagt til ei bevertningsbestilling på søknaden.
+catering_mail_intro_changed	booking	nn	%1 har endra ei bevertningsbestilling på søknaden.
+catering_mail_intro_cancelled	booking	nn	%1 har avbestilt ei bevertningsbestilling på søknaden.
+catering_mail_the_applicant	booking	nn	Søkjar
+catering_mail_on_behalf_of	booking	nn	(på vegner av %1)
+catering_mail_application	booking	nn	Søknad
+catering_mail_building	booking	nn	Bygg
+catering_mail_activity	booking	nn	Aktivitet
+catering_mail_field	booking	nn	Felt
+catering_mail_from	booking	nn	Frå
+catering_mail_to	booking	nn	Til
+catering_mail_value	booking	nn	Verdi
+catering_mail_open_case	booking	nn	Opne saka
+catering_mail_open_order	booking	nn	Sjå bestillinga
+catering_mail_nothing	booking	nn	—
+catering_field_hospitality	booking	nn	Bevertning
+catering_field_serving_time	booking	nn	Serveringstid
+catering_field_location	booking	nn	Leveringsstad
+catering_field_comment	booking	nn	Kommentar
+catering_field_special_requirements	booking	nn	Spesielle krav
+catering_field_total	booking	nn	Sum

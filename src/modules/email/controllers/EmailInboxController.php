@@ -5,6 +5,7 @@ namespace App\modules\email\controllers;
 use App\modules\email\services\EmailMessageSerializer;
 use App\modules\email\services\EmailFolderSerializer;
 use App\modules\email\services\InboxSerializer;
+use App\modules\phpgwapi\services\Preferences;
 use App\modules\phpgwapi\services\Settings;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
@@ -395,12 +396,17 @@ class EmailInboxController
 					'total_count' => (int) ($status['number_all'] ?? 0),
 				];
 			}
-			$accounts = [];
-			foreach ((array) $mail->extra_and_default_acounts as $item)
+			$accounts = [[
+				'id' => 0,
+				'name' => (string) $mail->get_pref_value('fullname', 0) ?: lang('Account') . ' 0',
+			]];
+			$emailPreferences = (array) (Preferences::getInstance()->read()['email'] ?? []);
+			foreach (\App\modules\email\services\EmailAccountsSerializer::serialize(
+				(array) ($emailPreferences['ex_accounts'] ?? [])
+			) as $item)
 			{
 				if (($item['status'] ?? '') !== 'enabled') continue;
-				$number = (int) $item['acctnum'];
-				$accounts[] = ['id' => $number, 'name' => (string) $mail->get_pref_value('fullname', $number) ?: lang('Account') . ' ' . $number];
+				$accounts[] = ['id' => (int) $item['id'], 'name' => (string) $item['name']];
 			}
 			$trash = $mail->get_pref_value('use_trash_folder', $account)
 				? $mail->folder_lookup('', (string) $mail->get_pref_value('trash_folder_name', $account), $account) : '';

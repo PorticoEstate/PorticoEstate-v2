@@ -335,7 +335,7 @@ class mail_msg_base
 	{
 		$this->serverSettings = Settings::getInstance()->get('server');
 		$this->userSettings = Settings::getInstance()->get('user');
-		$this->extra_accounts = (array) ($this->userSettings['preferences']['email']['ex_accounts'] ?? []);
+		$this->extra_accounts = array();
 		if ($this instanceof mail_msg_wrappers)
 		{
 			$this->mail_msg_wrappers = $this;

@@ -42,6 +42,17 @@ class EmailInboxController
 				);
 				$msgListDisplay = $mail->get_msg_list_display($folderInfo, $msgballs, true);
 			}
+			elseif ($mail->getTransport((int) $folderInfo['fldball']['acctnum']) instanceof \mail_dcom_pop3_local)
+			{
+				$account = (int) $folderInfo['fldball']['acctnum'];
+				$ids = $mail->getTransport($account)->page($mail->get_arg_value('mailsvr_stream', $account),
+					(int) $mail->get_arg_value('sort'), (int) $mail->get_arg_value('order'), $start, $pageSize);
+				$msgballs = array_map(static fn($id) => [
+					'msgball[msgnum]' => $id, 'msgball[acctnum]' => $account,
+					'msgball[folder]' => $folderInfo['fldball']['folder'],
+				], $ids);
+				$msgListDisplay = $mail->get_msg_list_display($folderInfo, $msgballs, true);
+			}
 			else
 			{
 				$msgListDisplay = (array) $mail->get_msg_list_display($folderInfo);

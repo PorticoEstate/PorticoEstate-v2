@@ -108,7 +108,7 @@ The POP fixture is isolated from `imap-test`: seeding or deleting its messages d
 
 Create and enable an extra email account, or enable custom settings on the main account. Set **Email Account Name** to `pop-test`, **Email address** to `pop-test@pop.test`, authentication to **Password**, and the password shown above. When PHP runs in Docker, use **Mail Server** `pop-test` with **POP-3** and port `3110`, or **POP-3S** and port `3995`. When PHP runs on the host, use `127.0.0.1` with ports `1110` or `1995` respectively.
 
-Set the port explicitly: the application's standard POP defaults are 110/995, not GreenMail's test ports. Upgrade the Email module to `0.9.17.503` before opening the POP account: the setup migrations create `phpgw_email_pop_messages` and convert existing PostgreSQL base64 MIME text to raw `bytea` bytes. The durable POP transport uses PHP streams and the installed MIME parser, without requiring the native IMAP extension. POP3S uses the fixture's self-signed certificate; certificate-validation exceptions must remain restricted to this local test server.
+Set the port explicitly: the application's standard POP defaults are 110/995, not GreenMail's test ports. Upgrade the Email module to `0.9.17.503` before opening the POP account: the setup migrations create `phpgw_email_pop_messages`, add typed sortable metadata, and backfill existing binary MIME messages. The inbox then sorts and paginates through SQL instead of parsing all stored messages. The durable POP transport uses PHP streams and the installed MIME parser, without requiring the native IMAP extension. POP3S uses the fixture's self-signed certificate; certificate-validation exceptions must remain restricted to this local test server.
 
 There is no POP-specific emailadmin server preset. Do not select Microsoft or Google OAuth. This fixture tests the user Email POP settings and local POP transport, not cloud authentication or SMTP sending.
 
@@ -157,6 +157,8 @@ docker exec -e XDEBUG_MODE=off -e GREENMAIL_POP_TEST=1 -e POP_TEST_HOST=pop-test
 This verifies the legacy native adapter's subject, sender, date, size, and intentionally subjectless message. It uses `imap_headerinfo()` rather than the removed `imap_header()` alias; it is a compatibility regression, not the application's new durable transport. From the host, use `GREENMAIL_POP_TEST=1 vendor/bin/phpunit --filter testGreenMailPopHeadersContainMailboxMetadata tests/services/EmailTransportFactoryTest.php` when the native IMAP extension is installed.
 
 ### Durable local mailbox regression tests
+
+The suite includes SQL-only page selection, stable sorting ties, hidden-message filtering, import-time metadata, and bounded migration backfill that preserves MIME and flags. The controller paging check runs with `vendor/bin/phpunit tests/controllers/EmailMessageLifecycleTest.php`.
 
 Run the isolated store and application-flow tests without creating database tables:
 

@@ -14,7 +14,7 @@
  */
 
 $setup_info['email']['name']      = 'email';
-$setup_info['email']['version']   = '0.9.17.502';
+$setup_info['email']['version']   = '0.9.17.503';
 $setup_info['email']['app_order'] = '2';
 $setup_info['email']['enable']    = 1;
 $setup_info['email']['app_group']	= 'office';

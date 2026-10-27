@@ -1902,22 +1902,7 @@ class mail_msg extends mail_msg_wrappers
 			//$ex_acctnum = $this->get_acctnum();
 			// TESTING get the acctnum from the folder info
 			$ex_acctnum = $folder_info['fldball']['acctnum'];
-			if (($this->session_cache_enabled == True)
-				&& (isset($this->getSessionCache()[$ex_acctnum]['msgball_list'][$ex_folder]['msgball_list']))
-			)
-			//&& (isset($GLOBALS['phpgw_session']['phpgw_app_sessions']['email']['dat'][$ex_acctnum]['msgball_list']['msgball_list'])))
-			{
-				$msgball_list = &$this->getSessionCache()[$ex_acctnum]['msgball_list'][$ex_folder]['msgball_list'];
-				//$msgball_list =& $GLOBALS['phpgw_session']['phpgw_app_sessions']['email']['dat'][$ex_acctnum]['msgball_list']['msgball_list'];
-				//$msgball_list = $GLOBALS['phpgw_session']['phpgw_app_sessions']['email']['dat'][$ex_acctnum]['msgball_list']['msgball_list'];
-			}
-			else
-			{
-				// ok we could not obtain a reference for some reason, get a COPY then
-				//$msgball_list = $this->get_msgball_list();
-				// EXPERIMENT with passing arge to this
-				$msgball_list = $this->get_msgball_list($ex_acctnum, $ex_folder);
-			}
+			$msgball_list = $this->get_msgball_list($ex_acctnum, $ex_folder);
 		}
 
 		if ($pre_paginated)

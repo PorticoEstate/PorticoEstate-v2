@@ -158,6 +158,20 @@ namespace Tests\Controllers
 			$this->assertSame($handle, $mail->ensure_stream_and_folder(['acctnum' => 2, 'folder' => 'INBOX']));
 		}
 
+		public function testInboxDisplayValidatesOrderingEvenWhenMessageListIsCached(): void
+		{
+			$mail = $this->getMockBuilder(\mail_msg::class)->disableOriginalConstructor()
+				->onlyMethods(['get_msgball_list'])->getMock();
+			$cache = new \ReflectionProperty(\mail_msg_wrappers::class, 'sessionCache');
+			$cache->setValue($mail, [2 => ['msgball_list' => ['INBOX' => ['msgball_list' => [
+				['msgball[acctnum]' => 2, 'msgball[folder]' => 'INBOX', 'msgball[msgnum]' => 1],
+			]]]]]);
+			$mail->expects($this->once())->method('get_msgball_list')->with(2, 'INBOX')
+				->willThrowException(new \RuntimeException('Sort-aware cache validation requested'));
+			$this->expectExceptionMessage('Sort-aware cache validation requested');
+			$mail->get_msg_list_display(['number_all' => 1, 'fldball' => ['acctnum' => 2, 'folder' => 'INBOX']]);
+		}
+
 		public function testModuleHasNoLegacyCacheBackend(): void
 		{
 			$violations = [];

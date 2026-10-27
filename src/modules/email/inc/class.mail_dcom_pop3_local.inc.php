@@ -78,16 +78,16 @@ class mail_dcom_pop3_local extends mail_dcom_base
 	public function close($stream, $flags = 0) { $this->opened = false; return true; }
 	public function noop_ping_test($stream) { return $this->opened; }
 	public function server_last_error() { return $this->lastError; }
-	public function num_msg($stream) { return count($this->store->rows()); }
+	public function num_msg($stream) { return (int) $this->store->stats()['message_count']; }
 	public function status($stream, $mailbox = '', $options = 0)
 	{
-		$rows = $this->store->rows();
-		return (object) ['messages' => count($rows), 'unseen' => count(array_filter($rows, static fn($row) => !$row['is_seen'])), 'recent' => 0, 'uidnext' => $rows ? max(array_column($rows, 'message_id')) + 1 : 1, 'uidvalidity' => 1];
+		$stats = $this->store->stats();
+		return (object) ['messages' => (int) $stats['message_count'], 'unseen' => (int) $stats['unseen_count'], 'recent' => 0, 'uidnext' => (int) $stats['uidnext'], 'uidvalidity' => 1];
 	}
 	public function mailboxmsginfo($stream)
 	{
-		$status = $this->status($stream);
-		return (object) ['Nmsgs' => $status->messages, 'Unread' => $status->unseen, 'Recent' => 0, 'Size' => array_sum(array_column($this->store->rows(), 'message_size')), 'Date' => '', 'Driver' => 'local-pop', 'Mailbox' => 'INBOX'];
+		$stats = $this->store->stats();
+		return (object) ['Nmsgs' => (int) $stats['message_count'], 'Unread' => (int) $stats['unseen_count'], 'Recent' => 0, 'Size' => (int) $stats['total_size'], 'Date' => '', 'Driver' => 'local-pop', 'Mailbox' => 'INBOX'];
 	}
 
 	public function header($stream, $number, $fromlength = 0, $tolength = 0, $defaulthost = '')
@@ -98,7 +98,10 @@ class mail_dcom_pop3_local extends mail_dcom_base
 		foreach (['from', 'to', 'cc', 'bcc', 'reply_to', 'sender', 'return_path'] as $name)
 		{
 			$value = $message->getHeaderValue(str_replace('_', '-', $name), '');
-			$addresses = \PHPMailer\PHPMailer\PHPMailer::parseAddresses($value, false, 'UTF-8');
+			$addressHeader = $message->getHeader(str_replace('_', '-', $name));
+			$addresses = $addressHeader instanceof \ZBateson\MailMimeParser\Header\AddressHeader
+				? array_map(static fn($address) => ['address' => $address->getEmail(), 'name' => $address->getName() ?? ''], $addressHeader->getAddresses())
+				: \PHPMailer\PHPMailer\PHPMailer::parseAddresses($value, false, 'UTF-8');
 			$header->$name = array_map(static function ($address) {
 				[$mailbox, $host] = array_pad(explode('@', $address['address'], 2), 2, '');
 				return (object) ['personal' => $address['name'], 'mailbox' => $mailbox, 'host' => $host];
@@ -139,15 +142,12 @@ class mail_dcom_pop3_local extends mail_dcom_base
 
 	public function sort($stream, $criteria = 1, $reverse = false, $flags = 0)
 	{
-		$values = [];
-		foreach ($this->store->rows() as $row)
-		{
-			$id = (int) $row['message_id'];
-			$header = $this->header($stream, $id);
-			$values[$id] = match ((int) $criteria) { 0 => $header->udate, 1 => $id, 2 => strtolower($header->fromaddress), 3 => strtolower($header->subject), 4 => strtolower($header->toaddress), 5 => strtolower($header->ccaddress), 6 => $header->Size, default => $id };
-		}
-		$reverse ? arsort($values) : asort($values);
-		return array_keys($values);
+		return $this->store->messageIds((int) $criteria, (int) (bool) $reverse);
+	}
+
+	public function page($stream, int $sort, int $order, int $start, int $pageSize): array
+	{
+		return $this->store->messageIds($sort, $order, $start, $pageSize);
 	}
 
 	public function i_search($stream, $criteria, $flags = 0)
@@ -180,8 +180,7 @@ class mail_dcom_pop3_local extends mail_dcom_base
 
 	private function row(int $id): array
 	{
-		foreach ($this->store->rows() as $row) if ((int) $row['message_id'] === $id) return $row;
-		throw new RuntimeException('Local POP message no longer exists');
+		return $this->store->metadata($id);
 	}
 }
 

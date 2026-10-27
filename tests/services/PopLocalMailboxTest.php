@@ -79,6 +79,61 @@ class PopLocalMailboxTest extends TestCase
 		$this->assertSame('sender', $reopened->header($stream, 1)->from[0]->mailbox);
 	}
 
+	public function testInboxColumnsSortByDisplayedValuesInBothDirections(): void
+	{
+		$db = new PopStoreFakeDb();
+		$source = $this->source();
+		$source->messages = [
+			'uid-z' => str_replace('Sender <sender@example.test>', 'Zoe <zoe@example.test>', $this->raw('Zebra')),
+			'uid-a' => str_replace(['Sender <sender@example.test>', 'Tue, 27 Oct 2026 10:00:00 +0000'], ['Amy <amy@example.test>', 'Mon, 26 Oct 2026 10:00:00 +0000'], $this->raw('Alpha with a substantially longer subject')),
+		];
+		$transport = $this->transport($db, $source);
+		$stream = $transport->open('{pop.test:995/pop3/ssl}INBOX', 'user', 'password');
+		foreach ([0, 1, 2, 3] as $column)
+		{
+			$this->assertSame([2, 1], $transport->sort($stream, $column, 0), 'Ascending column ' . $column);
+			$this->assertSame([1, 2], $transport->sort($stream, $column, 1), 'Descending column ' . $column);
+		}
+		$this->assertSame([1, 2], $transport->sort($stream, 6, 0));
+		$this->assertSame([2, 1], $transport->sort($stream, 6, 1));
+		$this->assertSame('Zoe', $transport->header($stream, 1)->from[0]->personal);
+		$this->assertSame('Amy', $transport->header($stream, 2)->from[0]->personal);
+	}
+
+	public function testSortableMetadataIsExtractedDuringImport(): void
+	{
+		$db = new PopStoreFakeDb();
+		$store = new PopMessageStore(17, 2, PopMessageStore::mailboxKey('pop.test', 995, 'user'), $db);
+		$raw = $this->raw('Mixed CASE subject');
+		$store->save('uid-meta', $raw);
+		$this->assertSame('mixed case subject', $db->messages[1]['subject_sort']);
+		$this->assertSame('sender', $db->messages[1]['from_sort']);
+		$this->assertSame('user@example.test', $db->messages[1]['to_sort']);
+		$this->assertSame('', $db->messages[1]['cc_sort']);
+		$this->assertSame(strtotime('2026-10-27 10:00:00 +0000'), $db->messages[1]['date_sent']);
+		$this->assertSame($raw, $store->raw(1));
+	}
+
+	public function testSqlPaginationUsesStableIdsAndDoesNotReadMime(): void
+	{
+		$db = new PopStoreFakeDb();
+		$source = $this->source();
+		$source->messages = ['uid-a' => $this->raw('Equal'), 'uid-b' => $this->raw('Alpha'), 'uid-c' => $this->raw('Equal'), 'uid-d' => $this->raw('Zebra')];
+		$transport = $this->transport($db, $source);
+		$stream = $transport->open('{pop.test:995/pop3/ssl}INBOX', 'user', 'password');
+		$db->queries = [];
+		$this->assertSame([2, 1], $transport->page($stream, 3, 0, 0, 2));
+		$this->assertSame([3, 4], $transport->page($stream, 3, 0, 2, 2));
+		$this->assertSame([4, 3], $transport->page($stream, 3, 1, 0, 2));
+		$this->assertStringContainsString('ORDER BY subject_sort ASC, message_id ASC LIMIT :page_size OFFSET :page_start', $db->queries[0]);
+		$this->assertStringNotContainsString('raw_message', implode(' ', $db->queries));
+		$this->assertSame(PDO::PARAM_INT, $db->bindingTypes['page_size']);
+		$this->assertSame(PDO::PARAM_INT, $db->bindingTypes['page_start']);
+		\IMAPManager::imap_delete($stream, '1');
+		\IMAPManager::imap_expunge($stream);
+		$this->assertSame([2, 3], $transport->page($stream, 3, 0, 0, 2));
+	}
+
 	public function testLocalDeletionRetainsTombstoneAndNeverChangesRemoteMailbox(): void
 	{
 		$db = new PopStoreFakeDb();
@@ -272,33 +327,31 @@ class PopLocalMailboxTest extends TestCase
 		finally { fclose($stream); }
 	}
 
-	public function testBinaryUpgradeConvertsTextAndSkipsExistingBytea(): void
+	public function testMetadataUpgradeBackfillsBatchesWithoutChangingMimeOrFlags(): void
 	{
 		require_once __DIR__ . '/../../src/modules/email/setup/tables_update.inc.php';
-		foreach (['text', 'bytea'] as $type)
-		{
-			$db = new class($type) {
-				public array $calls = [];
-				public function __construct(private string $type) {}
-				public function transaction_begin(): void { $this->calls[] = 'begin'; }
-				public function transaction_commit(): bool { $this->calls[] = 'commit'; return true; }
-				public function transaction_abort(): void { $this->calls[] = 'abort'; }
-				public function prepare($sql): object {
-					return new class($this->type) {
-						public function __construct(private string $type) {}
-						public function execute($values): bool { return true; }
-						public function fetchColumn(): string { return $this->type; }
-					};
-				}
-				public function exec($sql): int { $this->calls[] = $sql; return 0; }
-			};
-			$processor = (object) ['dbms' => 'postgres', 'm_odb' => $db];
-			$this->assertSame('0.9.17.503', \email_upgrade0_9_17_502($processor));
-			$this->assertSame('begin', $db->calls[0]);
-			$this->assertSame('commit', end($db->calls));
-			$this->assertCount($type === 'text' ? 3 : 2, $db->calls);
-			if ($type === 'text') $this->assertStringContainsString("USING decode(raw_message, 'base64')", $db->calls[1]);
-		}
+		$db = new PopStoreFakeDb();
+		$store = new PopMessageStore(17, 2, PopMessageStore::mailboxKey('pop.test', 995, 'user'), $db);
+		$store->save('uid-a', $this->raw('Backfill A'));
+		$store->save('uid-b', $this->raw('Backfill B'));
+		$store->flag(1, '\\Seen', true);
+		$store->flag(2, '\\Deleted', true);
+		$store->expunge();
+		$before = $db->messages;
+		$db->columns = array_diff(array_keys($before[1]), ['date_sent', 'subject_sort', 'from_sort', 'to_sort', 'cc_sort']);
+		foreach ($db->messages as &$row) foreach (['date_sent', 'subject_sort', 'from_sort', 'to_sort', 'cc_sort'] as $column) unset($row[$column]);
+		unset($row);
+		$processor = new class($db) {
+			public function __construct(public object $m_odb) {}
+			public function AddColumn($table, $column, $definition): bool { $this->m_odb->columns[] = $column; return true; }
+			public function AlterColumn($table, $column, $definition): bool { return $definition['nullable'] === false; }
+		};
+		$this->assertSame('0.9.17.503', \email_upgrade0_9_17_502($processor));
+		$this->assertSame($before, $db->messages);
+		$this->assertSame(['begin', 'commit'], $db->transactions);
+		$this->assertCount(6, array_filter($db->queries, static fn($sql) => str_starts_with($sql, 'CREATE INDEX')));
+		PopMessageStore::backfillSortMetadata($db, 1);
+		$this->assertSame($before, $db->messages);
 	}
 
 	public function testReadOnlySyncAgainstGreenMail(): void
@@ -328,7 +381,14 @@ final class PopStoreFakeDb
 {
 	public array $messages = [];
 	public array $bindingTypes = [];
-	public function prepare(string $sql): PopStoreFakeStatement { return new PopStoreFakeStatement($this, $sql); }
+	public array $queries = [];
+	public array $columns = [];
+	public array $transactions = [];
+	public function prepare(string $sql): PopStoreFakeStatement { $this->queries[] = $sql; return new PopStoreFakeStatement($this, $sql); }
+	public function exec(string $sql): int { $this->queries[] = $sql; return 0; }
+	public function transaction_begin(): void { $this->transactions[] = 'begin'; }
+	public function transaction_commit(): bool { $this->transactions[] = 'commit'; return true; }
+	public function transaction_abort(): void { $this->transactions[] = 'abort'; }
 }
 
 final class PopStoreFakeStatement
@@ -347,6 +407,7 @@ final class PopStoreFakeStatement
 	{
 		$values = $values + $this->bound;
 		$this->rows = [];
+		if (str_contains($this->sql, 'WHERE 1 = 0')) return true;
 		if (str_starts_with($this->sql, 'INSERT'))
 		{
 			foreach ($this->db->messages as $row) if ($this->sameScope($row, $values) && $row['uidl'] === $values['uidl']) throw new \PDOException('Duplicate UIDL', 23505);
@@ -356,19 +417,43 @@ final class PopStoreFakeStatement
 		}
 		foreach ($this->db->messages as &$row)
 		{
-			if (!$this->sameScope($row, $values) || (isset($values['message_id']) && $row['message_id'] !== $values['message_id']) || (isset($values['uidl']) && $row['uidl'] !== $values['uidl'])) continue;
+			if ((isset($values['account_id']) && !$this->sameScope($row, $values)) || (isset($values['message_id']) && $row['message_id'] !== $values['message_id']) || (isset($values['uidl']) && $row['uidl'] !== $values['uidl'])) continue;
+			if (isset($values['cursor']) && $row['message_id'] <= $values['cursor']) continue;
 			if (str_contains($this->sql, 'is_hidden = 0') && $row['is_hidden']) continue;
 			if (str_starts_with($this->sql, 'UPDATE'))
 			{
-				if (str_contains($this->sql, 'SET is_hidden')) { if ($row['is_deleted']) $row['is_hidden'] = 1; }
+				if (isset($values['date_sent'])) { foreach (['date_sent', 'subject_sort', 'from_sort', 'to_sort', 'cc_sort'] as $column) $row[$column] = $values[$column]; }
+				elseif (str_contains($this->sql, 'SET is_hidden')) { if ($row['is_deleted']) $row['is_hidden'] = 1; }
 				else { $column = str_contains($this->sql, 'SET is_seen') ? 'is_seen' : 'is_deleted'; $row[$column] = $values['flag_value']; }
 			}
 			else $this->rows[] = $row;
 		}
+		if (str_contains($this->sql, 'COUNT(*)'))
+		{
+			$this->rows = [[
+				'message_count' => count($this->rows),
+				'unseen_count' => count(array_filter($this->rows, static fn($row) => !$row['is_seen'])),
+				'total_size' => array_sum(array_column($this->rows, 'message_size')),
+				'uidnext' => $this->rows ? max(array_column($this->rows, 'message_id')) + 1 : 1,
+			]];
+		}
+		elseif (preg_match('/ORDER BY ([a-z_]+) (ASC|DESC), message_id/', $this->sql, $sort))
+		{
+			usort($this->rows, static function ($left, $right) use ($sort) {
+				$comparison = in_array($sort[1], ['date_sent', 'message_size'], true)
+					? $left[$sort[1]] <=> $right[$sort[1]] : strcmp($left[$sort[1]], $right[$sort[1]]);
+				$comparison = $comparison ?: $left['message_id'] <=> $right['message_id'];
+				return $sort[2] === 'DESC' ? -$comparison : $comparison;
+			});
+			if (isset($values['page_size'])) $this->rows = array_slice($this->rows, $values['page_start'], $values['page_size']);
+		}
+		if (isset($values['batch_size'])) $this->rows = array_slice($this->rows, 0, $values['batch_size']);
 		return true;
 	}
+	public function columnCount(): int { return count($this->db->columns); }
+	public function getColumnMeta(int $index): array { return ['name' => array_values($this->db->columns)[$index]]; }
 	private function sameScope(array $row, array $values): bool { return $row['account_id'] === $values['account_id'] && $row['mail_account'] === $values['mail_account'] && $row['mailbox_key'] === $values['mailbox_key']; }
-	public function fetchAll(int $mode = PDO::FETCH_ASSOC): array { return $mode === PDO::FETCH_COLUMN ? array_column($this->rows, 'uidl') : $this->rows; }
+	public function fetchAll(int $mode = PDO::FETCH_ASSOC): array { return $mode === PDO::FETCH_COLUMN ? array_column($this->rows, str_starts_with($this->sql, 'SELECT message_id') ? 'message_id' : 'uidl') : $this->rows; }
 	public function fetch(int $mode = PDO::FETCH_ASSOC): array|false { return $this->rows[0] ?? false; }
 	public function fetchColumn(): mixed { return $this->rows ? $this->rows[0][str_contains($this->sql, 'SELECT content_hash') ? 'content_hash' : 'message_id'] : false; }
 }

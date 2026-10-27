@@ -38,10 +38,17 @@ namespace Tests\Controllers
 		public int $flagCalls = 0;
 		public int $closed = 0;
 		public int $released = 0;
+		public array $arguments = [];
+		public array $rendered = [];
 		public static function getInstance(): self { return self::$instance; }
 		public static function hasInstance(): bool { return true; }
 		public static function releaseInstance(): void { self::$instance->released++; }
-		public function get_arg_value($name) { return $name === 'msgball' ? ['acctnum' => 2, 'folder' => 'INBOX', 'msgnum' => 5] : null; }
+		public function get_arg_value($name) { return $this->arguments[$name] ?? ($name === 'msgball' ? ['acctnum' => 2, 'folder' => 'INBOX', 'msgnum' => 5] : null); }
+		public function get_folder_status_info(): array { return ['is_imap' => false, 'number_all' => 8, 'number_new' => 0, 'fldball' => ['acctnum' => 2, 'folder' => 'INBOX']]; }
+		public function get_msg_list_display($info, $messages, $paged): array {
+			$this->rendered = [$messages, $paged];
+			return array_map(static fn($message) => ['acctnum' => 2, 'folder' => 'INBOX', 'msgnum' => $message['msgball[msgnum]']], $messages);
+		}
 		public function getTransport($account): object { return $this->transport; }
 		public function phpgw_header($message): object { return (object) ['Draft' => '']; }
 		public function phpgw_set_flag($message, $flag, $display): bool { $this->flagCalls++; return $this->flagResult; }
@@ -62,8 +69,53 @@ namespace Tests\Controllers
 		}
 	}
 
+	class MessageLifecycleLinks
+	{
+		public static function link($path, $arguments = [], $redirect = false): string { return $path . '?' . http_build_query($arguments); }
+	}
+
 	class EmailMessageLifecycleTest extends TestCase
 	{
+		private function aliasMailService(): void
+		{
+			class_alias(MessageLifecycleMail::class, \App\modules\email\services\MailMessage::class);
+		}
+
+		/**
+		 * @runInSeparateProcess
+		 * @preserveGlobalState disabled
+		 */
+		public function testPopInboxUsesDatabasePageBeforeRendering(): void
+		{
+			\registerEmailMessageLifecycleFunctions();
+			$this->aliasMailService();
+			class_alias(MessageLifecycleLinks::class, 'phpgw');
+			require_once __DIR__ . '/../../src/modules/email/inc/class.mail_dcom_pop3_local.inc.php';
+			$settings = new \ReflectionProperty(\App\modules\phpgwapi\services\Settings::class, 'instance');
+			$original = $settings->getValue();
+			$settings->setValue(null, new class {
+				public function get($key): array { return $key === 'user' ? ['preferences' => ['common' => ['maxmatchs' => 2]]] : []; }
+			});
+			try
+			{
+				$mail = new MessageLifecycleMail();
+				MessageLifecycleMail::$instance = $mail;
+				$stream = new \stdClass();
+				$mail->arguments = ['start' => 2, 'sort' => 3, 'order' => 0, 'mailsvr_stream' => $stream];
+				$mail->transport = $this->getMockBuilder(\mail_dcom_pop3_local::class)->disableOriginalConstructor()->onlyMethods(['page'])->getMock();
+				$mail->transport->expects($this->once())->method('page')->with($stream, 3, 0, 2, 2)->willReturn([4, 6]);
+				$request = (new ServerRequest('GET', '/email/api/inbox'))->withQueryParams(['fldball' => ['acctnum' => 2, 'folder' => 'INBOX'], 'sort' => 3, 'order' => 0, 'start' => 2]);
+				$response = (new EmailInboxController())->index($request, new Response());
+				$this->assertSame(200, $response->getStatusCode());
+				$data = json_decode((string) $response->getBody(), true);
+				$this->assertSame([4, 6], array_column($data['items'], 'messageNumber'));
+				$this->assertTrue($mail->rendered[1]);
+				$this->assertSame(2, $data['start']);
+				$this->assertSame(2, $data['pageSize']);
+			}
+			finally { $settings->setValue(null, $original); }
+		}
+
 		/**
 		 * @runInSeparateProcess
 		 * @preserveGlobalState disabled
@@ -72,7 +124,7 @@ namespace Tests\Controllers
 		public function testMessageOpeningRespectsTransportFlags(bool $supportsFlags, bool $flagResult, int $status): void
 		{
 			\registerEmailMessageLifecycleFunctions();
-			class_alias(MessageLifecycleMail::class, \App\modules\email\services\MailMessage::class);
+			$this->aliasMailService();
 			class_alias(MessageLifecycleContent::class, \App\modules\email\services\EmailMessageContent::class);
 			$mail = new MessageLifecycleMail();
 			MessageLifecycleMail::$instance = $mail;

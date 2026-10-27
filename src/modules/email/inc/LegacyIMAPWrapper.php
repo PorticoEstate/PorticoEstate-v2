@@ -86,11 +86,7 @@ class LegacyIMAPWrapper
      */
     public static function imap_header($stream, $msgNum, $fromlength = 0, $tolength = 0, $defaulthost = '', $flags = 0)
     {
-        if (!function_exists('imap_header')) {
-            return false;
-        }
-        
-        $fn = 'imap_header'; return @$fn($stream, $msgNum, $fromlength, $tolength, $defaulthost);
+        return self::imap_headerinfo($stream, $msgNum, (int) $fromlength, (int) $tolength, $defaulthost);
     }
     
     /**
@@ -102,7 +98,7 @@ class LegacyIMAPWrapper
             return false;
         }
         
-        $fn = 'imap_headerinfo'; return @$fn($stream, $msgNum, $fromlength, $tolength, $defaulthost);
+        $fn = 'imap_headerinfo'; return @$fn($stream, $msgNum, (int) $fromlength, (int) $tolength);
     }
     
     /**

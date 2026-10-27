@@ -147,6 +147,15 @@ PY
 
 A newly seeded mailbox has 20 messages. This check issues no DELE commands and does not remove messages. Verify attachment download in the app using fixture message 5, 12, or 19. The IMAP regression tests above still target `imap-test`; they do not exercise POP automatically.
 
+Run the native POP header regression from the application container:
+
+```sh
+docker exec -e XDEBUG_MODE=off -e GREENMAIL_POP_TEST=1 -e POP_TEST_HOST=pop-test -e POP_TEST_PORT=3995 portico_api \
+  vendor/bin/phpunit --filter testGreenMailPopHeadersContainMailboxMetadata tests/services/EmailTransportFactoryTest.php
+```
+
+This verifies subject, sender, date, size, and the intentionally subjectless message through the actual POP transport. It uses `imap_headerinfo()` rather than the removed `imap_header()` alias. From the host, use `GREENMAIL_POP_TEST=1 vendor/bin/phpunit --filter testGreenMailPopHeadersContainMailboxMetadata tests/services/EmailTransportFactoryTest.php` when the native IMAP extension is installed. The inbox currently skips POP attachment detection to avoid downloading every message; check attachments by opening the message rather than relying on its inbox attachment flag.
+
 GreenMail 2.1.2 can leave Python `poplib` command responses misaligned after `RSET`. For deletion-cancellation tests, issue `RSET`, disconnect, and verify the count on a new connection rather than relying on same-session STAT/LIST responses. Do not mistake this fixture limitation for production POP behavior.
 
 ### Reseed and reset

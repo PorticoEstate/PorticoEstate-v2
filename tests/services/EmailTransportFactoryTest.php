@@ -46,7 +46,6 @@ namespace Tests\Services
 			class_alias(TransportFactoryImports::class, 'phpgw');
 			class_alias(TransportFactoryCommon::class, 'phpgwapi_common');
 			$property = new \ReflectionProperty(Settings::class, 'instance');
-			$property->setAccessible(true);
 			$property->setValue(null, new class
 			{
 				public function get(string $key): array
@@ -79,6 +78,44 @@ namespace Tests\Services
 		public static function protocolOrders(): array
 		{
 			return [[['imap', 'pop3']], [['pop3s', 'imaps']], [['IMAPS', 'POP3S']]];
+		}
+
+		public function testGreenMailPopHeadersContainMailboxMetadata(): void
+		{
+			if (getenv('GREENMAIL_POP_TEST') !== '1' || !function_exists('imap_headerinfo'))
+			{
+				$this->markTestSkipped('Set GREENMAIL_POP_TEST=1 with the native IMAP extension and seeded POP fixture.');
+			}
+			$transport = \email_ofemail::createObject('email.mail_dcom', 'pop3s');
+			$host = getenv('POP_TEST_HOST') ?: '127.0.0.1';
+			$port = (int) (getenv('POP_TEST_PORT') ?: 1995);
+			$stream = $transport->open('{' . $host . ':' . $port . '/pop3/ssl/novalidate-cert}INBOX', 'pop-test', 'local-test-password');
+			$this->assertNotFalse($stream, (string) $transport->server_last_error());
+			try
+			{
+				$this->assertSame(20, $transport->num_msg($stream));
+				foreach ([1, 5, 20] as $number)
+				{
+					$header = $transport->header($stream, $number);
+					$this->assertIsObject($header);
+					$this->assertSame(sprintf('sender%02d', $number), $header->from[0]->mailbox);
+					$this->assertSame('example.test', $header->from[0]->host);
+					$this->assertNotEmpty($header->date);
+					$this->assertGreaterThan(0, (int) $header->Size);
+					if ($number !== 20)
+					{
+						$this->assertStringContainsString(sprintf('IMAP fixture %02d', $number), $header->subject);
+					}
+					else
+					{
+						$this->assertEmpty($header->subject ?? '');
+					}
+				}
+			}
+			finally
+			{
+				$this->assertTrue($transport->close($stream));
+			}
 		}
 
 		public function testOmittedProtocolUsesDefaultPreferences(): void

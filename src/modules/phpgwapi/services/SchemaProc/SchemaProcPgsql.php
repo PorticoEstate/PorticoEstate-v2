@@ -526,8 +526,9 @@
 
 			if ($sSequenceName)
 			{
-				$stmt = $oProc->m_odb->prepare("SELECT last_value FROM seq_:oldTableName");
-				$stmt->execute([':oldTableName' => $sOldTableName]);
+				$sQuotedSequenceName = '"' . str_replace('"', '""', $sSequenceName) . '"';
+				$stmt = $oProc->m_odb->prepare("SELECT last_value FROM {$sQuotedSequenceName}");
+				$stmt->execute();
 
 				$result = $stmt->fetch(PDO::FETCH_NUM);
 				$lastval = $result[0];
@@ -789,4 +790,3 @@
 		}
 
 	}
-

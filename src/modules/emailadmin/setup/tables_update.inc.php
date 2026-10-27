@@ -68,3 +68,18 @@ function emailadmin_upgrade1_5_004($oProc)
 		return '1.5.005';
 	}
 }
+
+$test[] = '1.5.005';
+function emailadmin_upgrade1_5_005($oProc)
+{
+	$oProc->m_odb->transaction_begin();
+	if (!$oProc->RenameTable('egw_emailadmin', 'phpgw_emailadmin'))
+	{
+		$oProc->m_odb->transaction_abort();
+		return false;
+	}
+	if ($oProc->m_odb->transaction_commit())
+	{
+		return '1.5.006';
+	}
+}

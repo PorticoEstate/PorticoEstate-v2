@@ -15,7 +15,7 @@
 
 $setup_info['emailadmin']['name']      = 'emailadmin';
 $setup_info['emailadmin']['title']     = 'EMailAdmin';
-$setup_info['emailadmin']['version']   = '1.5.005';
+$setup_info['emailadmin']['version']   = '1.5.006';
 $setup_info['emailadmin']['app_order'] = 10;
 $setup_info['emailadmin']['enable']    = 1;
 
@@ -30,7 +30,7 @@ $setup_info['emailadmin']['maintainer'][] = array(
 	'email' => 'kl@stylite.de'
 );
 
-$setup_info['emailadmin']['tables'][]	= 'egw_emailadmin';
+$setup_info['emailadmin']['tables'][]	= 'phpgw_emailadmin';
 
 /* The hooks this app includes, needed for hooks registration */
 $setup_info['emailadmin']['hooks'] = array(

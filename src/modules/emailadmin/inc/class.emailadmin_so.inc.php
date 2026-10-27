@@ -19,7 +19,7 @@ class emailadmin_so
 {
 	var $phpgwapi_common;
 	var $db;
-	var $table = 'egw_emailadmin';
+	var $table = 'phpgw_emailadmin';
 	var $db_cols = array(
 		'ea_profile_id'			=> 'profileID',
 		'ea_smtp_server'		=> 'smtpServer',

@@ -1,0 +1,82 @@
+.email-inbox th [data-email-sort]
+{
+	background: none;
+	border: 0;
+	color: inherit;
+	cursor: pointer;
+	font: inherit;
+	padding: 0;
+	text-align: left;
+}
+.email-inbox th[aria-sort="ascending"] [data-email-sort]::after { content: ' \2191'; }
+.email-inbox th[aria-sort="descending"] [data-email-sort]::after { content: ' \2193'; }
+.email-inbox {
+	--mail-ink: #1d292f;
+	--mail-muted: #53636b;
+	--mail-line: #cbd4d8;
+	--mail-surface: #f2f6f6;
+	--mail-accent: #075d73;
+	color: var(--mail-ink);
+	max-width: 1280px;
+	margin: 0 auto;
+	padding: 1.25rem;
+}
+.email-inbox-header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1rem; }
+.email-inbox-header h1 { margin: 0; font-size: 1.6rem; }
+.email-inbox-kicker { margin: 0 0 .2rem; color: var(--mail-muted); font-size: .82rem; }
+.email-inbox-header nav { display: flex; flex-wrap: wrap; gap: .45rem; }
+.email-inbox-action, .email-inbox-pagination button { display: inline-flex; align-items: center; min-height: 2.25rem; padding: .4rem .7rem; border: 1px solid #9aa9af; border-radius: 3px; background: #fff; color: var(--mail-ink); text-decoration: none; cursor: pointer; }
+.email-inbox-action--primary { background: var(--mail-accent); border-color: var(--mail-accent); color: #fff; }
+.email-inbox-status { padding: .55rem 0; color: var(--mail-muted); }
+.email-inbox-error { margin: .75rem 0; padding: .75rem; border-left: 4px solid #a32c2c; background: #fff0f0; color: #681d1d; }
+.email-inbox-notice { border: 1px solid var(--mail-line); padding: 1rem; background: var(--mail-surface); }
+.email-inbox-notice p { margin: 0 0 .5rem; }
+.email-inbox-table-wrap { overflow-x: auto; }
+.email-inbox-workspace { display: grid; grid-template-columns: minmax(12rem, 16rem) minmax(0, 1fr); gap: 1.25rem; }
+.email-inbox-sidebar { min-width: 0; border-inline-end: 1px solid var(--mail-line); padding-inline-end: 1rem; }
+.email-inbox-account { display: grid; gap: .3rem; margin-bottom: .75rem; color: var(--mail-muted); font-size: .85rem; }
+.email-inbox-account select { box-sizing: border-box; width: 100%; min-width: 0; min-height: 2.25rem; padding: .3rem .5rem; border: 1px solid var(--mail-line); border-radius: 3px; background: #fff; color: var(--mail-ink); font: inherit; }
+.email-inbox-sidebar h2 { margin: .55rem 0 .75rem; font-size: 1rem; }
+.email-inbox-folder-status { color: var(--mail-muted); font-size: .85rem; }
+.email-inbox-folder-list, .email-inbox-folder-list ul { list-style: none; margin: 0; padding: 0; }
+.email-inbox-folder-list ul { margin-inline-start: .65rem; padding-inline-start: .55rem; border-inline-start: 1px solid var(--mail-line); }
+.email-inbox-folder-list a { display: flex; align-items: center; justify-content: space-between; gap: .5rem; min-height: 2.25rem; padding: .25rem .45rem; color: var(--mail-ink); text-decoration: none; border-radius: 3px; }
+.email-inbox-folder-list a:hover { background: var(--mail-surface); }
+.email-inbox-folder-list a[aria-current="page"] { color: var(--mail-accent); background: #e1f0f3; box-shadow: inset 3px 0 var(--mail-accent); }
+.email-inbox-folder-list a:focus-visible { outline: 2px solid var(--mail-accent); outline-offset: 1px; }
+.email-inbox-folder-list a.is-drop-target { outline: 2px dashed var(--mail-accent); outline-offset: -2px; background: #d5ece4; }
+.email-inbox-folder-list .has-unread { font-weight: 700; }
+.email-inbox-folder-name { min-width: 0; overflow-wrap: anywhere; }
+.email-inbox-folder-count { flex: 0 0 auto; min-width: 2.5ch; padding: .1rem .35rem; border-radius: 3px; background: var(--mail-surface); color: var(--mail-muted); font-size: .8rem; font-variant-numeric: tabular-nums; text-align: center; }
+.email-inbox-messages { min-width: 0; }
+.email-inbox-bulk { display: flex; flex-wrap: wrap; align-items: end; gap: .5rem; padding-block: .65rem; border-block: 1px solid var(--mail-line); }
+.email-inbox-bulk label { display: grid; gap: .25rem; font-size: .8rem; color: var(--mail-muted); max-width: 15rem; }
+.email-inbox-bulk select, .email-inbox-bulk button { min-height: 2rem; border: 1px solid var(--mail-line); background: #fff; border-radius: 3px; color: var(--mail-ink); padding: .3rem .5rem; }
+.email-inbox-bulk button { cursor: pointer; }
+.email-inbox-bulk button:disabled { opacity: .5; cursor: default; }
+.email-inbox-table { width: 100%; border-collapse: collapse; }
+.email-inbox-table th, .email-inbox-table td { padding: .65rem .75rem; border-bottom: 1px solid var(--mail-line); text-align: left; }
+.email-inbox-table th { background: var(--mail-surface); font-weight: 650; }
+.email-inbox-table tr.is-unseen { font-weight: 700; }
+.email-inbox-table .email-inbox-read { width: 3rem; text-align: center; }
+.email-inbox-read input { width: 1.1rem; height: 1.1rem; cursor: pointer; accent-color: var(--mail-accent); }
+.email-inbox-read input:disabled { cursor: wait; }
+.email-inbox-draggable { cursor: grab; }
+.email-inbox-draggable.is-dragging { opacity: .45; }
+.email-inbox[aria-busy="true"] .email-inbox-draggable { cursor: progress; }
+.email-inbox-move-status { color: var(--mail-accent); padding-block: .25rem; }
+.email-inbox-move-status:empty { display: none; }
+.email-inbox-sender-address { display: block; color: var(--mail-muted); font-size: .85rem; font-weight: 400; }
+.email-inbox-subject a { color: var(--mail-ink); text-decoration: none; }
+.email-inbox-subject a:hover { text-decoration: underline; }
+.email-inbox-pagination { display: flex; justify-content: center; align-items: center; gap: .8rem; padding: 1rem 0; }
+.email-inbox-pagination button:disabled { opacity: .5; cursor: default; }
+@media (max-width: 720px) {
+	.email-inbox { padding: .75rem; }
+	.email-inbox-workspace { grid-template-columns: minmax(0, 1fr); gap: .75rem; }
+	.email-inbox-sidebar { border-inline-end: 0; border-bottom: 1px solid var(--mail-line); padding: 0 0 .75rem; }
+	.email-inbox-sidebar nav { max-height: 14rem; overflow-y: auto; }
+	.email-inbox-header { align-items: flex-start; flex-direction: column; }
+	.email-inbox-header nav { width: 100%; }
+	.email-inbox-action { flex: 1 1 auto; justify-content: center; }
+}

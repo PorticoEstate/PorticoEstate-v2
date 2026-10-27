@@ -1,4 +1,7 @@
 <?php
+
+use App\modules\phpgwapi\services\Settings;
+
 /**
  * eGroupWare EmailAdmin - Postfix with inetOrgPerson schema
  *
@@ -10,7 +13,7 @@
  * @version $Id$
  */
 
-include_once(PHPGW_SERVER_ROOT.'/emailadmin/inc/class.defaultsmtp.inc.php');
+include_once(PHPGW_SERVER_ROOT . '/emailadmin/inc/class.defaultsmtp.inc.php');
 
 /**
  * Postfix with inetOrgPerson schema (default for eGW accounts)
@@ -39,13 +42,13 @@ class postfixinetorgperson extends defaultsmtp
 	function getAccountEmailAddress($_accountName)
 	{
 		$emailAddresses	= array();
-		$ds = $GLOBALS['phpgw']->common->ldapConnect();
-		$sri = @ldap_search($ds, $GLOBALS['phpgw_info']['server']['ldap_context'],"(&(uid=$_accountName)(objectclass=posixAccount))",array('dn','mail'));
-		
+		$ds = $this->phpgwapi_common->ldapConnect();
+		$sri = @ldap_search($ds, Settings::getInstance()->get('server')['ldap_context'], "(&(uid=$_accountName)(objectclass=posixAccount))", array('dn', 'mail'));
+
 		if ($sri && ($allValues = ldap_get_entries($ds, $sri)) && is_array($allValues[0]['mail']))
 		{
-			$realName = trim($GLOBALS['phpgw_info']['user']['firstname'] . (!empty($GLOBALS['phpgw_info']['user']['firstname']) ? ' ' : '') . $GLOBALS['phpgw_info']['user']['lastname']);
-			foreach($allValues[0]['mail'] as $n => $mail)
+			$realName = trim(Settings::getInstance()->get('user')['firstname'] . (!empty(Settings::getInstance()->get('user')['firstname']) ? ' ' : '') . Settings::getInstance()->get('user')['lastname']);
+			foreach ($allValues[0]['mail'] as $n => $mail)
 			{
 				if (!is_numeric($n)) continue;
 
@@ -66,12 +69,12 @@ class postfixinetorgperson extends defaultsmtp
 	 * @param int $_uidnumber numerical user-id
 	 * @return array
 	 */
-	function getUserData($_uidnumber) 
+	function getUserData($_uidnumber)
 	{
 		$userdata = array();
-		$ldap = $GLOBALS['phpgw']->common->ldapConnect();
-		
-		if (($sri = @ldap_search($ldap,$GLOBALS['phpgw_info']['server']['ldap_context'],'uidnumber='.(int)$_uidnumber,array('mail'))))
+		$ldap = $this->phpgwapi_common->ldapConnect();
+
+		if (($sri = @ldap_search($ldap, Settings::getInstance()->get('server')['ldap_context'], 'uidnumber=' . (int)$_uidnumber, array('mail'))))
 		{
 			$allValues = ldap_get_entries($ldap, $sri);
 			if ($allValues['count'] > 0)
@@ -82,14 +85,14 @@ class postfixinetorgperson extends defaultsmtp
 					'mailAlternateAddress'  => $allValues[0]['mail'],
 					'accountStatus'		    => 'active',
 					'mailForwardingAddress' => array(),
-//					'deliveryMode'          => ,
+					//					'deliveryMode'          => ,
 				);
 			}
 		}
 		//echo "<p>postfixinetorgperson::getUserData($_uidnumber) = ".print_r($userdata,true)."</p>\n";
 		return $userdata;
 	}
-	
+
 	/**
 	 * Set the data of a given user
 	 * 
@@ -101,31 +104,31 @@ class postfixinetorgperson extends defaultsmtp
 	 * @param string $_mailLocalAddress
 	 * @return boolean
 	 */
-	function setUserData($_uidnumber, $_mailAlternateAddress, $_mailForwardingAddress, $_deliveryMode, $_accountStatus, $_mailLocalAddress) 
+	function setUserData($_uidnumber, $_mailAlternateAddress, $_mailForwardingAddress, $_deliveryMode, $_accountStatus = null, $_mailLocalAddress = null)
 	{
 		$filter = "uidnumber=$_uidnumber";
 
-		$ldap = $GLOBALS['phpgw']->common->ldapConnect();
+		$ldap = $this->phpgwapi_common->ldapConnect();
 
-		if (($sri = @ldap_search($ldap,$GLOBALS['phpgw_info']['server']['ldap_context'],'uidnumber='.(int)$_uidnumber,array('dn')))) 
+		if (($sri = @ldap_search($ldap, Settings::getInstance()->get('server')['ldap_context'], 'uidnumber=' . (int)$_uidnumber, array('dn'))))
 		{
 			$allValues 	= ldap_get_entries($ldap, $sri);
 			$accountDN 	= $allValues[0]['dn'];
 
 			sort($_mailAlternateAddress);
-			$newData['mail'] = array_values(array_unique(array_merge(array($_mailLocalAddress),$_mailAlternateAddress)));
+			$newData['mail'] = array_values(array_unique(array_merge(array($_mailLocalAddress), $_mailAlternateAddress)));
 
-//			sort($_mailForwardingAddress);
-//			$newData['forwards'] = (array)$_mailForwardingAddress;
-//			$newData['active'] = $_accountStatus;
-//			$newData['mode'] = $_deliveryMode;
+			//			sort($_mailForwardingAddress);
+			//			$newData['forwards'] = (array)$_mailForwardingAddress;
+			//			$newData['active'] = $_accountStatus;
+			//			$newData['mode'] = $_deliveryMode;
 
 			//echo "<p>postfixinetorgperson::setUserData($_uidnumber,...) setting $accountDN to ".print_r($newData,true)."</p>\n";
 			return ldap_mod_replace($ldap, $accountDN, $newData);
 		}
 		return false;
 	}
-	
+
 	/**
 	 * Saves the forwarding information
 	 *

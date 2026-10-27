@@ -43,6 +43,31 @@ The API will be available at [http://localhost:8088/](http://localhost:8088/)
 
 **Note:** Ensure the `xdebug.client_port` is set to `9003`.
 
+### Building behind a VPN or proxy in WSL
+
+The `slim` build reads the lowercase `http_proxy` and `https_proxy` environment
+variables. Export the proxy URL supplied by your organization before building:
+
+```bash
+export http_proxy=http://your-proxy-host:8080
+export https_proxy="$http_proxy"
+docker compose --progress=plain build slim
+```
+
+If proxy access works from WSL but `apt-get update` times out during the build,
+compare Docker bridge and host networking. When only host networking works, use:
+
+```bash
+SLIM_BUILD_NETWORK=host docker compose --progress=plain build slim
+```
+
+This changes only the network used by `slim` build steps, not the running
+containers. The default remains Docker's default build network. Host networking
+works with Docker Engine running inside WSL; Docker Desktop requires host
+networking support to be enabled (available in version 4.34 and later).
+Pulling base images uses a separate network path, so a successful pull does not
+verify connectivity inside build steps.
+
 
 ## A bit about the principles of the new API and how it is combined with existing code
 

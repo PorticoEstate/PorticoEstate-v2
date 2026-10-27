@@ -1,0 +1,86 @@
+{% extends layout|default('@views/_bare.twig') %}
+
+{% block title %}{{ lang('Compose') }}{% endblock %}
+
+{% block styles %}
+<style>{{ source('@views/compose.css') }}</style>
+{% endblock %}
+
+{% block content %}
+<main class="email-compose" id="email-compose"
+	data-api-url="{{ api_url|e('html_attr') }}"
+	data-compose-api-url="{{ compose_api_url|e('html_attr') }}"
+	data-spellcheck-url="{{ spellcheck_url|e('html_attr') }}"
+	data-draft-url="{{ draft_url|e('html_attr') }}"
+	data-attachments-api-url="{{ attachments_api_url|e('html_attr') }}"
+	data-attachment-upload-url="{{ attachment_upload_url|e('html_attr') }}"
+	data-attachment-delete-url="{{ attachment_delete_url|e('html_attr') }}"
+	data-contacts-api-url="{{ contacts_api_url|e('html_attr') }}"
+	data-return-url="{{ return_url|e('html_attr') }}"
+	data-context="{{ context|json_encode|e('html_attr') }}"
+	data-csrf-name="{{ csrf.name|e('html_attr') }}"
+	data-csrf-value="{{ csrf.value|e('html_attr') }}">
+	<header class="email-compose-header">
+		<div>
+			<p>{{ lang('E-Mail') }}</p>
+			<h1>{{ lang('Compose') }}</h1>
+		</div>
+		<a class="email-compose-button" href="{{ return_url|e }}">{{ lang('Cancel') }}</a>
+	</header>
+	<div class="email-compose-error" id="email-compose-error" role="alert" hidden></div>
+	<div class="email-compose-status" id="email-compose-status" role="status" aria-live="polite" hidden></div>
+	<form id="email-compose-form" name="doit">
+		<div class="email-compose-recipients">
+			<label>{{ lang('To') }}<input name="to" type="text" autocomplete="email" value="{{ to }}"><button class="email-compose-button" type="button" data-address-target="to">{{ lang('Address book') }}</button></label>
+			<label>{{ lang('Cc') }}<input name="cc" type="text" value="{{ cc }}"><button class="email-compose-button" type="button" data-address-target="cc">{{ lang('Address book') }}</button></label>
+			<label>{{ lang('Bcc') }}<input name="bcc" type="text" value="{{ bcc }}"><button class="email-compose-button" type="button" data-address-target="bcc">{{ lang('Address book') }}</button></label>
+		</div>
+		<label>{{ lang('Subject') }}<input name="subject" type="text" spellcheck="true" value="{{ subject }}"></label>
+		<div class="email-compose-spellcheck">
+			<button class="email-compose-button" id="email-compose-spellcheck" type="button" hidden>{{ lang('Check spelling') }}</button>
+			<span id="email-compose-spellcheck-status" role="status" aria-live="polite"></span>
+		</div>
+		<label>{{ lang('Message') }}<textarea name="body" rows="18" spellcheck="true">{{ body }}</textarea></label>
+		<ul id="email-compose-spellcheck-results" class="email-compose-spellcheck-results" aria-label="{{ lang('Spelling suggestions') }}"></ul>
+		<section class="email-compose-attachments" aria-labelledby="email-compose-attachments-heading">
+			<h2 id="email-compose-attachments-heading">{{ lang('Attachments') }}</h2>
+			<div class="email-compose-attachment-upload">
+				<label>{{ lang('Choose file') }} <input id="email-compose-file" type="file"></label>
+				<button class="email-compose-button" id="email-compose-upload" type="button">{{ lang('Upload') }}</button>
+				<span>{{ lang('Maximum file size: 25 MiB') }}</span>
+			</div>
+			<div class="email-compose-attachments-status" id="email-compose-attachments-status" role="status" aria-live="polite"></div>
+			<ul class="email-compose-attachment-list" id="email-compose-attachment-list"></ul>
+		</section>
+		<div class="email-compose-options">
+			<label id="email-compose-signature-option" hidden><input name="attach_sig" type="checkbox" {{ attach_signature ? 'checked' }}> {{ lang('Attach signature') }}</label>
+			<label><input name="req_notify" type="checkbox"> {{ lang('Notify on delivery') }}</label>
+		</div>
+		<div class="email-compose-actions">
+			<button class="email-compose-button email-compose-button--primary" type="submit">{{ lang('Send') }}</button>
+			<button class="email-compose-button" type="submit" name="intent" value="draft" formnovalidate>{{ lang('Save draft') }}</button>
+			<a class="email-compose-button" href="{{ return_url|e }}">{{ lang('Cancel') }}</a>
+		</div>
+	</form>
+	<section class="email-addressbook" id="email-addressbook-dialog" aria-labelledby="email-addressbook-title" hidden>
+		<header><h2 id="email-addressbook-title">{{ lang('Address book') }}</h2><button class="email-compose-button" type="button" id="email-addressbook-close">{{ lang('Close') }}</button></header>
+		<div id="email-addressbook-search" role="search">
+			<label>{{ lang('Search') }}<input id="email-addressbook-query" type="search" autocomplete="off"></label>
+			<label>{{ lang('Contact scope') }}
+				<select id="email-addressbook-filter">
+					<option value="none">{{ lang('Global contacts') }}</option>
+					<option value="user_only">{{ lang('My contacts') }}</option>
+					<option value="private">{{ lang('Private contacts') }}</option>
+				</select>
+			</label>
+		</div>
+		<div id="email-addressbook-status" role="status" aria-live="polite"></div>
+		<ul id="email-addressbook-results"></ul>
+	</section>
+</main>
+{% endblock %}
+
+{% block scripts %}
+<script>{{ source('@views/url.js') }}</script>
+<script>{{ source('@views/compose.js') }}</script>
+{% endblock %}

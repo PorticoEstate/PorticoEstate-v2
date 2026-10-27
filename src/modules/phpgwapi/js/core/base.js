@@ -43,7 +43,7 @@ function phpGWLink(strURL, oArgs, bAsJSON)
 			strNewURL += obj + '=' + oArgs[obj] + '&';
 		}
 	}
-	strNewURL += arURLParts[1];
+	strNewURL += arURLParts[1] || '';
 
 	if (bAsJSON)
 	{

@@ -1,35 +1,41 @@
 <?php
+
+use App\modules\phpgwapi\services\Cache;
+use App\modules\phpgwapi\controllers\Accounts\Accounts;
+
+use App\modules\phpgwapi\services\Settings;
+
 /***************************************************************************\
-* EGroupWare - EMailAdmin IMAP via Plesk                                    *
-* http://www.egroupware.org                                                 *
-* Written and (c) 2006 by RalfBecker-AT-outdoor-training.de                 *
-* ------------------------------------------------------------------------- *
-* emailadmin plugin for plesk:                                              *
-* - tested with Plesk7.5 under Linux, but should work with other plesk      *
-*   versions and Windows too as it uses plesks cli (command line interface) *
-* - this plugin ONLY works if you have root access to the webserver !!!     *
-* - you need to have mail activated for the domain in plesk first           *
-* - you need to configure the path to plesk's mail.sh or mail.exe cli by    *
-*   editing this file (search for psa_mail_script) for now                  *
-* - to allow the webserver to use the mail cli under Linux you need to      *
-*   install the sudo package and add the following line to your sudoers     *
-*   file using the visudo command as root:                                  *
-*   wwwrun ALL = NOPASSWD: /usr/local/psa/bin/mail.sh                       *
-*   Replace wwwrun with the user the webserver is running as and, if        *
-*   necessary adapt the path to mail.sh.                                    *
-*   PLEASE NOTE: This allows all webserver users to run the mail.sh script  *
-*                and to change the mail configuration of ALL domains !!!    *
-* => as with the "LDAP, Postfix & Cyrus" plugin the plesk one creates mail  *
-*    users and manages passwords, aliases, forwards and quota from within   *
-*    eGroupWare - no need to additionally visit the plesk interface anymore *
-* ------------------------------------------------------------------------- *
-* This program is free software; you can redistribute it and/or modify it   *
-* under the terms of the GNU General Public License as published by the     *
-* Free Software Foundation; version 2 of the License.                       *
+ * EGroupWare - EMailAdmin IMAP via Plesk                                    *
+ * http://www.egroupware.org                                                 *
+ * Written and (c) 2006 by RalfBecker-AT-outdoor-training.de                 *
+ * ------------------------------------------------------------------------- *
+ * emailadmin plugin for plesk:                                              *
+ * - tested with Plesk7.5 under Linux, but should work with other plesk      *
+ *   versions and Windows too as it uses plesks cli (command line interface) *
+ * - this plugin ONLY works if you have root access to the webserver !!!     *
+ * - you need to have mail activated for the domain in plesk first           *
+ * - you need to configure the path to plesk's mail.sh or mail.exe cli by    *
+ *   editing this file (search for psa_mail_script) for now                  *
+ * - to allow the webserver to use the mail cli under Linux you need to      *
+ *   install the sudo package and add the following line to your sudoers     *
+ *   file using the visudo command as root:                                  *
+ *   wwwrun ALL = NOPASSWD: /usr/local/psa/bin/mail.sh                       *
+ *   Replace wwwrun with the user the webserver is running as and, if        *
+ *   necessary adapt the path to mail.sh.                                    *
+ *   PLEASE NOTE: This allows all webserver users to run the mail.sh script  *
+ *                and to change the mail configuration of ALL domains !!!    *
+ * => as with the "LDAP, Postfix & Cyrus" plugin the plesk one creates mail  *
+ *    users and manages passwords, aliases, forwards and quota from within   *
+ *    eGroupWare - no need to additionally visit the plesk interface anymore *
+ * ------------------------------------------------------------------------- *
+ * This program is free software; you can redistribute it and/or modify it   *
+ * under the terms of the GNU General Public License as published by the     *
+ * Free Software Foundation; version 2 of the License.                       *
 \***************************************************************************/
 /* $Id$ */
 
-include_once(PHPGW_SERVER_ROOT."/emailadmin/inc/class.defaultimap.inc.php");
+include_once(PHPGW_SERVER_ROOT . "/emailadmin/inc/class.defaultimap.inc.php");
 
 class pleskimap extends defaultimap
 {
@@ -45,7 +51,7 @@ class pleskimap extends defaultimap
 	/**
 	 * @var array $create_folders=array('Send','Trash') folders to automatic create and subscribe on account creation
 	 */
-	var $create_folders = array('Sent','Trash');
+	var $create_folders = array('Sent', 'Trash');
 	/**
 	 * @var string/boolean $error string with last error-message or false
 	 */
@@ -60,18 +66,18 @@ class pleskimap extends defaultimap
 	 * @param string $action='create'
 	 * @return boolean true on success, false otherwise
 	 */
-	function addAccount($hookValues,$action='create')
+	function addAccount($hookValues, $action = 'create')
 	{
 		//echo "<p>pleskimap::addAccount(".print_r($hookValues,true).")</p>\n";
 
 		$defaultDomain = $this->profileData['defaultDomain'] ? $this->profileData['defaultDomain'] :
-			$GLOBALS['phpgw_info']['server']['mail_suffix'];
+			Settings::getInstance()->get('server')['mail_suffix'];
 
-		$localEmail = $hookValues['account_lid'].'@'.$defaultDomain;
+		$localEmail = $hookValues['account_lid'] . '@' . $defaultDomain;
 		$aliases = $forwards = array();
 
 		// is the given email a local address from our default domain?
-		if (substr($hookValues['account_email'],-1-strlen($defaultDomain)) != '@'.$defaultDomain)
+		if (substr($hookValues['account_email'], -1 - strlen($defaultDomain)) != '@' . $defaultDomain)
 		{
 			$forwards[] = $hookValues['account_email'];
 		}
@@ -80,32 +86,40 @@ class pleskimap extends defaultimap
 			$aliases[] = $hookValues['account_email'];
 		}
 		// add a default alias with Firstname.Lastname
-		if (!in_array($alias=$hookValues['account_firstname'].'.'.$hookValues['account_lastname'],$aliases) &&
-			$this->is_email($alias))
+		if (
+			!in_array($alias = $hookValues['account_firstname'] . '.' . $hookValues['account_lastname'], $aliases) &&
+			$this->is_email($alias)
+		)
 		{
 			$aliases[] = $alias;
 		}
-		$info = $this->plesk_mail($action,$hookValues['account_lid'],$hookValues['account_passwd'],
-			$action != 'create' && !$aliases ? null : $aliases,$forwards,$this->allways_create_mailbox);
+		$info = $this->plesk_mail(
+			$action,
+			$hookValues['account_lid'],
+			$hookValues['account_passwd'],
+			$action != 'create' && !$aliases ? null : $aliases,
+			$forwards,
+			$this->allways_create_mailbox
+		);
 
-		if (!$info['SUCCESS']) return false;
+		if (!is_array($info) || empty($info['SUCCESS'])) return false;
 
 		if ($forwards && !$this->allways_create_mailbox) return true;	// no mailbox created, only a forward
 
 		// create Sent & Trash mailboxes and subscribe them
 		require_once __DIR__ . '/../../email/inc/imap_config.php';
-		if(($mbox = IMAPManager::imap_open ($this->getMailboxString(),$localEmail,$hookValues['account_passwd'])))
+		if (($mbox = IMAPManager::imap_open($this->getMailboxString(), $localEmail, $hookValues['account_passwd'])))
 		{
-			$list = IMAPManager::imap_getmailboxes($mbox, $this->getMailboxString(),'INBOX');
+			$list = IMAPManager::imap_getmailboxes($mbox, $this->getMailboxString(), 'INBOX');
 			$delimiter = isset($list[0]->delimiter) ? $list[0]->delimiter : '.';
-			IMAPManager::imap_subscribe($mbox,$this->getMailboxString('INBOX'));
+			IMAPManager::imap_subscribe($mbox, $this->getMailboxString('INBOX'));
 
-			foreach($this->create_folders as $folder)
+			foreach ($this->create_folders as $folder)
 			{
-				$mailBoxName = 'INBOX'.$delimiter.$folder;
-				if(IMAPManager::imap_createmailbox($mbox,IMAPManager::imap_utf7_encode('{'.$this->profileData['imapServer'].'}'.$mailBoxName)))
+				$mailBoxName = 'INBOX' . $delimiter . $folder;
+				if (IMAPManager::imap_createmailbox($mbox, IMAPManager::imap_utf7_encode('{' . $this->profileData['imapServer'] . '}' . $mailBoxName)))
 				{
-					IMAPManager::imap_subscribe($mbox,$this->getMailboxString($mailBoxName));
+					IMAPManager::imap_subscribe($mbox, $this->getMailboxString($mailBoxName));
 				}
 			}
 			IMAPManager::imap_close($mbox);
@@ -116,20 +130,20 @@ class pleskimap extends defaultimap
 	function deleteAccount($hookValues)
 	{
 		//echo "<p>pleskimap::deleteAccount(".print_r($hookValues,true).")</p>\n";
-		
-		return $this->plesk_mail('remove',$hookValues['account_lid']);
+
+		return $this->plesk_mail('remove', $hookValues['account_lid']);
 	}
 
 	function updateAccount($hookValues)
 	{
 		//echo "<p>pleskimap::updateAccount(".print_r($hookValues,true).")</p>\n";
-		
-		if($hookValues['account_lid'] != $hookValues['old_loginid'])
+
+		if ($hookValues['account_lid'] != $hookValues['old_loginid'])
 		{
 			$this->error = lang("Plesk can't rename users --> request ignored");
 			return false;
 		}
-		return $this->addAccount($hookValues,'update');
+		return $this->addAccount($hookValues, 'update');
 	}
 
 	/**
@@ -142,23 +156,24 @@ class pleskimap extends defaultimap
 	{
 		//echo "<p>pleskimap::getUserData('$accountID')</p>\n";
 
-		if (!($info = $this->plesk_mail('info',$accountID))) return false;
+		$info = $this->plesk_mail('info', $accountID);
+		if (!is_array($info)) return false;
 		//_debug_array($info);
-		
+
 		$data = array(
-			'mailLocalAddress'     => $info['Mailname'].'@'.$info['Domain'],
-			'mailAlternateAddress' => $info['Alias(es)'] ? explode(' ',$info['Alias(es)']) : array(),
+			'mailLocalAddress'     => $info['Mailname'] . '@' . $info['Domain'],
+			'mailAlternateAddress' => $info['Alias(es)'] ? explode(' ', $info['Alias(es)']) : array(),
 			'accountStatus'        => $info['Mailbox'] == 'true' || $info['Redirect'] == 'true' ? 'active' : 'disabled',
-			'mailRoutingAddress'   => $info['Redirect address'] ? explode(' ',$info['Redirect address']) : false,
+			'mailRoutingAddress'   => $info['Redirect address'] ? explode(' ', $info['Redirect address']) : false,
 			'deliveryMode'         => $info['Redirect'] == 'true' && $info['Mailbox'] == 'false' ? 'forwardOnly' : '',
-//				'qmailDotMode'         => false,
-//				'deliveryProgramPath'  => false,
-			'quotaLimit'           => $info['Mbox quota'] == 'Unlimited' ? '' : $info['Mbox quota']/1024.0,
+			//				'qmailDotMode'         => false,
+			//				'deliveryProgramPath'  => false,
+			'quotaLimit'           => $info['Mbox quota'] == 'Unlimited' ? '' : $info['Mbox quota'] / 1024.0,
 		);
 		//_debug_array($data);
 		return $data;
 	}
-	
+
 	/**
 	 * Save mail account data
 	 *
@@ -169,17 +184,21 @@ class pleskimap extends defaultimap
 	function saveUserData($accountID, $accountData)
 	{
 		//echo "<p>pleskimap::saveUserData('$accountID',".print_r($accountData,true).")</p>\n";
-		
+
 		// not used: $accountData['accountStatus']=='active', $accountData['qmailDotMode'], $accountData['deliveryProgramPath']
-		$info = $this->plesk_mail('update',$accountID,null,
+		$info = $this->plesk_mail(
+			'update',
+			$accountID,
+			null,
 			$accountData['mailAlternateAddress'] ? $accountData['mailAlternateAddress'] : array(),
 			$accountData['mailRoutingAddress'] ? $accountData['mailRoutingAddress'] : array(),
 			empty($accountData['deliveryMode']),
-			1024*(float)$accountData['quotaLimit'],$accountData['accountStatus']=='active');
-			
-		if (!$info['SUCCSESS'])
+			1024 * (float)$accountData['quotaLimit']
+		);
+
+		if (!is_array($info) || empty($info['SUCCSESS']))
 		{
-			if ($info) $this->error = implode(', ',$info);
+			if (is_array($info)) $this->error = implode(', ', $info);
 			return false;
 		}
 		return true;
@@ -316,86 +335,92 @@ class pleskimap extends defaultimap
 	 * @param int|null $quota_kb=null mailbox quota in kb
 	 * @return boolean/array array with returned values or false otherwise, error-message in $this->error
 	 */
-	function plesk_mail($action,$account,$password=null,$aliases=null,$forwards=null,$keepLocalCopy=null,$quota_kb=null)
+	function plesk_mail($action, $account, $password = null, $aliases = null, $forwards = null, $keepLocalCopy = null, $quota_kb = null)
 	{
+		$accounts_obj = new Accounts();
 		//echo "<p>smtpplesk::plesk_mail('$action','$account','$password',".print_r($aliases,true).",".print_r($forwards,true).",".(is_null($keepLocalCopy)?'':(int)$keepLocalCopy).",$quota_kb)</p>\n";
 
 		$this->error = false;
 
 		if (is_numeric($account))
 		{
-			$account_lid = $GLOBALS['phpgw']->accounts->id2name($account);
+			$account_lid = $accounts_obj->id2name($account);
 		}
-		elseif ($GLOBALS['phpgw']->accounts->name2id($account))
+		elseif ($accounts_obj->name2id($account))
 		{
 			$account_lid = $account;
 		}
 		if (!$account_lid)
 		{
-			$this->error = lang("Account '%1' not found !!!",$account);
+			$this->error = lang("Account '%1' not found !!!", $account);
 			return false;
 		}
-		if (!in_array($action,array('info','create','update','remove')))
+		if (!in_array($action, array('info', 'create', 'update', 'remove')))
 		{
-			$this->error = lang("Unsupported action '%1' !!!",$action);
+			$this->error = lang("Unsupported action '%1' !!!", $action);
 			return false;
 		}
 		$defaultDomain = $this->profileData['defaultDomain'] ? $this->profileData['defaultDomain'] :
-			$GLOBALS['phpgw_info']['server']['mail_suffix'];
+			Settings::getInstance()->get('server')['mail_suffix'];
 
-		if ($action == 'update' && !($info = $this->plesk_mail('info',$account)))
+		$info = null;
+		if ($action == 'update')
 		{
-			$action = 'create';	// mail-account does not yet exist --> create it
+			$info = $this->plesk_mail('info', $account);
+			if (!is_array($info))
+			{
+				$action = 'create';	// mail-account does not yet exist --> create it
+			}
 		}
-		$localEmail = $account_lid.'@'.$defaultDomain;
-		$script = $this->psa_mail_script . ' --'.$action . ' ' . $localEmail;
+		$localEmail = $account_lid . '@' . $defaultDomain;
+		$script = $this->psa_mail_script . ' --' . $action . ' ' . $localEmail;
 
 		if ($action != 'info')
 		{
 			// invalidate our cache
-			$GLOBALS['phpgw']->session->appsession('plesk-email-'.$account_lid,'emailadmin',false);
+			Cache::session_set('emailadmin', 'plesk-email-' . $account_lid, false);
 
 			// we dont set passwords shorten then 5 chars, as it only give an error in plesk
 			if (!is_null($password) && $password)
 			{
-				if (strlen($password) < 5 || strpos($password,$account_lid) !== false)
+				if (strlen($password) < 5 || strpos($password, $account_lid) !== false)
 				{
 					$this->error = lang('Plesk requires passwords to have at least 5 characters and not contain the account-name --> password NOT set!!!');
 				}
 				else
 				{
-					$script .= ' -passwd \''.str_replace('\'','\\\'',$password).'\' -passwd_type plain';
+					$script .= ' -passwd \'' . str_replace('\'', '\\\'', $password) . '\' -passwd_type plain';
 				}
 			}
 			if ($action == 'create' || !is_null($forwards) || !is_null($keepLocalCopy))
 			{
-				$script .= ' -mailbox '.(!$forwards || $keepLocalCopy ? 'true' : 'false');
+				$script .= ' -mailbox ' . (!$forwards || $keepLocalCopy ? 'true' : 'false');
 			}
 			// plesk allows only one forwarding address, we ignore everything but the first
 			if (!is_null($forwards) && (!$forwards || $this->is_email($forwards[0])))
 			{
-				$script .= ' -redirect '.(!$forwards ? 'false' : 'true -rediraddr '.$forwards[0]);
+				$script .= ' -redirect ' . (!$forwards ? 'false' : 'true -rediraddr ' . $forwards[0]);
 			}
 			if ($action == 'update')
 			{
 				if (!is_null($aliases))
 				{
-					$existing_aliases = explode(' ',$info['Alias(es)']);	// without domain!
+					$existing_aliases = explode(' ', (string) ($info['Alias(es)'] ?? ''));	// without domain!
 					$delete_aliases = array();
-					foreach($existing_aliases as $alias)
+					foreach ($existing_aliases as $alias)
 					{
-						if ($alias && !in_array($alias,$aliases) && !in_array($alias.'@'.$defaultDomain,$aliases))
+						if ($alias && !in_array($alias, $aliases) && !in_array($alias . '@' . $defaultDomain, $aliases))
 						{
 							$delete_aliases[] = $alias;
 						}
 					}
 					if ($delete_aliases)
 					{
-						$script .= ' -aliases del:'.implode(',',$delete_aliases);
+						$script .= ' -aliases del:' . implode(',', $delete_aliases);
 					}
-					foreach($aliases as $n => $alias)
+					foreach ($aliases as $n => $alias)
 					{
-						if (in_array($alias,$existing_aliases) || in_array(str_replace('@'.$defaultDomain,'',$alias),$existing_aliases))
+						if (in_array($alias, $existing_aliases) || in_array(str_replace('@' . $defaultDomain, '', $alias), $existing_aliases))
 						{
 							unset($aliases[$n]);	// no change
 						}
@@ -404,29 +429,29 @@ class pleskimap extends defaultimap
 			}
 			if (!is_null($aliases) && count($aliases))
 			{
-				foreach($aliases as $alias)
+				foreach ($aliases as $alias)
 				{
 					if (!$this->is_email($alias)) return false;	// security precausion
 				}
-				$script .= ' -aliases add:'.str_replace('@'.$defaultDomain,'',implode(',',$aliases));
+				$script .= ' -aliases add:' . str_replace('@' . $defaultDomain, '', implode(',', $aliases));
 			}
 			if (!is_null($quota_kb) && (int)$quota_kb)
 			{
-				$script .= ' -mbox_quota '.(int)$quota_kb;
+				$script .= ' -mbox_quota ' . (int)$quota_kb;
 			}
 		}
 		//echo "<p>$script</p>\n";
-		if (!($fp = popen($script.' 2>&1','r')))
+		if (!($fp = popen($script . ' 2>&1', 'r')))
 		{
-			$this->error = lang("Plesk mail script '%1' not found !!!",$this->psa_mail_script);
+			$this->error = lang("Plesk mail script '%1' not found !!!", $this->psa_mail_script);
 			return false;
 		}
 		$values = array();
-		while(!feof($fp))
+		while (!feof($fp))
 		{
 			$line = trim(fgets($fp));
-			list($name,$value) = preg_split('/: */',$line,2);
-			if (!is_null($value) && strpos($name,'An error occured') === false && $name)
+			list($name, $value) = preg_split('/: */', $line, 2);
+			if (!is_null($value) && strpos($name, 'An error occured') === false && $name)
 			{
 				$values[$name] = $value;
 			}
@@ -439,12 +464,12 @@ class pleskimap extends defaultimap
 
 		if (!$values['SUCCESS'])
 		{
-			$this->error = implode(', ',$values);
+			$this->error = implode(', ', $values);
 			return false;
 		}
 		return $values;
 	}
-	
+
 	/**
 	 * checks for valid email addresse (local mail address dont need a domain!)
 	 *
@@ -455,6 +480,6 @@ class pleskimap extends defaultimap
 	 */
 	function is_email($email)
 	{
-		return preg_match('/^[@a-z0-9_.-]+$/i',$email);
+		return preg_match('/^[@a-z0-9_.-]+$/i', $email);
 	}
 }

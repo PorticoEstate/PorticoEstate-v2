@@ -28,5 +28,5 @@
 	* Include phpgroupware header
 	*/
 	include('../header.inc.php');
-	phpgw::redirect_link('/index.php', array('menuaction' => 'email.uiindex.index'));
+	phpgw::redirect_link('/email/view/inbox');
 

@@ -1,0 +1,18 @@
+[ req ]
+distinguished_name = subject
+prompt = no
+
+[ subject ]
+CN = POP3 loopback test
+
+[ loopback ]
+basicConstraints = critical,CA:TRUE
+keyUsage = critical,digitalSignature,keyEncipherment,keyCertSign
+extendedKeyUsage = serverAuth
+subjectAltName = IP:127.0.0.1
+
+[ wrong_host ]
+basicConstraints = critical,CA:TRUE
+keyUsage = critical,digitalSignature,keyEncipherment,keyCertSign
+extendedKeyUsage = serverAuth
+subjectAltName = DNS:wrong-host.invalid

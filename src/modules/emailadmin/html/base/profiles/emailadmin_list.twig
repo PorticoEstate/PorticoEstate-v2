@@ -1,0 +1,35 @@
+{% extends layout|default('@views/_layout.twig') %}
+
+{% block title %}{{ lang('Email administration') }}{% endblock %}
+
+{% block styles %}
+<style>{{ source('@views/profiles/emailadmin.css') }}</style>
+{% endblock %}
+
+{% block content %}
+<main class="emailadmin-page" id="emailadmin-list"
+	data-api-url="{{ api_url|e('html_attr') }}"
+	data-edit-url="{{ edit_url_template|e('html_attr') }}"
+	data-csrf-name="{{ csrf.name|e('html_attr') }}"
+	data-csrf-value="{{ csrf.value|e('html_attr') }}">
+	<header class="emailadmin-heading">
+		<h1>{{ lang('Email profiles') }}</h1>
+		<a class="emailadmin-button emailadmin-button--primary" href="{{ add_url|e }}">{{ lang('add profile') }}</a>
+	</header>
+	<div class="emailadmin-alert" id="emailadmin-error" role="alert" hidden></div>
+	<div class="emailadmin-table-scroll">
+		<table class="emailadmin-table">
+			<thead><tr>
+				<th>{{ lang('description') }}</th><th>{{ lang('SMTP server name') }}</th><th>{{ lang('IMAP server name') }}</th>
+				<th>{{ lang('application') }}</th><th>{{ lang('group') }}</th><th>{{ lang('user') }}</th>
+				<th>{{ lang('active') }}</th><th>{{ lang('order') }}</th><th>{{ lang('actions') }}</th>
+			</tr></thead>
+			<tbody id="emailadmin-profile-rows"><tr><td colspan="9">{{ lang('Loading...') }}</td></tr></tbody>
+		</table>
+	</div>
+</main>
+{% endblock %}
+
+{% block scripts %}
+<script>{{ source('@views/profiles/emailadmin_list.js') }}</script>
+{% endblock %}

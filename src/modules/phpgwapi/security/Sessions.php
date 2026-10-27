@@ -809,6 +809,16 @@ class Sessions
 	}
 
 	/**
+	 * Get the current user id
+	 *
+	 * @return int the account id
+	 */
+	public function getAccountId()
+	{
+		return $this->_account_id;
+	}
+
+	/**
 	 * Terminate a session
 	 *
 	 * @param string $sessionid the session to terminate

@@ -92,55 +92,87 @@ class phpgwapi_network
 
 	function close_port()
 	{
-		return fclose($this->socket);
+		$socket = $this->socket;
+		$this->socket = null;
+		return is_resource($socket) ? fclose($socket) : true;
 	}
 
 	function read_port()
 	{
-		return fgets($this->socket, 1024);
+		if (!is_resource($this->socket))
+		{
+			$this->set_error('Error', 'Connection Lost', 'Cannot read from a closed socket.');
+			return false;
+		}
+		$line = fgets($this->socket);
+		return $this->check_read_result($line);
 	}
 
 	function bs_read_port($bytes)
 	{
-		return fread($this->socket, $bytes);
+		if (!is_resource($this->socket))
+		{
+			$this->set_error('Error', 'Connection Lost', 'Cannot read from a closed socket.');
+			return false;
+		}
+		return $this->check_read_result(fread($this->socket, $bytes));
+	}
+
+	private function check_read_result($data)
+	{
+		$metadata = stream_get_meta_data($this->socket);
+		if (!empty($metadata['timed_out']))
+		{
+			$this->set_error('Error', 'Read Timeout', 'Timed out while reading from server.');
+			return false;
+		}
+		if ($data === false || $data === '')
+		{
+			$this->set_error('Error', !empty($metadata['eof']) ? 'End Of Stream' : 'Read Failed',
+				'Unable to read more data from server.');
+			return false;
+		}
+		return $data;
 	}
 
 	function write_port($str)
 	{
-		$ok = fputs($this->socket, $this->add_crlf($str));
-		if (!$ok)
-		{
-			return $this->set_error('Error', 'Connection Lost', 'lost connection to server');
-		}
-		else
-		{
-			return 1;
-		}
+		return $this->write_data($this->add_crlf($str));
 	}
 
 	function bs_write_port($str, $bytes = 0)
 	{
-		if ($bytes)
-		{
-			$ok = fwrite($this->socket, $this->add_crlf($str), $bytes);
-		}
-		else
-		{
-			$ok = fwrite($this->socket, $this->add_crlf($str));
-		}
-		if (!$ok)
+		$data = $this->add_crlf($str);
+		return $this->write_data($bytes ? substr($data, 0, $bytes) : $data);
+	}
+
+	private function write_data($data)
+	{
+		if (!is_resource($this->socket))
 		{
 			return $this->set_error('Error', 'Connection Lost', 'lost connection to server');
 		}
-		else
+		$length = strlen($data);
+		if ($length === 0)
 		{
-			return 1;
+			return $this->set_error('Error', 'Write Failed', 'No data supplied to write.');
 		}
+		$offset = 0;
+		while ($offset < $length)
+		{
+			$written = fwrite($this->socket, substr($data, $offset));
+			if ($written === false || $written === 0)
+			{
+				return $this->set_error('Error', 'Connection Lost', 'lost connection to server');
+			}
+			$offset += $written;
+		}
+		return 1;
 	}
 
 	function msg2socket($str, $expected_response, &$response)
 	{
-		if (!$this->socket)
+		if (!is_resource($this->socket))
 		{
 			return $this->set_error(
 				'521',
@@ -160,17 +192,21 @@ class phpgwapi_network
 			}
 		}
 		$response = $this->read_port();
+		if ($response === false)
+		{
+			return 0;
+		}
 		if (!preg_match("/$expected_response/i", $response))
 		{
 			if (substr($expected_response, 1, 1) == '+')
 			{
 				return $this->set_error('550', '', '');
 			}
-			$pos = strpos(' ', $response);
+			$pos = strpos($response, ' ');
 			return $this->set_error(
-				substr($response, 0, $pos),
+				$pos === false ? trim($response) : substr($response, 0, $pos),
 				'invalid response(' . $expected_response . ')',
-				substr($response, ($pos + 1), (strlen($response) - $pos))
+				$pos === false ? '' : substr($response, $pos + 1)
 			);
 		}
 		else

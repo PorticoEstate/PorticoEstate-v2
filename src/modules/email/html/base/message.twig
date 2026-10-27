@@ -1,0 +1,57 @@
+{% extends layout|default('@views/_bare.twig') %}
+
+{% block title %}{{ lang('Message') }}{% endblock %}
+
+{% block styles %}
+<style>{{ source('@views/message.css') }}</style>
+{% endblock %}
+
+{% block content %}
+<main class="email-message" id="email-message" data-api-url="{{ api_url|e('html_attr') }}"
+	data-action-url="{{ action_url|e('html_attr') }}" data-folders-url="{{ folders_url|e('html_attr') }}" data-back-url="{{ back_url|e('html_attr') }}"
+	data-seen-url="{{ seen_url|e('html_attr') }}"
+	data-csrf-name="{{ csrf.name|e('html_attr') }}"
+	data-csrf-value="{{ csrf.value|e('html_attr') }}">
+	<header class="email-message-toolbar">
+		<a class="email-message-button" href="{{ back_url|e }}">{{ lang('Back to inbox') }}</a>
+		<a class="email-message-button" href="{{ reply_url|e }}">{{ lang('Reply') }}</a>
+		<a class="email-message-button" href="{{ reply_all_url|e }}">{{ lang('Reply all') }}</a>
+		<a class="email-message-button" href="{{ forward_url|e }}">{{ lang('Forward') }}</a>
+		<a class="email-message-button" id="email-message-edit" href="{{ edit_url|e }}" hidden>{{ lang('Edit draft') }}</a>
+		<a class="email-message-button" id="email-message-previous" hidden>{{ lang('Previous') }}</a>
+		<a class="email-message-button" id="email-message-next" hidden>{{ lang('Next') }}</a>
+		<button class="email-message-button" id="email-message-print" type="button" disabled>{{ lang('Print') }}</button>
+		<button class="email-message-button" id="email-message-format" type="button" hidden>{{ lang('View unformatted') }}</button>
+		<button class="email-message-button" id="email-message-html" type="button" hidden>{{ lang('View sanitized HTML') }}</button>
+		<button class="email-message-button" id="email-message-delete" type="button" disabled>{{ lang('Delete') }}</button>
+		<select id="email-message-target" aria-label="{{ lang('Destination folder') }}" disabled></select>
+		<button class="email-message-button" id="email-message-move" type="button" disabled>{{ lang('Move') }}</button>
+		<label class="email-message-read-control"><input id="email-message-seen" type="checkbox" checked disabled> {{ lang('Read') }}</label>
+	</header>
+	<div class="email-message-error" id="email-message-error" role="alert" hidden></div>
+	<div class="email-message-status" id="email-message-status" role="status" aria-live="polite">{{ lang('Loading message') }}</div>
+	<article id="email-message-content" hidden>
+		<header class="email-message-header">
+			<h1 id="email-message-subject"></h1>
+			<dl>
+				<div><dt>{{ lang('From') }}</dt><dd id="email-message-from"></dd></div>
+				<div><dt>{{ lang('To') }}</dt><dd id="email-message-to"></dd></div>
+				<div id="email-message-cc-row" hidden><dt>{{ lang('Cc') }}</dt><dd id="email-message-cc"></dd></div>
+				<div><dt>{{ lang('Date') }}</dt><dd id="email-message-date"></dd></div>
+			</dl>
+		</header>
+		<section class="email-message-body" id="email-message-body" aria-label="{{ lang('Message body') }}"></section>
+		<section class="email-message-attachments" id="email-message-attachments" hidden>
+			<h2>{{ lang('Attachments') }}</h2>
+			<ul id="email-message-attachment-list"></ul>
+		</section>
+	</article>
+</main>
+{% endblock %}
+
+{% block scripts %}
+<script>{{ source('@views/folder-hierarchy.js') }}</script>
+<script>{{ source('@views/message-actions.js') }}</script>
+<script>{{ source('@views/message-seen.js') }}</script>
+<script>{{ source('@views/message.js') }}</script>
+{% endblock %}

@@ -4,252 +4,259 @@ require_once __DIR__ . '/imap_config.php';
 defined('PE_IMAP_FT_UID') || define('PE_IMAP_FT_UID', 1);
 defined('PE_IMAP_FT_PREFETCHTEXT') || define('PE_IMAP_FT_PREFETCHTEXT', 16);
 defined('PE_IMAP_SE_UID') || define('PE_IMAP_SE_UID', 1);
-	/**
-	* EMail - POP3 Mail Wrapper for Imap Enabled PHP
-	*
-	* @copyright Copyright (C) 2003-2005 Free Software Foundation, Inc. http://www.fsf.org/
-	* @license http://www.gnu.org/licenses/lgpl.html GNU Lesser General Public License
-	* @package email
-	* @version $Id$
-	*/
+/**
+ * EMail - POP3 Mail Wrapper for Imap Enabled PHP
+ *
+ * @copyright Copyright (C) 2003-2005 Free Software Foundation, Inc. http://www.fsf.org/
+ * @license http://www.gnu.org/licenses/lgpl.html GNU Lesser General Public License
+ * @package email
+ * @version $Id$
+ */
 
 
 
-	/**
-	* POP3 Mail Wrapper for Imap Enabled PHP
-	*
-	* @package email
-	* @ignore
-	*/	
-	class mail_dcom extends mail_dcom_base
+/**
+ * POP3 Mail Wrapper for Imap Enabled PHP
+ *
+ * @package email
+ * @ignore
+ */
+class mail_dcom_pop3 extends mail_dcom_base
+{
+	function append($stream, $folder, $header, $body, $flags = 0)
 	{
-		function append($stream, $folder = 'Sent', $header, $body, $flags=0)
+		// N/A for pop3
+		return False;
+	}
+
+	function base64($text)
+	{
+		return IMAPManager::imap_base64($text);
+	}
+
+	function close($stream, $flags = 0)
+	{
+		return IMAPManager::imap_close($stream, $flags);
+	}
+
+	function createmailbox($stream, $mailbox)
+	{
+		// N/A for pop3
+		return true;
+	}
+
+	function deletemailbox($stream, $mailbox)
+	{
+		// N/A for pop3
+		return true;
+	}
+
+	function delete($stream, $msg_num, $flags = 0)
+	{
+		// do we force use of msg UID's 
+		if (($this->force_msg_uids == True)
+			&& (!($flags & PE_IMAP_FT_UID))
+		)
 		{
-			// N/A for pop3
-			return False;
+			$flags |= PE_IMAP_FT_UID;
 		}
+		$retval = IMAPManager::imap_delete($stream, $msg_num, $flags);
+		// some lame pop3 servers need this extra call to expunge, but RFC says not necessary
+		IMAPManager::imap_expunge($stream);
+		return $retval;
+	}
 
-		function base64($text)
+	function expunge($stream)
+	{
+		// N/A for pop3
+		return true;
+	}
+
+	function fetchbody($stream, $msgnr, $partnr, $flags = 0)
+	{
+		// do we force use of msg UID's 
+		if (($this->force_msg_uids == True)
+			&& (!($flags & PE_IMAP_FT_UID))
+		)
 		{
-			return IMAPManager::imap_base64($text);
+			$flags |= PE_IMAP_FT_UID;
 		}
+		return IMAPManager::imap_fetchbody($stream, $msgnr, $partnr, $flags);
+	}
 
-		function close($stream,$flags=0)
+	function fetchheader($stream, $msg_num, $flags = 0)
+	{
+		// do we force use of msg UID's 
+		if (($this->force_msg_uids == True)
+			&& (!($flags & PE_IMAP_FT_UID))
+		)
 		{
-			return IMAPManager::imap_close($stream,$flags);
+			$flags |= PE_IMAP_FT_UID;
 		}
+		return IMAPManager::imap_fetchheader($stream, $msg_num, $flags);
+	}
 
-		function createmailbox($stream,$mailbox)
+	function fetch_raw_mail($stream, $msg_num, $flags = 0)
+	{
+		$flags |= PE_IMAP_FT_PREFETCHTEXT;
+		// do we force use of msg UID's 
+		if (($this->force_msg_uids == True)
+			&& (!($flags & PE_IMAP_FT_UID))
+		)
 		{
-			// N/A for pop3
-			return true;
+			$flags |= PE_IMAP_FT_UID;
 		}
+		return IMAPManager::imap_fetchheader($stream, $msg_num, $flags);
+	}
 
-		function deletemailbox($stream,$mailbox)
+	function fetchstructure($stream, $msg_num, $flags = 0)
+	{
+		// do we force use of msg UID's 
+		if (($this->force_msg_uids == True)
+			&& (!($flags & PE_IMAP_FT_UID))
+		)
 		{
-			// N/A for pop3
-			return true;
-		} 
+			$flags |= PE_IMAP_FT_UID;
+		}
+		return IMAPManager::imap_fetchstructure($stream, $msg_num, $flags);
+	}
 
-		function delete($stream,$msg_num,$flags=0)
+	function get_body($stream, $msg_num, $flags = 0)
+	{
+		// do we force use of msg UID's 
+		if (($this->force_msg_uids == True)
+			&& (!($flags & PE_IMAP_FT_UID))
+		)
 		{
-			// do we force use of msg UID's 
-			if ( ($this->force_msg_uids == True)
-			&& (!($flags & PE_IMAP_FT_UID)) )
+			$flags |= PE_IMAP_FT_UID;
+		}
+		return IMAPManager::imap_body($stream, $msg_num, $flags);
+	}
+
+	function get_header($stream, $msg_num, $flags)
+	{
+		// alias for compatibility with some old code
+		return $this->fetchheader($stream, $msg_num, $flags);
+	}
+
+	function header($stream, $msg_nr, $fromlength = '', $tolength = '', $defaulthost = '')
+	{
+		// do we need to temporarily switch to regular msg num sequence for this function?
+		if ($this->force_msg_uids == True)
+		{
+			// this function can nothandle UIDs, switch to sequence number
+			$new_msg_nr = IMAPManager::imap_msgno($stream, $msg_nr);
+			if ($new_msg_nr)
 			{
-				$flags |= PE_IMAP_FT_UID;
+				$msg_nr = $new_msg_nr;
 			}
-			$retval = IMAPManager::imap_delete($stream,$msg_num,$flags);
-			// some lame pop3 servers need this extra call to expunge, but RFC says not necessary
-			IMAPManager::imap_expunge($stream);
-			return $retval;
 		}
-     
-		function expunge($stream)
-		{
-			// N/A for pop3
-			return true;
-		}
-     
-		function fetchbody($stream,$msgnr,$partnr,$flags=0)
-		{
-			// do we force use of msg UID's 
-			if ( ($this->force_msg_uids == True)
-			&& (!($flags & PE_IMAP_FT_UID)) )
-			{
-				$flags |= PE_IMAP_FT_UID;
-			}
-			return IMAPManager::imap_fetchbody($stream,$msgnr,$partnr,$flags);
-		}
+		return IMAPManager::imap_header($stream, $msg_nr, $fromlength, $tolength, $defaulthost);
+	}
 
-		function fetchheader($stream,$msg_num,$flags=0)
-		{
-			// do we force use of msg UID's 
-			if ( ($this->force_msg_uids == True)
-			&& (!($flags & PE_IMAP_FT_UID)) )
-			{
-				$flags |= PE_IMAP_FT_UID;
-			}
-			return IMAPManager::imap_fetchheader($stream,$msg_num,$flags);
-		}
+	function listmailbox($stream, $ref, $pattern)
+	{
+		// N/A for pop3
+		return False;
+	}
 
-		function fetch_raw_mail($stream,$msg_num,$flags=0)
-		{
-			$flags |= PE_IMAP_FT_PREFETCHTEXT;
-			// do we force use of msg UID's 
-			if ( ($this->force_msg_uids == True)
-			&& (!($flags & PE_IMAP_FT_UID)) )
-			{
-				$flags |= PE_IMAP_FT_UID;
-			}
-			return IMAPManager::imap_fetchheader($stream,$msg_num,$flags);
-		}
+	function mailboxmsginfo($stream)
+	{
+		return IMAPManager::imap_mailboxmsginfo($stream);
+	}
 
-		function fetchstructure($stream,$msg_num,$flags=0)
-		{
-			// do we force use of msg UID's 
-			if ( ($this->force_msg_uids == True)
-			&& (!($flags & PE_IMAP_FT_UID)) )
-			{
-				$flags |= PE_IMAP_FT_UID;
-			}
-			return IMAPManager::imap_fetchstructure($stream,$msg_num,$flags);
-		}
+	function mailcopy($stream, $msg_list, $mailbox, $flags)
+	{
+		// N/A for pop3
+		return False;
+	}
 
-		function get_body($stream,$msg_num,$flags=0)
-		{
-			// do we force use of msg UID's 
-			if ( ($this->force_msg_uids == True)
-			&& (!($flags & PE_IMAP_FT_UID)) )
-			{
-				$flags |= PE_IMAP_FT_UID;
-			}
-			return IMAPManager::imap_body($stream,$msg_num,$flags);
-		}
+	function mail_move($stream, $msg_list, $mailbox, $flags)
+	{
+		// N/A for pop3
+		return False;
+	}
 
-		function get_header($stream,$msg_num,$flags)
-		{
-			// alias for compatibility with some old code
-			return $this->fetchheader($stream,$msg_num,$flags);
-		}
+	function num_msg($stream) // returns number of messages in the mailbox
+	{
+		return IMAPManager::imap_num_msg($stream);
+	}
 
-		function header($stream,$msg_nr,$fromlength='',$tolength='',$defaulthost='')
-		{
-			// do we need to temporarily switch to regular msg num sequence for this function?
-			if ($this->force_msg_uids == True)
-			{
-				// this function can nothandle UIDs, switch to sequence number
-				$new_msg_nr = IMAPManager::imap_msgno($stream,$msg_nr);
-				if ($new_msg_nr)
-				{
-					$msg_nr = $new_msg_nr;
-				}
-			}
-			return IMAPManager::imap_header($stream,$msg_nr,$fromlength,$tolength,$defaulthost);
-		}
+	function noop_ping_test($stream)
+	{
+		return IMAPManager::imap_ping($stream);
+	}
 
-		function listmailbox($stream,$ref,$pattern)
-		{
-			// N/A for pop3
-			return False;
-		}
+	function open($mailbox, $username, $password, $flags = 0)
+	{
+		return LegacyIMAPWrapper::imap_open($mailbox, $username, $password, $flags);
+	}
 
-		function mailboxmsginfo($stream) 
-		{
-			return IMAPManager::imap_mailboxmsginfo($stream);
-		}
+	function qprint($message)
+	{
+		//      return quoted_printable_decode($message);
+		$str = quoted_printable_decode($message);
+		return str_replace("=\n", '', $str);
+	}
 
-		function mailcopy($stream,$msg_list,$mailbox,$flags)
-		{
-			// N/A for pop3
-			return False;
-		}
+	function reopen($stream, $mailbox, $flags = '')
+	{
+		// N/A for pop3
+		return False;
+	}
 
-		function mail_move($stream,$msg_list,$mailbox,$flags)
-		{
-			// N/A for pop3
-			return False;
-		}
+	function server_last_error()
+	{
+		// supported in PHP >= 3.0.12
+		//UNKNOWN if POP3 server errors also get put here
+		return LegacyIMAPWrapper::imap_last_error();
+	}
 
-		function num_msg($stream) // returns number of messages in the mailbox
-		{ 
-			return IMAPManager::imap_num_msg($stream);
-		}
-		
-		function noop_ping_test($stream)
-		{ 
-			return IMAPManager::imap_ping($stream);
-		}
-
-		function open($mailbox,$username,$password,$flags=0)
+	// does this work for pop3?
+	function i_search($stream, $criteria, $flags = 0)
+	{
+		// do we force use of msg UID's 
+		if (($this->force_msg_uids == True)
+			&& (!($flags & PE_IMAP_SE_UID))
+		)
 		{
-			return IMAPManager::imap_open($mailbox,$username,$password,$flags);
+			$flags |= PE_IMAP_SE_UID;
 		}
+		return IMAPManager::imap_search($stream, $criteria, $flags);
+	}
 
-		function qprint($message)
+	//function sort($stream,$criteria,$reverse='',$options='',$msg_info='')
+	function sort($stream, $criteria, $reverse = '', $flags = 0)
+	{
+		// do we force use of msg UID's 
+		if (($this->force_msg_uids == True)
+			&& (!($flags & PE_IMAP_SE_UID))
+		)
 		{
-			//      return quoted_printable_decode($message);
-			$str = quoted_printable_decode($message);
-			return str_replace("=\n",'',$str);
+			$flags |= PE_IMAP_SE_UID;
 		}
+		return IMAPManager::imap_sort($stream, $criteria, $reverse, $flags);
+	}
 
-		function reopen($stream,$mailbox,$flags='')
-		{
-			// N/A for pop3
-			return False;
-		}
+	function status($stream, $mailbox, $options)
+	{
+		// don't forget pop3 has 1 "folder": INBOX, any other folder name will not work
+		return IMAPManager::imap_status($stream, $mailbox, $options);
+	}
 
-		function server_last_error()
-		{
-			// supported in PHP >= 3.0.12
-			//UNKNOWN if POP3 server errors also get put here
-			return IMAPManager::imap_last_error();
-		}
+	function construct_folder_str($folder)
+	{
+		// pop3 has only 1 "folder" - inbox
+		$folder = 'INBOX';
+		$folder_str = \App\modules\email\services\MailMessage::getInstance()->get_folder_long($folder);
+		return $folder_str;
+	}
 
-		// does this work for pop3?
-		function i_search($stream,$criteria,$flags=0)
-		{
-			// do we force use of msg UID's 
-			if ( ($this->force_msg_uids == True)
-			&& (!($flags & PE_IMAP_SE_UID)) )
-			{
-				$flags |= PE_IMAP_SE_UID;
-			}
-			return IMAPManager::imap_search($stream,$criteria,$flags);
-		}
-		
-		//function sort($stream,$criteria,$reverse='',$options='',$msg_info='')
-		function sort($stream,$criteria,$reverse='',$flags=0)
-		{
-			// do we force use of msg UID's 
-			if ( ($this->force_msg_uids == True)
-			&& (!($flags & PE_IMAP_SE_UID)) )
-			{
-				$flags |= PE_IMAP_SE_UID;
-			}
-			return IMAPManager::imap_sort($stream,$criteria,$reverse,$flags);
-		}
-
-		function status($stream,$mailbox,$options)
-		{
-			// don't forget pop3 has 1 "folder": INBOX, any other folder name will not work
-			return IMAPManager::imap_status($stream,$mailbox,$options);
-		}
-
-		function construct_folder_str($folder)
-		{
-			// pop3 has only 1 "folder" - inbox
-			$folder = 'INBOX';
-			$folder_str = $GLOBALS['phpgw']->msg->get_folder_long($folder);
-			return $folder_str;
-		}
-
-		function deconstruct_folder_str($folder)
-		{
-			// pop3 has only 1 "folder" - inbox
-			$folder = 'INBOX';
-			$folder_str = $GLOBALS['phpgw']->msg->get_folder_short($folder);
-			return $folder_str;
-		}
-
-	} // end of class msg
+	function deconstruct_folder_str($folder)
+	{
+		// pop3 has only 1 "folder" - inbox
+		$folder = 'INBOX';
+		$folder_str = \App\modules\email\services\MailMessage::getInstance()->get_folder_short($folder);
+		return $folder_str;
+	}
+} // end of class msg

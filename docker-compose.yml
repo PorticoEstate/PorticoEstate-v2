@@ -32,13 +32,13 @@ services:
         build:
             context: .
             dockerfile: Dockerfile
+            network: ${SLIM_BUILD_NETWORK:-default}
             args:
                 INSTALL_MSSQL: ${INSTALL_MSSQL:-false}
                 INSTALL_XDEBUG: ${INSTALL_XDEBUG:-false}
                 INSTALL_ORACLE: ${INSTALL_ORACLE:-false}
                 http_proxy: ${http_proxy}
                 https_proxy: ${https_proxy}
-    #       network: host  # corporate proxy allow-lists by source IP; bridge NAT gets dropped
         working_dir: /var/www/html
         environment:
             <<: *common-variables
@@ -65,6 +65,68 @@ services:
             - "host.docker.internal:host-gateway"
         depends_on:
             - redis
+
+    imap-test:
+        image: greenmail/standalone:2.1.2
+        container_name: portico_imap_test
+        profiles: [email-test]
+        environment:
+            GREENMAIL_OPTS: >-
+                -Dgreenmail.setup.test.imap
+                -Dgreenmail.setup.test.imaps
+                -Dgreenmail.hostname=0.0.0.0
+                -Dgreenmail.users=outlook-test:local-test-password@outlook.test
+        ports:
+            - "1143:3143"
+            - "1993:3993"
+        networks:
+            - internal
+
+#docker compose --profile email-test up -d imap-test-seed
+    imap-test-seed:
+        image: python:3.12-alpine
+        profiles: [email-test]
+        restart: "no"
+        depends_on:
+            imap-test:
+                condition: service_started
+                restart: true
+        command: ["python3", "/fixtures/seed_mailbox.py", "--host", "imap-test", "--port", "3993", "--if-empty", "--wait-seconds", "60"]
+        volumes:
+            - ./tests/fixtures/imap:/fixtures:ro
+        networks:
+            - internal
+
+    pop-test:
+        image: greenmail/standalone:2.1.2
+        container_name: portico_pop_test
+        profiles: [email-test]
+        environment:
+            GREENMAIL_OPTS: >-
+                -Dgreenmail.setup.test.pop3
+                -Dgreenmail.setup.test.pop3s
+                -Dgreenmail.setup.test.imaps
+                -Dgreenmail.hostname=0.0.0.0
+                -Dgreenmail.users=pop-test:local-test-password@pop.test
+        ports:
+            - "127.0.0.1:1110:3110"
+            - "127.0.0.1:1995:3995"
+        networks:
+            - internal
+
+    pop-test-seed:
+        image: python:3.12-alpine
+        profiles: [email-test]
+        restart: "no"
+        depends_on:
+            pop-test:
+                condition: service_started
+                restart: true
+        command: ["python3", "/fixtures/seed_mailbox.py", "--host", "pop-test", "--port", "3993", "--user", "pop-test", "--address", "pop-test@pop.test", "--if-empty", "--wait-seconds", "60"]
+        volumes:
+            - ./tests/fixtures/imap:/fixtures:ro
+        networks:
+            - internal
 
     websocket:
         container_name: ${WEBSOCKET_HOST:-portico_websocket}

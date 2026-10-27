@@ -13,16 +13,39 @@
 	*/
 	
 	$phpgw_baseline = array(
-			'phpgw_anglemail' => array(
-				'fd' => array(
-					'account_id' => array('type' => 'varchar', 'precision' => 20, 'nullable' => false),
-					'data_key' => array('type' => 'varchar', 'precision' => 255, 'nullable' => False, 'default' => ''),
-					'content' => array('type' => 'text', 'nullable' => False, 'default' => ''),
-				),
-				'pk' => array('account_id', 'data_key'),
-				'fk' => array(),
-				'ix' => array(),
-				'uc' => array()
+		'phpgw_anglemail' => array(
+			'fd' => array(
+				'account_id' => array('type' => 'varchar', 'precision' => 20, 'nullable' => false),
+				'data_key' => array('type' => 'varchar', 'precision' => 255, 'nullable' => False, 'default' => ''),
+				'content' => array('type' => 'text', 'nullable' => False, 'default' => ''),
+			),
+			'pk' => array('account_id', 'data_key'),
+			'fk' => array(),
+			'ix' => array(),
+			'uc' => array()
+		),
+		'phpgw_email_message_index' => array(
+			'fd' => array(
+				'account_id' => array('type' => 'int', 'precision' => 4, 'nullable' => false),
+				'mail_account' => array('type' => 'int', 'precision' => 4, 'nullable' => false),
+				'mailbox_key' => array('type' => 'varchar', 'precision' => 64, 'nullable' => false),
+				'folder' => array('type' => 'text', 'nullable' => false),
+				'message_uid' => array('type' => 'int', 'precision' => 8, 'nullable' => false),
+				'uidvalidity' => array('type' => 'int', 'precision' => 8, 'nullable' => true),
+				'uidnext' => array('type' => 'int', 'precision' => 8, 'nullable' => true),
+				'message_total' => array('type' => 'int', 'precision' => 8, 'nullable' => true),
+				'date_sent' => array('type' => 'int', 'precision' => 8, 'nullable' => true),
+				'date_received' => array('type' => 'int', 'precision' => 8, 'nullable' => true),
+				'from_sort' => array('type' => 'varchar', 'precision' => 255, 'nullable' => false, 'default' => ''),
+				'to_sort' => array('type' => 'varchar', 'precision' => 255, 'nullable' => false, 'default' => ''),
+				'cc_sort' => array('type' => 'varchar', 'precision' => 255, 'nullable' => false, 'default' => ''),
+				'subject_sort' => array('type' => 'varchar', 'precision' => 255, 'nullable' => false, 'default' => ''),
+				'message_size' => array('type' => 'int', 'precision' => 8, 'nullable' => true),
+			),
+			'pk' => array('account_id', 'mail_account', 'mailbox_key', 'message_uid'),
+			'fk' => array(),
+			'ix' => array(),
+			'uc' => array()
 		)
 	);
 	

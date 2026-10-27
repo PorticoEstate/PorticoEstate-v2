@@ -1,5 +1,18 @@
 <?php
 
+/**
+ * EMail - Filters API
+ *
+ * @author Sigurd Nes <sigurdne at gmail.com>
+ * @copyright Copyright (C) 2026 Free Software Foundation, Inc. http://www.fsf.org/
+ * @license http://www.gnu.org/licenses/lgpl.html GNU Lesser General Public License
+ * @package email
+ */
+
+/**
+ * Provides filter editor data, persists filter changes, and runs or tests mailbox filters.
+ */
+
 namespace App\modules\email\controllers;
 
 use App\modules\email\services\EmailFilterSerializer;

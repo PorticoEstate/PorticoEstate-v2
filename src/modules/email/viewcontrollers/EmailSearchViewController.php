@@ -1,5 +1,18 @@
 <?php
 
+/**
+ * EMail - Search Views
+ *
+ * @author Sigurd Nes <sigurdne at gmail.com>
+ * @copyright Copyright (C) 2026 Free Software Foundation, Inc. http://www.fsf.org/
+ * @license http://www.gnu.org/licenses/lgpl.html GNU Lesser General Public License
+ * @package email
+ */
+
+/**
+ * Renders the mailbox search page with account selection, CSRF tokens, and search API URLs.
+ */
+
 namespace App\modules\email\viewcontrollers;
 
 use App\modules\phpgwapi\helpers\LegacyViewHelper;

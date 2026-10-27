@@ -1,5 +1,18 @@
 <?php
 
+/**
+ * EMail - Mail Server Ports
+ *
+ * @author Sigurd Nes <sigurdne at gmail.com>
+ * @copyright Copyright (C) 2026 Free Software Foundation, Inc. http://www.fsf.org/
+ * @license http://www.gnu.org/licenses/lgpl.html GNU Lesser General Public License
+ * @package email
+ */
+
+/**
+ * Resolves incoming ports from account overrides, applicable profile settings, and protocol defaults.
+ */
+
 namespace App\modules\email\services;
 
 final class EmailServerPortResolver

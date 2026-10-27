@@ -1,5 +1,18 @@
 <?php
 
+/**
+ * EMail - Google OAuth
+ *
+ * @author Sigurd Nes <sigurdne at gmail.com>
+ * @copyright Copyright (C) 2026 Free Software Foundation, Inc. http://www.fsf.org/
+ * @license http://www.gnu.org/licenses/lgpl.html GNU Lesser General Public License
+ * @package email
+ */
+
+/**
+ * Manages Gmail OAuth state and PKCE, token exchange and refresh, account verification, and proxy-aware HTTPS calls.
+ */
+
 namespace App\modules\email\services;
 
 use App\modules\phpgwapi\services\Cache;

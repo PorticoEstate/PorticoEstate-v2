@@ -1,5 +1,18 @@
 <?php
 
+/**
+ * EMail - Preferences API
+ *
+ * @author Sigurd Nes <sigurdne at gmail.com>
+ * @copyright Copyright (C) 2026 Free Software Foundation, Inc. http://www.fsf.org/
+ * @license http://www.gnu.org/licenses/lgpl.html GNU Lesser General Public License
+ * @package email
+ */
+
+/**
+ * Exposes preference schemas and values, saves main and extra accounts, and handles account deletion.
+ */
+
 namespace App\modules\email\controllers;
 
 use App\modules\phpgwapi\services\Preferences;

@@ -1,5 +1,18 @@
 <?php
 
+/**
+ * EMail - Draft Message Construction
+ *
+ * @author Sigurd Nes <sigurdne at gmail.com>
+ * @copyright Copyright (C) 2026 Free Software Foundation, Inc. http://www.fsf.org/
+ * @license http://www.gnu.org/licenses/lgpl.html GNU Lesser General Public License
+ * @package email
+ */
+
+/**
+ * Builds MIME draft messages from compose content and attachments, including drafts without recipients.
+ */
+
 namespace App\modules\email\services;
 
 use PHPMailer\PHPMailer\PHPMailer;

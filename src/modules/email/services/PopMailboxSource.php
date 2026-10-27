@@ -1,5 +1,18 @@
 <?php
 
+/**
+ * EMail - POP Message Retrieval
+ *
+ * @author Sigurd Nes <sigurdne at gmail.com>
+ * @copyright Copyright (C) 2026 Free Software Foundation, Inc. http://www.fsf.org/
+ * @license http://www.gnu.org/licenses/lgpl.html GNU Lesser General Public License
+ * @package email
+ */
+
+/**
+ * Reads remote POP UIDLs and complete MIME messages over bounded socket responses without issuing remote deletes.
+ */
+
 namespace App\modules\email\services;
 
 require_once __DIR__ . '/PopMailboxSourceException.php';

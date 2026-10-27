@@ -1,5 +1,18 @@
 <?php
 
+/**
+ * EMail - Inbox Views
+ *
+ * @author Sigurd Nes <sigurdne at gmail.com>
+ * @copyright Copyright (C) 2026 Free Software Foundation, Inc. http://www.fsf.org/
+ * @license http://www.gnu.org/licenses/lgpl.html GNU Lesser General Public License
+ * @package email
+ */
+
+/**
+ * Renders inbox, message, and folder pages, including account navigation and mailbox API URLs.
+ */
+
 namespace App\modules\email\viewcontrollers;
 
 use App\modules\email\services\EmailAccountsSerializer;

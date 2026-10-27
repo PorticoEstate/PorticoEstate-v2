@@ -1,5 +1,18 @@
 <?php
 
+/**
+ * EMail - Filter Preferences
+ *
+ * @author Sigurd Nes <sigurdne at gmail.com>
+ * @copyright Copyright (C) 2026 Free Software Foundation, Inc. http://www.fsf.org/
+ * @license http://www.gnu.org/licenses/lgpl.html GNU Lesser General Public License
+ * @package email
+ */
+
+/**
+ * Loads and persists user filter definitions and applies filter editor and management changes.
+ */
+
 namespace App\modules\email\services;
 
 use App\modules\phpgwapi\services\Preferences;

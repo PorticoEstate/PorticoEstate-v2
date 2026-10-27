@@ -1,5 +1,18 @@
 <?php
 
+/**
+ * EMail - Filter Views
+ *
+ * @author Sigurd Nes <sigurdne at gmail.com>
+ * @copyright Copyright (C) 2026 Free Software Foundation, Inc. http://www.fsf.org/
+ * @license http://www.gnu.org/licenses/lgpl.html GNU Lesser General Public License
+ * @package email
+ */
+
+/**
+ * Renders the filter list and editor pages with account context and API configuration.
+ */
+
 namespace App\modules\email\viewcontrollers;
 
 use App\modules\phpgwapi\helpers\LegacyViewHelper;

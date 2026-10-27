@@ -1,5 +1,18 @@
 <?php
 
+/**
+ * EMail - Message Serialization
+ *
+ * @author Sigurd Nes <sigurdne at gmail.com>
+ * @copyright Copyright (C) 2026 Free Software Foundation, Inc. http://www.fsf.org/
+ * @license http://www.gnu.org/licenses/lgpl.html GNU Lesser General Public License
+ * @package email
+ */
+
+/**
+ * Serializes message headers, sanitized display bodies, and attachment descriptors for the message API.
+ */
+
 namespace App\modules\email\services;
 
 final class EmailMessageSerializer

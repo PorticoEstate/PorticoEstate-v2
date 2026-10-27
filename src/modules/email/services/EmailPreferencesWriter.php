@@ -1,5 +1,18 @@
 <?php
 
+/**
+ * EMail - Account Preference Updates
+ *
+ * @author Sigurd Nes <sigurdne at gmail.com>
+ * @copyright Copyright (C) 2026 Free Software Foundation, Inc. http://www.fsf.org/
+ * @license http://www.gnu.org/licenses/lgpl.html GNU Lesser General Public License
+ * @package email
+ */
+
+/**
+ * Coordinates main and extra-account saves, account-number validation and allocation, deletion, and cache invalidation.
+ */
+
 namespace App\modules\email\services;
 
 final class EmailPreferencesWriter

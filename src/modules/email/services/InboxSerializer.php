@@ -1,5 +1,18 @@
 <?php
 
+/**
+ * EMail - Inbox Serialization
+ *
+ * @author Sigurd Nes <sigurdne at gmail.com>
+ * @copyright Copyright (C) 2026 Free Software Foundation, Inc. http://www.fsf.org/
+ * @license http://www.gnu.org/licenses/lgpl.html GNU Lesser General Public License
+ * @package email
+ */
+
+/**
+ * Converts legacy message-list and folder data into inbox API items, counts, and paging state.
+ */
+
 namespace App\modules\email\services;
 
 final class InboxSerializer

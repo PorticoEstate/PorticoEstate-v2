@@ -1,5 +1,18 @@
 <?php
 
+/**
+ * EMail - IMAP Inbox Index
+ *
+ * @author Sigurd Nes <sigurdne at gmail.com>
+ * @copyright Copyright (C) 2026 Free Software Foundation, Inc. http://www.fsf.org/
+ * @license http://www.gnu.org/licenses/lgpl.html GNU Lesser General Public License
+ * @package email
+ */
+
+/**
+ * Synchronizes IMAP UID sort metadata with the database and selects stable, sorted inbox pages.
+ */
+
 namespace App\modules\email\services;
 
 use App\Database\Db;

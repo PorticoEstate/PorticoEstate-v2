@@ -1,5 +1,18 @@
 <?php
 
+/**
+ * EMail - Compose Attachments API
+ *
+ * @author Sigurd Nes <sigurdne at gmail.com>
+ * @copyright Copyright (C) 2026 Free Software Foundation, Inc. http://www.fsf.org/
+ * @license http://www.gnu.org/licenses/lgpl.html GNU Lesser General Public License
+ * @package email
+ */
+
+/**
+ * Lists, uploads, and deletes temporary compose attachments using session-scoped storage.
+ */
+
 namespace App\modules\email\controllers;
 
 use Psr\Http\Message\ResponseInterface as Response;

@@ -1,5 +1,18 @@
 <?php
 
+/**
+ * EMail - Search Criteria
+ *
+ * @author Sigurd Nes <sigurdne at gmail.com>
+ * @copyright Copyright (C) 2026 Free Software Foundation, Inc. http://www.fsf.org/
+ * @license http://www.gnu.org/licenses/lgpl.html GNU Lesser General Public License
+ * @package email
+ */
+
+/**
+ * Normalizes search form values and builds escaped mailbox criteria for text, flags, and dates.
+ */
+
 namespace App\modules\email\services;
 
 final class EmailSearchCriteria

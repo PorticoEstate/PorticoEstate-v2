@@ -1,5 +1,18 @@
 <?php
 
+/**
+ * EMail - MIME Message Content
+ *
+ * @author Sigurd Nes <sigurdne at gmail.com>
+ * @copyright Copyright (C) 2026 Free Software Foundation, Inc. http://www.fsf.org/
+ * @license http://www.gnu.org/licenses/lgpl.html GNU Lesser General Public License
+ * @package email
+ */
+
+/**
+ * Fetches and classifies MIME parts and prepares message bodies, inline-image links, and attachment metadata.
+ */
+
 namespace App\modules\email\services;
 
 final class EmailMessageContent

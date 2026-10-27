@@ -1,5 +1,18 @@
 <?php
 
+/**
+ * EMail - Address Book API
+ *
+ * @author Sigurd Nes <sigurdne at gmail.com>
+ * @copyright Copyright (C) 2026 Free Software Foundation, Inc. http://www.fsf.org/
+ * @license http://www.gnu.org/licenses/lgpl.html GNU Lesser General Public License
+ * @package email
+ */
+
+/**
+ * Handles address-book searches and returns contact suggestions for message recipients.
+ */
+
 namespace App\modules\email\controllers;
 
 use App\modules\phpgwapi\services\Settings;

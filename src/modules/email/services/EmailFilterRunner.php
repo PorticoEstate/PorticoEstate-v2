@@ -1,5 +1,18 @@
 <?php
 
+/**
+ * EMail - Filter Execution
+ *
+ * @author Sigurd Nes <sigurdne at gmail.com>
+ * @copyright Copyright (C) 2026 Free Software Foundation, Inc. http://www.fsf.org/
+ * @license http://www.gnu.org/licenses/lgpl.html GNU Lesser General Public License
+ * @package email
+ */
+
+/**
+ * Applies mailbox filters to eligible accounts, supports test runs, and delegates matching-message moves.
+ */
+
 namespace App\modules\email\services;
 
 final class EmailFilterRunner

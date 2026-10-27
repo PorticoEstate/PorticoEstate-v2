@@ -1,5 +1,18 @@
 <?php
 
+/**
+ * EMail - Message Actions
+ *
+ * @author Sigurd Nes <sigurdne at gmail.com>
+ * @copyright Copyright (C) 2026 Free Software Foundation, Inc. http://www.fsf.org/
+ * @license http://www.gnu.org/licenses/lgpl.html GNU Lesser General Public License
+ * @package email
+ */
+
+/**
+ * Validates and executes batch moves, confirmed deletion, and Trash cleanup, with per-message results.
+ */
+
 namespace App\modules\email\services;
 
 final class EmailMessageActions

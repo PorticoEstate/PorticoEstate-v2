@@ -1,5 +1,18 @@
 <?php
 
+/**
+ * EMail - Home Summary
+ *
+ * @author Sigurd Nes <sigurdne at gmail.com>
+ * @copyright Copyright (C) 2026 Free Software Foundation, Inc. http://www.fsf.org/
+ * @license http://www.gnu.org/licenses/lgpl.html GNU Lesser General Public License
+ * @package email
+ */
+
+/**
+ * Collects main-account counts, recent message links, and folder choices for the optional home-screen summary.
+ */
+
 namespace App\modules\email\services;
 
 /**

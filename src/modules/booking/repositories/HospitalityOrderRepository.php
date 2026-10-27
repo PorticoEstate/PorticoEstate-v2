@@ -49,11 +49,14 @@ class HospitalityOrderRepository
     }
 
     /**
-     * The changelog's changed_at is `timestamp DEFAULT NOW()` on a UTC database session, i.e. a
-     * NAIVE UTC value, and was handed to the browser as it stands — so the admin pages read it as
-     * local time and every case entry showed one hour early (two in summer). Return it as an
-     * ISO-8601 instant in venue time, the way the order model's own timestamps are serialised
-     * (@Timestamp(sourceTimezone="UTC")), which `new Date()` in the browser reads correctly.
+     * The changelog's changed_at is `timestamp DEFAULT (now() AT TIME ZONE 'UTC')` once the
+     * hospitality timestamps migration has run, i.e. a NAIVE UTC value on every install, and was
+     * handed to the browser as it stands — so the admin pages read it as local time and every case
+     * entry showed one hour early (two in summer). Return it as an ISO-8601 instant in venue time,
+     * the way the order model's own timestamps are serialised (@Timestamp(sourceTimezone="UTC")),
+     * which `new Date()` in the browser reads correctly. On an install whose database session is
+     * not UTC and which has not run that migration yet, the stored value is still that session's
+     * wall clock and this reads it one hour late (two in summer), as the order model does.
      */
     public static function utcToVenueIso(?string $naiveUtc): ?string
     {
@@ -189,7 +192,8 @@ class HospitalityOrderRepository
             return true;
         }
 
-        $updates[] = "modified = NOW()";
+        // DEFAULT, not NOW(): see HospitalityRepository::update().
+        $updates[] = "modified = DEFAULT";
         if (isset($data['modified_by'])) {
             $updates[] = "modified_by = :modified_by";
             $params[':modified_by'] = $data['modified_by'];
@@ -203,7 +207,7 @@ class HospitalityOrderRepository
     public function updateStatus(int $id, string $status, ?int $modifiedBy = null): bool
     {
         $sql = "UPDATE bb_hospitality_order
-                SET status = :status, modified = NOW(), modified_by = :modified_by
+                SET status = :status, modified = DEFAULT, modified_by = :modified_by
                 WHERE id = :id";
         $stmt = $this->db->prepare($sql);
         return $stmt->execute([

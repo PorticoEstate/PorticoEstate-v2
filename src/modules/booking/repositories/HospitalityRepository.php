@@ -143,7 +143,9 @@ class HospitalityRepository
             return true;
         }
 
-        $updates[] = "modified = NOW()";
+        // DEFAULT, not NOW(): the column default is the one place that decides the zone the time is
+        // stored in (UTC, from the hospitality timestamps migration on), so no writer can disagree.
+        $updates[] = "modified = DEFAULT";
         if (isset($data['modified_by'])) {
             $updates[] = "modified_by = :modified_by";
             $params[':modified_by'] = $data['modified_by'];
@@ -156,7 +158,7 @@ class HospitalityRepository
 
     public function delete(int $id): bool
     {
-        $stmt = $this->db->prepare("UPDATE bb_hospitality SET active = 0, modified = NOW() WHERE id = :id");
+        $stmt = $this->db->prepare("UPDATE bb_hospitality SET active = 0, modified = DEFAULT WHERE id = :id");
         return $stmt->execute([':id' => $id]);
     }
 

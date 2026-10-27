@@ -30,15 +30,8 @@ class email_ofemail extends phpgwapi_object_factory
 
 			case 'pop3':
 			case 'pop3s':
-				if (extension_loaded('imap') && function_exists('imap_open'))
-				{
-					require_once __DIR__ . '/class.mail_dcom_base.inc.php';
-					require_once __DIR__ . '/class.mail_dcom_pop3.inc.php';
-					return new mail_dcom_pop3();
-				}
-				require_once __DIR__ . '/class.mail_dcom_base_sock.inc.php';
-				require_once __DIR__ . '/class.mail_dcom_pop3_sock.inc.php';
-				return new mail_dcom_pop3_sock();
+				require_once __DIR__ . '/class.mail_dcom_pop3_local.inc.php';
+				return new mail_dcom_pop3_local();
 
 			default:
 				throw new \InvalidArgumentException('Unsupported email transport protocol: ' . $protocol);

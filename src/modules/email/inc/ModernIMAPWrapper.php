@@ -844,7 +844,7 @@ class ModernIMAPWrapper
         return $result;
     }
     
-    private static function convertMimeStructure(\ZBateson\MailMimeParser\Message\IMimePart $part): stdClass
+    public static function convertMimeStructure(\ZBateson\MailMimeParser\Message\IMimePart $part): stdClass
     {
         $structure = new stdClass();
         [$type, $subtype] = explode('/', strtoupper($part->getContentType()), 2);

@@ -53,6 +53,9 @@ class IMAPManager
      */
     private static function getWrapper($function, $args)
     {
+        if (($args[0] ?? null) instanceof LocalPopConnection) {
+            return 'LocalPopIMAPWrapper';
+        }
         switch (self::$mode) {
             case self::MODE_LEGACY:
                 return 'LegacyIMAPWrapper';

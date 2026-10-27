@@ -84,3 +84,16 @@ function email_upgrade0_9_17_500($oProc)
 		return '0.9.17.501';
 	}
 }
+
+$test[] = '0.9.17.501';
+function email_upgrade0_9_17_501($oProc)
+{
+	require __DIR__ . '/tables_current.inc.php';
+	$oProc->m_odb->transaction_begin();
+	if (!$oProc->CreateTable('phpgw_email_pop_messages', $phpgw_baseline['phpgw_email_pop_messages']))
+	{
+		$oProc->m_odb->transaction_abort();
+		return false;
+	}
+	if ($oProc->m_odb->transaction_commit()) return '0.9.17.502';
+}

@@ -299,7 +299,8 @@
 			});
 			folderStatus.textContent = folders.length ? '' : 'No folders found';
 			folderStatus.hidden = folders.length > 0;
-			folderError.hidden = true;
+			folderError.textContent = result.syncWarning || '';
+			folderError.hidden = !result.syncWarning;
 		} catch (exception)
 		{
 			folderStatus.hidden = true;

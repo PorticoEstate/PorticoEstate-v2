@@ -1418,6 +1418,7 @@ class mail_msg extends mail_msg_wrappers
 		// *not* SKIPPED, although parameters is more useful (I think), dparameters may sometimes hold an attachment name
 		// ex_num_dparam_pairs defaults to 0 (no dparams)
 		$part_nice['ex_num_dparam_pairs'] = 0;
+		$part_nice['dparams'] = array();
 		if ((isset($part->ifdparameters)) && ($part->ifdparameters)
 			&& (isset($part->dparameters)) && ($part->dparameters)
 		)
@@ -1447,6 +1448,7 @@ class mail_msg extends mail_msg_wrappers
 		// 16:  parameters : MIME parameters array  - this *may* have more than a single attribute / value pair  but I'm not sure
 		// ex_num_param_pairs defaults to 0 (no params)
 		$part_nice['ex_num_param_pairs'] = 0;
+		$part_nice['params'] = array();
 		if ((isset($part->ifparameters)) && ($part->ifparameters)
 			&& (isset($part->parameters)) && ($part->parameters)
 		)
@@ -2021,7 +2023,8 @@ class mail_msg extends mail_msg_wrappers
 			// ... but ...
 			// 	THIS skips attachment check for ALL POP3 situations
 			// 	it is WAY SLOW to check for attachments like this with POP3
-			if (stristr($this->get_pref_value('mail_server_type'), 'pop3'))
+			if (stristr($this->get_pref_value('mail_server_type'), 'pop3')
+				&& !($this->getTransport((int) $this_loop_msgball['acctnum']) instanceof \mail_dcom_pop3_local))
 			{
 				// do Nothing - socket class pop3 not ready for this stress yet
 				$msg_list_display[$x]['has_attachment'] = False;

@@ -147,6 +147,10 @@ class mail_msg_wrappers extends mail_msg_base
 
 	public function setTransport(int $account, object $transport): void
 	{
+		if ($transport instanceof \mail_dcom_pop3_local)
+		{
+			$transport->setAccountContext((int) ($this->userSettings['account_id'] ?? 0), $account);
+		}
 		$this->transports[$account] = $transport;
 	}
 
@@ -1071,7 +1075,7 @@ class mail_msg_wrappers extends mail_msg_base
 		{
 			$return_data['is_imap'] = False;
 			// pop3 does not know what is "new" or not
-			$return_data['number_new'] = $mailbox_status->messages;
+			$return_data['number_new'] = $mailsvr_stream instanceof \LocalPopConnection ? $mailbox_status->unseen : $mailbox_status->messages;
 			$return_data['number_all'] = $mailbox_status->messages;
 			if ($mailbox_status->messages > 0)
 			{

@@ -416,6 +416,8 @@ class EmailInboxController
 				'delimiter' => (string) $mail->get_arg_value('mailsvr_delimiter', $account),
 				'accounts' => $accounts,
 				'trashFolder' => (string) $trash,
+				'syncWarning' => $mail->getTransport($account) instanceof \mail_dcom_pop3_local
+					? (string) $mail->getTransport($account)->server_last_error() : '',
 			]);
 		}
 		catch (\App\modules\email\services\EmailMailConfigurationException $exception)

@@ -171,7 +171,7 @@ every legacy adapter's behavior. Match the configuration to the actual service.
 | --- | --- | --- | --- |
 | IMAP (`imap`) | `143` | Non-implicit-TLS IMAP; STARTTLS requires a compatible connection path | Password or configured OAuth; server folders available |
 | IMAPS (`imaps`) | `993` | TLS from connection start | Password or Microsoft/Google OAuth; recommended cloud-mail choice |
-| POP-3 (`pop3`) | `110` | Legacy POP3 | Password; no server folder tree, IMAP moves, or IMAP Sent/Drafts/Trash |
+| POP-3 (`pop3`) | `110` | POP3 download into a durable local INBOX | Password; local read/deletion state, no server folder tree or IMAP Sent/Drafts/Trash |
 | POP-3S (`pop3s`) | `995` | TLS from connection start | Password; same folder limitations as POP3 |
 
 Incoming port selection is: explicit account port, then resolved profile
@@ -184,6 +184,20 @@ of every emailadmin encryption choice into STARTTLS/plaintext behavior. Do not
 treat selecting profile STARTTLS as proof that the Email runtime uses STARTTLS.
 For nonstandard plaintext/STARTTLS or POP deployments, test the actual adapter;
 IMAPS on `993` is the documented Microsoft/Google setup.
+
+### Durable Local POP Mailboxes
+
+Starting with Email version `0.9.17.502`, POP3/POP3S accounts import complete MIME messages into `phpgw_email_pop_messages`. Run the Email setup upgrade before using POP with this version; runtime code does not create database tables. The unused `phpgw_anglemail` cache table is not reused or modified.
+
+Each mailbox is scoped by application user, mail-account number, and a hash of the POP hostname, port, and login name. POP UIDLs identify remote messages, while stable local message IDs identify messages in the application. Changing the server, port, or login name selects a different local mailbox; old data is retained but is not shown under the new identity. A password change alone does not change the mailbox identity.
+
+Opening the account synchronizes messages not already represented by a UIDL. Complete headers, bodies, and attachments are stored together as base64-encoded MIME in the database, with a SHA-256 integrity digest and read-after-write verification. Base64 is a storage encoding, not encryption. Protect the database and backups as mailbox content. A single import is limited to 100 MB per message and 1 MB per response line; larger messages remain on the server and produce a sync warning. The first import of a large mailbox can take multiple requests if interrupted; already saved messages are not downloaded again.
+
+The synchronizer never issues remote DELE commands. Imported messages remain available locally if the remote server later removes them. Read/unread changes are local and persistent, and the inbox can inspect stored MIME for attachment indicators without downloading messages again. If a subsequent network/authentication sync fails, stored messages remain readable and the folder pane shows a sync warning. Successful initial synchronization still requires valid POP credentials and a server with working UIDL support.
+
+Deleting or moving a local POP message out of INBOX hides its local copy while retaining its UIDL tombstone and MIME. This prevents the next sync from downloading it again and does not delete the server copy. No permanent purge, retention job, remote-delete option, or recovery UI is implemented. Database growth therefore includes hidden messages; maintain backups and plan retention separately. Deleting an account in preferences does not purge its stored messages. Never delete this table as a cache-cleaning operation.
+
+Local POP currently provides one INBOX, not local Sent/Drafts/Trash folders. Copying out to an IMAP account uses the existing cross-account message action; importing copies into a POP destination or moving between POP folders is unsupported. Local search supports ALL, SEEN, UNSEEN, DELETED, and UNDELETED; text/date searches are explicitly rejected rather than evaluated against the remote server. Flag state is not synchronized to other POP clients.
 
 ### Microsoft and Google Credential Fields
 

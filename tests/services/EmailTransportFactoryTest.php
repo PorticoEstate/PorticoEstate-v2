@@ -68,7 +68,7 @@ namespace Tests\Services
 				$transport = \email_ofemail::createObject('email.mail_dcom', $protocol);
 				$expected = str_starts_with(strtolower($protocol), 'imap')
 					? 'email_mail_dcom'
-					: (extension_loaded('imap') && function_exists('imap_open') ? 'mail_dcom_pop3' : 'mail_dcom_pop3_sock');
+					: 'mail_dcom_pop3_local';
 				$this->assertSame($expected, get_class($transport));
 				$transports[] = $transport;
 			}
@@ -86,7 +86,9 @@ namespace Tests\Services
 			{
 				$this->markTestSkipped('Set GREENMAIL_POP_TEST=1 with the native IMAP extension and seeded POP fixture.');
 			}
-			$transport = \email_ofemail::createObject('email.mail_dcom', 'pop3s');
+			require_once __DIR__ . '/../../src/modules/email/inc/class.mail_dcom_base.inc.php';
+			require_once __DIR__ . '/../../src/modules/email/inc/class.mail_dcom_pop3.inc.php';
+			$transport = new \mail_dcom_pop3();
 			$host = getenv('POP_TEST_HOST') ?: '127.0.0.1';
 			$port = (int) (getenv('POP_TEST_PORT') ?: 1995);
 			$stream = $transport->open('{' . $host . ':' . $port . '/pop3/ssl/novalidate-cert}INBOX', 'pop-test', 'local-test-password');
@@ -121,8 +123,7 @@ namespace Tests\Services
 		public function testOmittedProtocolUsesDefaultPreferences(): void
 		{
 			$transport = \email_ofemail::createObject('email.mail_dcom', '_UNDEF_');
-			$this->assertSame(extension_loaded('imap') && function_exists('imap_open')
-				? 'mail_dcom_pop3' : 'mail_dcom_pop3_sock', get_class($transport));
+			$this->assertSame('mail_dcom_pop3_local', get_class($transport));
 		}
 
 		/**

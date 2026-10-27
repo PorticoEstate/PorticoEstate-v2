@@ -14,12 +14,12 @@
  */
 
 $setup_info['email']['name']      = 'email';
-$setup_info['email']['version']   = '0.9.17.501';
+$setup_info['email']['version']   = '0.9.17.502';
 $setup_info['email']['app_order'] = '2';
 $setup_info['email']['enable']    = 1;
 $setup_info['email']['app_group']	= 'office';
 
-$setup_info['email']['tables']    = array('phpgw_anglemail', 'phpgw_email_message_index');
+$setup_info['email']['tables']    = array('phpgw_anglemail', 'phpgw_email_message_index', 'phpgw_email_pop_messages');
 
 $setup_info['email']['author'][] = array('name' => '&quot;Angles&quot; Angelo Tony Puglisi');
 $setup_info['email']['license']  = 'GPL';

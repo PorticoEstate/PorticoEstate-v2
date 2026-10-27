@@ -108,11 +108,11 @@ The POP fixture is isolated from `imap-test`: seeding or deleting its messages d
 
 Create and enable an extra email account, or enable custom settings on the main account. Set **Email Account Name** to `pop-test`, **Email address** to `pop-test@pop.test`, authentication to **Password**, and the password shown above. When PHP runs in Docker, use **Mail Server** `pop-test` with **POP-3** and port `3110`, or **POP-3S** and port `3995`. When PHP runs on the host, use `127.0.0.1` with ports `1110` or `1995` respectively.
 
-Set the port explicitly: the application's standard POP defaults are 110/995, not GreenMail's test ports. The current POP transport requires the native PHP IMAP extension; the Python checks below can verify GreenMail independently of that extension. POP3S uses the fixture's self-signed certificate; certificate-validation exceptions must remain restricted to this local test server.
+Set the port explicitly: the application's standard POP defaults are 110/995, not GreenMail's test ports. Upgrade the Email module to `0.9.17.502` before opening the POP account: it creates `phpgw_email_pop_messages` through the setup migration. The durable POP transport uses PHP streams and the installed MIME parser, without requiring the native IMAP extension. POP3S uses the fixture's self-signed certificate; certificate-validation exceptions must remain restricted to this local test server.
 
-There is no POP-specific emailadmin server preset. Do not select Microsoft or Google OAuth. This fixture tests the user Email POP settings and native POP transport, not cloud authentication or SMTP sending.
+There is no POP-specific emailadmin server preset. Do not select Microsoft or Google OAuth. This fixture tests the user Email POP settings and local POP transport, not cloud authentication or SMTP sending.
 
-The app exposes one remote INBOX for POP, not a local downloaded mailbox. Do not expect IMAP Sent/Drafts/Trash folders. Explicit deletion can permanently remove messages from this disposable server.
+The application imports POP messages into a durable local INBOX. Opening a message persists local read state, and deleting it hides the local message while retaining its MIME and UIDL tombstone; it does not delete the GreenMail copy or re-import that UIDL. There are no POP Sent/Drafts/Trash folders. Resetting/recreating GreenMail does not reset the application's local archive; new UIDLs can create additional local messages. See the [settings guide](../../../src/modules/email/doc/settings-guide.md#durable-local-pop-mailboxes) for storage, ownership, retention, and offline behavior.
 
 ### Read-only protocol check
 
@@ -154,7 +154,23 @@ docker exec -e XDEBUG_MODE=off -e GREENMAIL_POP_TEST=1 -e POP_TEST_HOST=pop-test
   vendor/bin/phpunit --filter testGreenMailPopHeadersContainMailboxMetadata tests/services/EmailTransportFactoryTest.php
 ```
 
-This verifies subject, sender, date, size, and the intentionally subjectless message through the actual POP transport. It uses `imap_headerinfo()` rather than the removed `imap_header()` alias. From the host, use `GREENMAIL_POP_TEST=1 vendor/bin/phpunit --filter testGreenMailPopHeadersContainMailboxMetadata tests/services/EmailTransportFactoryTest.php` when the native IMAP extension is installed. The inbox currently skips POP attachment detection to avoid downloading every message; check attachments by opening the message rather than relying on its inbox attachment flag.
+This verifies the legacy native adapter's subject, sender, date, size, and intentionally subjectless message. It uses `imap_headerinfo()` rather than the removed `imap_header()` alias; it is a compatibility regression, not the application's new durable transport. From the host, use `GREENMAIL_POP_TEST=1 vendor/bin/phpunit --filter testGreenMailPopHeadersContainMailboxMetadata tests/services/EmailTransportFactoryTest.php` when the native IMAP extension is installed.
+
+### Durable local mailbox regression tests
+
+Run the isolated store and application-flow tests without creating database tables:
+
+```sh
+vendor/bin/phpunit tests/services/PopLocalMailboxTest.php
+```
+
+Include the read-only live POP sync against GreenMail:
+
+```sh
+GREENMAIL_POP_STORE_TEST=1 vendor/bin/phpunit tests/services/PopLocalMailboxTest.php
+```
+
+The live test uses the host POP3S endpoint `127.0.0.1:1995`, a fake database for isolated storage assertions, and the real UIDL/RETR protocol. It compares remote counts before and after import without resetting the fixture. The suite also checks idempotent imports, sequence renumbering, owner/account/mailbox isolation, offline reads, read flags, local deletion tombstones, interrupted downloads, integrity checks, MIME rendering, and attachment decoding. The live test is skipped unless explicitly enabled. Runtime database persistence requires applying the setup migration; this test does not apply it to your application database.
 
 GreenMail 2.1.2 can leave Python `poplib` command responses misaligned after `RSET`. For deletion-cancellation tests, issue `RSET`, disconnect, and verify the count on a new connection rather than relying on same-session STAT/LIST responses. Do not mistake this fixture limitation for production POP behavior.
 

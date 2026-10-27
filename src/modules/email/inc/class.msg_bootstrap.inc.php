@@ -46,7 +46,10 @@ class email_msg_bootstrap
 		);
 		foreach ($loginModes as $name => $value)
 		{
-			if (!defined($name)) define($name, $value);
+			if (!defined($name))
+            {
+            	define($name, $value);
+            }
 		}
 	}
 

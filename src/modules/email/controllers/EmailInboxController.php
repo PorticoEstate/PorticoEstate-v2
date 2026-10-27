@@ -83,7 +83,10 @@ class EmailInboxController
 				];
 				foreach (['sort', 'order', 'start', 'click_history'] as $key)
 				{
-					if (isset($query[$key])) $params[$key] = $query[$key];
+					if (isset($query[$key]))
+                    {
+                    	$params[$key] = $query[$key];
+                    }
 				}
 				$result['items'][$index]['messageUrl'] = \phpgw::link('/email/view/message', $params, true);
 			}
@@ -104,9 +107,15 @@ class EmailInboxController
 	public function action(Request $request, Response $response): Response
 	{
 		$input = $request->getParsedBody();
-		if (!is_array($input)) $input = json_decode((string) $request->getBody(), true);
+		if (!is_array($input))
+        {
+        	$input = json_decode((string) $request->getBody(), true);
+        }
 		$payload = \App\modules\email\services\EmailMessageActions::normalize(is_array($input) ? $input : []);
-		if ($payload === null) return $this->json($response, ['error' => lang('Invalid message action')], 400);
+		if ($payload === null)
+        {
+        	return $this->json($response, ['error' => lang('Invalid message action')], 400);
+        }
 		$originalPost = $_POST;
 		$_POST = ['fldball' => ['acctnum' => $payload['account'], 'folder' => $payload['messages'][0]['folder'] ?? 'INBOX']];
 		$mail = null;
@@ -129,8 +138,14 @@ class EmailInboxController
 		}
 		finally
 		{
-			if (is_object($mail)) $mail->end_request();
-			if (\App\modules\email\services\MailMessage::hasInstance()) \App\modules\email\services\MailMessage::releaseInstance();
+			if (is_object($mail))
+            {
+            	$mail->end_request();
+            }
+			if (\App\modules\email\services\MailMessage::hasInstance())
+            {
+            	\App\modules\email\services\MailMessage::releaseInstance();
+            }
 			$_POST = $originalPost;
 		}
 	}
@@ -138,7 +153,10 @@ class EmailInboxController
 	public function move(Request $request, Response $response): Response
 	{
 		$input = $request->getParsedBody();
-		if (!is_array($input)) $input = json_decode((string) $request->getBody(), true);
+		if (!is_array($input))
+        {
+        	$input = json_decode((string) $request->getBody(), true);
+        }
 		$input = is_array($input) ? $input : [];
 		$message = (array) ($input['msgball'] ?? []);
 		$target = (array) ($input['target_fldball'] ?? []);
@@ -181,7 +199,10 @@ class EmailInboxController
 			{
 				return $this->json($response, ['error' => lang('Unable to move message'), 'reason' => $transport->server_last_error()], 422);
 			}
-			if (!is_string($stream)) $transport->expunge($stream);
+			if (!is_string($stream))
+            {
+            	$transport->expunge($stream);
+            }
 			$mail->event_msg_move_or_delete($message, 'email.api.move', $target);
 			return $this->json($response, ['moved' => true]);
 		}
@@ -208,7 +229,10 @@ class EmailInboxController
 	public function seen(Request $request, Response $response): Response
 	{
 		$input = $request->getParsedBody();
-		if (!is_array($input)) $input = json_decode((string) $request->getBody(), true);
+		if (!is_array($input))
+        {
+        	$input = json_decode((string) $request->getBody(), true);
+        }
 		$input = is_array($input) ? $input : [];
 		$message = (array) ($input['msgball'] ?? []);
 		$account = filter_var($message['acctnum'] ?? null, FILTER_VALIDATE_INT);
@@ -275,12 +299,18 @@ class EmailInboxController
 		$result = [];
 		foreach ((array) $addresses as $address)
 		{
-			if (!is_object($address)) continue;
+			if (!is_object($address))
+            {
+            	continue;
+            }
 			$mailbox = (string) ($address->mailbox ?? '');
 			$host = (string) ($address->host ?? '');
 			$email = $mailbox !== '' && $host !== '' ? $mailbox . '@' . $host : '';
 			$personal = trim((string) ($address->personal ?? ''));
-			if ($personal !== '') $personal = (string) $mail->decode_header_string($personal);
+			if ($personal !== '')
+            {
+            	$personal = (string) $mail->decode_header_string($personal);
+            }
 			$result[] = ['name' => $personal !== '' ? $personal : $email, 'address' => $email];
 		}
 		return $result;
@@ -347,11 +377,17 @@ class EmailInboxController
 			{
 				$reference = $navigation[$key]['msgball']['uri'] ?? null;
 				$item[$direction . 'Url'] = null;
-				if (!is_array($reference)) continue;
+				if (!is_array($reference))
+                {
+                	continue;
+                }
 				foreach (['sort', 'order', 'start', 'click_history'] as $parameter)
 				{
 					$value = $mail->get_arg_value($parameter);
-					if ($value !== null && $value !== '') $reference[$parameter] = $value;
+					if ($value !== null && $value !== '')
+                    {
+                    	$reference[$parameter] = $value;
+                    }
 				}
 				$item[$direction . 'Url'] = \phpgw::link('/email/view/message', $reference, true);
 			}
@@ -417,7 +453,10 @@ class EmailInboxController
 				(array) ($emailPreferences['ex_accounts'] ?? [])
 			) as $item)
 			{
-				if (($item['status'] ?? '') !== 'enabled') continue;
+				if (($item['status'] ?? '') !== 'enabled')
+                {
+                	continue;
+                }
 				$accounts[] = ['id' => (int) $item['id'], 'name' => (string) $item['name']];
 			}
 			$trash = $mail->get_pref_value('use_trash_folder', $account)
@@ -454,7 +493,10 @@ class EmailInboxController
 	public function folderAction(Request $request, Response $response): Response
 	{
 		$input = $request->getParsedBody();
-		if (!is_array($input)) $input = json_decode((string) $request->getBody(), true);
+		if (!is_array($input))
+        {
+        	$input = json_decode((string) $request->getBody(), true);
+        }
 		$input = is_array($input) ? $input : [];
 		$action = (string) ($input['action'] ?? '');
 		$target = (array) ($input['target_fldball'] ?? []);
@@ -561,15 +603,27 @@ class EmailInboxController
 			$partBall['part_no'] = $partNumber;
 			$data = (string) $mail->phpgw_fetchbody($partBall);
 			$encoding = strtolower((string) ($selectedPart['encoding'] ?? ''));
-			if ($encoding === 'base64') $data = $mail->de_base64($data);
-			elseif ($encoding === 'qprint') $data = $mail->qprint($data);
+			if ($encoding === 'base64')
+            {
+            	$data = $mail->de_base64($data);
+			}
+            elseif ($encoding === 'qprint')
+            {
+            	$data = $mail->qprint($data);
+            }
 
 			$fileName = preg_replace('/[\x00-\x1f\x7f]/', '_', (string) ($selectedPart['ex_part_name'] ?? 'attachment'));
 			$fileName = basename(str_replace('\\', '/', $fileName));
-			if ($fileName === '') $fileName = 'attachment';
+			if ($fileName === '')
+            {
+            	$fileName = 'attachment';
+            }
 			$fallbackName = preg_replace('/[^A-Za-z0-9._-]/', '_', $fileName);
 			$mimeType = strtolower((string) ($selectedPart['type'] ?? '') . '/' . (string) ($selectedPart['subtype'] ?? ''));
-			if (!preg_match('#^[a-z0-9.+-]+/[a-z0-9.+-]+$#', $mimeType)) $mimeType = 'application/octet-stream';
+			if (!preg_match('#^[a-z0-9.+-]+/[a-z0-9.+-]+$#', $mimeType))
+            {
+            	$mimeType = 'application/octet-stream';
+            }
 
 			$response->getBody()->write($data);
 			return $response

@@ -19,8 +19,14 @@ final class EmailOutgoingMessage
 	public function prepare(array $payload, object $mail): PHPMailer
 	{
 		$mailer = $this->mailerFactory ? ($this->mailerFactory)() : new MailerSmtp();
-		if (!$mailer instanceof PHPMailer) throw new \RuntimeException('Invalid PHPMailer factory');
-		if ($this->mailerFactory) $mailer->isSMTP();
+		if (!$mailer instanceof PHPMailer)
+        {
+        	throw new \RuntimeException('Invalid PHPMailer factory');
+        }
+		if ($this->mailerFactory)
+        {
+        	$mailer->isSMTP();
+        }
 		$mailer->CharSet = 'UTF-8';
 		$mailer->WordWrap = 76;
 
@@ -29,14 +35,23 @@ final class EmailOutgoingMessage
 		$mail->set_acctnum($account);
 		$from = trim((string) $mail->get_pref_value('address', $account));
 		$fromOverride = getenv('SMTP_FROM_OVERRIDE');
-		if ($fromOverride !== false && trim($fromOverride) !== '') $from = trim($fromOverride);
+		if ($fromOverride !== false && trim($fromOverride) !== '')
+        {
+        	$from = trim($fromOverride);
+        }
 		$fullname = trim((string) $mail->get_pref_value('fullname', $account));
-		if ($from === '') $from = trim((string) ($user['fullname'] ?? '')) !== ''
+		if ($from === '')
+        {
+        	$from = trim((string) ($user['fullname'] ?? '')) !== ''
 			? (string) ($user['preferences']['email']['address'] ?? '')
 			: 'NoReply@' . (string) (Settings::getInstance()->get('server')['hostname'] ?? 'localhost');
+        }
 		$mailer->setFrom($from, $fullname);
 		$sender = trim((string) ($payload['sender'] ?? ''));
-		if ($sender !== '') $mailer->Sender = $sender;
+		if ($sender !== '')
+        {
+        	$mailer->Sender = $sender;
+        }
 		$mailer->Subject = (string) ($payload['subject'] ?? '');
 		$mailer->isHTML(false);
 		$body = htmlspecialchars_decode((string) ($payload['body'] ?? ''), ENT_QUOTES | ENT_HTML5);
@@ -51,7 +66,10 @@ final class EmailOutgoingMessage
 			: $mail->body_hard_wrap($body, 78);
 		$mailer->Body = $body;
 		$mailer->addCustomHeader('X-Originating-IP: ' . $this->originatingIp());
-		if (!empty($payload['req_notify'])) $mailer->ConfirmReadingTo = $mailer->Sender ?: $from;
+		if (!empty($payload['req_notify']))
+        {
+        	$mailer->ConfirmReadingTo = $mailer->Sender ?: $from;
+        }
 
 		$to = (string) ($payload['to'] ?? '');
 		$cc = (string) ($payload['cc'] ?? '');
@@ -70,14 +88,20 @@ final class EmailOutgoingMessage
 		$this->addAddresses($mailer, $to, 'addAddress');
 		$this->addAddresses($mailer, $cc, 'addCC');
 		$this->addAddresses($mailer, $bcc, 'addBCC');
-		if (!$mailer->getToAddresses() && !$mailer->getCcAddresses() && !$mailer->getBccAddresses()) $mailer->addAddress('undisclosed-recipients:;');
+		if (!$mailer->getToAddresses() && !$mailer->getCcAddresses() && !$mailer->getBccAddresses())
+        {
+        	$mailer->addAddress('undisclosed-recipients:;');
+        }
 
 		$storage = new EmailAttachmentStorage((string) $mail->att_files_dir);
 		$attachmentDescriptors = [];
 		foreach ($storage->list() as $attachment)
 		{
 			$path = $mail->att_files_dir . '/' . $attachment['id'];
-			if (!is_file($path) || is_link($path)) continue;
+			if (!is_file($path) || is_link($path))
+            {
+            	continue;
+            }
 			$mimeType = preg_match('#^[a-z0-9.+-]+/[a-z0-9.+-]+$#i', (string) $attachment['mimeType'])
 				? $attachment['mimeType'] : 'application/octet-stream';
 			$mailer->addAttachment($path, $attachment['name'], PHPMailer::ENCODING_BASE64, $mimeType);
@@ -95,7 +119,10 @@ final class EmailOutgoingMessage
 
 	public function send(PHPMailer $mailer): array
 	{
-		if (!$mailer->preSend()) throw new \RuntimeException($mailer->ErrorInfo ?: 'Unable to prepare message');
+		if (!$mailer->preSend())
+        {
+        	throw new \RuntimeException($mailer->ErrorInfo ?: 'Unable to prepare message');
+        }
 		$mime = $mailer->getSentMIMEMessage();
 		if (MailDiskWriter::isEnabled())
 		{
@@ -118,19 +145,30 @@ final class EmailOutgoingMessage
 
 	private function addAddresses(PHPMailer $mailer, string $value, string $method): void
 	{
-		if (trim($value) === '') return;
+		if (trim($value) === '')
+        {
+        	return;
+        }
 		try
 		{
 			$addresses = PHPMailer::parseAddresses($value, true, 'UTF-8');
-		} catch (\PHPMailer\PHPMailer\Exception $exception)
+		}
+        catch (\PHPMailer\PHPMailer\Exception $exception)
 		{
 			throw new \InvalidArgumentException('Enter valid recipient addresses', 0, $exception);
 		}
-		if (!$addresses) throw new \InvalidArgumentException('Enter valid recipient addresses');
+		if (!$addresses)
+        {
+        	throw new \InvalidArgumentException('Enter valid recipient addresses');
+        }
 		try
 		{
-			foreach ($addresses as $address) $mailer->$method($address['address'], $address['name']);
-		} catch (\PHPMailer\PHPMailer\Exception $exception)
+			foreach ($addresses as $address)
+            {
+            	$mailer->$method($address['address'], $address['name']);
+            }
+		}
+        catch (\PHPMailer\PHPMailer\Exception $exception)
 		{
 			throw new \InvalidArgumentException('Enter valid recipient addresses', 0, $exception);
 		}
@@ -141,15 +179,24 @@ final class EmailOutgoingMessage
 		$account = filter_var($msgball['acctnum'] ?? null, FILTER_VALIDATE_INT);
 		$number = filter_var($msgball['msgnum'] ?? null, FILTER_VALIDATE_INT);
 		$folder = $msgball['folder'] ?? null;
-		if ($account === false || $number === false || $number < 1 || !is_string($folder) || $folder === '') throw new \InvalidArgumentException('Invalid forwarded message reference');
+		if ($account === false || $number === false || $number < 1 || !is_string($folder) || $folder === '')
+        {
+        	throw new \InvalidArgumentException('Invalid forwarded message reference');
+        }
 		$msgball['folder'] = $mail->prep_folder_out($folder);
-		if (!$mail->ensure_stream_and_folder($msgball, 'email.api.send.forward', false)) throw new \RuntimeException('Unable to open forwarded message');
+		if (!$mail->ensure_stream_and_folder($msgball, 'email.api.send.forward', false))
+        {
+        	throw new \RuntimeException('Unable to open forwarded message');
+        }
 		$transport = $mail->getTransport($account);
 		$options = $transport->force_msg_uids ? 1 : 0;
 		$stream = $mail->get_arg_value('mailsvr_stream', $account);
 		$header = \IMAPManager::imap_fetchheader($stream, $number, $options);
 		$body = \IMAPManager::imap_body($stream, $number, $options | 2);
-		if ($header === false || $body === false) throw new \RuntimeException('Unable to fetch forwarded message');
+		if ($header === false || $body === false)
+        {
+        	throw new \RuntimeException('Unable to fetch forwarded message');
+        }
 		$header = $mail->normalize_crlf(trim((string) $header));
 		$header = preg_replace('/^>?From\s.{1,}\r\n/im', '', $header) ?? $header;
 		$header = preg_replace('/^Received:\s(.{1,}\r\n\s){0,6}.{1,}\r\n(?!\s)/im', '', $header) ?? $header;
@@ -160,7 +207,10 @@ final class EmailOutgoingMessage
 
 	private function configureGoogleSmtp(PHPMailer $mailer, object $mail, int $account): void
 	{
-		if ((string) $mail->get_pref_value('imap_auth_type', $account) !== 'google_oauth') return;
+		if ((string) $mail->get_pref_value('imap_auth_type', $account) !== 'google_oauth')
+        {
+        	return;
+        }
 		$emailAddress = trim((string) $mail->get_pref_value('userid', $account));
 		$encryptedRefreshToken = (string) $mail->get_pref_value('passwd', $account);
 		$refreshToken = $mail->decrypt_email_passwd($encryptedRefreshToken);
@@ -202,7 +252,10 @@ final class EmailOutgoingMessage
 		$unquoted = [];
 		$flush = static function () use (&$unquoted, &$output, $mail): void
 		{
-			if ($unquoted) $output[] = $mail->body_hard_wrap(implode("\r\n", $unquoted), 78);
+			if ($unquoted)
+            {
+            	$output[] = $mail->body_hard_wrap(implode("\r\n", $unquoted), 78);
+            }
 			$unquoted = [];
 		};
 		foreach ($lines as $line)
@@ -211,7 +264,8 @@ final class EmailOutgoingMessage
 			{
 				$flush();
 				$output[] = $line;
-			} else
+			}
+            else
 			{
 				$unquoted[] = $line;
 			}

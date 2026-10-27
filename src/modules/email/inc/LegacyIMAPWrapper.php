@@ -14,7 +14,8 @@ class LegacyIMAPWrapper
      */
     public static function imap_open($mailbox, $username, $password, $flags = 0, $retries = 0, $params = [])
     {
-        if (!function_exists('imap_open')) {
+        if (!function_exists('imap_open'))
+        {
             throw new Exception('PHP IMAP extension is not installed');
         }
         
@@ -26,7 +27,8 @@ class LegacyIMAPWrapper
      */
     public static function imap_close($stream, $flags = 0)
     {
-        if (!function_exists('imap_close')) {
+        if (!function_exists('imap_close'))
+        {
             return false;
         }
         
@@ -38,7 +40,8 @@ class LegacyIMAPWrapper
      */
     public static function imap_search($stream, $criteria, $flags = 0)
     {
-        if (!function_exists('imap_search')) {
+        if (!function_exists('imap_search'))
+        {
             return false;
         }
         
@@ -50,7 +53,8 @@ class LegacyIMAPWrapper
      */
     public static function imap_fetchheader($stream, $msgNum, $flags = 0)
     {
-        if (!function_exists('imap_fetchheader')) {
+        if (!function_exists('imap_fetchheader'))
+        {
             return false;
         }
         
@@ -62,7 +66,8 @@ class LegacyIMAPWrapper
      */
     public static function imap_fetchbody($stream, $msgNum, $section, $flags = 0)
     {
-        if (!function_exists('imap_fetchbody')) {
+        if (!function_exists('imap_fetchbody'))
+        {
             return false;
         }
         
@@ -74,7 +79,8 @@ class LegacyIMAPWrapper
      */
     public static function imap_fetchstructure($stream, $msgNum, $flags = 0)
     {
-        if (!function_exists('imap_fetchstructure')) {
+        if (!function_exists('imap_fetchstructure'))
+        {
             return false;
         }
         
@@ -94,7 +100,8 @@ class LegacyIMAPWrapper
      */
     public static function imap_headerinfo($stream, $msgNum, $fromlength = 0, $tolength = 0, $defaulthost = '')
     {
-        if (!function_exists('imap_headerinfo')) {
+        if (!function_exists('imap_headerinfo'))
+        {
             return false;
         }
         
@@ -106,7 +113,8 @@ class LegacyIMAPWrapper
      */
     public static function imap_delete($stream, $msgNums, $flags = 0)
     {
-        if (!function_exists('imap_delete')) {
+        if (!function_exists('imap_delete'))
+        {
             return false;
         }
         
@@ -118,7 +126,8 @@ class LegacyIMAPWrapper
      */
     public static function imap_expunge($stream)
     {
-        if (!function_exists('imap_expunge')) {
+        if (!function_exists('imap_expunge'))
+        {
             return false;
         }
         
@@ -130,7 +139,8 @@ class LegacyIMAPWrapper
      */
     public static function imap_num_msg($stream)
     {
-        if (!function_exists('imap_num_msg')) {
+        if (!function_exists('imap_num_msg'))
+        {
             return false;
         }
         
@@ -142,7 +152,8 @@ class LegacyIMAPWrapper
      */
     public static function imap_list($stream, $ref, $pattern)
     {
-        if (!function_exists('imap_list')) {
+        if (!function_exists('imap_list'))
+        {
             return false;
         }
         
@@ -154,7 +165,8 @@ class LegacyIMAPWrapper
      */
     public static function imap_listmailbox($stream, $ref, $pattern)
     {
-        if (!function_exists('imap_listmailbox')) {
+        if (!function_exists('imap_listmailbox'))
+        {
             return false;
         }
         
@@ -166,7 +178,8 @@ class LegacyIMAPWrapper
      */
     public static function imap_utf7_encode($data)
     {
-        if (!function_exists('imap_utf7_encode')) {
+        if (!function_exists('imap_utf7_encode'))
+        {
             return mb_convert_encoding($data, 'UTF7-IMAP', 'UTF-8');
         }
         
@@ -178,7 +191,8 @@ class LegacyIMAPWrapper
      */
     public static function imap_utf7_decode($data)
     {
-        if (!function_exists('imap_utf7_decode')) {
+        if (!function_exists('imap_utf7_decode'))
+        {
             return mb_convert_encoding($data, 'UTF-8', 'UTF7-IMAP');
         }
         
@@ -190,7 +204,8 @@ class LegacyIMAPWrapper
      */
     public static function imap_mime_header_decode($text)
     {
-        if (!function_exists('imap_mime_header_decode')) {
+        if (!function_exists('imap_mime_header_decode'))
+        {
             // Fallback implementation
             $decoded = iconv_mime_decode($text, ICONV_MIME_DECODE_STRICT, 'UTF-8');
             
@@ -210,7 +225,8 @@ class LegacyIMAPWrapper
      */
     public static function imap_last_error()
     {
-        if (!function_exists('imap_last_error')) {
+        if (!function_exists('imap_last_error'))
+        {
             return 'IMAP extension not available';
         }
         
@@ -222,7 +238,8 @@ class LegacyIMAPWrapper
      */
     public static function imap_ping($stream)
     {
-        if (!function_exists('imap_ping')) {
+        if (!function_exists('imap_ping'))
+        {
             return false;
         }
         
@@ -234,7 +251,8 @@ class LegacyIMAPWrapper
      */
     public static function imap_append($stream, $folder, $message, $flags = '')
     {
-        if (!function_exists('imap_append')) {
+        if (!function_exists('imap_append'))
+        {
             return false;
         }
         
@@ -246,7 +264,8 @@ class LegacyIMAPWrapper
      */
     public static function imap_body($stream, $msgNum, $flags = 0)
     {
-        if (!function_exists('imap_body')) {
+        if (!function_exists('imap_body'))
+        {
             return false;
         }
         
@@ -258,7 +277,8 @@ class LegacyIMAPWrapper
      */
     public static function imap_createmailbox($stream, $mailbox)
     {
-        if (!function_exists('imap_createmailbox')) {
+        if (!function_exists('imap_createmailbox'))
+        {
             return false;
         }
         
@@ -270,7 +290,8 @@ class LegacyIMAPWrapper
      */
     public static function imap_deletemailbox($stream, $mailbox)
     {
-        if (!function_exists('imap_deletemailbox')) {
+        if (!function_exists('imap_deletemailbox'))
+        {
             return false;
         }
         
@@ -282,7 +303,8 @@ class LegacyIMAPWrapper
      */
     public static function imap_renamemailbox($stream, $old_name, $new_name)
     {
-        if (!function_exists('imap_renamemailbox')) {
+        if (!function_exists('imap_renamemailbox'))
+        {
             return false;
         }
         
@@ -294,7 +316,8 @@ class LegacyIMAPWrapper
      */
     public static function imap_status($stream, $mailbox, $options)
     {
-        if (!function_exists('imap_status')) {
+        if (!function_exists('imap_status'))
+        {
             return false;
         }
         
@@ -306,7 +329,8 @@ class LegacyIMAPWrapper
      */
     public static function imap_mailboxmsginfo($stream)
     {
-        if (!function_exists('imap_mailboxmsginfo')) {
+        if (!function_exists('imap_mailboxmsginfo'))
+        {
             return false;
         }
         
@@ -318,7 +342,8 @@ class LegacyIMAPWrapper
      */
     public static function imap_mail_copy($stream, $msgList, $mailbox, $flags = 0)
     {
-        if (!function_exists('imap_mail_copy')) {
+        if (!function_exists('imap_mail_copy'))
+        {
             return false;
         }
         
@@ -330,7 +355,8 @@ class LegacyIMAPWrapper
      */
     public static function imap_mail_move($stream, $msgList, $mailbox, $flags = 0)
     {
-        if (!function_exists('imap_mail_move')) {
+        if (!function_exists('imap_mail_move'))
+        {
             return false;
         }
         
@@ -342,7 +368,8 @@ class LegacyIMAPWrapper
      */
     public static function imap_setflag_full($stream, $msgNum, $flag, $options = 0)
     {
-        if (!function_exists('imap_setflag_full')) {
+        if (!function_exists('imap_setflag_full'))
+        {
             return false;
         }
         
@@ -351,7 +378,8 @@ class LegacyIMAPWrapper
     
     public static function imap_clearflag_full($stream, $msgNum, $flag, $options = 0)
     {
-        if (!function_exists('imap_clearflag_full')) {
+        if (!function_exists('imap_clearflag_full'))
+        {
             return false;
         }
 
@@ -363,7 +391,8 @@ class LegacyIMAPWrapper
      */
     public static function imap_sort($stream, $criteria, $reverse, $options = 0)
     {
-        if (!function_exists('imap_sort')) {
+        if (!function_exists('imap_sort'))
+        {
             return false;
         }
         
@@ -372,37 +401,45 @@ class LegacyIMAPWrapper
 
     public static function imap_fetch_sort_metadata($stream, array $messageNumbers, $flags = 0)
     {
-        if (!function_exists('imap_fetch_overview') || !defined('FT_UID')) {
+        if (!function_exists('imap_fetch_overview') || !defined('FT_UID'))
+        {
             return false;
         }
 
         $messageNumbers = array_values(array_unique(array_filter(array_map('intval', $messageNumbers), static fn($number) => $number > 0)));
-        if (!$messageNumbers) {
+        if (!$messageNumbers)
+        {
             return [];
         }
 
         $fn = 'imap_fetch_overview';
         $overview = @$fn($stream, implode(',', $messageNumbers), FT_UID);
-        if (!is_array($overview)) {
+        if (!is_array($overview))
+        {
             return false;
         }
 
-        $mailbox = static function ($value): string {
-            if (function_exists('imap_rfc822_parse_adrlist')) {
+        $mailbox = static function ($value): string
+        {
+            if (function_exists('imap_rfc822_parse_adrlist'))
+            {
                 $parse = 'imap_rfc822_parse_adrlist';
                 $addresses = @$parse((string) $value, '');
-                if (is_array($addresses) && isset($addresses[0]->mailbox)) {
+                if (is_array($addresses) && isset($addresses[0]->mailbox))
+                {
                     return strtolower((string) $addresses[0]->mailbox);
                 }
             }
-            if (preg_match('/([^\s<>@,]+)@/', (string) $value, $matches)) {
+            if (preg_match('/([^\s<>@,]+)@/', (string) $value, $matches))
+            {
                 return strtolower($matches[1]);
             }
             return '';
         };
 
         $result = [];
-        foreach ($overview as $item) {
+        foreach ($overview as $item)
+        {
             $subject = strtolower(preg_replace('/^(?:(?:re|fw|fwd)\s*:\s*)+/i', '', trim((string) ($item->subject ?? ''))));
             $result[] = [
                 'uid' => (int) ($item->uid ?? 0),
@@ -423,7 +460,8 @@ class LegacyIMAPWrapper
      */
     public static function imap_reopen($stream, $mailbox, $flags = 0)
     {
-        if (!function_exists('imap_reopen')) {
+        if (!function_exists('imap_reopen'))
+        {
             return false;
         }
         
@@ -435,7 +473,8 @@ class LegacyIMAPWrapper
      */
     public static function imap_msgno($stream, $uid)
     {
-        if (!function_exists('imap_msgno')) {
+        if (!function_exists('imap_msgno'))
+        {
             return false;
         }
         
@@ -447,7 +486,8 @@ class LegacyIMAPWrapper
      */
     public static function imap_base64($data)
     {
-        if (!function_exists('imap_base64')) {
+        if (!function_exists('imap_base64'))
+        {
             return base64_decode($data);
         }
         
@@ -459,7 +499,8 @@ class LegacyIMAPWrapper
      */
     public static function imap_qprint($data)
     {
-        if (!function_exists('imap_qprint')) {
+        if (!function_exists('imap_qprint'))
+        {
             return quoted_printable_decode($data);
         }
         
@@ -473,7 +514,8 @@ class LegacyIMAPWrapper
      */
     public static function imap_getmailboxes($stream, $ref, $pattern)
     {
-        if (!function_exists('imap_getmailboxes')) {
+        if (!function_exists('imap_getmailboxes'))
+        {
             return false;
         }
         
@@ -485,7 +527,8 @@ class LegacyIMAPWrapper
      */
     public static function imap_subscribe($stream, $mailbox)
     {
-        if (!function_exists('imap_subscribe')) {
+        if (!function_exists('imap_subscribe'))
+        {
             return false;
         }
         
@@ -497,7 +540,8 @@ class LegacyIMAPWrapper
      */
     public static function imap_unsubscribe($stream, $mailbox)
     {
-        if (!function_exists('imap_unsubscribe')) {
+        if (!function_exists('imap_unsubscribe'))
+        {
             return false;
         }
         
@@ -509,7 +553,8 @@ class LegacyIMAPWrapper
      */
     public static function imap_8bit($data)
     {
-        if (!function_exists('imap_8bit')) {
+        if (!function_exists('imap_8bit'))
+        {
             // Fallback implementation - converts 8bit to quoted-printable
             return quoted_printable_encode($data);
         }
@@ -522,10 +567,12 @@ class LegacyIMAPWrapper
      */
     public static function imap_rfc822_write_address($mailbox, $host, $personal)
     {
-        if (!function_exists('imap_rfc822_write_address')) {
+        if (!function_exists('imap_rfc822_write_address'))
+        {
             // Fallback implementation
             $address = $mailbox . '@' . $host;
-            if ($personal) {
+            if ($personal)
+            {
                 return '"' . $personal . '" <' . $address . '>';
             }
             return $address;
@@ -539,25 +586,35 @@ class LegacyIMAPWrapper
      */
     public static function imap_rfc822_parse_adrlist($address, $default_host)
     {
-        if (!function_exists('imap_rfc822_parse_adrlist')) {
+        if (!function_exists('imap_rfc822_parse_adrlist'))
+        {
             // Fallback implementation - simple parsing
             $results = [];
             $addresses = explode(',', $address);
-            foreach ($addresses as $addr) {
+            foreach ($addresses as $addr)
+            {
                 $addr = trim($addr);
-                if (preg_match('/^(.+?)\s*<(.+?)>$/', $addr, $matches)) {
+                if (preg_match('/^(.+?)\s*<(.+?)>$/', $addr, $matches))
+                {
                     $personal = trim($matches[1], '"');
                     $email = $matches[2];
-                    if (strpos($email, '@') !== false) {
+                    if (strpos($email, '@') !== false)
+                    {
                         list($mailbox, $host) = explode('@', $email, 2);
-                    } else {
+                    }
+                    else
+                    {
                         $mailbox = $email;
                         $host = $default_host;
                     }
-                } elseif (strpos($addr, '@') !== false) {
+                }
+                elseif (strpos($addr, '@') !== false)
+                {
                     list($mailbox, $host) = explode('@', $addr, 2);
                     $personal = '';
-                } else {
+                }
+                else
+                {
                     $mailbox = $addr;
                     $host = $default_host;
                     $personal = '';
@@ -580,7 +637,8 @@ class LegacyIMAPWrapper
      */
     public static function imap_headers($stream)
     {
-        if (!function_exists('imap_headers')) {
+        if (!function_exists('imap_headers'))
+        {
             return false;
         }
         

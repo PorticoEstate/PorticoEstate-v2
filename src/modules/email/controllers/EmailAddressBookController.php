@@ -30,7 +30,10 @@ class EmailAddressBookController
 		{
 			$user = (array) Settings::getInstance()->get('user');
 			$owner = (int) ($user['account_id'] ?? 0);
-			if ($owner < 1) return $this->json($response, ['error' => lang('Address book unavailable')], 403);
+			if ($owner < 1)
+            {
+            	return $this->json($response, ['error' => lang('Address book unavailable')], 403);
+            }
 			$contacts = \CreateObject('phpgwapi.contacts');
 			$access = match ($filter)
 			{
@@ -47,10 +50,19 @@ class EmailAddressBookController
 			{
 				$contact = (array) $contact;
 				$email = trim((string) (($contact['email'] ?? '') ?: ($contact['email_home'] ?? '')));
-				if ($email === '' || filter_var($email, FILTER_VALIDATE_EMAIL) === false) continue;
+				if ($email === '' || filter_var($email, FILTER_VALIDATE_EMAIL) === false)
+                {
+                	continue;
+                }
 				$name = trim((string) ($contact['per_full_name'] ?? ''));
-				if ($name === '') $name = trim((string) ($contact['per_first_name'] ?? '') . ' ' . (string) ($contact['per_last_name'] ?? ''));
-				if ($name === '') $name = $email;
+				if ($name === '')
+                {
+                	$name = trim((string) ($contact['per_first_name'] ?? '') . ' ' . (string) ($contact['per_last_name'] ?? ''));
+                }
+				if ($name === '')
+                {
+                	$name = $email;
+                }
 				$items[] = ['name' => $name, 'email' => $email];
 			}
 			return $this->json($response, ['items' => $items]);

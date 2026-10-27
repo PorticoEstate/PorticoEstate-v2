@@ -19,15 +19,24 @@ final class EmailAccountsSerializer
 		$result = [];
 		foreach ($accounts as $key => $account)
 		{
-			if (!is_array($account)) continue;
+			if (!is_array($account))
+            {
+            	continue;
+            }
 			$status = array_key_exists('status', $account)
 				? (string) $account['status']
 				: self::storedAccountStatus($account);
-			if ($status === 'empty') continue;
+			if ($status === 'empty')
+            {
+            	continue;
+            }
 			$id = (int) ($account['acctnum'] ?? $key);
 			$name = self::accountName($account);
 			$name = html_entity_decode($name, ENT_QUOTES | ENT_HTML5, 'UTF-8');
-			if ($status === 'disabled') $name = '(disabled) ' . $name;
+			if ($status === 'disabled')
+            {
+            	$name = '(disabled) ' . $name;
+            }
 			$result[] = [
 				'id' => $id,
 				'name' => '[' . $id . '] ' . $name,
@@ -41,7 +50,10 @@ final class EmailAccountsSerializer
 	{
 		foreach (['fullname', 'email_sig', 'layout'] as $required)
 		{
-			if (!isset($account[$required])) return 'empty';
+			if (!isset($account[$required]))
+            {
+            	return 'empty';
+            }
 		}
 		$enabled = $account['ex_account_enabled'] ?? null;
 		return $enabled !== null && (string) $enabled !== '' ? 'enabled' : 'disabled';

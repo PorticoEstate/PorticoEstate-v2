@@ -60,9 +60,15 @@ class EmailComposeController
 	public function spellcheck(Request $request, Response $response): Response
 	{
 		$input = $request->getParsedBody();
-		if (!is_array($input)) $input = json_decode((string) $request->getBody(), true);
+		if (!is_array($input))
+        {
+        	$input = json_decode((string) $request->getBody(), true);
+        }
 		$body = is_array($input) ? ($input['body'] ?? null) : null;
-		if (!is_string($body) || strlen($body) > 200000) return $this->json($response, ['error' => lang('Invalid spellcheck text')], 400);
+		if (!is_string($body) || strlen($body) > 200000)
+        {
+        	return $this->json($response, ['error' => lang('Invalid spellcheck text')], 400);
+        }
 		try
 		{
 			return $this->json($response, (new \App\modules\email\services\EmailSpellcheckService())->check($body, $this->spellcheckLanguage()));
@@ -83,9 +89,15 @@ class EmailComposeController
 	public function draft(Request $request, Response $response): Response
 	{
 		$input = $request->getParsedBody();
-		if (!is_array($input)) $input = json_decode((string) $request->getBody(), true);
+		if (!is_array($input))
+        {
+        	$input = json_decode((string) $request->getBody(), true);
+        }
 		$payload = EmailComposeSerializer::normalize(is_array($input) ? $input : [], false);
-		if ($payload === null) return $this->json($response, ['error' => lang('Invalid draft data')], 422);
+		if ($payload === null)
+        {
+        	return $this->json($response, ['error' => lang('Invalid draft data')], 422);
+        }
 		$account = (int) ($payload['msgball']['acctnum'] ?? $payload['fldball']['acctnum'] ?? 0);
 		$originalPost = $_POST;
 		$_POST = ['fldball' => ['acctnum' => $account, 'folder' => 'INBOX']];
@@ -106,7 +118,10 @@ class EmailComposeController
 			{
 				$id = (string) $attachment['id'];
 				$path = $mail->att_files_dir . '/' . $id;
-				if (!is_file($path) || is_link($path)) throw new \RuntimeException('Attachment no longer exists');
+				if (!is_file($path) || is_link($path))
+                {
+                	throw new \RuntimeException('Attachment no longer exists');
+                }
 				$attachments[] = ['path' => $path, 'name' => $attachment['name']];
 			}
 			$raw = \App\modules\email\services\EmailDraftMessage::build($payload,
@@ -117,7 +132,10 @@ class EmailComposeController
 			if ($folder === '')
 			{
 				$folder = $mail->get_folder_long('Drafts');
-				if (!$mail->phpgw_createmailbox_ex(['acctnum' => $account, 'folder' => $mail->prep_folder_out($folder)], false)) throw new \RuntimeException('Unable to create Drafts folder');
+				if (!$mail->phpgw_createmailbox_ex(['acctnum' => $account, 'folder' => $mail->prep_folder_out($folder)], false))
+                {
+                	throw new \RuntimeException('Unable to create Drafts folder');
+                }
 			}
 			$stream = $mail->get_arg_value('mailsvr_stream', $account);
 			$path = $mail->get_arg_value('mailsvr_callstr', $account) . $mail->getTransport($account)->utf7_encode($folder);
@@ -132,14 +150,23 @@ class EmailComposeController
 				}
 				$oldDraft['folder'] = $mail->prep_folder_out($oldDraft['folder']);
 				$oldHeaders = $mail->phpgw_header($oldDraft, false);
-				if (!$oldHeaders || trim((string) ($oldHeaders->Draft ?? '')) === '') throw new \InvalidArgumentException('The selected message is not a draft');
+				if (!$oldHeaders || trim((string) ($oldHeaders->Draft ?? '')) === '')
+                {
+                	throw new \InvalidArgumentException('The selected message is not a draft');
+                }
 			}
-			if (!\IMAPManager::imap_append($stream, $path, $raw, '\\Draft \\Seen')) throw new \RuntimeException('Unable to save draft');
+			if (!\IMAPManager::imap_append($stream, $path, $raw, '\\Draft \\Seen'))
+            {
+            	throw new \RuntimeException('Unable to save draft');
+            }
 			$transport = $mail->getTransport($account);
 			$searchOptions = $transport->force_msg_uids ? 1 : 0;
 			$mail->ensure_stream_and_folder(['acctnum' => $account, 'folder' => $mail->prep_folder_out($folder)], 'email.api.draft', false);
 			$numbers = \IMAPManager::imap_search($mail->get_arg_value('mailsvr_stream', $account), 'ALL', $searchOptions);
-			if ($numbers === false || !$numbers) throw new \RuntimeException('Draft saved, but its message reference could not be read');
+			if ($numbers === false || !$numbers)
+            {
+            	throw new \RuntimeException('Draft saved, but its message reference could not be read');
+            }
 			$newMessageNumber = max(array_map('intval', $numbers));
 			$cleanupWarning = false;
 			if ($oldDraft)
@@ -152,15 +179,22 @@ class EmailComposeController
 				{
 					$mail->ensure_stream_and_folder(['acctnum' => $account, 'folder' => $mail->prep_folder_out($folder)], 'email.api.draft', false);
 					$numbers = \IMAPManager::imap_search($mail->get_arg_value('mailsvr_stream', $account), 'ALL', $searchOptions);
-					if ($numbers) $newMessageNumber = max(array_map('intval', $numbers));
-				} else
+					if ($numbers)
+                    {
+                    	$newMessageNumber = max(array_map('intval', $numbers));
+                    }
+				}
+                else
 				{
 					$cleanupWarning = true;
 				}
 				$mail->expire_session_cache_item('msgball_list', $account, $oldFolder);
 				$mail->expire_session_cache_item('folder_status_info', $account, $oldFolder);
 			}
-			foreach (['msgball_list', 'folder_status_info'] as $key) $mail->expire_session_cache_item($key, $account, $mail->prep_folder_out($folder));
+			foreach (['msgball_list', 'folder_status_info'] as $key)
+            {
+            	$mail->expire_session_cache_item($key, $account, $mail->prep_folder_out($folder));
+            }
 			$mail->expire_session_cache_item('folder_list', $account);
 			return $this->json($response, ['saved' => true, 'folder' => $folder, 'msgnum' => $newMessageNumber, 'cleanupWarning' => $cleanupWarning]);
 		}
@@ -228,7 +262,8 @@ class EmailComposeController
 				{
 					error_log('[email] EmailComposeController::send sent-copy append failed');
 				}
-			} catch (\Throwable $exception)
+			}
+            catch (\Throwable $exception)
 			{
 				error_log('[email] EmailComposeController::send sent-copy append failed (' . get_class($exception) . ')');
 			}
@@ -239,7 +274,8 @@ class EmailComposeController
 					$source = $payload['msgball'];
 					$source['folder'] = $mail->prep_folder_out((string) $source['folder']);
 					$mail->phpgw_set_flag($source, '\\Answered', false);
-				} catch (\Throwable $exception)
+				}
+                catch (\Throwable $exception)
 				{
 					error_log('[email] EmailComposeController::send reply flag update failed (' . get_class($exception) . ')');
 				}
@@ -268,7 +304,8 @@ class EmailComposeController
 				{
 					$storage = new \App\modules\email\services\EmailAttachmentStorage((string) $mail->att_files_dir);
 					$storage->delete(array_column($storage->list(), 'id'));
-				} catch (\Throwable $exception)
+				}
+                catch (\Throwable $exception)
 				{
 					error_log('[email] EmailComposeController::send attachment cleanup failed (' . get_class($exception) . ')');
 				}

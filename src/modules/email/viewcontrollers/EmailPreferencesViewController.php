@@ -104,7 +104,10 @@ class EmailPreferencesViewController
 	private function googleOauthConfigured(array $accountPreferences): bool
 	{
 		$profile = \CreateObject('emailadmin.emailadmin_bo', true)->getResolvedProfileData('email');
-		if (!is_array($profile)) return false;
+		if (!is_array($profile))
+        {
+        	return false;
+        }
 		if (trim((string) ($profile['google_redirect_uri'] ?? '')) === '')
 		{
 			$profile['google_redirect_uri'] = strtok(\phpgw::link('/email/oauth/google/callback', [], false, true, true, true), '?');

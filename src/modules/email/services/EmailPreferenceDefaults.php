@@ -82,7 +82,8 @@ final class EmailPreferenceDefaults
 					}
 					else
 					{
-						$values[$id] = match ($server['mail_login_type'] ?? '') {
+						$values[$id] = match ($server['mail_login_type'] ?? '')
+                        {
 							'vmailmgr' => $login . '@' . $suffix,
 							'ispman' => $login . '_' . str_replace('.', '_', $suffix),
 							default => $login,

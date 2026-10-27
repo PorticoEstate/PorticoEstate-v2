@@ -1681,7 +1681,7 @@ class mail_msg extends mail_msg_wrappers
 			'msgball[folder]' => $msgball['folder'] ?? $this->get_arg_value('folder'),
 			'msgball[msgnum]' => $msgball['msgnum'] ?? 0,
 			'msgball[part_no]' => $m_part_num_mime,
-	], true);
+		], true);
 		// Make CLICKABLE link directly to this attachment or part
 		$href_part_name = $this->decode_header_string($part_name);
 		// escape certain undesirable chars before HTML display
@@ -1858,26 +1858,28 @@ class mail_msg extends mail_msg_wrappers
 		// obtain required data that is not passed into this function
 		// if no $folder_info was passed as an arg, then $folder_info will be an array with 0 elements
 		if (count($folder_info) == 0)
+        {
 			if (!$folder_info)
 			{
 				// use API-like high level function for this:
 				$folder_info = array();
 				$folder_info = $this->get_folder_status_info();
 				/*!
-			@capability get_folder_status_info info used in the get_msg_list_display function.
-			@discussion Duhhh, why is this document info here, it belongs with the
-			"get_folder_status_info" itself. Anyway, here goes.
-			Recall that the "get_folder_status_info" function returns this array.
-			UPDATE ME this has changed some.
-			@example UPDATE ME this should be moved to the "get_folder_status_info" doc string itself.
-			folder_info["is_imap"] boolean - pop3 server do not know what is "new" or not, IMAP servers do
-			folder_info["folder_checked"] string - the folder checked, as processed by the msg class, which may have done a lookup on the folder name
-			folder_info["alert_string"] string - langd string to show the user about status of new messages in this folder
-			folder_info["number_new"] integer - for IMAP the number "recent" and/or "unseen"messages, for POP3 the total number of messages
-			folder_info["number_all"] integer - for IMAP and POP3 the total number messages in the folder
-			and some validity data used for caching.
-			*/
+				@capability get_folder_status_info info used in the get_msg_list_display function.
+				@discussion Duhhh, why is this document info here, it belongs with the
+				"get_folder_status_info" itself. Anyway, here goes.
+				Recall that the "get_folder_status_info" function returns this array.
+				UPDATE ME this has changed some.
+				@example UPDATE ME this should be moved to the "get_folder_status_info" doc string itself.
+				folder_info["is_imap"] boolean - pop3 server do not know what is "new" or not, IMAP servers do
+				folder_info["folder_checked"] string - the folder checked, as processed by the msg class, which may have done a lookup on the folder name
+				folder_info["alert_string"] string - langd string to show the user about status of new messages in this folder
+				folder_info["number_new"] integer - for IMAP the number "recent" and/or "unseen"messages, for POP3 the total number of messages
+				folder_info["number_all"] integer - for IMAP and POP3 the total number messages in the folder
+				and some validity data used for caching.
+				*/
 			}
+        }
 
 		// initialize return structure
 		$msg_list_display = array();
@@ -1959,9 +1961,9 @@ class mail_msg extends mail_msg_wrappers
 					{
 						if (isset($msgball_list[$metadata_index]))
 						{
-						$page_msgball = $this->ball_data_parse_str($msgball_list[$metadata_index]);
-						$message_numbers[] = (int) ($page_msgball['msgnum'] ?? 0);
-					}
+							$page_msgball = $this->ball_data_parse_str($msgball_list[$metadata_index]);
+							$message_numbers[] = (int) ($page_msgball['msgnum'] ?? 0);
+						}
 					}
 					$this->getTransport($acctnum)->prefetch_message_metadata($mailsvr_stream, $message_numbers);
 				}
@@ -2028,11 +2030,11 @@ class mail_msg extends mail_msg_wrappers
 			/*
 			// begin GMT handling by "acros"
 			// pongo bien la hora de los correos (GMT)
-#			echo"hora inicial $hdr_envelope->date<br />";
-#						echo"hora inicial $hdr_envelope->udate<br />";
-///modificacion
-$msg_date2=$hdr_envelope->date;
-$comma = strpos($msg_date2,',');
+			#           echo"hora inicial $hdr_envelope->date<br />";
+			#                       echo"hora inicial $hdr_envelope->udate<br />";
+			///modificacion
+			$msg_date2=$hdr_envelope->date;
+			$comma = strpos($msg_date2,',');
 			if($comma)
 			{
 				$msg_date2 = substr($msg_date2,$comma + 2);
@@ -2048,13 +2050,13 @@ $comma = strpos($msg_date2,',');
 				$tzoffset = substr($dta[4],0,1);
 				(int)$tzhours = substr($dta[4],1,2);
 				(int)$tzmins = substr($dta[4],3,2);
-#echo"$ta[0] y $tzoffset";
+			#echo"$ta[0] y $tzoffset";
 				switch ($tzoffset)
 				{
 					case '+':
 						(int)$ta[0] -= (int)$tzhours;
 						(int)$ta[1] -= (int)$tzmins;
-#echo"$ta[0]";
+			#echo"$ta[0]";
 						break;
 					case '-':
 						(int)$ta[0] += (int)$tzhours;
@@ -2064,14 +2066,14 @@ $comma = strpos($msg_date2,',');
 			}
 
 			$new_time = mktime($ta[0],$ta[1],$ta[2],$GLOBALS['month_array'][strtolower($dta[1])],$dta[0],$dta[2]) - ((60 * 60) * intval($this->userSettings['preferences']['common']['tzoffset']));
-$new_time2=gmdate("D, d M Y H:m:s",$new_time)." GMT";
-$hdr_envelope->date = $new_time2;
-$hdr_envelope->udate = $new_time;
-#echo"hora final $hdr_envelope->udate<br />";
-#echo"hora final $hdr_envelope->date<br />";
+			$new_time2=gmdate("D, d M Y H:m:s",$new_time)." GMT";
+			$hdr_envelope->date = $new_time2;
+			$hdr_envelope->udate = $new_time;
+			#echo"hora final $hdr_envelope->udate<br />";
+			#echo"hora final $hdr_envelope->date<br />";
 			#$message_date = $GLOBALS['phpgw']->common->show_date($msg_headers->udate);
-//fin modificacion
-// end GMT handling by "acros"
+			//fin modificacion
+			// end GMT handling by "acros"
 			*/
 			// MESSAGE REFERENCE (a) NUMBER (b) FOLDER (c) ACCTNUM and (d) FAKE_URL EMBEDDED MULTI DATA
 			$msg_list_display[$x]['msgnum'] = $this_loop_msgball['msgnum'];

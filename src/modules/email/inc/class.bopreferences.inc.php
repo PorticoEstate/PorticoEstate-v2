@@ -318,7 +318,10 @@ class email_bopreferences
 		{
 			$this->msg->end_request();
 		}
-		if ($api_mode) return $actually_did_something;
+		if ($api_mode)
+        {
+        	return $actually_did_something;
+        }
 
 		// redirect user back to main preferences page
 		$take_me_to_url = phpgw::link('/email/view/accounts');

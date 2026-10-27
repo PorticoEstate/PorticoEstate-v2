@@ -9,10 +9,10 @@
 	* @version $Id$
 	*/
 
-	foreach ((array) \App\modules\phpgwapi\services\Cache::session_get('email', 'mail_keys') as $key => $unused)
-	{
-		\App\modules\phpgwapi\services\Cache::session_set('email', (string) $key, null);
-	}
+foreach ((array) \App\modules\phpgwapi\services\Cache::session_get('email', 'mail_keys') as $key => $unused)
+{
+	\App\modules\phpgwapi\services\Cache::session_set('email', (string) $key, null);
+}
 	\App\modules\phpgwapi\services\Cache::session_set('email', 'mail_keys', []);
 	\App\modules\phpgwapi\services\Cache::session_set('email', 'mail_state', []);
 	\App\modules\phpgwapi\services\Cache::session_set('email', '0;cached_prefs', null);

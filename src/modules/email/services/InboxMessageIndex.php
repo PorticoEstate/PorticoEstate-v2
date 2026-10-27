@@ -186,7 +186,10 @@ final class InboxMessageIndex
 			foreach ($insertBatch as $item)
 			{
 				$uid = (int) ($item['uid'] ?? 0);
-				if ($uid < 1) continue;
+				if ($uid < 1)
+                {
+                	continue;
+                }
 				$rowValues = [
 					'account_id' => $accountId,
 					'mail_account' => $account,
@@ -211,7 +214,10 @@ final class InboxMessageIndex
 				$values[] = '(' . implode(', ', $placeholders) . ')';
 				$row++;
 			}
-			if (!$values) continue;
+			if (!$values)
+            {
+            	continue;
+            }
 			$sql = 'INSERT INTO ' . self::TABLE . ' (' . implode(', ', $columns) . ') VALUES ' . implode(', ', $values);
 			$this->db->prepare($sql)->execute($params);
 		}

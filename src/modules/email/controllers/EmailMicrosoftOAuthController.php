@@ -14,7 +14,10 @@ class EmailMicrosoftOAuthController
 	public function authorize(Request $request, Response $response): Response
 	{
 		$account = filter_var($request->getQueryParams()['acctnum'] ?? 0, FILTER_VALIDATE_INT);
-		if ($account === false || $account < 0) return $this->error($response, 'Invalid email account', 400);
+		if ($account === false || $account < 0)
+        {
+        	return $this->error($response, 'Invalid email account', 400);
+        }
 		$profile = $this->resolvedProfile($request);
 
 		try
@@ -28,9 +31,15 @@ class EmailMicrosoftOAuthController
 			$accountPreferences = $account === 0
 				? $defaultPreferences
 				: (array) $defaultPreferences['ex_accounts'][$account];
-			if (!MicrosoftImapOAuth::isConfigured($profile, $accountPreferences)) return $this->error($response, 'Set Microsoft OAuth client credentials on this account or its assigned emailadmin profile', 503);
+			if (!MicrosoftImapOAuth::isConfigured($profile, $accountPreferences))
+            {
+            	return $this->error($response, 'Set Microsoft OAuth client credentials on this account or its assigned emailadmin profile', 503);
+            }
 			$emailAddress = trim((string) ($accountPreferences['userid'] ?? ''));
-			if ($emailAddress === '') return $this->error($response, 'Set the Outlook email address before connecting', 422);
+			if ($emailAddress === '')
+            {
+            	return $this->error($response, 'Set the Outlook email address before connecting', 422);
+            }
 			if (($accountPreferences['mail_server_type'] ?? '') !== 'imap'
 				&& ($accountPreferences['mail_server_type'] ?? '') !== 'imaps')
 			{

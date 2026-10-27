@@ -33,9 +33,15 @@ final class EmailMessageSerializer
 				continue;
 			}
 
-			if (($part['d_instructions'] ?? '') !== 'show') continue;
+			if (($part['d_instructions'] ?? '') !== 'show')
+            {
+            	continue;
+            }
 			$body = (string) ($part['message_body'] ?? '');
-			if ($body === '') continue;
+			if ($body === '')
+            {
+            	continue;
+            }
 
 			$bodyParts[] = [
 				'html' => \Sanitizer::clean_html($body),

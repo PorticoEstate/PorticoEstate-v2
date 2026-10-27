@@ -19,7 +19,10 @@ class EmailSearchController
 	public function search(Request $request, Response $response): Response
 	{
 		$input = $request->getParsedBody();
-		if (!is_array($input)) $input = json_decode((string) $request->getBody(), true);
+		if (!is_array($input))
+        {
+        	$input = json_decode((string) $request->getBody(), true);
+        }
 		$criteria = EmailSearchCriteria::normalize(is_array($input) ? $input : []);
 		if ($criteria === null)
 		{
@@ -41,8 +44,14 @@ class EmailSearchController
 			{
 				$longName = (string) ($folder['folder_long'] ?? '');
 				$shortName = (string) ($folder['folder_short'] ?? '');
-				if ($longName !== '') $foldersByName[$longName] = ['long' => $longName, 'short' => $shortName];
-				if ($shortName !== '') $foldersByName[$shortName] = ['long' => $longName, 'short' => $shortName];
+				if ($longName !== '')
+                {
+                	$foldersByName[$longName] = ['long' => $longName, 'short' => $shortName];
+                }
+				if ($shortName !== '')
+                {
+                	$foldersByName[$shortName] = ['long' => $longName, 'short' => $shortName];
+                }
 			}
 
 			$selectedFolders = [];

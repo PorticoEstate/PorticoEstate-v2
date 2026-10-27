@@ -23,7 +23,8 @@ class ModernIMAPWrapper
      */
     private static function initClientManager()
     {
-        if (self::$clientManager === null) {
+        if (self::$clientManager === null)
+        {
             self::$clientManager = new ClientManager();
         }
     }
@@ -34,17 +35,21 @@ class ModernIMAPWrapper
     public static function imap_open($mailbox, $username, $password, $flags = 0, $retries = 0, $params = [])
     {
         $client = null;
-        try {
+        try
+        {
             self::initClientManager();
             
             // Parse mailbox string: {server:port/protocol/options}folder
-            if (preg_match('/^\{([^:]+):?(\d+)?\/([^\/]+)?\/?([^}]*)\}(.*)$/', $mailbox, $matches)) {
+            if (preg_match('/^\{([^:]+):?(\d+)?\/([^\/]+)?\/?([^}]*)\}(.*)$/', $mailbox, $matches))
+            {
                 $server = $matches[1];
                 $port = $matches[2] ?: (strpos($matches[3], 'ssl') !== false ? 993 : 143);
                 $protocol = $matches[3] ?: 'imap';
                 $options = $matches[4];
                 $folder = $matches[5] ?: 'INBOX';
-            } else {
+            }
+            else
+            {
                 throw new Exception("Invalid mailbox format: $mailbox");
             }
             
@@ -52,10 +57,12 @@ class ModernIMAPWrapper
             $encryption = 'tls';
             $validateCert = true;
             
-            if (strpos($options, 'ssl') !== false) {
+            if (strpos($options, 'ssl') !== false)
+            {
                 $encryption = 'ssl';
             }
-            if (strpos($options, 'novalidate-cert') !== false) {
+            if (strpos($options, 'novalidate-cert') !== false)
+            {
                 $validateCert = false;
             }
             
@@ -75,7 +82,8 @@ class ModernIMAPWrapper
             $client->connect();
 
             $folderObj = $client->getFolderByPath($folder, true);
-            if (!$folderObj) {
+            if (!$folderObj)
+            {
                 throw new RuntimeException('Mailbox does not exist');
             }
             $client->openFolder($folderObj->path, true);
@@ -90,12 +98,18 @@ class ModernIMAPWrapper
             
             return $connectionId;
             
-        } catch (Exception $e) {
+        }
+        catch (Exception $e)
+        {
             self::$lastError = $e->getMessage();
-            if ($client !== null) {
-                try {
+            if ($client !== null)
+            {
+                try
+                {
                     $client->disconnect();
-                } catch (Exception $cleanupException) {
+                }
+                catch (Exception $cleanupException)
+                {
                     self::$lastError .= ' Connection cleanup failed (' . get_class($cleanupException) . ').';
                 }
             }
@@ -108,26 +122,32 @@ class ModernIMAPWrapper
      */
     public static function imap_close($stream, $flags = 0)
     {
-        if (!isset(self::$connections[$stream])) {
+        if (!isset(self::$connections[$stream]))
+        {
             return false;
         }
         
-        try {
+        try
+        {
             $connection = self::$connections[$stream];
             // CL_EXPUNGE is unavailable when the native IMAP extension is absent.
-            if ($flags & 32768) {
+            if ($flags & 32768)
+            {
                 $client = $connection['client'];
                 $client->openFolder($connection['folder']->path);
                 $client->getConnection()->requestAndResponse('CLOSE', [], true)->validatedData();
                 $client->setActiveFolder(null);
                 self::clearMessageMetadata($stream);
             }
-            if (isset($connection['client'])) {
+            if (isset($connection['client']))
+            {
                 $connection['client']->disconnect();
             }
             unset(self::$connections[$stream]);
             return true;
-        } catch (Exception $e) {
+        }
+        catch (Exception $e)
+        {
             self::$lastError = $e->getMessage();
             return false;
         }
@@ -135,15 +155,18 @@ class ModernIMAPWrapper
     
     public static function imap_reopen($stream, $mailbox, $flags = 0)
     {
-        if (!isset(self::$connections[$stream]['client'])) {
+        if (!isset(self::$connections[$stream]['client']))
+        {
             return false;
         }
 
         $client = self::$connections[$stream]['client'];
-        try {
+        try
+        {
             $path = preg_replace('/^\{[^}]*\}/', '', $mailbox);
             $folder = $client->getFolderByPath($path !== '' ? $path : 'INBOX', true);
-            if (!$folder) {
+            if (!$folder)
+            {
                 throw new RuntimeException('Mailbox does not exist');
             }
             $client->openFolder($folder->path, true);
@@ -151,7 +174,9 @@ class ModernIMAPWrapper
             self::$connections[$stream]['currentFolder'] = $folder->path;
             self::clearMessageMetadata($stream);
             return true;
-        } catch (Exception $exception) {
+        }
+        catch (Exception $exception)
+        {
             $client->setActiveFolder(null);
             self::$lastError = $exception->getMessage();
             return false;
@@ -163,11 +188,13 @@ class ModernIMAPWrapper
      */
     public static function imap_search($stream, $criteria, $flags = 0)
     {
-        if (!isset(self::$connections[$stream]['folder'])) {
+        if (!isset(self::$connections[$stream]['folder']))
+        {
             return false;
         }
         
-        try {
+        try
+        {
             $folder = self::$connections[$stream]['folder'];
             
             // Convert IMAP search criteria to Webklex format
@@ -176,39 +203,53 @@ class ModernIMAPWrapper
             $tokens = [];
             $offset = 0;
             $criteria = trim($criteria);
-            while ($offset < strlen($criteria)) {
-                if (!preg_match('/\G\s*(?:"((?:[^"\\\\\r\n]|\\\\["\\\\])*)"|([A-Za-z0-9_.@:+\/-]+))(?=\s|$)/', $criteria, $match, 0, $offset)) {
+            while ($offset < strlen($criteria))
+            {
+                if (!preg_match('/\G\s*(?:"((?:[^"\\\\\r\n]|\\\\["\\\\])*)"|([A-Za-z0-9_.@:+\/-]+))(?=\s|$)/', $criteria, $match, 0, $offset))
+                {
                     throw new InvalidArgumentException('Invalid IMAP search criteria');
                 }
                 $tokens[] = isset($match[2]) ? $match[2] : str_replace(['\\"', '\\\\'], ['"', '\\'], $match[1]);
                 $offset += strlen($match[0]);
             }
-            if (!$tokens) {
+            if (!$tokens)
+            {
                 throw new InvalidArgumentException('Empty IMAP search criteria');
             }
             $flagMethods = ['ALL' => 'all', 'UNSEEN' => 'unseen', 'SEEN' => 'seen', 'DELETED' => 'deleted'];
             $otherFlags = ['ANSWERED', 'FLAGGED', 'NEW', 'OLD', 'RECENT', 'UNANSWERED', 'UNDELETED', 'UNFLAGGED'];
-            for ($i = 0; $i < count($tokens); $i++) {
+            for ($i = 0; $i < count($tokens); $i++)
+            {
                 $operator = strtoupper($tokens[$i]);
-                if (isset($flagMethods[$operator])) {
+                if (isset($flagMethods[$operator]))
+                {
                     $query->{$flagMethods[$operator]}();
-                } elseif (in_array($operator, $otherFlags, true)) {
+                }
+                elseif (in_array($operator, $otherFlags, true))
+                {
                     $query->where($operator);
-                } elseif (in_array($operator, ['SUBJECT', 'BODY', 'FROM', 'TO', 'CC', 'BCC', 'KEYWORD', 'ON', 'BEFORE', 'SINCE'], true)) {
-                    if (!isset($tokens[++$i])) {
+                }
+                elseif (in_array($operator, ['SUBJECT', 'BODY', 'FROM', 'TO', 'CC', 'BCC', 'KEYWORD', 'ON', 'BEFORE', 'SINCE'], true))
+                {
+                    if (!isset($tokens[++$i]))
+                    {
                         throw new InvalidArgumentException('Missing IMAP search operand');
                     }
                     $value = $tokens[$i];
-                    if (in_array($operator, ['ON', 'BEFORE', 'SINCE'], true)) {
+                    if (in_array($operator, ['ON', 'BEFORE', 'SINCE'], true))
+                    {
                         $date = DateTimeImmutable::createFromFormat('!m/d/Y', $value)
                             ?: DateTimeImmutable::createFromFormat('!d-M-Y', $value);
-                        if (!$date || !in_array($value, [$date->format('m/d/Y'), $date->format('d-M-Y')], true)) {
+                        if (!$date || !in_array($value, [$date->format('m/d/Y'), $date->format('d-M-Y')], true))
+                        {
                             throw new InvalidArgumentException('Invalid IMAP search date');
                         }
                         $value = $date->format('d-M-Y');
                     }
                     $query->where($operator, $value);
-                } else {
+                }
+                else
+                {
                     throw new InvalidArgumentException('Unsupported IMAP search criterion: ' . $operator);
                 }
             }
@@ -216,13 +257,16 @@ class ModernIMAPWrapper
             $messages = $query->get();
             $uids = [];
             
-            foreach ($messages as $message) {
+            foreach ($messages as $message)
+            {
                 $uids[] = (int) (($flags & 1) ? $message->getUid() : $message->getMsgn());
             }
             
             return $uids;
             
-        } catch (Exception $e) {
+        }
+        catch (Exception $e)
+        {
             self::$lastError = $e->getMessage();
             return false;
         }
@@ -230,15 +274,19 @@ class ModernIMAPWrapper
     
     public static function imap_createmailbox($stream, $mailbox)
     {
-        if (!isset(self::$connections[$stream]['client'])) {
+        if (!isset(self::$connections[$stream]['client']))
+        {
             return false;
         }
 
-        try {
+        try
+        {
             $path = preg_replace('/^\{[^}]*\}/', '', $mailbox);
             self::$connections[$stream]['client']->createFolder($path, false, true);
             return true;
-        } catch (Exception $exception) {
+        }
+        catch (Exception $exception)
+        {
             self::$lastError = $exception->getMessage();
             return false;
         }
@@ -246,13 +294,19 @@ class ModernIMAPWrapper
 
     public static function imap_append($stream, $folder, $message, $flags = '')
     {
-        if (!isset(self::$connections[$stream]['client'])) return false;
-        try {
+        if (!isset(self::$connections[$stream]['client']))
+        {
+        	return false;
+        }
+        try
+        {
             $path = preg_replace('/^\{[^}]*\}/', '', $folder);
             $messageFlags = preg_split('/\s+/', trim((string) $flags), -1, PREG_SPLIT_NO_EMPTY);
             self::$connections[$stream]['client']->getConnection()->appendMessage($path, $message, $messageFlags)->validatedData();
             return true;
-        } catch (Exception $exception) {
+        }
+        catch (Exception $exception)
+        {
             self::$lastError = $exception->getMessage();
             return false;
         }
@@ -260,8 +314,12 @@ class ModernIMAPWrapper
 
     public static function imap_mail_copy($stream, $msgList, $mailbox, $flags = 0)
     {
-        if (!isset(self::$connections[$stream]['folder'])) return false;
-        try {
+        if (!isset(self::$connections[$stream]['folder']))
+        {
+        	return false;
+        }
+        try
+        {
             $connection = self::$connections[$stream];
             $client = $connection['client'];
             $client->openFolder($connection['folder']->path);
@@ -269,7 +327,9 @@ class ModernIMAPWrapper
             $mode = ($flags & 1) ? \Webklex\PHPIMAP\IMAP::ST_UID : \Webklex\PHPIMAP\IMAP::ST_MSGN;
             $client->getConnection()->copyMessage($path, $msgList, null, $mode)->validatedData();
             return true;
-        } catch (Exception $exception) {
+        }
+        catch (Exception $exception)
+        {
             self::$lastError = $exception->getMessage();
             return false;
         }
@@ -277,8 +337,12 @@ class ModernIMAPWrapper
 
     public static function imap_renamemailbox($stream, $oldName, $newName)
     {
-        if (!isset(self::$connections[$stream]['client'])) return false;
-        try {
+        if (!isset(self::$connections[$stream]['client']))
+        {
+        	return false;
+        }
+        try
+        {
             $client = self::$connections[$stream]['client'];
             $oldPath = preg_replace('/^\{[^}]*\}/', '', $oldName);
             $newPath = preg_replace('/^\{[^}]*\}/', '', $newName);
@@ -287,13 +351,16 @@ class ModernIMAPWrapper
             $client->setActiveFolder(null);
             $current = self::$connections[$stream]['folder'];
             if ($current && ($current->path === $oldPath
-                || ($current->delimiter && str_starts_with($current->path, $oldPath . $current->delimiter)))) {
+                || ($current->delimiter && str_starts_with($current->path, $oldPath . $current->delimiter))))
+            {
                 $path = $newPath . substr($current->path, strlen($oldPath));
                 self::$connections[$stream]['folder'] = $client->getFolderByPath($path, true);
                 self::$connections[$stream]['currentFolder'] = $path;
             }
             return true;
-        } catch (Exception $exception) {
+        }
+        catch (Exception $exception)
+        {
             self::$lastError = $exception->getMessage();
             return false;
         }
@@ -301,20 +368,25 @@ class ModernIMAPWrapper
 
     public static function imap_deletemailbox($stream, $mailbox)
     {
-        if (!isset(self::$connections[$stream]['client'])) {
+        if (!isset(self::$connections[$stream]['client']))
+        {
             return false;
         }
 
-        try {
+        try
+        {
             $path = preg_replace('/^\{[^}]*\}/', '', $mailbox);
             $client = self::$connections[$stream]['client'];
-            if (!$client->getFolderByPath($path, true)) {
+            if (!$client->getFolderByPath($path, true))
+            {
                 throw new RuntimeException('Mailbox does not exist');
             }
             $path = \Webklex\PHPIMAP\EncodingAliases::convert($path, 'UTF7-IMAP', 'UTF-8');
             $client->deleteFolder($path, false);
             return true;
-        } catch (Exception $exception) {
+        }
+        catch (Exception $exception)
+        {
             self::$lastError = $exception->getMessage();
             return false;
         }
@@ -322,11 +394,13 @@ class ModernIMAPWrapper
 
     public static function imap_mail_move($stream, $msgList, $mailbox, $flags = 0)
     {
-        if (!isset(self::$connections[$stream]['folder'])) {
+        if (!isset(self::$connections[$stream]['folder']))
+        {
             return false;
         }
 
-        try {
+        try
+        {
             $connection = self::$connections[$stream];
             $client = $connection['client'];
             $path = preg_replace('/^\{[^}]*\}/', '', $mailbox);
@@ -335,7 +409,9 @@ class ModernIMAPWrapper
             $client->getConnection()->moveMessage($path, $msgList, null, $mode)->validatedData();
             self::clearMessageMetadata($stream);
             return true;
-        } catch (Exception $exception) {
+        }
+        catch (Exception $exception)
+        {
             self::$lastError = $exception->getMessage();
             return false;
         }
@@ -353,12 +429,15 @@ class ModernIMAPWrapper
 
     private static function updateFlags($stream, $msgNums, $flag, $options, $operation)
     {
-        if (!isset(self::$connections[$stream]['folder'])) {
+        if (!isset(self::$connections[$stream]['folder']))
+        {
             return false;
         }
 
-        try {
-            if (!preg_match('/^[1-9][0-9]*(?::[1-9][0-9]*)?(?:,[1-9][0-9]*(?::[1-9][0-9]*)?)*$/', (string) $msgNums)) {
+        try
+        {
+            if (!preg_match('/^[1-9][0-9]*(?::[1-9][0-9]*)?(?:,[1-9][0-9]*(?::[1-9][0-9]*)?)*$/', (string) $msgNums))
+            {
                 throw new InvalidArgumentException('Invalid message set');
             }
             $connection = self::$connections[$stream];
@@ -367,12 +446,15 @@ class ModernIMAPWrapper
             $mode = ($options & 1) ? \Webklex\PHPIMAP\IMAP::ST_UID : \Webklex\PHPIMAP\IMAP::ST_MSGN;
             $flags = preg_split('/\s+/', trim($flag), -1, PREG_SPLIT_NO_EMPTY);
             self::clearMessageMetadata($stream);
-            foreach (explode(',', (string) $msgNums) as $range) {
+            foreach (explode(',', (string) $msgNums) as $range)
+            {
                 $bounds = explode(':', $range);
                 $client->getConnection()->store($flags, (int) $bounds[0], isset($bounds[1]) ? (int) $bounds[1] : null, $operation, true, $mode)->validatedData();
             }
             return true;
-        } catch (Exception $exception) {
+        }
+        catch (Exception $exception)
+        {
             self::$lastError = $exception->getMessage();
             return false;
         }
@@ -380,13 +462,16 @@ class ModernIMAPWrapper
 
     public static function imap_sort($stream, $criteria, $reverse, $options = 0)
     {
-        if (!isset(self::$connections[$stream]['folder'])) {
+        if (!isset(self::$connections[$stream]['folder']))
+        {
             return false;
         }
 
-        try {
+        try
+        {
             $criteria = filter_var($criteria, FILTER_VALIDATE_INT);
-            if (!in_array($criteria, range(0, 6), true)) {
+            if (!in_array($criteria, range(0, 6), true))
+            {
                 throw new InvalidArgumentException('Invalid IMAP sort criterion');
             }
 
@@ -403,10 +488,12 @@ class ModernIMAPWrapper
                 \Webklex\PHPIMAP\IMAP::ST_MSGN
             )->validatedData();
             $messages = [];
-            foreach ($metadata as $sequence => $attributes) {
+            foreach ($metadata as $sequence => $attributes)
+            {
                 $header = new \Webklex\PHPIMAP\Header($attributes['BODY[HEADER]'] ?? '', $client->getConfig());
                 $value = '';
-                switch ($criteria) {
+                switch ($criteria)
+                {
                     case 0:
                         $value = strtotime((string) $header->get('date')) ?: 0;
                         break;
@@ -419,13 +506,15 @@ class ModernIMAPWrapper
                         $field = [2 => 'from', 4 => 'to', 5 => 'cc'][$criteria];
                         $address = $header->get($field)->first();
                         $value = strtolower($address->mailbox ?? '');
-                        if ($value === '') {
+                        if ($value === '')
+                        {
                             $value = "\xff";
                         }
                         break;
                     case 3:
                         $value = strtolower(preg_replace('/^(?:(?:re|fw|fwd)\s*:\s*)+/i', '', trim((string) $header->get('subject'))));
-                        if ($value === '') {
+                        if ($value === '')
+                        {
                             $value = "\xff";
                         }
                         break;
@@ -435,14 +524,17 @@ class ModernIMAPWrapper
                 }
                 $messages[] = ['id' => (int) (($options & 1) ? $attributes['UID'] : $sequence), 'value' => $value];
             }
-            usort($messages, static function ($left, $right) use ($reverse) {
+            usort($messages, static function ($left, $right) use ($reverse)
+            {
                 $comparison = is_string($left['value'])
                     ? strcmp($left['value'], $right['value'])
                     : $left['value'] <=> $right['value'];
                 return $reverse ? -$comparison : $comparison;
             });
             return array_column($messages, 'id');
-        } catch (Exception $e) {
+        }
+        catch (Exception $e)
+        {
             self::$lastError = $e->getMessage();
             return false;
         }
@@ -459,16 +551,19 @@ class ModernIMAPWrapper
 
     public static function imap_prefetch_message_metadata($stream, array $messageNumbers, $flags = 0)
     {
-        if (!isset(self::$connections[$stream]['folder'])) {
+        if (!isset(self::$connections[$stream]['folder']))
+        {
             return false;
         }
 
         $messageNumbers = array_values(array_unique(array_filter(array_map('intval', $messageNumbers), static fn($number) => $number > 0)));
-        if (!$messageNumbers) {
+        if (!$messageNumbers)
+        {
             return [];
         }
 
-        try {
+        try
+        {
             $connection = self::$connections[$stream];
             $client = $connection['client'];
             $client->openFolder($connection['folder']->path);
@@ -481,16 +576,20 @@ class ModernIMAPWrapper
             )->validatedData();
 
             $foundMessageNumbers = [];
-            foreach ($metadata as $messageNumber => $attributes) {
+            foreach ($metadata as $messageNumber => $attributes)
+            {
                 $identifier = (int) (($flags & 1) ? ($attributes['UID'] ?? $messageNumber) : $messageNumber);
                 $foundMessageNumbers[] = $identifier;
-                if (isset($attributes['BODY[HEADER]']) && is_string($attributes['BODY[HEADER]']) && $attributes['BODY[HEADER]'] !== '') {
+                if (isset($attributes['BODY[HEADER]']) && is_string($attributes['BODY[HEADER]']) && $attributes['BODY[HEADER]'] !== '')
+                {
                     self::$connections[$stream]['messageHeaders'][$connection['folder']->path][$flags & 1][$identifier]
                         = self::convertFetchedHeader($attributes, $identifier, $client);
                 }
             }
             return $foundMessageNumbers;
-        } catch (Exception $exception) {
+        }
+        catch (Exception $exception)
+        {
             self::$lastError = $exception->getMessage();
             return false;
         }
@@ -498,16 +597,19 @@ class ModernIMAPWrapper
 
     public static function imap_fetch_sort_metadata($stream, array $messageNumbers, $flags = 0)
     {
-        if (!isset(self::$connections[$stream]['folder'])) {
+        if (!isset(self::$connections[$stream]['folder']))
+        {
             return false;
         }
 
         $messageNumbers = array_values(array_unique(array_filter(array_map('intval', $messageNumbers), static fn($number) => $number > 0)));
-        if (!$messageNumbers) {
+        if (!$messageNumbers)
+        {
             return [];
         }
 
-        try {
+        try
+        {
             $connection = self::$connections[$stream];
             $client = $connection['client'];
             $client->openFolder($connection['folder']->path);
@@ -520,10 +622,12 @@ class ModernIMAPWrapper
             )->validatedData();
 
             $result = [];
-            foreach ($metadata as $sequence => $attributes) {
+            foreach ($metadata as $sequence => $attributes)
+            {
                 $uid = (int) ($attributes['UID'] ?? $sequence);
                 $header = new \Webklex\PHPIMAP\Header((string) ($attributes['BODY[HEADER]'] ?? ''), $client->getConfig());
-                $firstMailbox = static function ($field) use ($header): string {
+                $firstMailbox = static function ($field) use ($header): string
+                {
                     $address = $header->get($field)->first();
                     return strtolower((string) ($address->mailbox ?? ''));
                 };
@@ -540,7 +644,9 @@ class ModernIMAPWrapper
                 ];
             }
             return $result;
-        } catch (Exception $exception) {
+        }
+        catch (Exception $exception)
+        {
             self::$lastError = $exception->getMessage();
             return false;
         }
@@ -550,7 +656,8 @@ class ModernIMAPWrapper
     {
         $source = new \Webklex\PHPIMAP\Header((string) ($attributes['BODY[HEADER]'] ?? ''), $client->getConfig());
         $header = new stdClass();
-        foreach (['from', 'to', 'cc', 'bcc', 'reply_to', 'sender', 'return_path'] as $field) {
+        foreach (['from', 'to', 'cc', 'bcc', 'reply_to', 'sender', 'return_path'] as $field)
+        {
             $addresses = $source->get($field)->toArray();
             $header->$field = array_map(static fn($address) => (object) [
                 'personal' => $address->personal,
@@ -559,7 +666,8 @@ class ModernIMAPWrapper
             ], $addresses);
             $header->{$field . 'address'} = implode(', ', array_map(static fn($address) => (string) $address, $addresses));
         }
-        if (!$header->reply_to) {
+        if (!$header->reply_to)
+        {
             $header->reply_to = $header->from;
             $header->reply_toaddress = $header->fromaddress;
         }
@@ -575,7 +683,8 @@ class ModernIMAPWrapper
         $isSeen = $hasFlag('seen');
         $header->Unseen = $isSeen ? ' ' : 'U';
         $header->Recent = $hasFlag('recent') ? ($isSeen ? 'R' : 'N') : ' ';
-        foreach (['answered' => 'A', 'flagged' => 'F', 'deleted' => 'D', 'draft' => 'X'] as $flag => $marker) {
+        foreach (['answered' => 'A', 'flagged' => 'F', 'deleted' => 'D', 'draft' => 'X'] as $flag => $marker)
+        {
             $header->{ucfirst($flag)} = $hasFlag($flag) ? $marker : ' ';
         }
         return $header;
@@ -586,19 +695,24 @@ class ModernIMAPWrapper
      */
     public static function imap_fetchheader($stream, $msgNum, $flags = 0)
     {
-        if (!isset(self::$connections[$stream]['folder'])) {
+        if (!isset(self::$connections[$stream]['folder']))
+        {
             return false;
         }
         
-        try {
+        try
+        {
             $message = self::getMessage($stream, $msgNum, $flags);
             
-            if ($message) {
+            if ($message)
+            {
                 return $message->getHeader()->raw;
             }
             return false;
             
-        } catch (Exception $e) {
+        }
+        catch (Exception $e)
+        {
             self::$lastError = $e->getMessage();
             return false;
         }
@@ -609,15 +723,22 @@ class ModernIMAPWrapper
      */
     public static function imap_body($stream, $msgNum, $flags = 0)
     {
-        if (!isset(self::$connections[$stream]['folder'])) return false;
-        try {
+        if (!isset(self::$connections[$stream]['folder']))
+        {
+        	return false;
+        }
+        try
+        {
             $peek = (bool) ($flags & 2);
-            if (!$peek) {
+            if (!$peek)
+            {
                 self::clearMessageMetadata($stream);
             }
             $message = self::getMessage($stream, $msgNum, $flags, $peek);
             return $message ? $message->getRawBody() : false;
-        } catch (Exception $exception) {
+        }
+        catch (Exception $exception)
+        {
             self::$lastError = $exception->getMessage();
             return false;
         }
@@ -625,12 +746,15 @@ class ModernIMAPWrapper
 
     public static function imap_fetchbody($stream, $msgNum, $section, $flags = 0)
     {
-        if (!isset(self::$connections[$stream]['folder'])) {
+        if (!isset(self::$connections[$stream]['folder']))
+        {
             return false;
         }
         
-        try {
-            if (!preg_match('/^[1-9][0-9]*(?:\.[1-9][0-9]*)*$/', (string) $section)) {
+        try
+        {
+            if (!preg_match('/^[1-9][0-9]*(?:\.[1-9][0-9]*)*$/', (string) $section))
+            {
                 throw new InvalidArgumentException('Invalid MIME section');
             }
             $connection = self::$connections[$stream];
@@ -638,14 +762,17 @@ class ModernIMAPWrapper
             $client->openFolder($connection['folder']->path);
             $mode = ($flags & 1) ? \Webklex\PHPIMAP\IMAP::ST_UID : \Webklex\PHPIMAP\IMAP::ST_MSGN;
             $peek = (bool) ($flags & 2);
-            if (!$peek) {
+            if (!$peek)
+            {
                 self::clearMessageMetadata($stream);
             }
             $data = $client->getConnection()->fetch([($peek ? 'BODY.PEEK[' : 'BODY[') . $section . ']', 'UID'], [(int) $msgNum], null, $mode)->validatedData();
             $message = $data ? reset($data) : [];
             return $message['BODY[' . $section . ']'] ?? false;
             
-        } catch (Exception $e) {
+        }
+        catch (Exception $e)
+        {
             self::$lastError = $e->getMessage();
             return false;
         }
@@ -656,16 +783,19 @@ class ModernIMAPWrapper
      */
     public static function imap_fetchstructure($stream, $msgNum, $flags = 0)
     {
-        if (!isset(self::$connections[$stream]['folder'])) {
+        if (!isset(self::$connections[$stream]['folder']))
+        {
             return false;
         }
 
         $structure = self::$connections[$stream]['messageStructures'][(int) $msgNum] ?? null;
-        if (is_array($structure)) {
+        if (is_array($structure))
+        {
             return self::convertBodyStructure($structure);
         }
         
-        try {
+        try
+        {
             $connection = self::$connections[$stream];
             $client = $connection['client'];
             $client->openFolder($connection['folder']->path);
@@ -678,23 +808,29 @@ class ModernIMAPWrapper
             );
             $response->validate();
             $raw = implode('', $response->getResponse());
-            if (preg_match_all('/^\* (\d+) FETCH /mi', $raw, $matches, PREG_OFFSET_CAPTURE)) {
-                foreach ($matches[0] as $index => $match) {
+            if (preg_match_all('/^\* (\d+) FETCH /mi', $raw, $matches, PREG_OFFSET_CAPTURE))
+            {
+                foreach ($matches[0] as $index => $match)
+                {
                     $offset = $match[1] + strlen($match[0]);
                     $attributes = self::parseStructureResponseValue($raw, $offset);
-                    if (!is_array($attributes) || count($attributes) % 2 !== 0) {
+                    if (!is_array($attributes) || count($attributes) % 2 !== 0)
+                    {
                         throw new \RuntimeException('Invalid IMAP structure response attributes.');
                     }
                     $attributes = array_chunk($attributes, 2);
                     $fields = [];
-                    foreach ($attributes as [$key, $value]) {
-                        if (!is_string($key)) {
+                    foreach ($attributes as [$key, $value])
+                    {
+                        if (!is_string($key))
+                        {
                             throw new \RuntimeException('Invalid IMAP structure response field.');
                         }
                         $fields[strtoupper($key)] = $value;
                     }
                     $identifier = ($flags & 1) ? ($fields['UID'] ?? 0) : $matches[1][$index][0];
-                    if ((int) $identifier === (int) $msgNum && is_array($fields['BODYSTRUCTURE'] ?? null)) {
+                    if ((int) $identifier === (int) $msgNum && is_array($fields['BODYSTRUCTURE'] ?? null))
+                    {
                         return self::convertBodyStructure($fields['BODYSTRUCTURE']);
                     }
                 }
@@ -702,7 +838,9 @@ class ModernIMAPWrapper
 
             throw new \RuntimeException('IMAP server did not return the requested message structure.');
             
-        } catch (Exception $e) {
+        }
+        catch (Exception $e)
+        {
             self::$lastError = $e->getMessage();
             return false;
         }
@@ -710,20 +848,31 @@ class ModernIMAPWrapper
 
     private static function parseStructureResponseValue(string $raw, int &$offset, int $depth = 0): array|string|null
     {
-        if ($depth > 100) {
+        if ($depth > 100)
+        {
             throw new \RuntimeException('IMAP structure response is nested too deeply.');
         }
         $length = strlen($raw);
-        while ($offset < $length && ctype_space($raw[$offset])) $offset++;
-        if ($offset >= $length) {
+        while ($offset < $length && ctype_space($raw[$offset]))
+        {
+        	$offset++;
+        }
+        if ($offset >= $length)
+        {
             throw new \RuntimeException('Incomplete IMAP structure response.');
         }
         $character = $raw[$offset++];
-        if ($character === '(') {
+        if ($character === '(')
+        {
             $values = [];
-            while ($offset < $length) {
-                while ($offset < $length && ctype_space($raw[$offset])) $offset++;
-                if ($offset < $length && $raw[$offset] === ')') {
+            while ($offset < $length)
+            {
+                while ($offset < $length && ctype_space($raw[$offset]))
+                {
+                	$offset++;
+                }
+                if ($offset < $length && $raw[$offset] === ')')
+                {
                     $offset++;
                     return $values;
                 }
@@ -731,13 +880,22 @@ class ModernIMAPWrapper
             }
             throw new \RuntimeException('Unclosed IMAP structure response list.');
         }
-        if ($character === '"') {
+        if ($character === '"')
+        {
             $value = '';
-            while ($offset < $length) {
+            while ($offset < $length)
+            {
                 $character = $raw[$offset++];
-                if ($character === '"') return $value;
-                if ($character === '\\') {
-                    if ($offset >= $length) break;
+                if ($character === '"')
+                {
+                	return $value;
+                }
+                if ($character === '\\')
+                {
+                    if ($offset >= $length)
+                    {
+                    	break;
+                    }
                     $character = $raw[$offset++];
                 }
                 $value .= $character;
@@ -745,17 +903,20 @@ class ModernIMAPWrapper
             throw new \RuntimeException('Unclosed IMAP structure response string.');
         }
         $offset--;
-        if ($character === '{' && preg_match('/\G\{(\d+)\+?\}\r\n/', $raw, $literal, 0, $offset)) {
+        if ($character === '{' && preg_match('/\G\{(\d+)\+?\}\r\n/', $raw, $literal, 0, $offset))
+        {
             $offset += strlen($literal[0]);
             $size = (int) $literal[1];
-            if ($size > $length - $offset) {
+            if ($size > $length - $offset)
+            {
                 throw new \RuntimeException('Incomplete IMAP structure response literal.');
             }
             $value = substr($raw, $offset, $size);
             $offset += $size;
             return $value;
         }
-        if (preg_match('/\G[^\s(){}"]+/', $raw, $atom, 0, $offset)) {
+        if (preg_match('/\G[^\s(){}"]+/', $raw, $atom, 0, $offset))
+        {
             $offset += strlen($atom[0]);
             return strtoupper($atom[0]) === 'NIL' ? null : $atom[0];
         }
@@ -765,10 +926,12 @@ class ModernIMAPWrapper
     private static function convertBodyStructure(array $bodyStructure): stdClass
     {
         $isMultipart = isset($bodyStructure[0]) && is_array($bodyStructure[0]);
-        if ($isMultipart) {
+        if ($isMultipart)
+        {
             $childCount = 0;
             $parts = [];
-            while (isset($bodyStructure[$childCount]) && is_array($bodyStructure[$childCount])) {
+            while (isset($bodyStructure[$childCount]) && is_array($bodyStructure[$childCount]))
+            {
                 $parts[] = self::convertBodyStructure($bodyStructure[$childCount]);
                 $childCount++;
             }
@@ -776,19 +939,27 @@ class ModernIMAPWrapper
             $subtype = (string) ($bodyStructure[$childCount] ?? '');
             $parameters = $bodyStructure[$childCount + 1] ?? null;
             $disposition = $bodyStructure[$childCount + 2] ?? null;
-        } else {
+        }
+        else
+        {
             $type = (string) ($bodyStructure[0] ?? 'OTHER');
             $subtype = (string) ($bodyStructure[1] ?? '');
             $parameters = $bodyStructure[2] ?? null;
             $dispositionIndex = strtoupper($type) === 'TEXT' ? 9 : 8;
-            if (strtoupper($type) === 'MESSAGE' && strtoupper($subtype) === 'RFC822') {
-                if (isset($bodyStructure[8]) && is_array($bodyStructure[8])) {
+            if (strtoupper($type) === 'MESSAGE' && strtoupper($subtype) === 'RFC822')
+            {
+                if (isset($bodyStructure[8]) && is_array($bodyStructure[8]))
+                {
                     $parts = [self::convertBodyStructure($bodyStructure[8])];
-                } else {
+                }
+                else
+                {
                     $parts = [];
                 }
                 $dispositionIndex = 11;
-            } else {
+            }
+            else
+            {
                 $parts = [];
             }
             $disposition = $bodyStructure[$dispositionIndex] ?? null;
@@ -813,7 +984,8 @@ class ModernIMAPWrapper
         $structure->ifdisposition = $structure->disposition !== '' ? 1 : 0;
         $structure->dparameters = self::convertBodyParameters(is_array($disposition) ? ($disposition[1] ?? null) : null);
         $structure->ifdparameters = $structure->dparameters ? 1 : 0;
-        if ($parts) {
+        if ($parts)
+        {
             $structure->parts = $parts;
         }
         return $structure;
@@ -821,20 +993,25 @@ class ModernIMAPWrapper
 
     private static function convertBodyParameters($parameters): array
     {
-        if (!is_array($parameters)) {
+        if (!is_array($parameters))
+        {
             return [];
         }
 
-        if ($parameters && !is_array(reset($parameters))) {
-            if (count($parameters) % 2 !== 0) {
+        if ($parameters && !is_array(reset($parameters)))
+        {
+            if (count($parameters) % 2 !== 0)
+            {
                 throw new \RuntimeException('Invalid IMAP body parameter pairs.');
             }
             $parameters = array_chunk($parameters, 2);
         }
 
         $result = [];
-        foreach ($parameters as $parameter) {
-            if (is_array($parameter) && isset($parameter[0])) {
+        foreach ($parameters as $parameter)
+        {
+            if (is_array($parameter) && isset($parameter[0]))
+            {
                 $result[] = (object) [
                     'attribute' => strtoupper((string) $parameter[0]),
                     'value' => (string) ($parameter[1] ?? ''),
@@ -858,9 +1035,13 @@ class ModernIMAPWrapper
         $structure->description = $part->getHeaderValue('Content-Description', '');
         $structure->ifdescription = $structure->description !== '' ? 1 : 0;
         $structure->parameters = [];
-        foreach (['charset', 'name', 'boundary'] as $attribute) {
+        foreach (['charset', 'name', 'boundary'] as $attribute)
+        {
             $value = $part->getHeaderParameter('Content-Type', $attribute);
-            if ($value !== null) $structure->parameters[] = (object) ['attribute' => strtoupper($attribute), 'value' => $value];
+            if ($value !== null)
+            {
+            	$structure->parameters[] = (object) ['attribute' => strtoupper($attribute), 'value' => $value];
+            }
         }
         $structure->ifparameters = $structure->parameters ? 1 : 0;
         $structure->disposition = strtoupper($part->getContentDisposition(''));
@@ -869,7 +1050,10 @@ class ModernIMAPWrapper
         $structure->dparameters = $filename === null ? [] : [(object) ['attribute' => 'FILENAME', 'value' => $filename]];
         $structure->ifdparameters = $structure->dparameters ? 1 : 0;
         $children = $part->getChildParts();
-        if ($children) $structure->parts = array_map([self::class, 'convertMimeStructure'], $children);
+        if ($children)
+        {
+        	$structure->parts = array_map([self::class, 'convertMimeStructure'], $children);
+        }
         return $structure;
     }
 
@@ -878,21 +1062,26 @@ class ModernIMAPWrapper
      */
     public static function imap_header($stream, $msgNum, $fromlength = 0, $tolength = 0, $defaulthost = '', $flags = 0)
     {
-        if (!isset(self::$connections[$stream]['folder'])) {
+        if (!isset(self::$connections[$stream]['folder']))
+        {
             return false;
         }
 
         $cachedHeader = self::$connections[$stream]['messageHeaders'][self::$connections[$stream]['folder']->path][$flags & 1][(int) $msgNum] ?? null;
-        if ($cachedHeader instanceof stdClass) {
+        if ($cachedHeader instanceof stdClass)
+        {
             return $cachedHeader;
         }
         
-        try {
+        try
+        {
             $message = self::getMessage($stream, $msgNum, $flags);
             
-            if ($message) {
+            if ($message)
+            {
                 $header = new stdClass();
-                foreach (['from', 'to', 'cc', 'bcc', 'reply_to', 'sender', 'return_path'] as $field) {
+                foreach (['from', 'to', 'cc', 'bcc', 'reply_to', 'sender', 'return_path'] as $field)
+                {
                     $addresses = $message->get($field)->toArray();
                     $header->$field = array_map(static fn($address) => (object) [
                         'personal' => $address->personal,
@@ -902,7 +1091,8 @@ class ModernIMAPWrapper
                     $addressField = $field . 'address';
                     $header->$addressField = implode(', ', array_map(static fn($address) => (string) $address, $addresses));
                 }
-                if (!$header->reply_to) {
+                if (!$header->reply_to)
+                {
                     $header->reply_to = $header->from;
                     $header->reply_toaddress = $header->fromaddress;
                 }
@@ -921,7 +1111,8 @@ class ModernIMAPWrapper
                 $flags = $message->getFlags();
                 $header->Unseen = $flags->has('seen') ? ' ' : 'U';
                 $header->Recent = $flags->has('recent') ? ($flags->has('seen') ? 'R' : 'N') : ' ';
-                foreach (['answered' => 'A', 'flagged' => 'F', 'deleted' => 'D', 'draft' => 'X'] as $flag => $marker) {
+                foreach (['answered' => 'A', 'flagged' => 'F', 'deleted' => 'D', 'draft' => 'X'] as $flag => $marker)
+                {
                     $field = ucfirst($flag);
                     $header->$field = $flags->has($flag) ? $marker : ' ';
                 }
@@ -931,7 +1122,9 @@ class ModernIMAPWrapper
             
             return false;
             
-        } catch (Exception $e) {
+        }
+        catch (Exception $e)
+        {
             self::$lastError = $e->getMessage();
             return false;
         }
@@ -942,13 +1135,16 @@ class ModernIMAPWrapper
      */
     public static function imap_delete($stream, $msgNums, $flags = 0)
     {
-        if (!isset(self::$connections[$stream]['folder'])) {
+        if (!isset(self::$connections[$stream]['folder']))
+        {
             return false;
         }
         
-        try {
+        try
+        {
             $set = is_array($msgNums) ? implode(',', $msgNums) : (string) $msgNums;
-            if (!preg_match('/^(?:[1-9][0-9]*|\*)(?::(?:[1-9][0-9]*|\*))?(?:,(?:[1-9][0-9]*|\*)(?::(?:[1-9][0-9]*|\*))?)*$/D', $set)) {
+            if (!preg_match('/^(?:[1-9][0-9]*|\*)(?::(?:[1-9][0-9]*|\*))?(?:,(?:[1-9][0-9]*|\*)(?::(?:[1-9][0-9]*|\*))?)*$/D', $set))
+            {
                 throw new InvalidArgumentException('Invalid message set');
             }
             $connection = self::$connections[$stream];
@@ -964,7 +1160,9 @@ class ModernIMAPWrapper
             
             return true;
             
-        } catch (Exception $e) {
+        }
+        catch (Exception $e)
+        {
             self::$lastError = $e->getMessage();
             return false;
         }
@@ -975,18 +1173,22 @@ class ModernIMAPWrapper
      */
     public static function imap_expunge($stream)
     {
-        if (!isset(self::$connections[$stream]['folder'])) {
+        if (!isset(self::$connections[$stream]['folder']))
+        {
             return false;
         }
         
-        try {
+        try
+        {
             $connection = self::$connections[$stream];
             $connection['client']->openFolder($connection['folder']->path);
             self::clearMessageMetadata($stream);
             $connection['client']->getConnection()->expunge()->validatedData();
             return true;
             
-        } catch (Exception $e) {
+        }
+        catch (Exception $e)
+        {
             self::$lastError = $e->getMessage();
             return false;
         }
@@ -1000,16 +1202,20 @@ class ModernIMAPWrapper
     
     public static function imap_status($stream, $mailbox, $options)
     {
-        if (!isset(self::$connections[$stream]['client'])) {
+        if (!isset(self::$connections[$stream]['client']))
+        {
             return false;
         }
 
-        try {
+        try
+        {
             $folder = preg_replace('/^\{[^}]+\}/', '', $mailbox);
             $fields = [1 => 'messages', 2 => 'recent', 4 => 'unseen', 8 => 'uidnext', 16 => 'uidvalidity'];
             $arguments = [];
-            foreach ($fields as $flag => $field) {
-                if ($options & $flag) {
+            foreach ($fields as $flag => $field)
+            {
+                if ($options & $flag)
+                {
                     $arguments[] = strtoupper($field);
                 }
             }
@@ -1018,14 +1224,18 @@ class ModernIMAPWrapper
             $data = array_change_key_case($data, CASE_LOWER);
             $status = new stdClass();
             $status->flags = 0;
-            foreach ($fields as $flag => $field) {
-                if (($options & $flag) && isset($data[$field])) {
+            foreach ($fields as $flag => $field)
+            {
+                if (($options & $flag) && isset($data[$field]))
+                {
                     $status->$field = (int) $data[$field];
                     $status->flags |= $flag;
                 }
             }
             return $status;
-        } catch (Exception $e) {
+        }
+        catch (Exception $e)
+        {
             self::$lastError = $e->getMessage();
             return false;
         }
@@ -1036,22 +1246,28 @@ class ModernIMAPWrapper
      */
     public static function imap_num_msg($stream)
     {
-        if (!isset(self::$connections[$stream]['folder'])) {
+        if (!isset(self::$connections[$stream]['folder']))
+        {
             return false;
         }
         
-        try {
+        try
+        {
             $folder = self::$connections[$stream]['folder'];
             $status = self::imap_status($stream, $folder->path, 1);
-            if ($status === false) {
+            if ($status === false)
+            {
                 return false;
             }
-            if (!isset($status->messages)) {
+            if (!isset($status->messages))
+            {
                 throw new RuntimeException('IMAP STATUS response did not include a message count.');
             }
             return $status->messages;
             
-        } catch (Exception $e) {
+        }
+        catch (Exception $e)
+        {
             self::$lastError = $e->getMessage();
             return false;
         }
@@ -1059,19 +1275,25 @@ class ModernIMAPWrapper
     
     public static function imap_msgno($stream, $uid)
     {
-        if (!isset(self::$connections[$stream]['folder'])) {
+        if (!isset(self::$connections[$stream]['folder']))
+        {
             return false;
         }
 
-        try {
+        try
+        {
             $connection = self::$connections[$stream];
             $client = $connection['client'];
             $client->openFolder($connection['folder']->path);
             return $client->getConnection()->getMessageNumber((string) $uid)->validate()->integer();
-        } catch (\Webklex\PHPIMAP\Exceptions\MessageNotFoundException $e) {
+        }
+        catch (\Webklex\PHPIMAP\Exceptions\MessageNotFoundException $e)
+        {
             self::$lastError = $e->getMessage();
             return 0;
-        } catch (Exception $e) {
+        }
+        catch (Exception $e)
+        {
             self::$lastError = $e->getMessage();
             return false;
         }
@@ -1130,15 +1352,19 @@ class ModernIMAPWrapper
      */
     public static function imap_ping($stream)
     {
-        if (!isset(self::$connections[$stream]['client'])) {
+        if (!isset(self::$connections[$stream]['client']))
+        {
             return false;
         }
         
-        try {
+        try
+        {
             $client = self::$connections[$stream]['client'];
             return $client->isConnected();
             
-        } catch (Exception $e) {
+        }
+        catch (Exception $e)
+        {
             self::$lastError = $e->getMessage();
             return false;
         }
@@ -1167,16 +1393,19 @@ class ModernIMAPWrapper
      */
     public static function imap_headers($stream)
     {
-        if (!isset(self::$connections[$stream]['folder'])) {
+        if (!isset(self::$connections[$stream]['folder']))
+        {
             return false;
         }
         
-        try {
+        try
+        {
             $folder = self::$connections[$stream]['folder'];
             $messages = $folder->messages()->all()->limit(1000); // Limit for performance
             
             $headers = [];
-            foreach ($messages as $message) {
+            foreach ($messages as $message)
+            {
                 $from = $message->getFrom()->first();
                 $fromStr = $from ? $from->mail : 'unknown';
                 $subject = $message->getSubject();
@@ -1192,7 +1421,9 @@ class ModernIMAPWrapper
             
             return $headers;
             
-        } catch (Exception $e) {
+        }
+        catch (Exception $e)
+        {
             self::$lastError = $e->getMessage();
             return false;
         }
@@ -1203,15 +1434,18 @@ class ModernIMAPWrapper
      */
     public static function imap_getmailboxes($stream, $ref, $pattern)
     {
-        if (!isset(self::$connections[$stream]['client'])) {
+        if (!isset(self::$connections[$stream]['client']))
+        {
             return false;
         }
         
-        try {
+        try
+        {
             $client = self::$connections[$stream]['client'];
             $prefix = '';
             $reference = $ref;
-            if (preg_match('/^(\{[^}]+\})(.*)$/s', $ref, $matches)) {
+            if (preg_match('/^(\{[^}]+\})(.*)$/s', $ref, $matches))
+            {
                 $prefix = $matches[1];
                 $reference = $matches[2];
             }
@@ -1222,12 +1456,14 @@ class ModernIMAPWrapper
                 '\\noinferiors' => 1, '\\noselect' => 2, '\\marked' => 4, '\\unmarked' => 8,
                 '\\referral' => 16, '\\haschildren' => 32, '\\hasnochildren' => 64,
             ];
-            foreach ($folders as $path => $folder) {
+            foreach ($folders as $path => $folder)
+            {
                 $mailbox = new stdClass();
                 $mailbox->name = $prefix . $path;
                 $mailbox->delimiter = $folder['delimiter'];
                 $mailbox->attributes = 0;
-                foreach ($folder['flags'] as $flag) {
+                foreach ($folder['flags'] as $flag)
+                {
                     $mailbox->attributes |= $attributeFlags[strtolower($flag)] ?? 0;
                 }
                 $mailboxes[] = $mailbox;
@@ -1235,7 +1471,9 @@ class ModernIMAPWrapper
             
             return $mailboxes;
             
-        } catch (Exception $e) {
+        }
+        catch (Exception $e)
+        {
             self::$lastError = $e->getMessage();
             return false;
         }
@@ -1246,17 +1484,21 @@ class ModernIMAPWrapper
      */
     public static function imap_subscribe($stream, $mailbox)
     {
-        if (!isset(self::$connections[$stream]['client'])) {
+        if (!isset(self::$connections[$stream]['client']))
+        {
             return false;
         }
         
-        try {
+        try
+        {
             $client = self::$connections[$stream]['client'];
             $path = preg_replace('/^\{[^}]+\}/', '', $mailbox);
             $client->getConnection()->subscribeFolder($path)->validatedData();
             return true;
             
-        } catch (Exception $e) {
+        }
+        catch (Exception $e)
+        {
             self::$lastError = $e->getMessage();
             return false;
         }
@@ -1267,16 +1509,20 @@ class ModernIMAPWrapper
      */
     public static function imap_unsubscribe($stream, $mailbox)
     {
-        if (!isset(self::$connections[$stream]['client'])) {
+        if (!isset(self::$connections[$stream]['client']))
+        {
             return false;
         }
         
-        try {
+        try
+        {
             $path = preg_replace('/^\{[^}]+\}/', '', $mailbox);
             self::$connections[$stream]['client']->getConnection()->unsubscribeFolder($path)->validatedData();
             return true;
             
-        } catch (Exception $e) {
+        }
+        catch (Exception $e)
+        {
             self::$lastError = $e->getMessage();
             return false;
         }
@@ -1296,7 +1542,8 @@ class ModernIMAPWrapper
     public static function imap_rfc822_write_address($mailbox, $host, $personal)
     {
         $address = $mailbox . '@' . $host;
-        if ($personal) {
+        if ($personal)
+        {
             return '"' . $personal . '" <' . $address . '>';
         }
         return $address;
@@ -1310,21 +1557,30 @@ class ModernIMAPWrapper
         // Simple parsing implementation
         $results = [];
         $addresses = explode(',', $address);
-        foreach ($addresses as $addr) {
+        foreach ($addresses as $addr)
+        {
             $addr = trim($addr);
-            if (preg_match('/^(.+?)\s*<(.+?)>$/', $addr, $matches)) {
+            if (preg_match('/^(.+?)\s*<(.+?)>$/', $addr, $matches))
+            {
                 $personal = trim($matches[1], '"');
                 $email = $matches[2];
-                if (strpos($email, '@') !== false) {
+                if (strpos($email, '@') !== false)
+                {
                     list($mailbox, $host) = explode('@', $email, 2);
-                } else {
+                }
+                else
+                {
                     $mailbox = $email;
                     $host = $default_host;
                 }
-            } elseif (strpos($addr, '@') !== false) {
+            }
+            elseif (strpos($addr, '@') !== false)
+            {
                 list($mailbox, $host) = explode('@', $addr, 2);
                 $personal = '';
-            } else {
+            }
+            else
+            {
                 $mailbox = $addr;
                 $host = $default_host;
                 $personal = '';

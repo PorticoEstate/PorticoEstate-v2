@@ -15,7 +15,10 @@ class EmailGoogleOAuthController
 	public function authorize(Request $request, Response $response): Response
 	{
 		$account = filter_var($request->getQueryParams()['acctnum'] ?? 0, FILTER_VALIDATE_INT);
-		if ($account === false || $account < 0) return $this->error($response, 'Invalid email account', 400);
+		if ($account === false || $account < 0)
+        {
+        	return $this->error($response, 'Invalid email account', 400);
+        }
 		$profile = $this->resolvedProfile($request);
 
 		try
@@ -26,7 +29,10 @@ class EmailGoogleOAuthController
 				return $this->error($response, 'Email account not found', 404);
 			}
 			$accountPreferences = $account === 0 ? $emailPreferences : (array) $emailPreferences['ex_accounts'][$account];
-			if (!GoogleMailOAuth::isConfigured($profile, $accountPreferences)) return $this->error($response, 'Set Google OAuth client credentials on this account or its assigned emailadmin profile', 503);
+			if (!GoogleMailOAuth::isConfigured($profile, $accountPreferences))
+            {
+            	return $this->error($response, 'Set Google OAuth client credentials on this account or its assigned emailadmin profile', 503);
+            }
 			$emailAddress = trim((string) ($accountPreferences['userid'] ?? ''));
 			$url = GoogleMailOAuth::authorizationUrl($account, $emailAddress, $profile, $accountPreferences);
 			return $response->withStatus(302)->withHeader('Location', $url);
@@ -72,7 +78,10 @@ class EmailGoogleOAuthController
 			if ($account === 0)
 			{
 				$preferences->add('email', 'use_custom_settings', 'True');
-				foreach ($accountSettings as $key => $value) $preferences->add('email', $key, $value);
+				foreach ($accountSettings as $key => $value)
+                {
+                	$preferences->add('email', $key, $value);
+                }
 			}
 			else
 			{

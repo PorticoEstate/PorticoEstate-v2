@@ -32,7 +32,10 @@ class EmailFilterController
 			foreach ((array) $mail->extra_and_default_acounts as $account)
 			{
 				$account = (array) $account;
-				if (($account['status'] ?? '') !== 'enabled') continue;
+				if (($account['status'] ?? '') !== 'enabled')
+                {
+                	continue;
+                }
 				$accountNum = (int) ($account['acctnum'] ?? 0);
 				$accounts[] = [
 					'id' => $accountNum,
@@ -41,7 +44,10 @@ class EmailFilterController
 			}
 
 			$filterData = $filter;
-			while (count($filterData['matches']) < 3) $filterData['matches'][] = [];
+			while (count($filterData['matches']) < 3)
+            {
+            	$filterData['matches'][] = [];
+            }
 			return $this->json($response, ['filter' => $filterData, 'accounts' => $accounts]);
 		}
 		catch (\OutOfBoundsException $exception)
@@ -69,7 +75,10 @@ class EmailFilterController
 	public function save(Request $request, Response $response): Response
 	{
 		$input = $request->getParsedBody();
-		if (!is_array($input)) $input = json_decode((string) $request->getBody(), true);
+		if (!is_array($input))
+        {
+        	$input = json_decode((string) $request->getBody(), true);
+        }
 		$input = is_array($input) ? $input : [];
 		$filterNum = (string) ($input['id'] ?? 'add_new');
 		$name = trim((string) ($input['name'] ?? ''));
@@ -127,7 +136,10 @@ class EmailFilterController
 			foreach ((array) $mail->extra_and_default_acounts as $account)
 			{
 				$account = (array) $account;
-				if (($account['status'] ?? '') === 'enabled') $enabledAccounts[] = (int) ($account['acctnum'] ?? 0);
+				if (($account['status'] ?? '') === 'enabled')
+                {
+                	$enabledAccounts[] = (int) ($account['acctnum'] ?? 0);
+                }
 			}
 			$destinationAccount = (int) $action['account'];
 			if (!in_array($destinationAccount, $enabledAccounts, true))
@@ -258,7 +270,10 @@ class EmailFilterController
 	public function run(Request $request, Response $response): Response
 	{
 		$input = $request->getParsedBody();
-		if (!is_array($input)) $input = json_decode((string) $request->getBody(), true);
+		if (!is_array($input))
+        {
+        	$input = json_decode((string) $request->getBody(), true);
+        }
 		$input = is_array($input) ? $input : [];
 		$test = filter_var($input['test'] ?? false, FILTER_VALIDATE_BOOLEAN);
 		$filterNum = $input['filterNum'] ?? null;

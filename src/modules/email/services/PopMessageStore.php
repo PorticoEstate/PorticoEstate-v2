@@ -15,7 +15,10 @@ final class PopMessageStore
 
 	public function __construct(int $owner, int $account, string $mailboxKey, ?object $db = null)
 	{
-		if ($owner < 1 || $account < 0 || !preg_match('/^[a-f0-9]{64}$/', $mailboxKey)) throw new \InvalidArgumentException('Invalid POP mailbox identity');
+		if ($owner < 1 || $account < 0 || !preg_match('/^[a-f0-9]{64}$/', $mailboxKey))
+        {
+        	throw new \InvalidArgumentException('Invalid POP mailbox identity');
+        }
 		$this->scope = ['account_id' => $owner, 'mail_account' => $account, 'mailbox_key' => $mailboxKey];
 		$this->db = $db ?? Db::getInstance();
 	}
@@ -33,7 +36,10 @@ final class PopMessageStore
 
 	public function save(string $uidl, string $raw): void
 	{
-		if (!preg_match('/^[\x21-\x7e]{1,70}$/D', $uidl) || $raw === '' || !str_contains($raw, "\r\n\r\n")) throw new \RuntimeException('Incomplete POP message or invalid UIDL');
+		if (!preg_match('/^[\x21-\x7e]{1,70}$/D', $uidl) || $raw === '' || !str_contains($raw, "\r\n\r\n"))
+        {
+        	throw new \RuntimeException('Incomplete POP message or invalid UIDL');
+        }
 		$receivedAt = time();
 		$values = $this->scope + [
 			'uidl' => $uidl, 'raw_message' => $raw, 'content_hash' => hash('sha256', $raw),
@@ -50,12 +56,21 @@ final class PopMessageStore
 		}
 		catch (\PDOException $exception)
 		{
-			if (!in_array((string) $exception->getCode(), ['23505', '23000'], true)) throw $exception;
+			if (!in_array((string) $exception->getCode(), ['23505', '23000'], true))
+            {
+            	throw $exception;
+            }
 			$existing = $this->query('SELECT content_hash FROM ' . self::TABLE . ' WHERE ' . $this->where() . ' AND uidl = :uidl', ['uidl' => $uidl])->fetchColumn();
-			if ($existing !== $values['content_hash']) throw new \RuntimeException('POP UIDL collision; existing message was retained', 0, $exception);
+			if ($existing !== $values['content_hash'])
+            {
+            	throw new \RuntimeException('POP UIDL collision; existing message was retained', 0, $exception);
+            }
 		}
 		$saved = $this->query('SELECT raw_message, content_hash FROM ' . self::TABLE . ' WHERE ' . $this->where() . ' AND uidl = :uidl', ['uidl' => $uidl])->fetch(PDO::FETCH_ASSOC);
-		if (!$saved || self::binaryValue($saved['raw_message']) !== $raw || $saved['content_hash'] !== $values['content_hash']) throw new \RuntimeException('POP message persistence verification failed; remote message was retained');
+		if (!$saved || self::binaryValue($saved['raw_message']) !== $raw || $saved['content_hash'] !== $values['content_hash'])
+        {
+        	throw new \RuntimeException('POP message persistence verification failed; remote message was retained');
+        }
 	}
 
 	public function rows(): array
@@ -81,7 +96,10 @@ final class PopMessageStore
 	public function metadata(int $id): array
 	{
 		$row = $this->query('SELECT message_id, message_size, received_at, is_seen, is_deleted FROM ' . self::TABLE . ' WHERE ' . $this->where() . ' AND message_id = :message_id AND is_hidden = 0', ['message_id' => $id])->fetch(PDO::FETCH_ASSOC);
-		if (!$row) throw new \RuntimeException('Local POP message no longer exists');
+		if (!$row)
+        {
+        	throw new \RuntimeException('Local POP message no longer exists');
+        }
 		return $row;
 	}
 
@@ -93,17 +111,32 @@ final class PopMessageStore
 	public function raw(int $id): string
 	{
 		$row = $this->query('SELECT raw_message, content_hash FROM ' . self::TABLE . ' WHERE ' . $this->where() . ' AND message_id = :message_id AND is_hidden = 0', ['message_id' => $id])->fetch(PDO::FETCH_ASSOC);
-		if (!$row) throw new \RuntimeException('Local POP message no longer exists');
+		if (!$row)
+        {
+        	throw new \RuntimeException('Local POP message no longer exists');
+        }
 		$raw = self::binaryValue($row['raw_message']);
-		if (!hash_equals($row['content_hash'], hash('sha256', $raw))) throw new \RuntimeException('Local POP message failed its integrity check');
+		if (!hash_equals($row['content_hash'], hash('sha256', $raw)))
+        {
+        	throw new \RuntimeException('Local POP message failed its integrity check');
+        }
 		return $raw;
 	}
 
 	public function flag(int $id, string $flag, bool $enabled): bool
 	{
-		$column = match (strtolower($flag)) { '\\seen' => 'is_seen', '\\deleted' => 'is_deleted', default => null };
-		if ($column === null) return false;
-		if (!$this->query('SELECT message_id FROM ' . self::TABLE . ' WHERE ' . $this->where() . ' AND message_id = :message_id AND is_hidden = 0', ['message_id' => $id])->fetchColumn()) return false;
+		$column = match (strtolower($flag))
+        {
+        	'\\seen' => 'is_seen', '\\deleted' => 'is_deleted', default => null
+        };
+		if ($column === null)
+        {
+        	return false;
+        }
+		if (!$this->query('SELECT message_id FROM ' . self::TABLE . ' WHERE ' . $this->where() . ' AND message_id = :message_id AND is_hidden = 0', ['message_id' => $id])->fetchColumn())
+        {
+        	return false;
+        }
 		$this->query('UPDATE ' . self::TABLE . ' SET ' . $column . ' = :flag_value WHERE ' . $this->where() . ' AND message_id = :message_id AND is_hidden = 0', ['flag_value' => (int) $enabled, 'message_id' => $id]);
 		return true;
 	}
@@ -126,22 +159,37 @@ final class PopMessageStore
 			foreach ($this->scope + $values as $name => $value)
 			{
 				$type = $name === 'raw_message' ? PDO::PARAM_LOB : (is_int($value) ? PDO::PARAM_INT : PDO::PARAM_STR);
-				if (!$statement->bindValue(':' . $name, $value, $type)) throw new \RuntimeException('Unable to bind local POP mailbox data');
+				if (!$statement->bindValue(':' . $name, $value, $type))
+                {
+                	throw new \RuntimeException('Unable to bind local POP mailbox data');
+                }
 			}
-			if (!$statement->execute()) throw new \RuntimeException('Unable to persist the local POP mailbox');
+			if (!$statement->execute())
+            {
+            	throw new \RuntimeException('Unable to persist the local POP mailbox');
+            }
 			return $statement;
 		}
 		catch (\PDOException $exception)
 		{
-			if (in_array((string) $exception->getCode(), ['42P01', '42S02', '42703', '42S22'], true)) throw new EmailMailConfigurationException('Upgrade the Email application to version 0.9.17.503 before using local POP storage', 0, $exception);
+			if (in_array((string) $exception->getCode(), ['42P01', '42S02', '42703', '42S22'], true))
+            {
+            	throw new EmailMailConfigurationException('Upgrade the Email application to version 0.9.17.503 before using local POP storage', 0, $exception);
+            }
 			throw $exception;
 		}
 	}
 
 	private static function binaryValue(mixed $value): string
 	{
-		if (is_resource($value)) $value = stream_get_contents($value);
-		if (!is_string($value)) throw new \RuntimeException('Unable to read local POP message bytes');
+		if (is_resource($value))
+        {
+        	$value = stream_get_contents($value);
+        }
+		if (!is_string($value))
+        {
+        	throw new \RuntimeException('Unable to read local POP message bytes');
+        }
 		return $value;
 	}
 
@@ -170,21 +218,36 @@ final class PopMessageStore
 			$statement = $db->prepare('SELECT message_id, received_at FROM ' . self::TABLE . ' WHERE message_id > :cursor ORDER BY message_id LIMIT :batch_size');
 			$statement->bindValue(':cursor', $cursor, PDO::PARAM_INT);
 			$statement->bindValue(':batch_size', max(1, $batchSize), PDO::PARAM_INT);
-			if (!$statement->execute()) throw new \RuntimeException('Unable to read POP metadata backfill batch');
+			if (!$statement->execute())
+            {
+            	throw new \RuntimeException('Unable to read POP metadata backfill batch');
+            }
 			$rows = $statement->fetchAll(PDO::FETCH_ASSOC);
 			foreach ($rows as $row)
 			{
 				$content = $db->prepare('SELECT raw_message, content_hash FROM ' . self::TABLE . ' WHERE message_id = :message_id');
-				if (!$content->execute(['message_id' => (int) $row['message_id']])) throw new \RuntimeException('Unable to read POP message for metadata backfill');
+				if (!$content->execute(['message_id' => (int) $row['message_id']]))
+                {
+                	throw new \RuntimeException('Unable to read POP message for metadata backfill');
+                }
 				$stored = $content->fetch(PDO::FETCH_ASSOC);
-				if (!$stored) throw new \RuntimeException('POP message disappeared during metadata backfill');
+				if (!$stored)
+                {
+                	throw new \RuntimeException('POP message disappeared during metadata backfill');
+                }
 				$raw = self::binaryValue($stored['raw_message']);
-				if (!hash_equals($stored['content_hash'], hash('sha256', $raw))) throw new \RuntimeException('POP metadata backfill stopped: message integrity check failed');
+				if (!hash_equals($stored['content_hash'], hash('sha256', $raw)))
+                {
+                	throw new \RuntimeException('POP metadata backfill stopped: message integrity check failed');
+                }
 				$metadata = self::sortMetadata($raw, (int) $row['received_at']);
 				$assignments = array_map(static fn($column) => $column . ' = :' . $column, array_keys($metadata));
 				$update = $db->prepare('UPDATE ' . self::TABLE . ' SET ' . implode(', ', $assignments) . ' WHERE message_id = :message_id');
 				$metadata['message_id'] = (int) $row['message_id'];
-				if (!$update->execute($metadata)) throw new \RuntimeException('Unable to backfill POP message metadata');
+				if (!$update->execute($metadata))
+                {
+                	throw new \RuntimeException('Unable to backfill POP message metadata');
+                }
 				$cursor = (int) $row['message_id'];
 			}
 		} while (count($rows) === max(1, $batchSize));

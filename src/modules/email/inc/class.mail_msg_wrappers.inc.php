@@ -70,7 +70,10 @@ class mail_msg_wrappers extends mail_msg_base
 
 	public function persistSessionCache(): bool
 	{
-		if (!$this->session_cache_enabled) return false;
+		if (!$this->session_cache_enabled)
+        {
+        	return false;
+        }
 		return Cache::session_set('email', 'mail_state', $this->getSessionCache());
 	}
 
@@ -133,7 +136,10 @@ class mail_msg_wrappers extends mail_msg_base
 
 	public static function releaseInstance(): void
 	{
-		if (self::$instance === null) return;
+		if (self::$instance === null)
+        {
+        	return;
+        }
 		try
 		{
 			self::$instance->end_request();
@@ -1670,7 +1676,7 @@ class mail_msg_wrappers extends mail_msg_base
 				.'&to_fldball[acctnum]='.$to_fldball['acctnum']
 				.'&to_fldball[folder]='.$to_fldball['folder']
 				.'&mov_msgball[msgnum]='.$mov_msgball['msgnum'];
-	*/
+		*/
 		$this_move_data = array(
 			'mov_msgball[acctnum]' => $mov_msgball['acctnum'],
 			'mov_msgball[folder]' => $mov_msgball['folder'],
@@ -1688,8 +1694,8 @@ class mail_msg_wrappers extends mail_msg_base
 	}
 
 	/*
-Array
-(
+	Array
+	(
     [0] => mov_msgball[acctnum]=5&mov_msgball[folder]=INBOX&to_fldball[acctnum]=5&to_fldball[folder]=mail%2FPostmaster&mov_msgball[msgnum]=38
     [1] => mov_msgball[acctnum]=5&mov_msgball[folder]=INBOX&to_fldball[acctnum]=5&to_fldball[folder]=mail%2FPostmaster&mov_msgball[msgnum]=66
     [2] => mov_msgball[acctnum]=5&mov_msgball[folder]=INBOX&to_fldball[acctnum]=5&to_fldball[folder]=mail%2FPostmaster&mov_msgball[msgnum]=28
@@ -1710,10 +1716,10 @@ Array
     [17] => mov_msgball[acctnum]=5&mov_msgball[folder]=INBOX&to_fldball[acctnum]=5&to_fldball[folder]=mail%2FPostmaster&mov_msgball[msgnum]=17
     [18] => mov_msgball[acctnum]=5&mov_msgball[folder]=INBOX&to_fldball[acctnum]=5&to_fldball[folder]=mail%2FPostmaster&mov_msgball[msgnum]=18
     [19] => mov_msgball[acctnum]=5&mov_msgball[folder]=INBOX&to_fldball[acctnum]=5&to_fldball[folder]=mail%2FPostmaster&mov_msgball[msgnum]=19
-)
+	)
 
-Array
-(
+	Array
+	(
     [mov_msgball] => Array
         (
             [acctnum] => 5
@@ -1727,7 +1733,7 @@ Array
             [folder] => mail/Postmaster
         )
 
-)
+	)
 		*/
 
 
@@ -4127,17 +4133,17 @@ Array
 				such as moving or deleting mail from a folder, and (2) so the following test which matches 
 				"number_all" elements of both data sets remain the same, so the "msgball_list" is considered 
 				"fresh" by this test.
-		@example This is the meta data that is saved and tested on reading the data from cache. 
-		$validity_test['fldball'] = array();
-		$validity_test['fldball']['acctnum'] = $acctnum;
-		$validity_test['fldball']['folder'] = $this->get_arg_value('folder', $acctnum);
-		$validity_test['folder_status_info']['uidnext'] = $folder_info['uidnext'];
-		$validity_test['folder_status_info']['uidvalidity'] = $folder_info['uidvalidity'];
-		$validity_test['folder_status_info']['number_all']  = $folder_info['number_all'];
-		$validity_test['sort'] = $this->get_arg_value('sort', $acctnum);
-		$validity_test['order'] = $this->get_arg_value('order', $acctnum);
-		$validity_test['mailsvr_callstr'] = $this->get_arg_value('mailsvr_callstr', $acctnum);
-		$validity_test['mailsvr_account_username'] = $this->get_arg_value('mailsvr_account_username', $acctnum);
+			@example This is the meta data that is saved and tested on reading the data from cache. 
+			$validity_test['fldball'] = array();
+			$validity_test['fldball']['acctnum'] = $acctnum;
+			$validity_test['fldball']['folder'] = $this->get_arg_value('folder', $acctnum);
+			$validity_test['folder_status_info']['uidnext'] = $folder_info['uidnext'];
+			$validity_test['folder_status_info']['uidvalidity'] = $folder_info['uidvalidity'];
+			$validity_test['folder_status_info']['number_all']  = $folder_info['number_all'];
+			$validity_test['sort'] = $this->get_arg_value('sort', $acctnum);
+			$validity_test['order'] = $this->get_arg_value('order', $acctnum);
+			$validity_test['mailsvr_callstr'] = $this->get_arg_value('mailsvr_callstr', $acctnum);
+			$validity_test['mailsvr_account_username'] = $this->get_arg_value('mailsvr_account_username', $acctnum);
 				@author Angles
 				*/
 

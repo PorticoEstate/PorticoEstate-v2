@@ -37,8 +37,14 @@ final class GoogleMailOAuth
 	public static function authorizationUrl(int $account, string $emailAddress, array $profile, array $accountPreferences = []): string
 	{
 		$config = self::configuration($profile, $accountPreferences);
-		if (!self::isConfigured($profile, $accountPreferences)) throw new \RuntimeException('Google OAuth client credentials and redirect URI are not configured');
-		if (!filter_var($emailAddress, FILTER_VALIDATE_EMAIL)) throw new \InvalidArgumentException('Enter the full Gmail address before connecting');
+		if (!self::isConfigured($profile, $accountPreferences))
+        {
+        	throw new \RuntimeException('Google OAuth client credentials and redirect URI are not configured');
+        }
+		if (!filter_var($emailAddress, FILTER_VALIDATE_EMAIL))
+        {
+        	throw new \InvalidArgumentException('Enter the full Gmail address before connecting');
+        }
 
 		$state = bin2hex(random_bytes(32));
 		$verifier = self::base64UrlEncode(random_bytes(48));
@@ -67,16 +73,28 @@ final class GoogleMailOAuth
 
 	public static function completeAuthorization(string $code, string $state, array $profile, ?array $accountPreferences = null): array
 	{
-		if ($code === '' || !preg_match('/^[a-f0-9]{64}$/i', $state)) throw new \InvalidArgumentException('Invalid Google OAuth callback');
+		if ($code === '' || !preg_match('/^[a-f0-9]{64}$/i', $state))
+        {
+        	throw new \InvalidArgumentException('Invalid Google OAuth callback');
+        }
 
 		$stateKey = self::STATE_PREFIX . $state;
 		$stateData = Cache::session_get('email', $stateKey);
 		Cache::session_set('email', $stateKey, null);
-		if (!is_array($stateData) || time() - (int) ($stateData['created'] ?? 0) > 600) throw new \RuntimeException('Google OAuth state is missing or expired');
-		if ((int) ($stateData['profile_id'] ?? 0) !== (int) ($profile['profileID'] ?? 0)) throw new \RuntimeException('The assigned email profile changed during Google OAuth');
+		if (!is_array($stateData) || time() - (int) ($stateData['created'] ?? 0) > 600)
+        {
+        	throw new \RuntimeException('Google OAuth state is missing or expired');
+        }
+		if ((int) ($stateData['profile_id'] ?? 0) !== (int) ($profile['profileID'] ?? 0))
+        {
+        	throw new \RuntimeException('The assigned email profile changed during Google OAuth');
+        }
 		$accountPreferences ??= self::accountPreferences((int) ($stateData['account'] ?? 0));
 		$config = self::configuration($profile, $accountPreferences);
-		if (!self::isConfigured($profile, $accountPreferences)) throw new \RuntimeException('Google OAuth client credentials and redirect URI are not configured');
+		if (!self::isConfigured($profile, $accountPreferences))
+        {
+        	throw new \RuntimeException('Google OAuth client credentials and redirect URI are not configured');
+        }
 
 		$tokens = self::requestTokens([
 			'grant_type' => 'authorization_code',
@@ -84,12 +102,21 @@ final class GoogleMailOAuth
 			'redirect_uri' => $config['redirect_uri'],
 			'code_verifier' => (string) ($stateData['verifier'] ?? ''),
 		], $config);
-		if (empty($tokens['refresh_token']) || empty($tokens['access_token'])) throw new \RuntimeException('Google did not return the required Gmail OAuth tokens');
+		if (empty($tokens['refresh_token']) || empty($tokens['access_token']))
+        {
+        	throw new \RuntimeException('Google did not return the required Gmail OAuth tokens');
+        }
 
 		$identity = self::requestUserInfo((string) $tokens['access_token']);
 		$authorizedEmail = strtolower(trim((string) ($identity['email'] ?? '')));
-		if (empty($identity['email_verified']) || $authorizedEmail === '') throw new \RuntimeException('Google did not verify the connected email address');
-		if (!hash_equals((string) ($stateData['email'] ?? ''), $authorizedEmail)) throw new \RuntimeException('The Google account does not match the selected email account');
+		if (empty($identity['email_verified']) || $authorizedEmail === '')
+        {
+        	throw new \RuntimeException('Google did not verify the connected email address');
+        }
+		if (!hash_equals((string) ($stateData['email'] ?? ''), $authorizedEmail))
+        {
+        	throw new \RuntimeException('The Google account does not match the selected email account');
+        }
 
 		return [
 			'account' => (int) ($stateData['account'] ?? 0),
@@ -101,14 +128,23 @@ final class GoogleMailOAuth
 
 	public static function refreshAccessToken(string $refreshToken, array $profile, array $accountPreferences = []): array
 	{
-		if ($refreshToken === '') throw new \RuntimeException('Connect this Gmail account with Google before using OAuth');
+		if ($refreshToken === '')
+        {
+        	throw new \RuntimeException('Connect this Gmail account with Google before using OAuth');
+        }
 		$config = self::configuration($profile, $accountPreferences);
-		if (!self::isConfigured($profile, $accountPreferences)) throw new \RuntimeException('Google OAuth client credentials and redirect URI are not configured');
+		if (!self::isConfigured($profile, $accountPreferences))
+        {
+        	throw new \RuntimeException('Google OAuth client credentials and redirect URI are not configured');
+        }
 		$tokens = self::requestTokens([
 			'grant_type' => 'refresh_token',
 			'refresh_token' => $refreshToken,
 		], $config);
-		if (empty($tokens['access_token'])) throw new \RuntimeException('Google did not return a Gmail access token');
+		if (empty($tokens['access_token']))
+        {
+        	throw new \RuntimeException('Google did not return a Gmail access token');
+        }
 		$tokens['refresh_token'] = (string) ($tokens['refresh_token'] ?? $refreshToken);
 		return $tokens;
 	}
@@ -132,9 +168,15 @@ final class GoogleMailOAuth
 		$status = (int) curl_getinfo($handle, CURLINFO_RESPONSE_CODE);
 		$error = curl_error($handle);
 		curl_close($handle);
-		if ($body === false || $status < 200 || $status >= 300) throw new \RuntimeException('Google OAuth token request failed' . ($error !== '' ? ': ' . $error : ''));
+		if ($body === false || $status < 200 || $status >= 300)
+        {
+        	throw new \RuntimeException('Google OAuth token request failed' . ($error !== '' ? ': ' . $error : ''));
+        }
 		$tokens = json_decode((string) $body, true);
-		if (!is_array($tokens) || isset($tokens['error'])) throw new \RuntimeException('Google OAuth token response was invalid');
+		if (!is_array($tokens) || isset($tokens['error']))
+        {
+        	throw new \RuntimeException('Google OAuth token response was invalid');
+        }
 		return $tokens;
 	}
 
@@ -153,9 +195,15 @@ final class GoogleMailOAuth
 		$status = (int) curl_getinfo($handle, CURLINFO_RESPONSE_CODE);
 		$error = curl_error($handle);
 		curl_close($handle);
-		if ($body === false || $status < 200 || $status >= 300) throw new \RuntimeException('Google account verification failed' . ($error !== '' ? ': ' . $error : ''));
+		if ($body === false || $status < 200 || $status >= 300)
+        {
+        	throw new \RuntimeException('Google account verification failed' . ($error !== '' ? ': ' . $error : ''));
+        }
 		$identity = json_decode((string) $body, true);
-		if (!is_array($identity)) throw new \RuntimeException('Google account verification response was invalid');
+		if (!is_array($identity))
+        {
+        	throw new \RuntimeException('Google account verification response was invalid');
+        }
 		return $identity;
 	}
 
@@ -182,7 +230,10 @@ final class GoogleMailOAuth
 		$server = (array) Settings::getInstance()->get('server');
 		$proxy = trim((string) ($server['httpproxy_server'] ?? ''));
 		$port = filter_var($server['httpproxy_port'] ?? null, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1, 'max_range' => 65535]]);
-		if ($proxy === '' || $port === false) return $options;
+		if ($proxy === '' || $port === false)
+        {
+        	return $options;
+        }
 
 		if (preg_match('~^https?://~i', $proxy))
 		{

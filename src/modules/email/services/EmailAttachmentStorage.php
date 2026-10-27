@@ -18,11 +18,20 @@ final class EmailAttachmentStorage
 		foreach (glob($this->directory . '/*.info') ?: [] as $metadataPath)
 		{
 			$id = basename($metadataPath, '.info');
-			if (!preg_match('/^[a-f0-9]{32}$/i', $id)) continue;
+			if (!preg_match('/^[a-f0-9]{32}$/i', $id))
+            {
+            	continue;
+            }
 			$attachmentPath = $this->path($id);
-			if (!is_file($attachmentPath) || is_link($metadataPath) || is_link($attachmentPath)) continue;
+			if (!is_file($attachmentPath) || is_link($metadataPath) || is_link($attachmentPath))
+            {
+            	continue;
+            }
 			$metadata = file($metadataPath, FILE_IGNORE_NEW_LINES);
-			if (!is_array($metadata)) continue;
+			if (!is_array($metadata))
+            {
+            	continue;
+            }
 			$items[] = [
 				'id' => $id,
 				'name' => trim((string) ($metadata[1] ?? 'attachment')),
@@ -38,7 +47,10 @@ final class EmailAttachmentStorage
 		$id = bin2hex(random_bytes(16));
 		$attachmentPath = $this->path($id);
 		[$name, $mimeType] = $this->normalizeMetadata($name, $mimeType);
-		if (!move_uploaded_file($temporaryPath, $attachmentPath)) throw new \RuntimeException('Unable to store uploaded attachment');
+		if (!move_uploaded_file($temporaryPath, $attachmentPath))
+        {
+        	throw new \RuntimeException('Unable to store uploaded attachment');
+        }
 		$this->writeMetadata($attachmentPath, $mimeType, $name);
 		return $this->list();
 	}
@@ -48,7 +60,10 @@ final class EmailAttachmentStorage
 		$id = bin2hex(random_bytes(16));
 		$attachmentPath = $this->path($id);
 		[$name, $mimeType] = $this->normalizeMetadata($name, $mimeType);
-		if (file_put_contents($attachmentPath, $content, LOCK_EX) === false) throw new \RuntimeException('Unable to store attachment');
+		if (file_put_contents($attachmentPath, $content, LOCK_EX) === false)
+        {
+        	throw new \RuntimeException('Unable to store attachment');
+        }
 		$this->writeMetadata($attachmentPath, $mimeType, $name);
 		return $this->list();
 	}
@@ -57,10 +72,16 @@ final class EmailAttachmentStorage
 	{
 		foreach ($ids as $id)
 		{
-			if (!is_string($id) || !preg_match('/^[a-f0-9]{32}$/i', $id)) throw new \InvalidArgumentException('Invalid attachment reference');
+			if (!is_string($id) || !preg_match('/^[a-f0-9]{32}$/i', $id))
+            {
+            	throw new \InvalidArgumentException('Invalid attachment reference');
+            }
 			foreach ([$this->path($id), $this->path($id) . '.info'] as $path)
 			{
-				if (is_file($path) && !is_link($path) && !unlink($path)) throw new \RuntimeException('Unable to remove attachment');
+				if (is_file($path) && !is_link($path) && !unlink($path))
+                {
+                	throw new \RuntimeException('Unable to remove attachment');
+                }
 			}
 		}
 		return $this->list();
@@ -68,7 +89,10 @@ final class EmailAttachmentStorage
 
 	private function path(string $id): string
 	{
-		if (!preg_match('/^[a-f0-9]{32}$/i', $id)) throw new \InvalidArgumentException('Invalid attachment reference');
+		if (!preg_match('/^[a-f0-9]{32}$/i', $id))
+        {
+        	throw new \InvalidArgumentException('Invalid attachment reference');
+        }
 		return $this->directory . '/' . $id;
 	}
 

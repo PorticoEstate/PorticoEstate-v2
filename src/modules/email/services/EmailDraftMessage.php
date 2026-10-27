@@ -16,19 +16,37 @@ final class EmailDraftMessage extends PHPMailer
 		foreach (['to' => 'addAddress', 'cc' => 'addCC', 'bcc' => 'addBCC'] as $field => $method)
 		{
 			$raw = trim((string) ($payload[$field] ?? ''));
-			if ($raw === '') continue;
+			if ($raw === '')
+            {
+            	continue;
+            }
 			$addresses = self::parseAddresses($raw, true, 'UTF-8');
-			if (!$addresses) throw new \InvalidArgumentException('Enter valid recipient addresses');
-			foreach ($addresses as $address) $message->$method($address['address'], $address['name']);
+			if (!$addresses)
+            {
+            	throw new \InvalidArgumentException('Enter valid recipient addresses');
+            }
+			foreach ($addresses as $address)
+            {
+            	$message->$method($address['address'], $address['name']);
+            }
 		}
 		$message->Subject = (string) ($payload['subject'] ?? '');
 		$message->Body = (string) ($payload['body'] ?? '');
-		foreach ($attachments as $attachment) $message->addAttachment($attachment['path'], $attachment['name']);
+		foreach ($attachments as $attachment)
+        {
+        	$message->addAttachment($attachment['path'], $attachment['name']);
+        }
 		$message->setMessageType();
 		$body = $message->createBody();
-		if ($body === '' && $message->isError()) throw new \RuntimeException('Unable to build draft message');
+		if ($body === '' && $message->isError())
+        {
+        	throw new \RuntimeException('Unable to build draft message');
+        }
 		$header = $message->createHeader();
-		if ($message->getBccAddresses()) $header .= $message->addrAppend('Bcc', $message->getBccAddresses());
+		if ($message->getBccAddresses())
+        {
+        	$header .= $message->addrAppend('Bcc', $message->getBccAddresses());
+        }
 		return $header . "\r\n" . $body;
 	}
 }

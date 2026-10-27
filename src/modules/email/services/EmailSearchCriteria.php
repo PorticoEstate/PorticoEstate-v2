@@ -34,39 +34,63 @@ final class EmailSearchCriteria
 		$fldball = (array) ($input['fldball'] ?? []);
 		$account = $fldball['acctnum'] ?? null;
 		$folders = $input['folder_list'] ?? [];
-		if (!is_numeric($account) || (int) $account < 0 || !is_array($folders)) return null;
+		if (!is_numeric($account) || (int) $account < 0 || !is_array($folders))
+        {
+        	return null;
+        }
 		$folders = array_values(array_unique(array_filter(array_map(
 			static fn($folder) => is_scalar($folder) ? trim((string) $folder) : '',
 			$folders
 		), static fn($folder) => $folder !== '')));
-		if (!$folders) return null;
+		if (!$folders)
+        {
+        	return null;
+        }
 
 		$terms = [];
 		foreach (self::TEXT_FIELDS as $field => $operator)
 		{
 			$value = $input[$field] ?? '';
-			if (!is_scalar($value)) return null;
+			if (!is_scalar($value))
+            {
+            	return null;
+            }
 			$value = trim((string) $value);
-			if ($value !== '') $terms[$operator] = $value;
+			if ($value !== '')
+            {
+            	$terms[$operator] = $value;
+            }
 		}
 
 		$flagsInput = (array) ($input['flags'] ?? []);
 		$flags = [];
 		foreach ($flagsInput as $flag)
 		{
-			if (is_string($flag) && isset(self::FLAGS[$flag])) $flags[] = self::FLAGS[$flag];
+			if (is_string($flag) && isset(self::FLAGS[$flag]))
+            {
+            	$flags[] = self::FLAGS[$flag];
+            }
 		}
 
 		$dates = [];
 		foreach (['date_on' => 'ON', 'date_before' => 'BEFORE', 'date_after' => 'SINCE'] as $field => $operator)
 		{
 			$value = $input[$field] ?? '';
-			if (!is_scalar($value)) return null;
+			if (!is_scalar($value))
+            {
+            	return null;
+            }
 			$value = trim((string) $value);
-			if ($value === '') continue;
+			if ($value === '')
+            {
+            	continue;
+            }
 			$date = \DateTimeImmutable::createFromFormat('!Y-m-d', $value);
 			$errors = \DateTimeImmutable::getLastErrors();
-			if (!$date || ($errors && ($errors['warning_count'] || $errors['error_count'])) || $date->format('Y-m-d') !== $value) return null;
+			if (!$date || ($errors && ($errors['warning_count'] || $errors['error_count'])) || $date->format('Y-m-d') !== $value)
+            {
+            	return null;
+            }
 			$dates[$operator] = $date->format('m/d/Y');
 		}
 

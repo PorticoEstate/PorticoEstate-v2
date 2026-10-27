@@ -25,7 +25,8 @@ class IMAPManager
      */
     public static function setMode($mode)
     {
-        if (in_array($mode, [self::MODE_AUTO, self::MODE_MODERN, self::MODE_LEGACY])) {
+        if (in_array($mode, [self::MODE_AUTO, self::MODE_MODERN, self::MODE_LEGACY]))
+        {
             self::$mode = $mode;
             self::$currentWrapper = null;
             self::$fallbackOccurred = false;
@@ -53,10 +54,12 @@ class IMAPManager
      */
     private static function getWrapper($function, $args)
     {
-        if (($args[0] ?? null) instanceof LocalPopConnection) {
+        if (($args[0] ?? null) instanceof LocalPopConnection)
+        {
             return 'LocalPopIMAPWrapper';
         }
-        switch (self::$mode) {
+        switch (self::$mode)
+        {
             case self::MODE_LEGACY:
                 return 'LegacyIMAPWrapper';
                 
@@ -65,7 +68,8 @@ class IMAPManager
                 
             case self::MODE_AUTO:
             default:
-                if ($function === 'imap_last_error' && self::$currentWrapper !== null) {
+                if ($function === 'imap_last_error' && self::$currentWrapper !== null)
+                {
                     return self::$currentWrapper;
                 }
 
@@ -80,12 +84,15 @@ class IMAPManager
                     'imap_getmailboxes', 'imap_subscribe', 'imap_unsubscribe', 'imap_headers', 'imap_fetch_sort_metadata',
                 ];
 
-                if (in_array($function, $streamFunctions, true)) {
+                if (in_array($function, $streamFunctions, true))
+                {
                     $stream = $args[0] ?? null;
-                    if (is_string($stream)) {
+                    if (is_string($stream))
+                    {
                         return 'ModernIMAPWrapper';
                     }
-                    if (is_resource($stream) || is_object($stream)) {
+                    if (is_resource($stream) || is_object($stream))
+                    {
                         return 'LegacyIMAPWrapper';
                     }
                 }
@@ -108,11 +115,17 @@ class IMAPManager
         self::$currentWrapper = 'LegacyIMAPWrapper';
         error_log('[email] IMAP connection falling back to native implementation');
 
-        try {
+        try
+        {
             $result = call_user_func_array('LegacyIMAPWrapper::' . $function, $args);
-            if ($result === false) error_log('[email] Native IMAP connection failed');
+            if ($result === false)
+            {
+            	error_log('[email] Native IMAP connection failed');
+            }
             return $result;
-        } catch (Exception $exception) {
+        }
+        catch (Exception $exception)
+        {
             error_log('[email] Native IMAP connection failed (' . get_class($exception) . ')');
             return false;
         }
@@ -128,20 +141,25 @@ class IMAPManager
         $oauthAuthentication = $function === 'imap_open'
             && (($args[5]['authentication'] ?? 'login') === 'oauth');
         
-        try {
+        try
+        {
             // Try primary wrapper
             $result = call_user_func_array([$wrapper, $function], $args);
             
             // If result is false and we haven't tried legacy yet, try fallback
-            if (self::canFallback($function, $wrapper, $oauthAuthentication) && $result === false) {
+            if (self::canFallback($function, $wrapper, $oauthAuthentication) && $result === false)
+            {
                 return self::fallbackToLegacy($function, $args);
             }
             
             return $result;
             
-        } catch (Exception $e) {
+        }
+        catch (Exception $e)
+        {
             // If exception occurs and we're in auto mode, try fallback
-            if (self::canFallback($function, $wrapper, $oauthAuthentication)) {
+            if (self::canFallback($function, $wrapper, $oauthAuthentication))
+            {
                 return self::fallbackToLegacy($function, $args);
             }
             
@@ -184,7 +202,8 @@ class IMAPManager
 
     public static function imap_prefetch_message_metadata($stream, array $messageNumbers, $flags = 0)
     {
-        if (!is_string($stream)) {
+        if (!is_string($stream))
+        {
             return false;
         }
         return ModernIMAPWrapper::imap_prefetch_message_metadata($stream, $messageNumbers, $flags);

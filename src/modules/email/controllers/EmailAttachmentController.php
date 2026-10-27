@@ -83,7 +83,10 @@ class EmailAttachmentController
 	public function delete(Request $request, Response $response): Response
 	{
 		$input = $request->getParsedBody();
-		if (!is_array($input)) $input = json_decode((string) $request->getBody(), true);
+		if (!is_array($input))
+        {
+        	$input = json_decode((string) $request->getBody(), true);
+        }
 		$ids = is_array($input) ? ($input['ids'] ?? null) : null;
 		if (!is_array($ids) || !$ids)
 		{

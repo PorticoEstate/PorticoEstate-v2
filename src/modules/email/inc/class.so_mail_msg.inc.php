@@ -54,7 +54,10 @@ class so_mail_msg
 	 */
 	function so_prop_use_group_data($feed_value = '##NOTHING##')
 	{
-		if ($feed_value !== '##NOTHING##') $this->use_group_data = (bool) $feed_value;
+		if ($feed_value !== '##NOTHING##')
+        {
+        	$this->use_group_data = (bool) $feed_value;
+        }
 		return $this->use_group_data;
 	}
 
@@ -64,8 +67,14 @@ class so_mail_msg
 	 */
 	function so_appsession_passthru($location = '', $data = '##NOTHING##', $compression = False)
 	{
-		if (!\App\modules\email\services\MailMessage::getInstance()->session_cache_enabled) return false;
-		if ($data === '##NOTHING##') return $this->so_get_data($location);
+		if (!\App\modules\email\services\MailMessage::getInstance()->session_cache_enabled)
+        {
+        	return false;
+        }
+		if ($data === '##NOTHING##')
+        {
+        	return $this->so_get_data($location);
+        }
 		return $this->so_set_data($location, $data);
 	}
 }

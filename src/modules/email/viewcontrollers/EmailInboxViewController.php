@@ -117,7 +117,10 @@ class EmailInboxViewController
 		$query = $request->getQueryParams();
 		foreach (['sort', 'order', 'start', 'click_history'] as $parameter)
 		{
-			if (isset($query[$parameter])) $backParameters[$parameter] = $query[$parameter];
+			if (isset($query[$parameter]))
+            {
+            	$backParameters[$parameter] = $query[$parameter];
+            }
 		}
 		$composeParameters = [
 			'msgball[acctnum]' => (int) $account,
@@ -126,7 +129,10 @@ class EmailInboxViewController
 		];
 		foreach (['sort', 'order', 'start', 'click_history'] as $parameter)
 		{
-			if (isset($query[$parameter])) $composeParameters[$parameter] = $query[$parameter];
+			if (isset($query[$parameter]))
+            {
+            	$composeParameters[$parameter] = $query[$parameter];
+            }
 		}
 		Settings::getInstance()->update('flags', ['app_header' => lang('E-Mail') . ': ' . lang('Message')]);
 		$html = $this->twig->render('@views/message.twig', [

@@ -41,7 +41,10 @@ class EmailComposeViewController
 		$context = [];
 		foreach (['action', 'msgball', 'fldball', 'fwd_proc', 'sort', 'order', 'start'] as $key)
 		{
-			if (isset($query[$key])) $context[$key] = $query[$key];
+			if (isset($query[$key]))
+            {
+            	$context[$key] = $query[$key];
+            }
 		}
 		return $context;
 	}
@@ -59,14 +62,18 @@ class EmailComposeViewController
 		{
 			$returnParameters['fldball[acctnum]'] = $messageBall['acctnum'] ?? 0;
 			$returnParameters['fldball[folder]'] = $messageBall['folder'] ?? 'INBOX';
-		} else
+		}
+        else
 		{
 			$returnParameters['fldball[acctnum]'] = $folderBall['acctnum'] ?? 0;
 			$returnParameters['fldball[folder]'] = $folderBall['folder'] ?? 'INBOX';
 		}
 		foreach (['sort', 'order', 'start', 'click_history'] as $key)
 		{
-			if (isset($query[$key])) $returnParameters[$key] = $query[$key];
+			if (isset($query[$key]))
+            {
+            	$returnParameters[$key] = $query[$key];
+            }
 		}
 
 		Settings::getInstance()->update('flags', ['app_header' => lang('E-Mail') . ': ' . lang('Compose')]);

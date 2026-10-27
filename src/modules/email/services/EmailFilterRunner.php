@@ -19,10 +19,16 @@ final class EmailFilterRunner
 	{
 		if ($filterNumber !== null)
 		{
-			if (!isset($filters[$filterNumber]['source_accounts'])) return false;
+			if (!isset($filters[$filterNumber]['source_accounts']))
+            {
+            	return false;
+            }
 			$filters = [$filterNumber => $filters[$filterNumber]];
 		}
-		if (!$filters) return false;
+		if (!$filters)
+        {
+        	return false;
+        }
 		$enabledAccounts = array_map('intval', array_column(array_filter((array) $mail->extra_and_default_acounts,
 			static fn($account) => ($account['status'] ?? '') === 'enabled'), 'acctnum'));
 		$items = [];
@@ -38,34 +44,61 @@ final class EmailFilterRunner
 			parse_str((string) ($filter['actions'][0]['folder'] ?? ''), $destination);
 			$destinationAccount = (int) ($destination['acctnum'] ?? -1);
 			$destinationFolder = (string) ($destination['folder'] ?? '');
-			if (!in_array($destinationAccount, $enabledAccounts, true)) throw new \InvalidArgumentException('Filter destination account is unavailable');
-			if (($filter['actions'][0]['judgement'] ?? '') !== 'fileinto') throw new \InvalidArgumentException('Filter action is not supported');
+			if (!in_array($destinationAccount, $enabledAccounts, true))
+            {
+            	throw new \InvalidArgumentException('Filter destination account is unavailable');
+            }
+			if (($filter['actions'][0]['judgement'] ?? '') !== 'fileinto')
+            {
+            	throw new \InvalidArgumentException('Filter action is not supported');
+            }
 			$folderLists[$destinationAccount] ??= array_column((array) $mail->get_folder_list($destinationAccount, true), 'folder_long');
-			if (!in_array($destinationFolder, $folderLists[$destinationAccount], true)) throw new \InvalidArgumentException('Filter destination folder is unavailable');
+			if (!in_array($destinationFolder, $folderLists[$destinationAccount], true))
+            {
+            	throw new \InvalidArgumentException('Filter destination folder is unavailable');
+            }
 			$matchedByAccount = [];
 			foreach ((array) ($filter['source_accounts'] ?? []) as $source)
 			{
 				$sourceAccount = (int) ($source['acctnum'] ?? -1);
-				if (!in_array($sourceAccount, $enabledAccounts, true)) throw new \InvalidArgumentException('Filter source account is unavailable');
+				if (!in_array($sourceAccount, $enabledAccounts, true))
+                {
+                	throw new \InvalidArgumentException('Filter source account is unavailable');
+                }
 				$sourceFolderEncoded = (string) ($source['folder'] ?? 'INBOX');
 				$sourceFolder = $mail->prep_folder_in($sourceFolderEncoded, $sourceAccount);
 				$folderLists[$sourceAccount] ??= array_column((array) $mail->get_folder_list($sourceAccount, true), 'folder_long');
-				if (!in_array($sourceFolder, $folderLists[$sourceAccount], true)) throw new \InvalidArgumentException('Filter source folder is unavailable');
+				if (!in_array($sourceFolder, $folderLists[$sourceAccount], true))
+                {
+                	throw new \InvalidArgumentException('Filter source folder is unavailable');
+                }
 				$messageList = (array) $mail->get_msgball_list_oldschool($sourceAccount, $mail->prep_folder_out($sourceFolder), false, false);
 				foreach ($messageList as $message)
 				{
 					$message = (array) $message;
 					$messageNumber = (int) ($message['msgnum'] ?? 0);
-					if ($messageNumber < 1) continue;
+					if ($messageNumber < 1)
+                    {
+                    	continue;
+                    }
 					$message['acctnum'] = $sourceAccount;
 					$message['folder'] = (string) ($message['folder'] ?? $sourceFolder);
 					$rawHeaders = $mail->phpgw_fetchheader($message, false);
-					if (!is_string($rawHeaders) || $rawHeaders === '') continue;
+					if (!is_string($rawHeaders) || $rawHeaders === '')
+                    {
+                    	continue;
+                    }
 					$headerMap = $this->parseHeaders((string) $mail->decode_rfc_header_glob($rawHeaders));
 					$decodedFilter = $filter;
-					foreach ($decodedFilter['matches'] as &$match) $match['matchthis'] = $mail->html_quotes_decode((string) ($match['matchthis'] ?? ''));
+					foreach ($decodedFilter['matches'] as &$match)
+                    {
+                    	$match['matchthis'] = $mail->html_quotes_decode((string) ($match['matchthis'] ?? ''));
+                    }
 					unset($match);
-					if (!$this->matcher->matches($decodedFilter, $headerMap)) continue;
+					if (!$this->matcher->matches($decodedFilter, $headerMap))
+                    {
+                    	continue;
+                    }
 					$matchedByAccount[$sourceAccount][] = [
 						'acctnum' => $sourceAccount,
 						'folder' => $sourceFolder,
@@ -77,17 +110,26 @@ final class EmailFilterRunner
 			$items[] = ['id' => (int) $filterIndex, 'name' => $filterName, 'matchCount' => $matchCount,
 				'action' => 'fileinto', 'destinationAccount' => $destinationAccount, 'destinationFolder' => $destinationFolder];
 			$matchReport[] = sprintf('%s: %d matches', $filterName, $matchCount);
-			if ($test || $matchCount === 0) continue;
+			if ($test || $matchCount === 0)
+            {
+            	continue;
+            }
 			foreach ($matchedByAccount as $sourceAccount => $messages)
 			{
 				$normalized = EmailMessageActions::normalize([
 					'action' => 'move', 'account' => (int) $sourceAccount, 'messages' => $messages,
 					'target_fldball' => ['acctnum' => $destinationAccount, 'folder' => $destinationFolder],
 				]);
-				if ($normalized === null) throw new \RuntimeException('Unable to prepare filter message move');
+				if ($normalized === null)
+                {
+                	throw new \RuntimeException('Unable to prepare filter message move');
+                }
 				$result = ($this->moveExecutor)($mail, $normalized);
 				$didMove = $didMove || (bool) $result['completed'];
-				foreach ($result['failed'] as $failure) $failed[] = $failure;
+				foreach ($result['failed'] as $failure)
+                {
+                	$failed[] = $failure;
+                }
 			}
 		}
 		return ['items' => $items, 'matchReport' => implode("\n", $matchReport), 'tested' => $test, 'didExpunge' => $didMove, 'failed' => $failed];
@@ -99,19 +141,28 @@ final class EmailFilterRunner
 		$lastHeader = null;
 		foreach (preg_split('/\r?\n/', $raw) ?: [] as $line)
 		{
-			if ($line === '') break;
+			if ($line === '')
+            {
+            	break;
+            }
 			if (preg_match('/^[\t ]+/', $line) && $lastHeader !== null)
 			{
 				$headers[$lastHeader][array_key_last($headers[$lastHeader])] .= ' ' . trim($line);
 				continue;
 			}
 			$separator = strpos($line, ':');
-			if ($separator === false) continue;
+			if ($separator === false)
+            {
+            	continue;
+            }
 			$lastHeader = strtolower(trim(substr($line, 0, $separator)));
 			$headers[$lastHeader][] = trim(substr($line, $separator + 1));
 		}
 		$flattened = [];
-		foreach ($headers as $name => $values) $flattened[$name] = implode("\n", $values);
+		foreach ($headers as $name => $values)
+        {
+        	$flattened[$name] = implode("\n", $values);
+        }
 		$flattened['recipient'] = implode("\n", array_filter([
 			$flattened['to'] ?? '', $flattened['cc'] ?? '', $flattened['bcc'] ?? '',
 		], static fn($value) => $value !== ''));

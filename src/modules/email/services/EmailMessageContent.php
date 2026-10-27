@@ -7,39 +7,67 @@ final class EmailMessageContent
 	public function build(object $mail, array $msgball, object $headers, callable $attachmentUrl, ?callable $formatDate = null): array
 	{
 		$structure = $mail->phpgw_fetchstructure($msgball, false);
-		if (!$structure) throw new \RuntimeException('Unable to fetch message MIME structure');
+		if (!$structure)
+        {
+        	throw new \RuntimeException('Unable to fetch message MIME structure');
+        }
 		$parts = (array) $mail->get_flat_pgw_struct($structure);
 		$imageUrls = [];
 		foreach ($parts as $index => $part)
 		{
-			if (($part['m_description'] ?? '') !== 'presentable/image') continue;
+			if (($part['m_description'] ?? '') !== 'presentable/image')
+            {
+            	continue;
+            }
 			$partNumber = (string) ($part['m_part_num_mime'] ?? '');
-			if ($partNumber === '') continue;
+			if ($partNumber === '')
+            {
+            	continue;
+            }
 			$imageUrl = $attachmentUrl($partNumber, true);
 			$parts[$index]['d_instructions'] = 'show';
 			$parts[$index]['d_processed_as'] = 'image_href';
 			$parts[$index]['message_body'] = '<img src="' . htmlspecialchars($imageUrl, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '" alt="">';
 			$id = trim((string) ($part['id'] ?? ''), "<> \t\r\n");
-			if ($id !== '') $imageUrls['cid:' . $id] = $imageUrl;
+			if ($id !== '')
+            {
+            	$imageUrls['cid:' . $id] = $imageUrl;
+            }
 		}
 
 		foreach ($parts as $index => $part)
 		{
-			if (($part['m_description'] ?? '') !== 'presentable' || str_contains((string) ($part['m_keywords'] ?? ''), 'alt_hide')) continue;
+			if (($part['m_description'] ?? '') !== 'presentable' || str_contains((string) ($part['m_keywords'] ?? ''), 'alt_hide'))
+            {
+            	continue;
+            }
 			$partNumber = (string) ($part['m_part_num_mime'] ?? '');
-			if ($partNumber === '') continue;
+			if ($partNumber === '')
+            {
+            	continue;
+            }
 			$partBall = $msgball;
 			$partBall['part_no'] = $partNumber;
 			$body = (string) $mail->phpgw_fetchbody($partBall);
 			$keywords = (string) ($part['m_keywords'] ?? '');
-			if (stripos($keywords, 'qprint') !== false) $body = $mail->qprint($body);
-			elseif (stripos($keywords, 'base64') !== false) $body = $mail->de_base64($body);
+			if (stripos($keywords, 'qprint') !== false)
+            {
+            	$body = $mail->qprint($body);
+			}
+            elseif (stripos($keywords, 'base64') !== false)
+            {
+            	$body = $mail->de_base64($body);
+            }
 			if (stripos((string) ($part['subtype'] ?? ''), 'html') !== false)
 			{
-				foreach ($imageUrls as $contentId => $url) $body = str_ireplace($contentId, htmlspecialchars($url, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'), $body);
+				foreach ($imageUrls as $contentId => $url)
+                {
+                	$body = str_ireplace($contentId, htmlspecialchars($url, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'), $body);
+                }
 				$parts[$index]['source_text'] = $body;
 				$parts[$index]['requires_html_confirmation'] = (bool) preg_match('/<style\b[^>]*>.*?\bbody\b.*?\{.*?\}|<script\b|<iframe\b/is', $body);
-			} else
+			}
+            else
 			{
 				$body = htmlspecialchars_decode($body, ENT_QUOTES | ENT_HTML5);
 				$parts[$index]['unformatted_text'] = $mail->normalize_crlf($body);

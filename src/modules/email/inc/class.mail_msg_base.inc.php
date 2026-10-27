@@ -4513,7 +4513,8 @@ class mail_msg_base
 		and  '  becomes  \'  but ONLY if magic_quotes is on, less likely to strip user intended slashes this way.
 		*/
 	function stripslashes_gpc($data)
-	{	/* get rid of the escape \ that magic_quotes HTTP POST will add, " becomes \" and  '  becomes  \'  
+	{
+    	/* get rid of the escape \ that magic_quotes HTTP POST will add, " becomes \" and  '  becomes  \'  
 			  but ONLY if magic_quotes is on, less likely to strip user intended slashes this way */
 		// get_magic_quotes_gpc() removed in PHP 8.0; magic quotes were always off since PHP 5.4
 		return $data;
@@ -4850,7 +4851,10 @@ class mail_msg_base
 				}
 			}
 		}
-		if (!$only_msgball_list) $this->mail_msg_wrappers->resetSessionCache(true);
+		if (!$only_msgball_list)
+        {
+        	$this->mail_msg_wrappers->resetSessionCache(true);
+        }
 	}
 
 	/*!

@@ -66,7 +66,10 @@ class EmailPreferencesController
 		}
 		finally
 		{
-			if (\App\modules\email\services\MailMessage::hasInstance()) \App\modules\email\services\MailMessage::releaseInstance();
+			if (\App\modules\email\services\MailMessage::hasInstance())
+            {
+            	\App\modules\email\services\MailMessage::releaseInstance();
+            }
 		}
 	}
 
@@ -150,7 +153,10 @@ class EmailPreferencesController
 		finally
 		{
 			$_POST = $originalPost;
-			if (\App\modules\email\services\MailMessage::hasInstance()) \App\modules\email\services\MailMessage::releaseInstance();
+			if (\App\modules\email\services\MailMessage::hasInstance())
+            {
+            	\App\modules\email\services\MailMessage::releaseInstance();
+            }
 		}
 	}
 
@@ -173,7 +179,10 @@ class EmailPreferencesController
 		}
 		finally
 		{
-			if (\App\modules\email\services\MailMessage::hasInstance()) \App\modules\email\services\MailMessage::releaseInstance();
+			if (\App\modules\email\services\MailMessage::hasInstance())
+            {
+            	\App\modules\email\services\MailMessage::releaseInstance();
+            }
 		}
 	}
 
@@ -207,7 +216,10 @@ class EmailPreferencesController
 			foreach (array_merge($schema['standard'], $schema['custom']) as $field)
 			{
 				$field = (array) $field;
-				if (stripos((string) ($field['accts_usage'] ?? ''), 'extra_accounts') === false || stripos((string) ($field['type'] ?? ''), 'INACTIVE') !== false) continue;
+				if (stripos((string) ($field['accts_usage'] ?? ''), 'extra_accounts') === false || stripos((string) ($field['type'] ?? ''), 'INACTIVE') !== false)
+                {
+                	continue;
+                }
 				$hidden = stripos((string) ($field['write_props'] ?? ''), 'hidden') !== false;
 				$value = $hidden ? '' : ($accountPreferences[$field['id']] ?? '');
 				$fields[] = [
@@ -239,7 +251,10 @@ class EmailPreferencesController
 		}
 		finally
 		{
-			if (\App\modules\email\services\MailMessage::hasInstance()) \App\modules\email\services\MailMessage::releaseInstance();
+			if (\App\modules\email\services\MailMessage::hasInstance())
+            {
+            	\App\modules\email\services\MailMessage::releaseInstance();
+            }
 		}
 	}
 
@@ -345,9 +360,15 @@ class EmailPreferencesController
 	public function deleteAccount(Request $request, Response $response): Response
 	{
 		$input = $request->getParsedBody();
-		if (!is_array($input)) $input = json_decode((string) $request->getBody(), true);
+		if (!is_array($input))
+        {
+        	$input = json_decode((string) $request->getBody(), true);
+        }
 		$account = is_array($input) ? filter_var($input['id'] ?? null, FILTER_VALIDATE_INT) : false;
-		if ($account === false || $account < 1) return $this->json($response, ['error' => lang('Invalid email account')], 422);
+		if ($account === false || $account < 1)
+        {
+        	return $this->json($response, ['error' => lang('Invalid email account')], 422);
+        }
 		try
 		{
 			$userSettings = Settings::getInstance()->get('user');

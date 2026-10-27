@@ -3,22 +3,23 @@
 namespace App\modules\email\services;
 
 use App\modules\phpgwapi\services\Cache;
+use App\modules\phpgwapi\services\Settings;
 
 final class MicrosoftImapOAuth
 {
 	private const STATE_PREFIX = 'microsoft_imap_oauth_';
 	private const SCOPE = 'https://outlook.office.com/IMAP.AccessAsUser.All offline_access openid profile';
 
-	public static function isConfigured(array $profile): bool
+	public static function isConfigured(array $profile, array $accountPreferences = []): bool
 	{
-		$config = self::configuration($profile);
+		$config = self::configuration($profile, $accountPreferences);
 		return $config['client_id'] !== '' && $config['client_secret'] !== '' && $config['redirect_uri'] !== '';
 	}
 
-	public static function authorizationUrl(int $account, string $loginHint, array $profile): string
+	public static function authorizationUrl(int $account, string $loginHint, array $profile, array $accountPreferences = []): string
 	{
-		$config = self::configuration($profile);
-		if (!self::isConfigured($profile)) throw new \RuntimeException('Microsoft OAuth is not configured on the selected emailadmin profile');
+		$config = self::configuration($profile, $accountPreferences);
+		if (!self::isConfigured($profile, $accountPreferences)) throw new \RuntimeException('Microsoft OAuth client credentials are not configured on this account or its emailadmin profile');
 
 		$state = bin2hex(random_bytes(32));
 		$verifier = self::base64UrlEncode(random_bytes(48));
@@ -43,10 +44,8 @@ final class MicrosoftImapOAuth
 		return self::authority($config['tenant']) . '/oauth2/v2.0/authorize?' . http_build_query($parameters);
 	}
 
-	public static function completeAuthorization(string $code, string $state, array $profile): array
+	public static function completeAuthorization(string $code, string $state, array $profile, ?array $accountPreferences = null): array
 	{
-		$config = self::configuration($profile);
-		if (!self::isConfigured($profile)) throw new \RuntimeException('Microsoft OAuth is not configured on the selected emailadmin profile');
 		if ($code === '' || !preg_match('/^[a-f0-9]{64}$/i', $state)) throw new \InvalidArgumentException('Invalid Microsoft OAuth callback');
 
 		$stateKey = self::STATE_PREFIX . $state;
@@ -54,6 +53,9 @@ final class MicrosoftImapOAuth
 		Cache::session_set('email', $stateKey, null);
 		if (!is_array($stateData) || time() - (int) ($stateData['created'] ?? 0) > 600) throw new \RuntimeException('Microsoft OAuth state is missing or expired');
 		if ((int) ($stateData['profile_id'] ?? 0) !== (int) ($profile['profileID'] ?? 0)) throw new \RuntimeException('The assigned email profile changed during Microsoft OAuth');
+		$accountPreferences ??= self::accountPreferences((int) ($stateData['account'] ?? 0));
+		$config = self::configuration($profile, $accountPreferences);
+		if (!self::isConfigured($profile, $accountPreferences)) throw new \RuntimeException('Microsoft OAuth client credentials are not configured on this account or its emailadmin profile');
 
 		$tokens = self::requestTokens([
 			'grant_type' => 'authorization_code',
@@ -65,11 +67,11 @@ final class MicrosoftImapOAuth
 		return ['account' => (int) ($stateData['account'] ?? 0)] + $tokens;
 	}
 
-	public static function refreshAccessToken(string $refreshToken, array $profile): array
+	public static function refreshAccessToken(string $refreshToken, array $profile, array $accountPreferences = []): array
 	{
 		if ($refreshToken === '') throw new \RuntimeException('Connect this email account to Microsoft before using OAuth');
-		$config = self::configuration($profile);
-		if (!self::isConfigured($profile)) throw new \RuntimeException('Microsoft OAuth is not configured on the selected emailadmin profile');
+		$config = self::configuration($profile, $accountPreferences);
+		if ($config['client_id'] === '' || $config['client_secret'] === '') throw new \RuntimeException('Microsoft OAuth client credentials are not configured on this account or its emailadmin profile');
 		$tokens = self::requestTokens([
 			'grant_type' => 'refresh_token',
 			'refresh_token' => $refreshToken,
@@ -85,7 +87,7 @@ final class MicrosoftImapOAuth
 		$parameters['client_secret'] = MailMessage::getInstance()->decrypt_email_passwd($config['client_secret']);
 		$parameters['scope'] = self::SCOPE;
 		$handle = curl_init(self::authority($config['tenant']) . '/oauth2/v2.0/token');
-		curl_setopt_array($handle, [
+		curl_setopt_array($handle, self::withHttpProxy([
 			CURLOPT_POST => true,
 			CURLOPT_POSTFIELDS => http_build_query($parameters),
 			CURLOPT_RETURNTRANSFER => true,
@@ -94,7 +96,7 @@ final class MicrosoftImapOAuth
 			CURLOPT_TIMEOUT => 20,
 			CURLOPT_SSL_VERIFYPEER => true,
 			CURLOPT_SSL_VERIFYHOST => 2,
-		]);
+		]));
 		$body = curl_exec($handle);
 		$status = (int) curl_getinfo($handle, CURLINFO_RESPONSE_CODE);
 		$error = curl_error($handle);
@@ -105,14 +107,36 @@ final class MicrosoftImapOAuth
 		return $tokens;
 	}
 
-	private static function configuration(array $profile): array
+	private static function withHttpProxy(array $options): array
 	{
+		$server = (array) Settings::getInstance()->get('server');
+		$proxy = trim((string) ($server['httpproxy_server'] ?? ''));
+		$port = filter_var($server['httpproxy_port'] ?? null, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1, 'max_range' => 65535]]);
+		if ($proxy === '' || $port === false) return $options;
+		$options[CURLOPT_PROXY] = $proxy;
+		$options[CURLOPT_PROXYPORT] = $port;
+		$options[CURLOPT_PROXYTYPE] = CURLPROXY_HTTP;
+		$options[CURLOPT_HTTPPROXYTUNNEL] = true;
+		return $options;
+	}
+
+	private static function configuration(array $profile, array $accountPreferences = []): array
+	{
+		$clientId = trim((string) ($accountPreferences['microsoft_client_id'] ?? ''));
+		$clientSecret = trim((string) ($accountPreferences['microsoft_client_secret'] ?? ''));
+		$tenant = trim((string) ($accountPreferences['microsoft_tenant_id'] ?? ''));
 		return [
-			'tenant' => trim((string) ($profile['microsoft_tenant_id'] ?? '')) ?: 'common',
-			'client_id' => trim((string) ($profile['microsoft_client_id'] ?? '')),
-			'client_secret' => (string) ($profile['microsoft_client_secret'] ?? ''),
+			'tenant' => $tenant !== '' ? $tenant : (trim((string) ($profile['microsoft_tenant_id'] ?? '')) ?: 'common'),
+			'client_id' => $clientId !== '' ? $clientId : trim((string) ($profile['microsoft_client_id'] ?? '')),
+			'client_secret' => $clientSecret !== '' ? $clientSecret : (string) ($profile['microsoft_client_secret'] ?? ''),
 			'redirect_uri' => trim((string) ($profile['microsoft_redirect_uri'] ?? '')),
 		];
+	}
+
+	private static function accountPreferences(int $account): array
+	{
+		$emailPreferences = (array) (\App\modules\phpgwapi\services\Preferences::getInstance()->read()['email'] ?? []);
+		return $account === 0 ? $emailPreferences : (array) ($emailPreferences['ex_accounts'][$account] ?? []);
 	}
 
 	private static function authority(string $tenant): string

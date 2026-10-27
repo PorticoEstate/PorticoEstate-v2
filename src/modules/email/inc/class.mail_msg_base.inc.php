@@ -735,7 +735,12 @@ class mail_msg_base
 		}
 		else
 		{
-			$tokens = \App\modules\email\services\MicrosoftImapOAuth::refreshAccessToken((string) $password, $profile);
+			$microsoftPreferences = [
+				'microsoft_client_id' => $this->mail_msg_wrappers->get_pref_value('microsoft_client_id', $acctnum),
+				'microsoft_client_secret' => $this->mail_msg_wrappers->get_pref_value('microsoft_client_secret', $acctnum),
+				'microsoft_tenant_id' => $this->mail_msg_wrappers->get_pref_value('microsoft_tenant_id', $acctnum),
+			];
+			$tokens = \App\modules\email\services\MicrosoftImapOAuth::refreshAccessToken((string) $password, $profile, $microsoftPreferences);
 		}
 		$refreshToken = (string) ($tokens['refresh_token'] ?? $password);
 		if ($refreshToken !== (string) $password)

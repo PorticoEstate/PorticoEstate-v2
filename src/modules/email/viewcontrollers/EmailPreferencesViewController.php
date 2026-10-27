@@ -23,12 +23,11 @@ class EmailPreferencesViewController
 
 	public function index(Request $request, Response $response): Response
 	{
-		$userSettings = (array) Settings::getInstance()->get('user');
-		$emailPreferences = (array) ($userSettings['preferences']['email'] ?? []);
+		$emailPreferences = (array) (Preferences::getInstance()->read()['email'] ?? []);
 		return $this->render($request, $response, '@views/preferences.twig', [
 			'api_url' => \phpgw::link('/email/api/preferences', [], true),
 			'save_url' => \phpgw::link('/email/api/preferences', [], true),
-			'oauth_url' => $this->oauthConfigured()
+			'oauth_url' => $this->oauthConfigured($emailPreferences)
 				? \phpgw::link('/email/oauth/microsoft/authorize', ['acctnum' => 0])
 				: '',
 			'google_oauth_url' => $this->googleOauthConfigured($emailPreferences)
@@ -56,7 +55,7 @@ class EmailPreferencesViewController
 			'save_url' => \phpgw::link('/email/api/preferences/account', [], true),
 			'accounts_url' => \phpgw::link('/email/view/accounts', [], true),
 			'account_mode' => true,
-			'oauth_url' => ctype_digit($account) && (int) $account > 0 && $this->oauthConfigured()
+			'oauth_url' => ctype_digit($account) && (int) $account > 0 && $this->oauthConfigured($accountPreferences)
 				? \phpgw::link('/email/oauth/microsoft/authorize', ['acctnum' => (int) $account])
 				: '',
 			'google_oauth_url' => ctype_digit($account) && (int) $account > 0 && $this->googleOauthConfigured($accountPreferences)
@@ -91,10 +90,15 @@ class EmailPreferencesViewController
 		return $response->withHeader('Content-Type', 'text/html');
 	}
 
-	private function oauthConfigured(): bool
+	private function oauthConfigured(array $accountPreferences): bool
 	{
 		$profile = \CreateObject('emailadmin.emailadmin_bo', true)->getResolvedProfileData('email');
-		return is_array($profile) && \App\modules\email\services\MicrosoftImapOAuth::isConfigured($profile);
+		$profile = is_array($profile) ? $profile : [];
+		if (trim((string) ($profile['microsoft_redirect_uri'] ?? '')) === '')
+		{
+			$profile['microsoft_redirect_uri'] = strtok(\phpgw::link('/email/oauth/microsoft/callback', [], false, true, true, true), '?');
+		}
+		return \App\modules\email\services\MicrosoftImapOAuth::isConfigured($profile, $accountPreferences);
 	}
 
 	private function googleOauthConfigured(array $accountPreferences): bool

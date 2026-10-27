@@ -475,7 +475,44 @@ final class EmailPreferenceSchema
 				'google_oauth' => lang('Google Gmail OAuth2'),
 			),
 			'google_help' => lang('Use the full Gmail address as the account name. Enter the Google OAuth client ID and secret below or use the emailadmin profile credentials. Save the settings, reload this page if you entered account credentials, and then choose Connect Gmail with Google OAuth2. For a new extra account, save and reopen it first. Workspace IMAP must be enabled by an administrator.'),
-			'long_desc' => lang('Choose password authentication or OAuth2 for Microsoft Outlook or Google Gmail. OAuth2 requires the server administrator to configure the matching mail profile.')
+			'microsoft_help' => lang('Use your full Outlook.com or Microsoft 365 email address as the account name. Enable this extra account and IMAP in your mailbox settings. Set the mail server to outlook.office365.com, type IMAPS and port 993. Register an application in Microsoft Entra that supports personal Microsoft accounts. Add a Web redirect URI using this application address followed by /email/oauth/microsoft/callback, or the override from your emailadmin profile. Add the delegated IMAP.AccessAsUser.All permission and create a client secret. Enter the application client ID and secret value below, or use your emailadmin profile credentials. Set the tenant to consumers for personal accounts, common for personal and work accounts, or your organization tenant ID. Save and reopen the account, then connect to Microsoft. Outbound IMAP port 993 must be reachable; the HTTP proxy only handles OAuth requests.'),
+			'long_desc' => lang('Choose password authentication or OAuth2 for Microsoft Outlook or Google Gmail. Configure OAuth client credentials on this account or its assigned emailadmin profile.')
+		);
+		$i++;
+		$this->cust_prefs[$i] = array(
+			'id' => 'microsoft_client_id',
+			'type' => 'user_string',
+			'widget' => 'textbox',
+			'accts_usage' => 'default, extra_accounts',
+			'write_props' => 'no_db_defang',
+			'lang_blurb' => lang('Microsoft OAuth client ID'),
+			'init_default' => 'string,',
+			'values' => array(),
+			'long_desc' => lang('Optional per-account Microsoft application client ID. Leave blank to use the assigned emailadmin profile credentials.')
+		);
+		$i++;
+		$this->cust_prefs[$i] = array(
+			'id' => 'microsoft_client_secret',
+			'type' => 'user_string',
+			'widget' => 'passwordbox',
+			'accts_usage' => 'default, extra_accounts',
+			'write_props' => 'password, hidden, encrypted, empty_no_delete',
+			'lang_blurb' => lang('Microsoft OAuth client secret'),
+			'init_default' => 'init_no_fill',
+			'values' => array(),
+			'long_desc' => lang('Enter the client secret value, not its secret ID. Stored encrypted and never displayed. Leave blank to keep the saved secret or use the assigned emailadmin profile secret.')
+		);
+		$i++;
+		$this->cust_prefs[$i] = array(
+			'id' => 'microsoft_tenant_id',
+			'type' => 'user_string',
+			'widget' => 'textbox',
+			'accts_usage' => 'default, extra_accounts',
+			'write_props' => 'no_db_defang',
+			'lang_blurb' => lang('Microsoft OAuth tenant'),
+			'init_default' => 'string,',
+			'values' => array(),
+			'long_desc' => lang('Use consumers for personal Outlook.com accounts, common for personal and work accounts, or an organization tenant ID. Leave blank to use the assigned emailadmin profile tenant.')
 		);
 		$i++;
 		$this->cust_prefs[$i] = array(

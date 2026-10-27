@@ -6,7 +6,6 @@ use App\modules\email\services\MailMessage;
 use App\modules\email\services\MicrosoftImapOAuth;
 use App\modules\phpgwapi\services\Cache;
 use App\modules\phpgwapi\services\Preferences;
-use App\modules\phpgwapi\services\Settings;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 
@@ -16,14 +15,11 @@ class EmailMicrosoftOAuthController
 	{
 		$account = filter_var($request->getQueryParams()['acctnum'] ?? 0, FILTER_VALIDATE_INT);
 		if ($account === false || $account < 0) return $this->error($response, 'Invalid email account', 400);
-		$profile = $this->resolvedProfile();
-		if (!MicrosoftImapOAuth::isConfigured($profile)) return $this->error($response, 'Microsoft Outlook OAuth is not configured on the emailadmin profile assigned to your account', 503);
+		$profile = $this->resolvedProfile($request);
 
 		try
 		{
-			$preferences = Preferences::getInstance();
-			$userSettings = Settings::getInstance()->get('user');
-			$defaultPreferences = $userSettings['preferences']['email'] ?? [];
+			$defaultPreferences = (array) (Preferences::getInstance()->read()['email'] ?? []);
 
 			if ($account > 0 && !isset($defaultPreferences['ex_accounts'][$account]))
 			{
@@ -31,7 +27,8 @@ class EmailMicrosoftOAuthController
 			}
 			$accountPreferences = $account === 0
 				? $defaultPreferences
-				: ($userSettings['preferences']['email']['ex_accounts'][$account] ?? []);
+				: (array) $defaultPreferences['ex_accounts'][$account];
+			if (!MicrosoftImapOAuth::isConfigured($profile, $accountPreferences)) return $this->error($response, 'Set Microsoft OAuth client credentials on this account or its assigned emailadmin profile', 503);
 			$emailAddress = trim((string) ($accountPreferences['userid'] ?? ''));
 			if ($emailAddress === '') return $this->error($response, 'Set the Outlook email address before connecting', 422);
 			if (($accountPreferences['mail_server_type'] ?? '') !== 'imap'
@@ -39,7 +36,7 @@ class EmailMicrosoftOAuthController
 			{
 				return $this->error($response, 'Select an IMAP or IMAPS server before connecting Outlook', 422);
 			}
-			$url = MicrosoftImapOAuth::authorizationUrl($account, $emailAddress, $profile);
+			$url = MicrosoftImapOAuth::authorizationUrl($account, $emailAddress, $profile, $accountPreferences);
 			return $response->withStatus(302)->withHeader('Location', $url);
 		}
 		catch (\Throwable $exception)
@@ -58,7 +55,7 @@ class EmailMicrosoftOAuthController
 		}
 		try
 		{
-			$tokens = MicrosoftImapOAuth::completeAuthorization((string) ($query['code'] ?? ''), (string) ($query['state'] ?? ''), $this->resolvedProfile());
+			$tokens = MicrosoftImapOAuth::completeAuthorization((string) ($query['code'] ?? ''), (string) ($query['state'] ?? ''), $this->resolvedProfile($request));
 			$account = (int) $tokens['account'];
 			$preferences = Preferences::getInstance();
 			$mail = MailMessage::getInstance();
@@ -72,8 +69,7 @@ class EmailMicrosoftOAuthController
 			}
 			else
 			{
-				$userSettings = Settings::getInstance()->get('user');
-				$defaultPreferences = $userSettings['preferences']['email'] ?? [];
+				$defaultPreferences = (array) ($preferences->read()['email'] ?? []);
 				if (!isset($defaultPreferences['ex_accounts'][$account]))
 				{
 					return $this->error($response, 'Email account no longer exists', 404);
@@ -104,9 +100,19 @@ class EmailMicrosoftOAuthController
 		return $response->withStatus($status)->withHeader('Content-Type', 'text/plain; charset=UTF-8');
 	}
 
-	private function resolvedProfile(): array
+	private function resolvedProfile(Request $request): array
 	{
 		$profile = \CreateObject('emailadmin.emailadmin_bo', true)->getResolvedProfileData('email');
-		return is_array($profile) ? $profile : [];
+		$profile = is_array($profile) ? $profile : [];
+		if (trim((string) ($profile['microsoft_redirect_uri'] ?? '')) === '')
+		{
+			$forwarded = strtolower(trim(explode(',', $request->getHeaderLine('X-Forwarded-Proto'))[0]));
+			$profile['microsoft_redirect_uri'] = \App\modules\email\services\GoogleMailOAuth::defaultRedirectUri(
+				\phpgw::link('/email/oauth/microsoft/callback', [], false, true, true, true),
+				$forwarded !== '' ? $forwarded : $request->getUri()->getScheme(),
+				trim($request->getHeaderLine('Host'))
+			);
+		}
+		return $profile;
 	}
 }

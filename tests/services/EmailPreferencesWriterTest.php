@@ -90,9 +90,11 @@ class EmailPreferencesWriterTest extends TestCase
 		$custom = [
 			['id' => 'use_custom_settings', 'type' => 'exists', 'widget' => 'checkbox', 'accts_usage' => 'default', 'write_props' => ''],
 			['id' => 'mail_server', 'type' => 'user_string', 'widget' => 'textbox', 'accts_usage' => 'extra_accounts', 'write_props' => ''],
+			['id' => 'microsoft_client_secret', 'type' => 'user_string', 'widget' => 'passwordbox', 'accts_usage' => 'extra_accounts', 'write_props' => 'password, hidden, encrypted, empty_no_delete'],
 		];
 		(new EmailPreferencesWriter())->saveExtraAccount(2, $standard, $custom, [
 			'userid' => 'user@example.test', 'password' => 'secret', 'email_sig' => '', 'use_custom_settings' => true, 'mail_server' => 'imap.example.test',
+			'microsoft_client_secret' => 'personal-client-secret',
 		], $preferences, $mail);
 		$this->assertContains(['add', 'email', '["ex_accounts"][2]["userid"]', 'encoded:user@example.test'], $preferences->writes);
 		$this->assertContains(['add', 'email', '["ex_accounts"][2]["password"]', 'encrypted:secret'], $preferences->writes);
@@ -103,6 +105,13 @@ class EmailPreferencesWriterTest extends TestCase
 		$this->assertContains(['sort', 'email', '["ex_accounts"]'], $preferences->writes);
 		$this->assertSame(['save'], end($preferences->writes));
 		$this->assertSame([2], $mail->invalidated);
+		$this->assertContains(['add', 'email', '["ex_accounts"][2]["microsoft_client_secret"]', 'encrypted:personal-client-secret'], $preferences->writes);
+		$preferences->writes = [];
+		(new EmailPreferencesWriter())->saveExtraAccount(2, $standard, $custom, [
+			'microsoft_client_secret' => '',
+		], $preferences, $mail);
+		$this->assertNotContains(['delete', 'email', '["ex_accounts"][2]["microsoft_client_secret"]'], $preferences->writes);
+		$this->assertSame([], array_values(array_filter($preferences->writes, static fn($write) => ($write[2] ?? '') === '["ex_accounts"][2]["microsoft_client_secret"]')));
 	}
 
 	/**

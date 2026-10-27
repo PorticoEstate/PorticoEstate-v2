@@ -82,6 +82,22 @@
 			input.addEventListener('change', () => { help.hidden = input.value !== 'google_oauth'; });
 			row.appendChild(help);
 		}
+		if (field.id === 'imap_auth_type' && field.microsoft_help)
+		{
+			const help = document.createElement('p');
+			help.className = 'email-preference-description';
+			help.setAttribute('role', 'note');
+			help.append(document.createTextNode(field.microsoft_help + ' '));
+			const registrationLink = document.createElement('a');
+			registrationLink.href = 'https://entra.microsoft.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade';
+			registrationLink.target = '_blank';
+			registrationLink.rel = 'noopener noreferrer';
+			registrationLink.textContent = 'Microsoft Entra';
+			help.append(registrationLink);
+			help.hidden = input.value !== 'microsoft_oauth';
+			input.addEventListener('change', () => { help.hidden = input.value !== 'microsoft_oauth'; });
+			row.appendChild(help);
+		}
 		parent.appendChild(row);
 	}
 

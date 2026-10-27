@@ -96,13 +96,17 @@ class Hospitality
     public $open_days_list;
 
     /**
+     * Stored as naive UTC (hospitality timestamps migration), served as an ISO-8601 instant.
      * @OA\Property(type="string", format="date-time")
+     * @Timestamp(format="c", sourceTimezone="UTC")
      * @Expose
      */
     public $created;
 
     /**
+     * Stored as naive UTC (hospitality timestamps migration), served as an ISO-8601 instant.
      * @OA\Property(type="string", format="date-time")
+     * @Timestamp(format="c", sourceTimezone="UTC")
      * @Expose
      */
     public $modified;

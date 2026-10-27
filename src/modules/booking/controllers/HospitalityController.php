@@ -33,6 +33,29 @@ class HospitalityController
 	}
 
 	/**
+	 * Has the row been modified after the version the client holds (X-If-Modified-Since)?
+	 *
+	 * `modified` is stored as naive UTC, so it is read as UTC here instead of in whatever zone PHP
+	 * happens to default to. The client's value is what the API sent it (ISO-8601 with an offset)
+	 * and carries its own zone; one without an offset is read as UTC too. Anything unparseable or
+	 * missing is not a conflict.
+	 */
+	public static function isStaleVersion(string $ifModifiedSince, ?string $storedModified): bool
+	{
+		if ($ifModifiedSince === '' || $storedModified === null || $storedModified === '') {
+			return false;
+		}
+		try {
+			$utc = new \DateTimeZone('UTC');
+			$clientTs = (new \DateTimeImmutable($ifModifiedSince, $utc))->getTimestamp();
+			$serverTs = (new \DateTimeImmutable($storedModified, $utc))->getTimestamp();
+		} catch (\Exception $e) {
+			return false;
+		}
+		return $clientTs < $serverTs;
+	}
+
+	/**
 	 * @OA\Get(
 	 *     path="/booking/hospitality",
 	 *     summary="List all hospitality entities",
@@ -194,19 +217,15 @@ class HospitalityController
 
 			// Conflict detection via X-If-Modified-Since header
 			$ifModifiedSince = $request->getHeaderLine('X-If-Modified-Since');
-			if ($ifModifiedSince && !empty($existing['modified'])) {
-				$clientTs = strtotime($ifModifiedSince);
-				$serverTs = strtotime($existing['modified']);
-				if ($clientTs && $serverTs && $clientTs < $serverTs) {
-					$freshRow = $this->repository->getById($id);
-					$freshModel = new Hospitality($freshRow);
-					$response->getBody()->write(json_encode([
-						'error' => 'CONFLICT',
-						'message' => 'Entity was modified by another user',
-						'current' => $freshModel->serialize()
-					]));
-					return $response->withHeader('Content-Type', 'application/json')->withStatus(409);
-				}
+			if (self::isStaleVersion($ifModifiedSince, $existing['modified'] ?? null)) {
+				$freshRow = $this->repository->getById($id);
+				$freshModel = new Hospitality($freshRow);
+				$response->getBody()->write(json_encode([
+					'error' => 'CONFLICT',
+					'message' => 'Entity was modified by another user',
+					'current' => $freshModel->serialize()
+				]));
+				return $response->withHeader('Content-Type', 'application/json')->withStatus(409);
 			}
 
 			$body = $request->getParsedBody() ?? json_decode($request->getBody()->getContents(), true) ?? [];

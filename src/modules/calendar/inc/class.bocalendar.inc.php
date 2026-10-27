@@ -1434,7 +1434,7 @@ class calendar_bocalendar
 		}
 		$user = $this->userSettings['account_id'];
 
-		$grants = (isset($this->grants[$owner]) ? $this->grants[$owner] : '');
+		$grants = (isset($this->grants[$owner]) ? $this->grants[$owner] : 0);
 
 		if ($owner == $user) //if the current user is the owner they have full rights
 		{

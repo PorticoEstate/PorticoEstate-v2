@@ -19,7 +19,7 @@ $setup_info['email']['app_order'] = '2';
 $setup_info['email']['enable']    = 1;
 $setup_info['email']['app_group']	= 'office';
 
-$setup_info['email']['tables']    = array('phpgw_anglemail', 'phpgw_email_message_index', 'phpgw_email_pop_messages');
+$setup_info['email']['tables']    = array('phpgw_email_message_index', 'phpgw_email_pop_messages');
 
 $setup_info['email']['author'][] = array('name' => '&quot;Angles&quot; Angelo Tony Puglisi');
 $setup_info['email']['license']  = 'GPL';
@@ -57,7 +57,7 @@ $setup_info['email']['depends'][] = array(
 
 $setup_info['email']['depends'][] = array(
 	'appname' => 'emailadmin',
-	'versions' => array('1.5.005')
+	'versions' => array('1.5.006')
 );
 
 $setup_info['email']['depends'][] = array(

@@ -21,7 +21,7 @@ $phpgw_baseline = array(
 			'mail_account' => array('type' => 'int', 'precision' => 4, 'nullable' => false),
 			'mailbox_key' => array('type' => 'varchar', 'precision' => 64, 'nullable' => false),
 			'uidl' => array('type' => 'varchar', 'precision' => 70, 'nullable' => false),
-			'raw_message' => array('type' => 'text', 'nullable' => false),
+			'raw_message' => array('type' => 'blob', 'nullable' => false),
 			'content_hash' => array('type' => 'varchar', 'precision' => 64, 'nullable' => false),
 			'message_size' => array('type' => 'int', 'precision' => 8, 'nullable' => false),
 			'received_at' => array('type' => 'int', 'precision' => 8, 'nullable' => false),
@@ -33,17 +33,6 @@ $phpgw_baseline = array(
 		'fk' => array(),
 		'ix' => array(),
 		'uc' => array(array('account_id', 'mail_account', 'mailbox_key', 'uidl')),
-	),
-	'phpgw_anglemail' => array(
-		'fd' => array(
-			'account_id' => array('type' => 'varchar', 'precision' => 20, 'nullable' => false),
-			'data_key' => array('type' => 'varchar', 'precision' => 255, 'nullable' => False, 'default' => ''),
-			'content' => array('type' => 'text', 'nullable' => False, 'default' => ''),
-		),
-		'pk' => array('account_id', 'data_key'),
-		'fk' => array(),
-			'ix' => array(),
-		'uc' => array()
 	),
 	'phpgw_email_message_index' =>	array(
 		'fd' => array(

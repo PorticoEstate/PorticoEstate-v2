@@ -136,7 +136,7 @@ class PopLocalMailboxTest extends TestCase
 		$store = new PopMessageStore(17, 2, PopMessageStore::mailboxKey('pop.test', 995, 'user'), $db);
 		try { $store->save('uid-a', 'truncated'); $this->fail('Incomplete mail was saved'); } catch (\RuntimeException $exception) { $this->assertSame([], $store->rows()); }
 		$store->save('uid-a', $this->raw());
-		$db->messages[1]['raw_message'] = base64_encode('corrupt');
+		$db->messages[1]['raw_message'] = 'corrupt';
 		$this->expectExceptionMessage('Local POP message failed its integrity check');
 		$store->raw(1);
 	}
@@ -233,7 +233,7 @@ class PopLocalMailboxTest extends TestCase
 		};
 		$store = new PopMessageStore(17, 2, PopMessageStore::mailboxKey('pop.test', 995, 'user'), $db);
 		$this->expectException(\App\modules\email\services\EmailMailConfigurationException::class);
-		$this->expectExceptionMessage('Upgrade the Email application to version 0.9.17.502');
+		$this->expectExceptionMessage('Upgrade the Email application to version 0.9.17.503');
 		$store->uidls();
 	}
 
@@ -242,13 +242,63 @@ class PopLocalMailboxTest extends TestCase
 		$db = new class {
 			public function prepare($sql): object {
 				return new class {
-					public function execute($values): bool { return false; }
+					public function bindValue($name, $value, $type): bool { return true; }
+					public function execute($values = []): bool { return false; }
 				};
 			}
 		};
 		$store = new PopMessageStore(17, 2, PopMessageStore::mailboxKey('pop.test', 995, 'user'), $db);
 		$this->expectExceptionMessage('Unable to persist the local POP mailbox');
 		$store->save('uid-a', $this->raw());
+	}
+
+	public function testRawMimeStoresBinaryBytesWithoutAnOuterBase64Layer(): void
+	{
+		$db = new PopStoreFakeDb();
+		$store = new PopMessageStore(17, 2, PopMessageStore::mailboxKey('pop.test', 995, 'user'), $db);
+		$raw = "From: sender@example.test\r\nContent-Transfer-Encoding: binary\r\n\r\n\x00\x01\xff\\'\r\n";
+		$store->save('binary-uid', $raw);
+		$this->assertSame($raw, $db->messages[1]['raw_message']);
+		$this->assertSame($raw, $store->raw(1));
+		$this->assertSame(PDO::PARAM_LOB, $db->bindingTypes['raw_message']);
+		$stream = fopen('php://temp', 'w+b');
+		try
+		{
+			fwrite($stream, $raw);
+			rewind($stream);
+			$db->messages[1]['raw_message'] = $stream;
+			$this->assertSame($raw, $store->raw(1));
+		}
+		finally { fclose($stream); }
+	}
+
+	public function testBinaryUpgradeConvertsTextAndSkipsExistingBytea(): void
+	{
+		require_once __DIR__ . '/../../src/modules/email/setup/tables_update.inc.php';
+		foreach (['text', 'bytea'] as $type)
+		{
+			$db = new class($type) {
+				public array $calls = [];
+				public function __construct(private string $type) {}
+				public function transaction_begin(): void { $this->calls[] = 'begin'; }
+				public function transaction_commit(): bool { $this->calls[] = 'commit'; return true; }
+				public function transaction_abort(): void { $this->calls[] = 'abort'; }
+				public function prepare($sql): object {
+					return new class($this->type) {
+						public function __construct(private string $type) {}
+						public function execute($values): bool { return true; }
+						public function fetchColumn(): string { return $this->type; }
+					};
+				}
+				public function exec($sql): int { $this->calls[] = $sql; return 0; }
+			};
+			$processor = (object) ['dbms' => 'postgres', 'm_odb' => $db];
+			$this->assertSame('0.9.17.503', \email_upgrade0_9_17_502($processor));
+			$this->assertSame('begin', $db->calls[0]);
+			$this->assertSame('commit', end($db->calls));
+			$this->assertCount($type === 'text' ? 3 : 2, $db->calls);
+			if ($type === 'text') $this->assertStringContainsString("USING decode(raw_message, 'base64')", $db->calls[1]);
+		}
 	}
 
 	public function testReadOnlySyncAgainstGreenMail(): void
@@ -277,15 +327,25 @@ class PopLocalMailboxTest extends TestCase
 final class PopStoreFakeDb
 {
 	public array $messages = [];
+	public array $bindingTypes = [];
 	public function prepare(string $sql): PopStoreFakeStatement { return new PopStoreFakeStatement($this, $sql); }
 }
 
 final class PopStoreFakeStatement
 {
 	private array $rows = [];
+	private array $bound = [];
 	public function __construct(private PopStoreFakeDb $db, private string $sql) {}
-	public function execute(array $values): bool
+	public function bindValue(string $name, mixed $value, int $type): bool
 	{
+		$name = ltrim($name, ':');
+		$this->bound[$name] = $value;
+		$this->db->bindingTypes[$name] = $type;
+		return true;
+	}
+	public function execute(array $values = []): bool
+	{
+		$values = $values + $this->bound;
 		$this->rows = [];
 		if (str_starts_with($this->sql, 'INSERT'))
 		{

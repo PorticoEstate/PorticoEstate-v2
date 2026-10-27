@@ -53,7 +53,7 @@
 					$sTranslated = 'int4';
 					break;
 				case 'blob':
-					$sTranslated = 'text';
+					$sTranslated = 'bytea';
 					break;
 				case 'char':
 					if ($iPrecision > 0 && $iPrecision < 256)
@@ -218,6 +218,9 @@
 				case 'json':
 				case 'jsonb':
 					$sTranslated = "'type' => '$sType'";
+					break;
+				case 'bytea':
+					$sTranslated = "'type' => 'blob'";
 					break;
 				case 'bool':
 				case 'boolean':

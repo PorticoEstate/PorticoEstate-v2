@@ -95,5 +95,7 @@ function email_upgrade0_9_17_501($oProc)
 		$oProc->m_odb->transaction_abort();
 		return false;
 	}
+
+	$oProc->DropTable('phpgw_anglemail');
 	if ($oProc->m_odb->transaction_commit()) return '0.9.17.502';
 }

@@ -24,6 +24,13 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 
 class EmailMicrosoftOAuthController
 {
+	/**
+	 * Start Microsoft OAuth using the selected account's effective client credentials.
+	 *
+	 * @param Request $request The HTTP request containing query parameters, submitted values, and request attributes.
+	 * @param Response $response The response to populate with content, headers, and status.
+	 * @return Response A Microsoft sign-in redirect or a plain-text account error.
+	 */
 	public function authorize(Request $request, Response $response): Response
 	{
 		$account = filter_var($request->getQueryParams()['acctnum'] ?? 0, FILTER_VALIDATE_INT);
@@ -68,6 +75,13 @@ class EmailMicrosoftOAuthController
 		}
 	}
 
+	/**
+	 * Exchange the Microsoft callback code and persist the encrypted account refresh token.
+	 *
+	 * @param Request $request The HTTP request containing query parameters, submitted values, and request attributes.
+	 * @param Response $response The response to populate with content, headers, and status.
+	 * @return Response An account-settings redirect or a plain-text authorization error.
+	 */
 	public function callback(Request $request, Response $response): Response
 	{
 		$query = $request->getQueryParams();
@@ -116,12 +130,26 @@ class EmailMicrosoftOAuthController
 		}
 	}
 
+	/**
+	 * Build an escaped plain-text OAuth error response.
+	 *
+	 * @param Response $response The response to populate with content, headers, and status.
+	 * @param string $message The error message to expose in the response.
+	 * @param int $status The HTTP status code to return.
+	 * @return Response The error response with the requested HTTP status.
+	 */
 	private function error(Response $response, string $message, int $status): Response
 	{
 		$response->getBody()->write((string) htmlspecialchars($message, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'));
 		return $response->withStatus($status)->withHeader('Content-Type', 'text/plain; charset=UTF-8');
 	}
 
+	/**
+	 * Resolve the mail profile and effective Microsoft callback URI.
+	 *
+	 * @param Request $request The HTTP request containing query parameters, submitted values, and request attributes.
+	 * @return array The resolved profile including its Microsoft redirect URI.
+	 */
 	private function resolvedProfile(Request $request): array
 	{
 		$profile = \CreateObject('emailadmin.emailadmin_bo', true)->getResolvedProfileData('email');

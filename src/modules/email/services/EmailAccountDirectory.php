@@ -17,6 +17,13 @@ namespace App\modules\email\services;
 
 final class EmailAccountDirectory
 {
+	/**
+	 * Check whether the requested account occurs in the enabled account summaries.
+	 *
+	 * @param array $accounts The stored account map or normalized account summaries required by this operation.
+	 * @param int $accountNumber The mail account number to find among enabled accounts.
+	 * @return bool Whether a matching enabled account exists.
+	 */
 	public static function hasEnabledAccount(array $accounts, int $accountNumber): bool
 	{
 		foreach ($accounts as $account)
@@ -31,6 +38,13 @@ final class EmailAccountDirectory
 		return false;
 	}
 
+	/**
+	 * Combine account status summaries with saved names for account-list output.
+	 *
+	 * @param array $accounts The stored account map or normalized account summaries required by this operation.
+	 * @param array $stored Saved extra-account preferences keyed by account number.
+	 * @return array Labeled extra-account entries with identifiers and status.
+	 */
 	public static function serialize(array $accounts, array $stored): array
 	{
 		$result = [];
@@ -59,6 +73,12 @@ final class EmailAccountDirectory
 		return $result;
 	}
 
+	/**
+	 * Find the next usable account number from ordered legacy account summaries.
+	 *
+	 * @param array $accounts The stored account map or normalized account summaries required by this operation.
+	 * @return int The available extra-account number.
+	 */
 	public static function nextAccountNumber(array $accounts): int
 	{
 		foreach ($accounts as $index => $account)

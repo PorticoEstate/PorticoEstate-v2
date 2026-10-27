@@ -17,6 +17,12 @@ namespace App\modules\email\services;
 
 final class EmailFolderSerializer
 {
+	/**
+	 * Normalize transport folder names, account references, and message counts.
+	 *
+	 * @param array $folders The transport folder entries to normalize.
+	 * @return array Folder descriptors for the folder API.
+	 */
 	public static function serialize(array $folders): array
 	{
 		return array_values(array_map(static function ($folder): array

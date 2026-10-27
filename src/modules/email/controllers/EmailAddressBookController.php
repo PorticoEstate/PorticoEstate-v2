@@ -21,6 +21,13 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 
 class EmailAddressBookController
 {
+	/**
+	 * Search the address book for recipient suggestions.
+	 *
+	 * @param Request $request The HTTP request containing query parameters, submitted values, and request attributes.
+	 * @param Response $response The response to populate with content, headers, and status.
+	 * @return Response Contact suggestions or a search error as JSON.
+	 */
 	public function search(Request $request, Response $response): Response
 	{
 		$query = $request->getQueryParams();
@@ -90,6 +97,14 @@ class EmailAddressBookController
 		}
 	}
 
+	/**
+	 * Encode an API payload and apply its JSON response headers and status.
+	 *
+	 * @param Response $response The response to populate with content, headers, and status.
+	 * @param array $data The response payload or template variables to render.
+	 * @param int $status The HTTP status code to return.
+	 * @return Response The JSON HTTP response.
+	 */
 	private function json(Response $response, array $data, int $status = 200): Response
 	{
 		$encoded = json_encode($data);

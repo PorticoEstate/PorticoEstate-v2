@@ -25,6 +25,14 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 
 class EmailInboxController
 {
+	/**
+	 * Encode an API payload and apply its JSON response headers and status.
+	 *
+	 * @param Response $response The response to populate with content, headers, and status.
+	 * @param array $data The response payload or template variables to render.
+	 * @param int $status The HTTP status code to return.
+	 * @return Response The JSON HTTP response.
+	 */
 	private function json(Response $response, array $data, int $status = 200): Response
 	{
 		$encoded = json_encode($data);
@@ -32,6 +40,13 @@ class EmailInboxController
 		return $response->withStatus($status)->withHeader('Content-Type', 'application/json');
 	}
 
+	/**
+	 * Load a sorted inbox page through the account's IMAP index or local POP store.
+	 *
+	 * @param Request $request The HTTP request containing query parameters, submitted values, and request attributes.
+	 * @param Response $response The response to populate with content, headers, and status.
+	 * @return Response Message items, folder counts, and pagination state as JSON.
+	 */
 	public function index(Request $request, Response $response): Response
 	{
 		try
@@ -117,6 +132,13 @@ class EmailInboxController
 		}
 	}
 
+	/**
+	 * Validate and execute confirmed batch message actions.
+	 *
+	 * @param Request $request The HTTP request containing query parameters, submitted values, and request attributes.
+	 * @param Response $response The response to populate with content, headers, and status.
+	 * @return Response Per-message action results or validation errors as JSON.
+	 */
 	public function action(Request $request, Response $response): Response
 	{
 		$input = $request->getParsedBody();
@@ -163,6 +185,13 @@ class EmailInboxController
 		}
 	}
 
+	/**
+	 * Move a message between validated mailbox folders.
+	 *
+	 * @param Request $request The HTTP request containing query parameters, submitted values, and request attributes.
+	 * @param Response $response The response to populate with content, headers, and status.
+	 * @return Response The move result or a mailbox validation error as JSON.
+	 */
 	public function move(Request $request, Response $response): Response
 	{
 		$input = $request->getParsedBody();
@@ -239,6 +268,13 @@ class EmailInboxController
 		}
 	}
 
+	/**
+	 * Update the requested message's supported read or unread flag.
+	 *
+	 * @param Request $request The HTTP request containing query parameters, submitted values, and request attributes.
+	 * @param Response $response The response to populate with content, headers, and status.
+	 * @return Response The persisted read-state result or an update error as JSON.
+	 */
 	public function seen(Request $request, Response $response): Response
 	{
 		$input = $request->getParsedBody();
@@ -307,6 +343,13 @@ class EmailInboxController
 		}
 	}
 
+	/**
+	 * Decode transport header addresses for message API output.
+	 *
+	 * @param array|object|null $addresses The transport-provided header address collection.
+	 * @param object $mail The active mail runtime used for mailbox access and header decoding.
+	 * @return array Address entries containing display names and email addresses.
+	 */
 	private function addressList($addresses, object $mail): array
 	{
 		$result = [];
@@ -329,6 +372,13 @@ class EmailInboxController
 		return $result;
 	}
 
+	/**
+	 * Load a message, render its MIME content, and apply supported read-state updates.
+	 *
+	 * @param Request $request The HTTP request containing query parameters, submitted values, and request attributes.
+	 * @param Response $response The response to populate with content, headers, and status.
+	 * @return Response Message content, attachment links, and navigation references as JSON.
+	 */
 	public function message(Request $request, Response $response): Response
 	{
 		$msgball = (array) (($request->getQueryParams()['msgball'] ?? []));
@@ -426,6 +476,13 @@ class EmailInboxController
 		}
 	}
 
+	/**
+	 * List mailbox folders with message counts and enabled account destinations.
+	 *
+	 * @param Request $request The HTTP request containing query parameters, submitted values, and request attributes.
+	 * @param Response $response The response to populate with content, headers, and status.
+	 * @return Response Folder entries, account choices, and synchronization warnings as JSON.
+	 */
 	public function folders(Request $request, Response $response): Response
 	{
 		$query = $request->getQueryParams();
@@ -503,6 +560,13 @@ class EmailInboxController
 		}
 	}
 
+	/**
+	 * Execute a validated folder-management command.
+	 *
+	 * @param Request $request The HTTP request containing query parameters, submitted values, and request attributes.
+	 * @param Response $response The response to populate with content, headers, and status.
+	 * @return Response The folder action result or validation errors as JSON.
+	 */
 	public function folderAction(Request $request, Response $response): Response
 	{
 		$input = $request->getParsedBody();
@@ -569,6 +633,13 @@ class EmailInboxController
 		}
 	}
 
+	/**
+	 * Validate and download a selected message attachment or permitted inline image.
+	 *
+	 * @param Request $request The HTTP request containing query parameters, submitted values, and request attributes.
+	 * @param Response $response The response to populate with content, headers, and status.
+	 * @return Response Attachment bytes with download headers, or an error response.
+	 */
 	public function attachment(Request $request, Response $response): Response
 	{
 		$query = $request->getQueryParams();

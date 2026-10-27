@@ -17,10 +17,21 @@ namespace App\modules\email\services;
 
 final class EmailComposePrefill
 {
+	/**
+	 * Bind the mail runtime used to read source messages and account preferences.
+	 *
+	 * @param object $mail The active mail runtime used for mailbox access and header decoding.
+	 */
 	public function __construct(private object $mail)
 	{
 	}
 
+	/**
+	 * Build compose fields for a new message, reply, forward, or draft edit.
+	 *
+	 * @param array $query The query parameters containing compose action and mailbox references.
+	 * @return array Recipient fields, subject, body, and signature state.
+	 */
 	public function build(array $query): array
 	{
 		$hasSignature = trim((string) $this->mail->get_pref_value('email_sig')) !== '';
@@ -95,6 +106,13 @@ final class EmailComposePrefill
 		return $prefill;
 	}
 
+	/**
+	 * Merge new-message query values into the initial compose defaults.
+	 *
+	 * @param array $query The query parameters containing compose action and mailbox references.
+	 * @param array $prefill The initial compose values to populate from the query.
+	 * @return array The populated new-message fields.
+	 */
 	private function newMessage(array $query, array $prefill): array
 	{
 		if (isset($query['mailto']) && is_string($query['mailto']) && $query['mailto'] !== '')
@@ -116,6 +134,12 @@ final class EmailComposePrefill
 		return $prefill;
 	}
 
+	/**
+	 * Choose the first suitable visible MIME body part.
+	 *
+	 * @param array $parts The classified MIME part descriptors for the source message.
+	 * @return array The selected part descriptor or an empty array when none is suitable.
+	 */
 	private function firstPresentable(array $parts): array
 	{
 		foreach ($parts as $part)
@@ -128,6 +152,14 @@ final class EmailComposePrefill
 		return ['m_part_num_mime' => '1', 'encoding' => '', 'subtype' => 'plain'];
 	}
 
+	/**
+	 * Build quoted reply text from the source headers and selected MIME part.
+	 *
+	 * @param object $headers The decoded message envelope or parsed header values used by the operation.
+	 * @param array $msgball The source message reference containing acctnum, folder, and msgnum.
+	 * @param array $part The selected classified MIME body-part descriptor.
+	 * @return string The reply attribution and quoted source body.
+	 */
 	private function replyBody(object $headers, array $msgball, array $part): string
 	{
 		$from = $headers->from[0] ?? $headers->reply_to[0] ?? null;
@@ -140,6 +172,14 @@ final class EmailComposePrefill
 		return "\r\n\r\n\r\n" . $who . ' ' . $this->language('wrote') . ":\r\n" . $prefix . "\r\n" . $this->quoteBody($msgball, $part, $prefix) . "\r\n";
 	}
 
+	/**
+	 * Build the forwarded body according to the account's inline-forward preference.
+	 *
+	 * @param object $headers The decoded message envelope or parsed header values used by the operation.
+	 * @param array $msgball The source message reference containing acctnum, folder, and msgnum.
+	 * @param array $part The selected classified MIME body-part descriptor.
+	 * @return string The prepared forward body.
+	 */
 	private function forwardBody(object $headers, array $msgball, array $part): string
 	{
 		$from = $headers->from[0] ?? null;
@@ -154,6 +194,12 @@ final class EmailComposePrefill
 		return $body;
 	}
 
+	/**
+	 * Build reply-all recipient lists while excluding inappropriate duplicates.
+	 *
+	 * @param object $headers The decoded message envelope or parsed header values used by the operation.
+	 * @return array The To and Cc recipient strings.
+	 */
 	private function replyAllAddresses(object $headers): array
 	{
 		$from = $headers->from[0] ?? null;
@@ -171,6 +217,12 @@ final class EmailComposePrefill
 		return [$to, $this->addresses($headers->cc ?? [])];
 	}
 
+	/**
+	 * Format a collection of transport addresses for compose input fields.
+	 *
+	 * @param mixed $addresses The transport-provided header address collection.
+	 * @return string The formatted recipient list.
+	 */
 	private function addresses(mixed $addresses): string
 	{
 		if (!is_array($addresses))
@@ -180,21 +232,49 @@ final class EmailComposePrefill
 		return implode(', ', array_filter(array_map(fn($address) => $this->address($address), $addresses)));
 	}
 
+	/**
+	 * Format a transport address with its decoded personal name.
+	 *
+	 * @param object $address The transport address object containing personal, mailbox, and host values.
+	 * @param bool $htmlEncode Whether the resulting address should be escaped for HTML output.
+	 * @return string The formatted address, optionally HTML-encoded.
+	 */
 	private function address(object $address, bool $htmlEncode = false): string
 	{
 		return (string) $this->mail->make_rfc2822_address($address, $htmlEncode);
 	}
 
+	/**
+	 * Join a transport address mailbox and host into an email address.
+	 *
+	 * @param object $address The transport address object containing personal, mailbox, and host values.
+	 * @return string The plain email address.
+	 */
 	private function plainAddress(object $address): string
 	{
 		return trim((string) ($address->mailbox ?? '') . '@' . (string) ($address->host ?? ''), '@');
 	}
 
+	/**
+	 * Decode the source subject and apply the requested reply or forward prefix.
+	 *
+	 * @param object $headers The decoded message envelope or parsed header values used by the operation.
+	 * @param string $prefix The reply or forward subject prefix to apply when needed.
+	 * @return string The compose subject.
+	 */
 	private function subject(object $headers, string $prefix = ''): string
 	{
 		return htmlspecialchars_decode((string) $this->mail->get_subject($headers, $prefix), ENT_QUOTES | ENT_HTML5);
 	}
 
+	/**
+	 * Fetch and decode a MIME body part for plain compose text.
+	 *
+	 * @param array $msgball The source message reference containing acctnum, folder, and msgnum.
+	 * @param array $part The selected classified MIME body-part descriptor.
+	 * @param bool $stripHtml Whether HTML source content should be converted to plain compose text.
+	 * @return string The decoded source text, with HTML stripped when requested.
+	 */
 	private function decodedPart(array $msgball, array $part, bool $stripHtml = true): string
 	{
 		$body = $this->fetchPart($msgball, $part);
@@ -205,6 +285,13 @@ final class EmailComposePrefill
 		return htmlspecialchars_decode((string) $this->mail->normalize_crlf($body), ENT_QUOTES | ENT_HTML5);
 	}
 
+	/**
+	 * Retrieve a selected source-message MIME part through the mail runtime.
+	 *
+	 * @param array $msgball The source message reference containing acctnum, folder, and msgnum.
+	 * @param array $part The selected classified MIME body-part descriptor.
+	 * @return string The fetched MIME-part content.
+	 */
 	private function fetchPart(array $msgball, array $part): string
 	{
 		$msgball['part_no'] = (string) ($part['m_part_num_mime'] ?? '1');
@@ -220,6 +307,15 @@ final class EmailComposePrefill
 		return $body;
 	}
 
+	/**
+	 * Decode a source body and prefix its lines for quoting.
+	 *
+	 * @param array $msgball The source message reference containing acctnum, folder, and msgnum.
+	 * @param array $part The selected classified MIME body-part descriptor.
+	 * @param string $quotePrefix The text prepended to each quoted source line.
+	 * @param string $leading The attribution or leading text placed before the quoted body.
+	 * @return string The leading attribution and quoted body.
+	 */
 	private function quoteBody(array $msgball, array $part, string $quotePrefix, string $leading = ''): string
 	{
 		$body = $this->decodedPart($msgball, $part);
@@ -236,6 +332,13 @@ final class EmailComposePrefill
 		return htmlspecialchars_decode(trim($leading), ENT_QUOTES | ENT_HTML5);
 	}
 
+	/**
+	 * Copy source-message attachments into the current compose store.
+	 *
+	 * @param array $msgball The source message reference containing acctnum, folder, and msgnum.
+	 * @param array $parts The classified MIME part descriptors for the source message.
+	 * @return void No value is returned.
+	 */
 	private function restoreAttachments(array $msgball, array $parts): void
 	{
 		$storage = new EmailAttachmentStorage((string) $this->mail->att_files_dir);
@@ -260,6 +363,12 @@ final class EmailComposePrefill
 		}
 	}
 
+	/**
+	 * Resolve a legacy email language token for compose attribution text.
+	 *
+	 * @param string $key The legacy email language token to resolve.
+	 * @return string The translated token value.
+	 */
 	private function language(string $key): string
 	{
 		return function_exists('lang') ? \lang($key) : $key;

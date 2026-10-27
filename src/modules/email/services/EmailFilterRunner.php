@@ -20,6 +20,12 @@ final class EmailFilterRunner
 	private EmailFilterMatcher $matcher;
 	private \Closure $moveExecutor;
 
+	/**
+	 * Configure the filter matcher and message-move executor.
+	 *
+	 * @param EmailFilterMatcher|null $matcher The optional header matcher; null uses the default implementation.
+	 * @param callable|null $moveExecutor The optional callback accepting a mail runtime and normalized move request and returning action results.
+	 */
 	public function __construct(?EmailFilterMatcher $matcher = null, ?callable $moveExecutor = null)
 	{
 		$this->matcher = $matcher ?? new EmailFilterMatcher();
@@ -28,6 +34,15 @@ final class EmailFilterRunner
 			: static fn(object $mail, array $request): array => (new EmailMessageActions())->execute($mail, $request);
 	}
 
+	/**
+	 * Evaluate eligible mailbox messages and optionally execute matching filter moves.
+	 *
+	 * @param object $mail The active mail runtime used for mailbox access and header decoding.
+	 * @param array $filters The filter definitions keyed by their stored identifiers.
+	 * @param bool $test Whether to report matching messages without executing filter moves.
+	 * @param int|null $filterNumber The optional identifier limiting execution to a single filter.
+	 * @return array|false Match and action reports, or false when no applicable filters exist.
+	 */
 	public function run(object $mail, array $filters, bool $test = false, ?int $filterNumber = null): array|false
 	{
 		if ($filterNumber !== null)
@@ -148,6 +163,12 @@ final class EmailFilterRunner
 		return ['items' => $items, 'matchReport' => implode("\n", $matchReport), 'tested' => $test, 'didExpunge' => $didMove, 'failed' => $failed];
 	}
 
+	/**
+	 * Unfold raw message headers into values used by filter matching.
+	 *
+	 * @param string $raw The complete original MIME message or raw header bytes required by the operation.
+	 * @return array Parsed header names and values.
+	 */
 	private function parseHeaders(string $raw): array
 	{
 		$headers = [];

@@ -25,10 +25,22 @@ final class EmailOutgoingMessage
 	private array $attachmentDescriptors = [];
 	private array $captureEnvelope = [];
 
+	/**
+	 * Configure the optional mailer factory used for outgoing-message construction.
+	 *
+	 * @param \Closure|null $mailerFactory The optional factory returning a PHPMailer instance; null uses the configured application mailer.
+	 */
 	public function __construct(private ?\Closure $mailerFactory = null)
 	{
 	}
 
+	/**
+	 * Construct an outgoing mailer with recipients, content, attachments, and provider settings.
+	 *
+	 * @param array $payload The normalized compose values used to build the message.
+	 * @param object $mail The active mail runtime used for mailbox access and header decoding.
+	 * @return PHPMailer The configured mailer ready for MIME preparation and delivery.
+	 */
 	public function prepare(array $payload, object $mail): PHPMailer
 	{
 		$mailer = $this->mailerFactory ? ($this->mailerFactory)() : new MailerSmtp();
@@ -130,6 +142,12 @@ final class EmailOutgoingMessage
 		return $mailer;
 	}
 
+	/**
+	 * Prepare MIME and deliver or capture the configured outgoing message.
+	 *
+	 * @param PHPMailer $mailer The configured PHPMailer instance to update or send.
+	 * @return array Delivery status, generated MIME, and any delivery error.
+	 */
 	public function send(PHPMailer $mailer): array
 	{
 		if (!$mailer->preSend())
@@ -156,6 +174,14 @@ final class EmailOutgoingMessage
 		}
 	}
 
+	/**
+	 * Parse recipient input and add addresses through the requested mailer method.
+	 *
+	 * @param PHPMailer $mailer The configured PHPMailer instance to update or send.
+	 * @param string $value The recipient list from a To, Cc, or Bcc compose field.
+	 * @param string $method The PHPMailer recipient-addition method to invoke.
+	 * @return void No value is returned.
+	 */
 	private function addAddresses(PHPMailer $mailer, string $value, string $method): void
 	{
 		if (trim($value) === '')
@@ -187,6 +213,13 @@ final class EmailOutgoingMessage
 		}
 	}
 
+	/**
+	 * Fetch and normalize the original message for an attached forwarded-message part.
+	 *
+	 * @param object $mail The active mail runtime used for mailbox access and header decoding.
+	 * @param array $msgball The source message reference containing acctnum, folder, and msgnum.
+	 * @return string The original message headers and body as MIME text.
+	 */
 	private function forwardedMessage(object $mail, array $msgball): string
 	{
 		$account = filter_var($msgball['acctnum'] ?? null, FILTER_VALIDATE_INT);
@@ -218,6 +251,14 @@ final class EmailOutgoingMessage
 		return trim($header) . "\r\n\r\n" . $body;
 	}
 
+	/**
+	 * Configure Gmail SMTP XOAUTH2 when the source account uses Google OAuth.
+	 *
+	 * @param PHPMailer $mailer The configured PHPMailer instance to update or send.
+	 * @param object $mail The active mail runtime used for mailbox access and header decoding.
+	 * @param int $account The mail account number; null selects the main preference root where supported.
+	 * @return void No value is returned.
+	 */
 	private function configureGoogleSmtp(PHPMailer $mailer, object $mail, int $account): void
 	{
 		if ((string) $mail->get_pref_value('imap_auth_type', $account) !== 'google_oauth')
@@ -250,6 +291,11 @@ final class EmailOutgoingMessage
 		$mailer->setOAuth(new GoogleSmtpOAuthTokenProvider($emailAddress, (string) $credentials['password']));
 	}
 
+	/**
+	 * Resolve the originating client IP from the request server variables.
+	 *
+	 * @return string The validated IP address or the unavailable fallback.
+	 */
 	private function originatingIp(): string
 	{
 		$forwarded = trim(explode(',', (string) ($_SERVER['HTTP_X_FORWARDED_FOR'] ?? ''))[0]);
@@ -257,6 +303,13 @@ final class EmailOutgoingMessage
 		return filter_var($remote, FILTER_VALIDATE_IP) ? $remote : 'not available';
 	}
 
+	/**
+	 * Wrap unquoted reply text while preserving already quoted lines.
+	 *
+	 * @param string $body The reply body whose unquoted lines should be wrapped.
+	 * @param object $mail The active mail runtime used for mailbox access and header decoding.
+	 * @return string The normalized and wrapped reply body.
+	 */
 	private function wrapUnquotedReplyText(string $body, object $mail): string
 	{
 		$prefix = (string) ($mail->reply_prefix ?? '>');

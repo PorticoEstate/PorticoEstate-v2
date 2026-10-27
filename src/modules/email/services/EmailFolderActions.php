@@ -17,6 +17,13 @@ namespace App\modules\email\services;
 
 final class EmailFolderActions
 {
+	/**
+	 * Validate a folder command and execute it through the account's transport.
+	 *
+	 * @param object $mail The active mail runtime used for mailbox access and header decoding.
+	 * @param array $input The submitted request values to validate and normalize.
+	 * @return array The folder-management result.
+	 */
 	public function execute(object $mail, array $input): array
 	{
 		$action = (string) ($input['action'] ?? '');

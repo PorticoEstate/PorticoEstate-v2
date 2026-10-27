@@ -19,6 +19,12 @@ use App\modules\phpgwapi\services\Preferences;
 
 final class EmailFilterStore
 {
+	/**
+	 * Read the active user's unprocessed mailbox filter preferences.
+	 *
+	 * @param object $mail The active mail runtime used for mailbox access and header decoding.
+	 * @return array The stored filter definitions.
+	 */
 	public function raw(object $mail): array
 	{
 		$filters = is_array($mail->raw_filters ?? null) ? $mail->raw_filters : [];
@@ -40,6 +46,13 @@ final class EmailFilterStore
 		return $filters;
 	}
 
+	/**
+	 * Build editable values for a new or existing filter.
+	 *
+	 * @param object $mail The active mail runtime used for mailbox access and header decoding.
+	 * @param string $id The stored entity identifier or new-entry marker accepted by the operation.
+	 * @return array|null The filter editor data, or null for an unavailable filter.
+	 */
 	public function editor(object $mail, string $id): ?array
 	{
 		$filters = $this->raw($mail);
@@ -76,6 +89,15 @@ final class EmailFilterStore
 		];
 	}
 
+	/**
+	 * Validate and persist a new or edited filter definition.
+	 *
+	 * @param object $mail The active mail runtime used for mailbox access and header decoding.
+	 * @param array $filter The stored or submitted filter definition.
+	 * @param string $id The stored entity identifier or new-entry marker accepted by the operation.
+	 * @param object|null $preferenceStore The optional preference repository; null resolves the current user repository.
+	 * @return int The saved filter number.
+	 */
 	public function save(object $mail, array $filter, string $id, ?object $preferenceStore = null): int
 	{
 		$filters = $this->raw($mail);
@@ -127,6 +149,15 @@ final class EmailFilterStore
 		return $index;
 	}
 
+	/**
+	 * Apply a supported filter-management action and persist the result.
+	 *
+	 * @param object $mail The active mail runtime used for mailbox access and header decoding.
+	 * @param string $action The requested filter-management command.
+	 * @param int $id The stored entity identifier or new-entry marker accepted by the operation.
+	 * @param object|null $preferenceStore The optional preference repository; null resolves the current user repository.
+	 * @return bool Whether the action was accepted.
+	 */
 	public function action(object $mail, string $action, int $id, ?object $preferenceStore = null): bool
 	{
 		$filters = $this->raw($mail);
@@ -162,6 +193,14 @@ final class EmailFilterStore
 		return true;
 	}
 
+	/**
+	 * Save the complete filter preference collection and invalidate related mail state.
+	 *
+	 * @param object $mail The active mail runtime used for mailbox access and header decoding.
+	 * @param array $filters The filter definitions keyed by their stored identifiers.
+	 * @param object|null $preferenceStore The optional preference repository; null resolves the current user repository.
+	 * @return void No value is returned.
+	 */
 	private function persist(object $mail, array $filters, ?object $preferenceStore = null): void
 	{
 		$filters = array_values($filters);

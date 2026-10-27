@@ -17,6 +17,14 @@ namespace App\modules\email\services;
 
 final class EmailMessageSerializer
 {
+	/**
+	 * Convert prepared message data and MIME parts into sanitized API content.
+	 *
+	 * @param array $message Prepared account, message-reference, subject, and date values.
+	 * @param array $parts The classified MIME part descriptors for the source message.
+	 * @param array $headers The decoded message envelope or parsed header values used by the operation.
+	 * @return array The message envelope, display bodies, and attachment descriptors.
+	 */
 	public static function serialize(array $message, array $parts, array $headers = []): array
 	{
 		$bodyParts = [];

@@ -42,6 +42,12 @@ final class EmailSearchCriteria
 		'flg_unseen' => 'UNSEEN',
 	];
 
+	/**
+	 * Validate search account, folder, term, flag, and date input.
+	 *
+	 * @param array $input The submitted request values to validate and normalize.
+	 * @return array|null Normalized search criteria, or null when the request is invalid.
+	 */
 	public static function normalize(array $input): ?array
 	{
 		$fldball = (array) ($input['fldball'] ?? []);
@@ -117,6 +123,12 @@ final class EmailSearchCriteria
 		];
 	}
 
+	/**
+	 * Build escaped mailbox search syntax from normalized criteria.
+	 *
+	 * @param array $criteria Normalized text terms, flags, and date restrictions.
+	 * @return string The combined search expression, defaulting to ALL.
+	 */
 	public static function build(array $criteria): string
 	{
 		$parts = [];

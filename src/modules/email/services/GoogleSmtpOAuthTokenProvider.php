@@ -17,6 +17,12 @@ namespace App\modules\email\services;
 
 final class GoogleSmtpOAuthTokenProvider implements \PHPMailer\PHPMailer\OAuthTokenProvider
 {
+	/**
+	 * Validate and retain the Gmail address and access token for SMTP authentication.
+	 *
+	 * @param string $emailAddress The full Gmail mailbox address to bind to authorization.
+	 * @param string $accessToken The current provider access token.
+	 */
 	public function __construct(private string $emailAddress, private string $accessToken)
 	{
 		if ($this->emailAddress === '' || $this->accessToken === '')
@@ -25,6 +31,11 @@ final class GoogleSmtpOAuthTokenProvider implements \PHPMailer\PHPMailer\OAuthTo
 		}
 	}
 
+	/**
+	 * Build the SASL XOAUTH2 authentication payload expected by PHPMailer.
+	 *
+	 * @return string The base64-encoded user and bearer-token payload.
+	 */
 	public function getOauth64(): string
 	{
 		return base64_encode('user=' . $this->emailAddress . "\001auth=Bearer " . $this->accessToken . "\001\001");

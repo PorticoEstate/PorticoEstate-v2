@@ -23,12 +23,28 @@ final class MicrosoftImapOAuth
 	private const STATE_PREFIX = 'microsoft_imap_oauth_';
 	private const SCOPE = 'https://outlook.office.com/IMAP.AccessAsUser.All offline_access openid profile';
 
+	/**
+	 * Check effective Microsoft client credentials and callback availability.
+	 *
+	 * @param array $profile The resolved emailadmin profile containing provider defaults.
+	 * @param array $accountPreferences The selected account's saved provider settings and optional client overrides.
+	 * @return bool Whether authorization can be started for the account.
+	 */
 	public static function isConfigured(array $profile, array $accountPreferences = []): bool
 	{
 		$config = self::configuration($profile, $accountPreferences);
 		return $config['client_id'] !== '' && $config['client_secret'] !== '' && $config['redirect_uri'] !== '';
 	}
 
+	/**
+	 * Create OAuth state and PKCE values and build the Microsoft sign-in URL.
+	 *
+	 * @param int $account The mail account number; null selects the main preference root where supported.
+	 * @param string $loginHint The mailbox login name suggested to Microsoft sign-in.
+	 * @param array $profile The resolved emailadmin profile containing provider defaults.
+	 * @param array $accountPreferences The selected account's saved provider settings and optional client overrides.
+	 * @return string The Microsoft authorization URL for the selected account.
+	 */
 	public static function authorizationUrl(int $account, string $loginHint, array $profile, array $accountPreferences = []): string
 	{
 		$config = self::configuration($profile, $accountPreferences);
@@ -63,6 +79,15 @@ final class MicrosoftImapOAuth
 		return self::authority($config['tenant']) . '/oauth2/v2.0/authorize?' . http_build_query($parameters);
 	}
 
+	/**
+	 * Validate the callback state and exchange the Microsoft authorization code.
+	 *
+	 * @param string $code The authorization code returned to the callback.
+	 * @param string $state The session-bound OAuth state token returned by the provider.
+	 * @param array $profile The resolved emailadmin profile containing provider defaults.
+	 * @param array|null $accountPreferences The selected account's saved provider settings and optional client overrides.
+	 * @return array The bound account identifier and issued OAuth tokens.
+	 */
 	public static function completeAuthorization(string $code, string $state, array $profile, ?array $accountPreferences = null): array
 	{
 		if ($code === '' || !preg_match('/^[a-f0-9]{64}$/i', $state))
@@ -101,6 +126,14 @@ final class MicrosoftImapOAuth
 		return ['account' => (int) ($stateData['account'] ?? 0)] + $tokens;
 	}
 
+	/**
+	 * Refresh an Outlook IMAP access token using effective account credentials.
+	 *
+	 * @param string $refreshToken The decrypted saved refresh token to exchange.
+	 * @param array $profile The resolved emailadmin profile containing provider defaults.
+	 * @param array $accountPreferences The selected account's saved provider settings and optional client overrides.
+	 * @return array The token response with the effective refresh token.
+	 */
 	public static function refreshAccessToken(string $refreshToken, array $profile, array $accountPreferences = []): array
 	{
 		if ($refreshToken === '')
@@ -124,6 +157,13 @@ final class MicrosoftImapOAuth
 		return $tokens;
 	}
 
+	/**
+	 * Send a proxy-aware token request to the configured Microsoft tenant authority.
+	 *
+	 * @param array $parameters The OAuth grant parameters to send to the token endpoint.
+	 * @param array $config The effective OAuth client credentials and provider configuration.
+	 * @return array The decoded Microsoft token response.
+	 */
 	private static function requestTokens(array $parameters, array $config): array
 	{
 		$parameters['client_id'] = $config['client_id'];
@@ -156,6 +196,12 @@ final class MicrosoftImapOAuth
 		return $tokens;
 	}
 
+	/**
+	 * Apply configured HTTP proxy settings to Microsoft token request options.
+	 *
+	 * @param array $options The existing cURL option map.
+	 * @return array The cURL options including valid proxy settings.
+	 */
 	private static function withHttpProxy(array $options): array
 	{
 		$server = (array) Settings::getInstance()->get('server');
@@ -172,6 +218,13 @@ final class MicrosoftImapOAuth
 		return $options;
 	}
 
+	/**
+	 * Resolve Microsoft client and tenant overrides against the assigned profile.
+	 *
+	 * @param array $profile The resolved emailadmin profile containing provider defaults.
+	 * @param array $accountPreferences The selected account's saved provider settings and optional client overrides.
+	 * @return array The effective tenant, client ID, client secret, and callback URI.
+	 */
 	private static function configuration(array $profile, array $accountPreferences = []): array
 	{
 		$clientId = trim((string) ($accountPreferences['microsoft_client_id'] ?? ''));
@@ -185,12 +238,24 @@ final class MicrosoftImapOAuth
 		];
 	}
 
+	/**
+	 * Read the selected mail account's saved Microsoft preference overrides.
+	 *
+	 * @param int $account The mail account number; null selects the main preference root where supported.
+	 * @return array The selected account preference values.
+	 */
 	private static function accountPreferences(int $account): array
 	{
 		$emailPreferences = (array) (\App\modules\phpgwapi\services\Preferences::getInstance()->read()['email'] ?? []);
 		return $account === 0 ? $emailPreferences : (array) ($emailPreferences['ex_accounts'][$account] ?? []);
 	}
 
+	/**
+	 * Validate the tenant value and construct its Microsoft login authority.
+	 *
+	 * @param string $tenant The Microsoft tenant ID, domain, or supported audience alias.
+	 * @return string The Microsoft identity-platform authority URL.
+	 */
 	private static function authority(string $tenant): string
 	{
 		if (!preg_match('/^[A-Za-z0-9.-]+$/', $tenant))
@@ -200,6 +265,12 @@ final class MicrosoftImapOAuth
 		return 'https://login.microsoftonline.com/' . $tenant;
 	}
 
+	/**
+	 * Encode PKCE material using unpadded URL-safe base64.
+	 *
+	 * @param string $value The raw bytes to encode.
+	 * @return string The URL-safe encoded value.
+	 */
 	private static function base64UrlEncode(string $value): string
 	{
 		return rtrim(strtr(base64_encode($value), '+/', '-_'), '=');

@@ -20,6 +20,11 @@ final class EmailPreferenceSchema
 	private array $std_prefs = [];
 	private array $cust_prefs = [];
 
+	/**
+	 * Build the standard and custom email preference field definitions.
+	 *
+	 * @return array The field catalogs with scopes, defaults, labels, and persistence rules.
+	 */
 	public function fields(): array
 	{
 

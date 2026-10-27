@@ -17,6 +17,12 @@ namespace App\modules\email\services;
 
 final class InboxSerializer
 {
+	/**
+	 * Normalize legacy inbox rows and folder statistics into the API envelope.
+	 *
+	 * @param array $data The legacy message-list data and folder-status information.
+	 * @return array Message items, folder counts, page offset, and any empty-folder message.
+	 */
 	public static function serialize(array $data): array
 	{
 		$folderInfo = (array) ($data['folder_info'] ?? []);

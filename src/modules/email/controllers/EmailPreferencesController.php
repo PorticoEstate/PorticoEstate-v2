@@ -23,6 +23,13 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 
 class EmailPreferencesController
 {
+	/**
+	 * Resolve the main account's preference schema and effective editor values.
+	 *
+	 * @param Request $request The HTTP request containing query parameters, submitted values, and request attributes.
+	 * @param Response $response The response to populate with content, headers, and status.
+	 * @return Response Preference fields, groups, and provider guidance as JSON.
+	 */
 	public function index(Request $request, Response $response): Response
 	{
 		try
@@ -86,6 +93,13 @@ class EmailPreferencesController
 		}
 	}
 
+	/**
+	 * Validate and persist submitted main-account preferences.
+	 *
+	 * @param Request $request The HTTP request containing query parameters, submitted values, and request attributes.
+	 * @param Response $response The response to populate with content, headers, and status.
+	 * @return Response A save confirmation or preference-validation errors as JSON.
+	 */
 	public function save(Request $request, Response $response): Response
 	{
 		$input = $request->getParsedBody();
@@ -173,6 +187,13 @@ class EmailPreferencesController
 		}
 	}
 
+	/**
+	 * List stored extra email accounts and their enabled status.
+	 *
+	 * @param Request $request The HTTP request containing query parameters, submitted values, and request attributes.
+	 * @param Response $response The response to populate with content, headers, and status.
+	 * @return Response Serialized extra-account entries or a loading error as JSON.
+	 */
 	public function accounts(Request $request, Response $response): Response
 	{
 		try
@@ -199,6 +220,13 @@ class EmailPreferencesController
 		}
 	}
 
+	/**
+	 * Resolve field definitions and values for an existing or new extra account.
+	 *
+	 * @param Request $request The HTTP request containing query parameters, submitted values, and request attributes.
+	 * @param Response $response The response to populate with content, headers, and status.
+	 * @return Response Account editor fields and the resolved account identifier as JSON.
+	 */
 	public function accountEditor(Request $request, Response $response): Response
 	{
 		$accountValue = (string) ($request->getQueryParams()['ex_acctnum'] ?? 'add_new');
@@ -271,6 +299,13 @@ class EmailPreferencesController
 		}
 	}
 
+	/**
+	 * Validate and persist the submitted extra-account settings.
+	 *
+	 * @param Request $request The HTTP request containing query parameters, submitted values, and request attributes.
+	 * @param Response $response The response to populate with content, headers, and status.
+	 * @return Response The account save result or validation errors as JSON.
+	 */
 	public function saveAccount(Request $request, Response $response): Response
 	{
 		$input = $request->getParsedBody();
@@ -370,6 +405,13 @@ class EmailPreferencesController
 		}
 	}
 
+	/**
+	 * Validate an extra-account identifier and remove its preferences.
+	 *
+	 * @param Request $request The HTTP request containing query parameters, submitted values, and request attributes.
+	 * @param Response $response The response to populate with content, headers, and status.
+	 * @return Response The deletion result or an account-validation error as JSON.
+	 */
 	public function deleteAccount(Request $request, Response $response): Response
 	{
 		$input = $request->getParsedBody();
@@ -418,6 +460,14 @@ class EmailPreferencesController
 		}
 	}
 
+	/**
+	 * Encode an API payload and apply its JSON response headers and status.
+	 *
+	 * @param Response $response The response to populate with content, headers, and status.
+	 * @param array $data The response payload or template variables to render.
+	 * @param int $status The HTTP status code to return.
+	 * @return Response The JSON HTTP response.
+	 */
 	private function json(Response $response, array $data, int $status = 200): Response
 	{
 		$encoded = json_encode($data);

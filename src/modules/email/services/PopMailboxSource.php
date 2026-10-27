@@ -21,6 +21,16 @@ final class PopMailboxSource
 {
 	private mixed $socket = null;
 
+	/**
+	 * Open the POP connection, validate its greeting, and authenticate with mailbox credentials.
+	 *
+	 * @param string $host The POP server hostname used for the connection and mailbox identity.
+	 * @param int $port The network port or port candidate to validate.
+	 * @param bool $tls Whether to establish TLS at connection startup.
+	 * @param bool $validate Whether TLS peer and hostname verification are required.
+	 * @param string $username The POP mailbox login name.
+	 * @param string $password The POP mailbox password used for authentication.
+	 */
 	public function __construct(string $host, int $port, bool $tls, bool $validate, string $username, string $password)
 	{
 		if (preg_match('/[\r\n]/', $username . $password))
@@ -47,6 +57,11 @@ final class PopMailboxSource
 		}
 	}
 
+	/**
+	 * Read and validate the remote message-number to UIDL mapping.
+	 *
+	 * @return array The map of remote session message numbers to their unique POP UIDLs.
+	 */
 	public function uidls(): array
 	{
 		$this->command('UIDL');
@@ -64,6 +79,12 @@ final class PopMailboxSource
 		return $result;
 	}
 
+	/**
+	 * Read a complete POP message with dot unstuffing and response-size limits.
+	 *
+	 * @param int $number The current remote POP session message number, not a local ID.
+	 * @return string The original MIME message bytes, including headers and body.
+	 */
 	public function retrieve(int $number): string
 	{
 		if ($number < 1)
@@ -83,6 +104,11 @@ final class PopMailboxSource
 		return $raw;
 	}
 
+	/**
+	 * Send POP logout when possible and close the socket even if logout fails.
+	 *
+	 * @return void No value is returned.
+	 */
 	public function close(): void
 	{
 		try
@@ -98,11 +124,20 @@ final class PopMailboxSource
         }
 	}
 
+	/**
+	 * Release any remaining socket without issuing further POP commands.
+	 */
 	public function __destruct()
     {
     	$this->disconnect();
     }
 
+	/**
+	 * Write a complete POP command and require a positive response.
+	 *
+	 * @param string $command The POP command to send without a trailing CRLF.
+	 * @return void No value is returned.
+	 */
 	private function command(string $command): void
 	{
 		$data = $command . "\r\n";
@@ -118,6 +153,12 @@ final class PopMailboxSource
 		$this->positive($this->line());
 	}
 
+	/**
+	 * Require a positive POP status response and reject protocol failures.
+	 *
+	 * @param string $line The POP status line to validate.
+	 * @return void No value is returned.
+	 */
 	private function positive(string $line): void
 	{
 		if (!preg_match('/^\+OK(?:[ \r\n]|$)/i', $line))
@@ -126,6 +167,11 @@ final class PopMailboxSource
         }
 	}
 
+	/**
+	 * Read one complete CRLF-terminated POP response line within the size limit.
+	 *
+	 * @return string The complete response line including its CRLF terminator.
+	 */
 	private function line(): string
 	{
 		$line = '';
@@ -145,6 +191,11 @@ final class PopMailboxSource
 		return $line;
 	}
 
+	/**
+	 * Close the underlying socket and clear the connection reference.
+	 *
+	 * @return void No value is returned.
+	 */
 	private function disconnect(): void
 	{
 		if (is_resource($this->socket))

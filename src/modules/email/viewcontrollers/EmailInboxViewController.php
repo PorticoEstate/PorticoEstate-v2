@@ -29,12 +29,21 @@ class EmailInboxViewController
 	private TwigHelper $twig;
 	private LegacyViewHelper $legacyView;
 
+	/**
+	 * Initialize Twig rendering and the legacy page-layout integration.
+	 */
 	public function __construct()
 	{
 		$this->legacyView = new LegacyViewHelper();
 		$this->twig = new TwigHelper('email');
 	}
 
+	/**
+	 * Read request CSRF credentials, creating them when necessary.
+	 *
+	 * @param Request $request The HTTP request containing query parameters, submitted values, and request attributes.
+	 * @return array The CSRF token name and value used by the rendered form.
+	 */
 	private function csrf(Request $request): array
 	{
 		$name = (string) ($request->getAttribute('csrf_name') ?? '');
@@ -51,6 +60,13 @@ class EmailInboxViewController
 		return ['name' => $name, 'value' => $value];
 	}
 
+	/**
+	 * Render the inbox shell, account selector, and mailbox navigation links.
+	 *
+	 * @param Request $request The HTTP request containing query parameters, submitted values, and request attributes.
+	 * @param Response $response The response to populate with content, headers, and status.
+	 * @return Response The inbox HTML response or a normalized-folder redirect.
+	 */
 	public function index(Request $request, Response $response): Response
 	{
 		$query = $request->getQueryParams();
@@ -112,6 +128,13 @@ class EmailInboxViewController
 		return $response->withHeader('Content-Type', 'text/html');
 	}
 
+	/**
+	 * Render the message page for a validated mailbox message reference.
+	 *
+	 * @param Request $request The HTTP request containing query parameters, submitted values, and request attributes.
+	 * @param Response $response The response to populate with content, headers, and status.
+	 * @return Response The message-page HTML response or an invalid-reference response.
+	 */
 	public function message(Request $request, Response $response): Response
 	{
 		$msgball = (array) ($request->getQueryParams()['msgball'] ?? []);
@@ -166,6 +189,13 @@ class EmailInboxViewController
 		return $response->withHeader('Content-Type', 'text/html');
 	}
 
+	/**
+	 * Render the folder-management page for the selected mail account.
+	 *
+	 * @param Request $request The HTTP request containing query parameters, submitted values, and request attributes.
+	 * @param Response $response The response to populate with content, headers, and status.
+	 * @return Response The folder-management HTML response.
+	 */
 	public function folders(Request $request, Response $response): Response
 	{
 		$query = $request->getQueryParams();

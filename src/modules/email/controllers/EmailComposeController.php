@@ -22,6 +22,14 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 
 class EmailComposeController
 {
+	/**
+	 * Encode an API payload and apply its JSON response headers and status.
+	 *
+	 * @param Response $response The response to populate with content, headers, and status.
+	 * @param array $data The response payload or template variables to render.
+	 * @param int $status The HTTP status code to return.
+	 * @return Response The JSON HTTP response.
+	 */
 	private function json(Response $response, array $data, int $status = 200): Response
 	{
 		$encoded = json_encode($data);
@@ -29,6 +37,13 @@ class EmailComposeController
 		return $response->withStatus($status)->withHeader('Content-Type', 'application/json');
 	}
 
+	/**
+	 * Load compose defaults and source-message prefill for the requested action.
+	 *
+	 * @param Request $request The HTTP request containing query parameters, submitted values, and request attributes.
+	 * @param Response $response The response to populate with content, headers, and status.
+	 * @return Response Compose context, fields, and attachment data as JSON.
+	 */
 	public function compose(Request $request, Response $response): Response
 	{
 		$originalGet = $_GET;
@@ -70,6 +85,13 @@ class EmailComposeController
 		}
 	}
 
+	/**
+	 * Check submitted message text against the selected dictionary.
+	 *
+	 * @param Request $request The HTTP request containing query parameters, submitted values, and request attributes.
+	 * @param Response $response The response to populate with content, headers, and status.
+	 * @return Response Spelling results or a validation error as JSON.
+	 */
 	public function spellcheck(Request $request, Response $response): Response
 	{
 		$input = $request->getParsedBody();
@@ -93,12 +115,24 @@ class EmailComposeController
 		}
 	}
 
+	/**
+	 * Resolve the spellchecking language from the current user settings.
+	 *
+	 * @return string The configured spellchecking language.
+	 */
 	private function spellcheckLanguage(): string
 	{
 		$user = (array) \App\modules\phpgwapi\services\Settings::getInstance()->get('user');
 		return (string) ($user['preferences']['common']['lang'] ?? 'en');
 	}
 
+	/**
+	 * Build and save a MIME draft from the submitted compose values.
+	 *
+	 * @param Request $request The HTTP request containing query parameters, submitted values, and request attributes.
+	 * @param Response $response The response to populate with content, headers, and status.
+	 * @return Response Draft save results or validation and mailbox errors as JSON.
+	 */
 	public function draft(Request $request, Response $response): Response
 	{
 		$input = $request->getParsedBody();
@@ -233,6 +267,13 @@ class EmailComposeController
 		}
 	}
 
+	/**
+	 * Validate compose values and send the resulting MIME message.
+	 *
+	 * @param Request $request The HTTP request containing query parameters, submitted values, and request attributes.
+	 * @param Response $response The response to populate with content, headers, and status.
+	 * @return Response Delivery results or validation and transport errors as JSON.
+	 */
 	public function send(Request $request, Response $response): Response
 	{
 		$input = $request->getParsedBody();

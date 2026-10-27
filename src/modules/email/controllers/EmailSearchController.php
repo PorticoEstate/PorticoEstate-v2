@@ -22,6 +22,14 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 
 class EmailSearchController
 {
+	/**
+	 * Encode an API payload and apply its JSON response headers and status.
+	 *
+	 * @param Response $response The response to populate with content, headers, and status.
+	 * @param array $data The response payload or template variables to render.
+	 * @param int $status The HTTP status code to return.
+	 * @return Response The JSON HTTP response.
+	 */
 	private function json(Response $response, array $data, int $status = 200): Response
 	{
 		$encoded = json_encode($data);
@@ -29,6 +37,13 @@ class EmailSearchController
 		return $response->withStatus($status)->withHeader('Content-Type', 'application/json');
 	}
 
+	/**
+	 * Validate search input and query the selected mailbox folders.
+	 *
+	 * @param Request $request The HTTP request containing query parameters, submitted values, and request attributes.
+	 * @param Response $response The response to populate with content, headers, and status.
+	 * @return Response Matching message entries and search pagination state as JSON.
+	 */
 	public function search(Request $request, Response $response): Response
 	{
 		$input = $request->getParsedBody();

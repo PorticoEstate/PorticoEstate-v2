@@ -26,6 +26,14 @@ final class GoogleMailOAuth
 	private const TOKEN_ENDPOINT = 'https://oauth2.googleapis.com/token';
 	private const USERINFO_ENDPOINT = 'https://openidconnect.googleapis.com/v1/userinfo';
 
+	/**
+	 * Build a callback URI from the request authority and generated application path.
+	 *
+	 * @param string $generatedLink The generated application callback link, possibly including an empty query suffix.
+	 * @param string $scheme The public request scheme, http or https.
+	 * @param string $hostHeader The public request hostname with its optional port.
+	 * @return string The callback URI without the generated empty query suffix.
+	 */
 	public static function defaultRedirectUri(string $generatedLink, string $scheme, string $hostHeader): string
 	{
 		$path = (string) parse_url($generatedLink, PHP_URL_PATH);
@@ -41,12 +49,28 @@ final class GoogleMailOAuth
 		return $scheme . '://' . $hostHeader . $path;
 	}
 
+	/**
+	 * Check for effective Google client credentials and a callback URI.
+	 *
+	 * @param array $profile The resolved emailadmin profile containing provider defaults.
+	 * @param array $accountPreferences The selected account's saved provider settings and optional client overrides.
+	 * @return bool Whether authorization can be started for the account.
+	 */
 	public static function isConfigured(array $profile, array $accountPreferences = []): bool
 	{
 		$config = self::configuration($profile, $accountPreferences);
 		return $config['client_id'] !== '' && $config['client_secret'] !== '' && $config['redirect_uri'] !== '';
 	}
 
+	/**
+	 * Create mailbox-bound state and PKCE values and build the Google consent URL.
+	 *
+	 * @param int $account The mail account number; null selects the main preference root where supported.
+	 * @param string $emailAddress The full Gmail mailbox address to bind to authorization.
+	 * @param array $profile The resolved emailadmin profile containing provider defaults.
+	 * @param array $accountPreferences The selected account's saved provider settings and optional client overrides.
+	 * @return string The Google authorization URL for the selected account.
+	 */
 	public static function authorizationUrl(int $account, string $emailAddress, array $profile, array $accountPreferences = []): string
 	{
 		$config = self::configuration($profile, $accountPreferences);
@@ -84,6 +108,15 @@ final class GoogleMailOAuth
 		]);
 	}
 
+	/**
+	 * Validate OAuth state, exchange the code, and verify the selected Google mailbox.
+	 *
+	 * @param string $code The authorization code returned to the callback.
+	 * @param string $state The session-bound OAuth state token returned by the provider.
+	 * @param array $profile The resolved emailadmin profile containing provider defaults.
+	 * @param array|null $accountPreferences The selected account's saved provider settings and optional client overrides.
+	 * @return array The bound account, verified email address, and access/refresh tokens.
+	 */
 	public static function completeAuthorization(string $code, string $state, array $profile, ?array $accountPreferences = null): array
 	{
 		if ($code === '' || !preg_match('/^[a-f0-9]{64}$/i', $state))
@@ -139,6 +172,14 @@ final class GoogleMailOAuth
 		];
 	}
 
+	/**
+	 * Exchange a saved Gmail refresh token for a current access token.
+	 *
+	 * @param string $refreshToken The decrypted saved refresh token to exchange.
+	 * @param array $profile The resolved emailadmin profile containing provider defaults.
+	 * @param array $accountPreferences The selected account's saved provider settings and optional client overrides.
+	 * @return array The access-token response with the effective refresh token.
+	 */
 	public static function refreshAccessToken(string $refreshToken, array $profile, array $accountPreferences = []): array
 	{
 		if ($refreshToken === '')
@@ -162,6 +203,13 @@ final class GoogleMailOAuth
 		return $tokens;
 	}
 
+	/**
+	 * Send a proxy-aware HTTPS token request using the effective Google client.
+	 *
+	 * @param array $parameters The OAuth grant parameters to send to the token endpoint.
+	 * @param array $config The effective OAuth client credentials and provider configuration.
+	 * @return array The decoded Google token response.
+	 */
 	private static function requestTokens(array $parameters, array $config): array
 	{
 		$parameters['client_id'] = $config['client_id'];
@@ -193,6 +241,12 @@ final class GoogleMailOAuth
 		return $tokens;
 	}
 
+	/**
+	 * Fetch the Google identity associated with the access token.
+	 *
+	 * @param string $accessToken The current provider access token.
+	 * @return array The decoded identity claims used for email verification.
+	 */
 	private static function requestUserInfo(string $accessToken): array
 	{
 		$handle = curl_init(self::USERINFO_ENDPOINT);
@@ -220,6 +274,13 @@ final class GoogleMailOAuth
 		return $identity;
 	}
 
+	/**
+	 * Resolve Google account credential overrides against the assigned profile.
+	 *
+	 * @param array $profile The resolved emailadmin profile containing provider defaults.
+	 * @param array $accountPreferences The selected account's saved provider settings and optional client overrides.
+	 * @return array The effective client ID, secret, and callback URI.
+	 */
 	private static function configuration(array $profile, array $accountPreferences = []): array
 	{
 		$accountClientId = trim((string) ($accountPreferences['google_client_id'] ?? ''));
@@ -231,6 +292,12 @@ final class GoogleMailOAuth
 		];
 	}
 
+	/**
+	 * Read main or extra-account Google settings from the current user context.
+	 *
+	 * @param int $account The mail account number; null selects the main preference root where supported.
+	 * @return array The selected account's preference values.
+	 */
 	private static function accountPreferences(int $account): array
 	{
 		$user = (array) Settings::getInstance()->get('user');
@@ -238,6 +305,12 @@ final class GoogleMailOAuth
 		return $account === 0 ? $emailPreferences : (array) ($emailPreferences['ex_accounts'][$account] ?? []);
 	}
 
+	/**
+	 * Apply configured HTTP proxy settings to OAuth cURL options.
+	 *
+	 * @param array $options The existing cURL option map.
+	 * @return array The cURL options including proxy configuration when valid.
+	 */
 	private static function withHttpProxy(array $options): array
 	{
 		$server = (array) Settings::getInstance()->get('server');
@@ -262,6 +335,12 @@ final class GoogleMailOAuth
 		return $options;
 	}
 
+	/**
+	 * Encode OAuth state material with unpadded URL-safe base64.
+	 *
+	 * @param string $value The raw bytes to encode.
+	 * @return string The URL-safe base64 value.
+	 */
 	private static function base64UrlEncode(string $value): string
 	{
 		return rtrim(strtr(base64_encode($value), '+/', '-_'), '=');

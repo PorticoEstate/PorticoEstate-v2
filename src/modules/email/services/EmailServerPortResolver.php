@@ -17,6 +17,14 @@ namespace App\modules\email\services;
 
 final class EmailServerPortResolver
 {
+	/**
+	 * Choose a valid account port, applicable IMAP profile port, or protocol default.
+	 *
+	 * @param string $serverType The incoming protocol identifier, such as imap, imaps, pop3, or pop3s.
+	 * @param mixed $accountPort The account-specific port candidate, which may be unset or invalid.
+	 * @param mixed $profileImapPort The optional IMAP profile port candidate.
+	 * @return int The effective incoming server port.
+	 */
 	public static function resolve(string $serverType, $accountPort, $profileImapPort): int
 	{
 		$accountPort = self::validPort($accountPort);
@@ -44,6 +52,12 @@ final class EmailServerPortResolver
 		return $defaults[$serverType] ?? 143;
 	}
 
+	/**
+	 * Validate an arbitrary port candidate against the allowed numeric range.
+	 *
+	 * @param mixed $port The network port or port candidate to validate.
+	 * @return int|null The valid port number, or null when the candidate is invalid.
+	 */
 	private static function validPort($port): ?int
 	{
 		if (!is_int($port) && !is_string($port))

@@ -18,7 +18,13 @@ namespace App\modules\email\services;
 final class EmailPreferencesWriter
 {
 	/**
-	 * Validates an existing extra-account ID without coercing malformed input.
+	 * Validate that an input identifies a stored extra account.
+	 *
+	 * Validates an existing extra-account ID without coercing malformed input. /
+	 *
+	 * @param mixed $value The submitted extra-account identifier to validate.
+	 * @param array $accounts The stored account map or normalized account summaries required by this operation.
+	 * @return int The validated extra-account number.
 	 */
 	public static function existingAccountNumber(mixed $value, array $accounts): int
 	{
@@ -36,6 +42,16 @@ final class EmailPreferencesWriter
 		return $account;
 	}
 
+	/**
+	 * Delete an existing extra-account preference tree and optionally save it.
+	 *
+	 * @param int $account The mail account number; null selects the main preference root where supported.
+	 * @param array $accounts The stored account map or normalized account summaries required by this operation.
+	 * @param object $preferences The preference repository exposing main and structured account writes.
+	 * @param object $mail The active mail runtime used for mailbox access and header decoding.
+	 * @param bool $saveRepository Whether to save repository changes and invalidate account caches.
+	 * @return void No value is returned.
+	 */
 	public function deleteAccount(
 		int $account, array $accounts, object $preferences, object $mail, bool $saveRepository = true
 	): void
@@ -50,7 +66,12 @@ final class EmailPreferencesWriter
 	}
 
 	/**
-	 * Accepts stored preference maps or legacy account summaries with explicit status.
+	 * Find the first unused positive extra-account number.
+	 *
+	 * Accepts stored preference maps or legacy account summaries with explicit status. /
+	 *
+	 * @param array $accounts The stored account map or normalized account summaries required by this operation.
+	 * @return int The available extra-account identifier.
 	 */
 	public static function nextAccountNumber(array $accounts): int
 	{
@@ -75,7 +96,18 @@ final class EmailPreferencesWriter
 	}
 
 	/**
-	 * Legacy adapters retain form decoding and can suppress repository saves in debug mode.
+	 * Persist main-account fields and apply the custom-settings master switch.
+	 *
+	 * Legacy adapters retain form decoding and can suppress repository saves in debug mode. /
+	 *
+	 * @param array $standardSchema The standard preference field definitions.
+	 * @param array $customSchema The custom connection and authentication field definitions.
+	 * @param array $values The submitted preference field values.
+	 * @param object $preferences The preference repository exposing main and structured account writes.
+	 * @param object $mail The active mail runtime used for mailbox access and header decoding.
+	 * @param bool $legacyInput Whether legacy form decoding rules should be applied.
+	 * @param bool $saveRepository Whether to save repository changes and invalidate account caches.
+	 * @return void No value is returned.
 	 */
 	public function saveDefault(
 		array $standardSchema, array $customSchema, array $values, object $preferences,
@@ -101,6 +133,19 @@ final class EmailPreferencesWriter
 		}
 	}
 
+	/**
+	 * Persist schema-supported fields for the selected extra account.
+	 *
+	 * @param int $account The mail account number; null selects the main preference root where supported.
+	 * @param array $standardSchema The standard preference field definitions.
+	 * @param array $customSchema The custom connection and authentication field definitions.
+	 * @param array $values The submitted preference field values.
+	 * @param object $preferences The preference repository exposing main and structured account writes.
+	 * @param object $mail The active mail runtime used for mailbox access and header decoding.
+	 * @param bool $legacyInput Whether legacy form decoding rules should be applied.
+	 * @param bool $saveRepository Whether to save repository changes and invalidate account caches.
+	 * @return void No value is returned.
+	 */
 	public function saveExtraAccount(
 		int $account, array $standardSchema, array $customSchema, array $values,
 		object $preferences, object $mail, bool $legacyInput = false, bool $saveRepository = true

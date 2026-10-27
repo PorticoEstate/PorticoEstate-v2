@@ -17,6 +17,13 @@ namespace App\modules\email\services;
 
 final class EmailFilterMatcher
 {
+	/**
+	 * Evaluate a stored filter's header conditions against parsed message headers.
+	 *
+	 * @param array $filter The stored or submitted filter definition.
+	 * @param array $headers The decoded message envelope or parsed header values used by the operation.
+	 * @return bool Whether the filter matches the supplied headers.
+	 */
 	public function matches(array $filter, array $headers): bool
 	{
 		$matches = array_values((array) ($filter['matches'] ?? []));

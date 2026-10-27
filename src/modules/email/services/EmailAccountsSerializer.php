@@ -17,6 +17,12 @@ namespace App\modules\email\services;
 
 final class EmailAccountsSerializer
 {
+	/**
+	 * Resolve an account label from its explicit name or full name.
+	 *
+	 * @param array $account The account preference values used to construct its label.
+	 * @return string The resolved label, or the unknown-account fallback.
+	 */
 	public static function accountName(array $account): string
 	{
 		$name = trim((string) ($account['account_name'] ?? ''));
@@ -27,6 +33,12 @@ final class EmailAccountsSerializer
 		return $name === '' ? 'Unknown account' : $name;
 	}
 
+	/**
+	 * Normalize saved or summarized accounts into API account entries.
+	 *
+	 * @param array $accounts The stored account map or normalized account summaries required by this operation.
+	 * @return array Account entries containing id, display name, and status.
+	 */
 	public static function serialize(array $accounts): array
 	{
 		$result = [];
@@ -59,6 +71,12 @@ final class EmailAccountsSerializer
 		return $result;
 	}
 
+	/**
+	 * Determine whether saved account fields describe an empty, disabled, or enabled account.
+	 *
+	 * @param array $account The saved preference fields for one extra account.
+	 * @return string The stored account status.
+	 */
 	private static function storedAccountStatus(array $account): string
 	{
 		foreach (['fullname', 'email_sig', 'layout'] as $required)

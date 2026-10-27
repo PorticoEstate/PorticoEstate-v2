@@ -17,6 +17,12 @@ namespace App\modules\email\services;
 
 final class EmailMessageActions
 {
+	/**
+	 * Validate confirmation, source messages, and destination values for a batch action.
+	 *
+	 * @param array $input The submitted request values to validate and normalize.
+	 * @return array|null The normalized action request, or null when input is invalid.
+	 */
 	public static function normalize(array $input): ?array
 	{
 		$action = $input['action'] ?? '';
@@ -74,6 +80,13 @@ final class EmailMessageActions
 		return ['action' => $action, 'account' => $account, 'messages' => array_values($normalized), 'target' => $target];
 	}
 
+	/**
+	 * Execute batch message moves, deletions, or Trash cleanup with per-message reporting.
+	 *
+	 * @param object $mail The active mail runtime used for mailbox access and header decoding.
+	 * @param array $request The normalized action, account, source messages, and destination.
+	 * @return array Completed and failed message-action entries.
+	 */
 	public function execute(object $mail, array $request): array
 	{
 		$account = $request['account'];
@@ -216,6 +229,14 @@ final class EmailMessageActions
 		return $result;
 	}
 
+	/**
+	 * Invalidate cached message and folder information after an action.
+	 *
+	 * @param object $mail The active mail runtime used for mailbox access and header decoding.
+	 * @param int $account The mail account number; null selects the main preference root where supported.
+	 * @param string $folder The mailbox folder name in the representation expected by the mail runtime.
+	 * @return void No value is returned.
+	 */
 	private function expire(object $mail, int $account, string $folder): void
 	{
 		$folder = $mail->prep_folder_out($folder);

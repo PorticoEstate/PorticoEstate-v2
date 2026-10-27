@@ -27,12 +27,21 @@ class EmailSearchViewController
 	private TwigHelper $twig;
 	private LegacyViewHelper $legacyView;
 
+	/**
+	 * Initialize Twig rendering and the legacy page-layout integration.
+	 */
 	public function __construct()
 	{
 		$this->legacyView = new LegacyViewHelper();
 		$this->twig = new TwigHelper('email');
 	}
 
+	/**
+	 * Read request CSRF credentials, creating them when necessary.
+	 *
+	 * @param Request $request The HTTP request containing query parameters, submitted values, and request attributes.
+	 * @return array The CSRF token name and value used by the rendered form.
+	 */
 	private function csrf(Request $request): array
 	{
 		$name = (string) ($request->getAttribute('csrf_name') ?? '');
@@ -49,6 +58,13 @@ class EmailSearchViewController
 		return ['name' => $name, 'value' => $value];
 	}
 
+	/**
+	 * Render the mailbox search page and its account-scoped API URLs.
+	 *
+	 * @param Request $request The HTTP request containing query parameters, submitted values, and request attributes.
+	 * @param Response $response The response to populate with content, headers, and status.
+	 * @return Response The search-page HTML response.
+	 */
 	public function index(Request $request, Response $response): Response
 	{
 		$query = $request->getQueryParams();

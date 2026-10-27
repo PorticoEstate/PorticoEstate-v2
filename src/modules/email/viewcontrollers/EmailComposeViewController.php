@@ -27,12 +27,21 @@ class EmailComposeViewController
 	private TwigHelper $twig;
 	private LegacyViewHelper $legacyView;
 
+	/**
+	 * Initialize Twig rendering and the legacy page-layout integration.
+	 */
 	public function __construct()
 	{
 		$this->legacyView = new LegacyViewHelper();
 		$this->twig = new TwigHelper('email');
 	}
 
+	/**
+	 * Read request CSRF credentials, creating them when necessary.
+	 *
+	 * @param Request $request The HTTP request containing query parameters, submitted values, and request attributes.
+	 * @return array The CSRF token name and value used by the rendered form.
+	 */
 	private function csrf(Request $request): array
 	{
 		$name = (string) ($request->getAttribute('csrf_name') ?? '');
@@ -49,6 +58,12 @@ class EmailComposeViewController
 		return ['name' => $name, 'value' => $value];
 	}
 
+	/**
+	 * Normalize compose action and mailbox references from query parameters.
+	 *
+	 * @param array $query The query parameters containing compose action and mailbox references.
+	 * @return array The compose context passed to the page and its API URLs.
+	 */
 	private function context(array $query): array
 	{
 		$context = [];
@@ -62,6 +77,13 @@ class EmailComposeViewController
 		return $context;
 	}
 
+	/**
+	 * Render the compose page with mailbox context and CSRF credentials.
+	 *
+	 * @param Request $request The HTTP request containing query parameters, submitted values, and request attributes.
+	 * @param Response $response The response to populate with content, headers, and status.
+	 * @return Response The compose page wrapped in the legacy application layout.
+	 */
 	public function index(Request $request, Response $response): Response
 	{
 		$query = $request->getQueryParams();

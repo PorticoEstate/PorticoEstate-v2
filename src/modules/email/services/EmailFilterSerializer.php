@@ -17,6 +17,12 @@ namespace App\modules\email\services;
 
 final class EmailFilterSerializer
 {
+	/**
+	 * Convert stored filter definitions into displayable filter-list entries.
+	 *
+	 * @param array $filters The filter definitions keyed by their stored identifiers.
+	 * @return array The serialized filter-list data.
+	 */
 	public static function serialize(array $filters): array
 	{
 		$result = [];

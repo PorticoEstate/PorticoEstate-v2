@@ -19,6 +19,15 @@ use PHPMailer\PHPMailer\PHPMailer;
 
 final class EmailDraftMessage extends PHPMailer
 {
+	/**
+	 * Build draft MIME without requiring a final recipient list.
+	 *
+	 * @param array $payload The normalized compose values used to build the message.
+	 * @param string $from The sender email address.
+	 * @param string $name The sender display name.
+	 * @param array $attachments The attachment descriptors containing source paths and MIME metadata.
+	 * @return string The complete MIME message ready to append to the Drafts mailbox.
+	 */
 	public static function build(array $payload, string $from, string $name, array $attachments = []): string
 	{
 		$message = new self(true);

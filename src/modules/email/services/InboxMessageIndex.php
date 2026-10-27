@@ -38,12 +38,29 @@ final class InboxMessageIndex
 	private object $db;
 	private ?int $accountId;
 
+	/**
+	 * Configure the database and optional application-user identity for IMAP indexing.
+	 *
+	 * @param object|null $db The database connection or compatible test adapter; null uses the application connection where supported.
+	 * @param int|null $accountId The application user identifier owning the indexed mailbox.
+	 */
 	public function __construct(?object $db = null, ?int $accountId = null)
 	{
 		$this->db = $db ?? Db::getInstance();
 		$this->accountId = $accountId;
 	}
 
+	/**
+	 * Synchronize IMAP sort metadata and select a stable database-sorted message page.
+	 *
+	 * @param object $mail The active mail runtime used for mailbox access and header decoding.
+	 * @param array $folderInfo The mailbox counts, UID validity, folder, and account reference used for paging.
+	 * @param int $start The zero-based message offset for the requested page.
+	 * @param int $pageSize The maximum page length; null requests the complete ordered ID list where supported.
+	 * @param int $sort The supported sort-column identifier.
+	 * @param int $order The direction selector: 0 ascending or 1 descending.
+	 * @return array Message-reference arrays for the requested page.
+	 */
 	public function page(object $mail, array $folderInfo, int $start, int $pageSize, int $sort, int $order): array
 	{
 		$account = (int) ($folderInfo['fldball']['acctnum'] ?? $mail->get_acctnum());
@@ -101,6 +118,19 @@ final class InboxMessageIndex
 		return $msgballs;
 	}
 
+	/**
+	 * Reconcile indexed IMAP UIDs with the mailbox's current validity and message counts.
+	 *
+	 * @param object $mail The active mail runtime used for mailbox access and header decoding.
+	 * @param array $folderInfo The mailbox counts, UID validity, folder, and account reference used for paging.
+	 * @param int $accountId The application user identifier owning the indexed mailbox.
+	 * @param int $account The mail account number; null selects the main preference root where supported.
+	 * @param string $folderKey The stable hash identifying the indexed mailbox folder.
+	 * @param string $folder The mailbox folder name in the representation expected by the mail runtime.
+	 * @param resource|object|string $stream The open native connection or modern mail transport handle.
+	 * @param object $transport The account-specific mail transport used to read UID metadata.
+	 * @return void No value is returned.
+	 */
 	private function synchronize(object $mail, array $folderInfo, int $accountId, int $account, string $folderKey, string $folder, $stream, object $transport): void
 	{
 		$uidValidity = (int) ($folderInfo['uidvalidity'] ?? 0);
@@ -156,6 +186,17 @@ final class InboxMessageIndex
 		$this->saveState($accountId, $account, $folderKey, $folder, $uidValidity, $uidNext, $indexedCount);
 	}
 
+	/**
+	 * Replace an account folder's indexed message metadata from its transport.
+	 *
+	 * @param int $accountId The application user identifier owning the indexed mailbox.
+	 * @param int $account The mail account number; null selects the main preference root where supported.
+	 * @param string $folderKey The stable hash identifying the indexed mailbox folder.
+	 * @param string $folder The mailbox folder name in the representation expected by the mail runtime.
+	 * @param object $transport The account-specific mail transport used to read UID metadata.
+	 * @param resource|object|string $stream The open native connection or modern mail transport handle.
+	 * @return void No value is returned.
+	 */
 	private function rebuild(int $accountId, int $account, string $folderKey, string $folder, object $transport, $stream): void
 	{
 		$uids = $transport->i_search($stream, 'ALL');
@@ -171,6 +212,19 @@ final class InboxMessageIndex
 		}
 	}
 
+	/**
+	 * Fetch and index metadata within the requested IMAP UID interval.
+	 *
+	 * @param int $accountId The application user identifier owning the indexed mailbox.
+	 * @param int $account The mail account number; null selects the main preference root where supported.
+	 * @param string $folderKey The stable hash identifying the indexed mailbox folder.
+	 * @param string $folder The mailbox folder name in the representation expected by the mail runtime.
+	 * @param object $transport The account-specific mail transport used to read UID metadata.
+	 * @param resource|object|string $stream The open native connection or modern mail transport handle.
+	 * @param int $firstUid The first message UID included in the requested interval.
+	 * @param int $uidNext The next UID reported by the mailbox, bounding the imported range.
+	 * @return void No value is returned.
+	 */
 	private function insertUidRange(int $accountId, int $account, string $folderKey, string $folder, object $transport, $stream, int $firstUid, int $uidNext): void
 	{
 		for ($batchStart = $firstUid; $batchStart < $uidNext; $batchStart += self::BATCH_SIZE)
@@ -182,6 +236,18 @@ final class InboxMessageIndex
 		}
 	}
 
+	/**
+	 * Fetch and insert a bounded batch of UID sort metadata.
+	 *
+	 * @param int $accountId The application user identifier owning the indexed mailbox.
+	 * @param int $account The mail account number; null selects the main preference root where supported.
+	 * @param string $folderKey The stable hash identifying the indexed mailbox folder.
+	 * @param string $folder The mailbox folder name in the representation expected by the mail runtime.
+	 * @param object $transport The account-specific mail transport used to read UID metadata.
+	 * @param resource|object|string $stream The open native connection or modern mail transport handle.
+	 * @param array $uids The message UIDs whose metadata should be fetched and indexed.
+	 * @return void No value is returned.
+	 */
 	private function insertMetadataBatch(int $accountId, int $account, string $folderKey, string $folder, object $transport, $stream, array $uids): void
 	{
 		$metadata = $transport->fetch_sort_metadata($stream, $uids);
@@ -236,6 +302,14 @@ final class InboxMessageIndex
 		}
 	}
 
+	/**
+	 * Read the synchronization state for the scoped indexed mailbox.
+	 *
+	 * @param int $accountId The application user identifier owning the indexed mailbox.
+	 * @param int $account The mail account number; null selects the main preference root where supported.
+	 * @param string $folderKey The stable hash identifying the indexed mailbox folder.
+	 * @return array|null The saved mailbox state, or null when no state is stored.
+	 */
 	private function readState(int $accountId, int $account, string $folderKey): ?array
 	{
 		$statement = $this->db->prepare(
@@ -248,6 +322,14 @@ final class InboxMessageIndex
 		return is_array($row) ? $row : null;
 	}
 
+	/**
+	 * Count indexed message rows for the selected account folder.
+	 *
+	 * @param int $accountId The application user identifier owning the indexed mailbox.
+	 * @param int $account The mail account number; null selects the main preference root where supported.
+	 * @param string $folderKey The stable hash identifying the indexed mailbox folder.
+	 * @return int The number of indexed messages.
+	 */
 	private function countMessages(int $accountId, int $account, string $folderKey): int
 	{
 		$statement = $this->db->prepare(
@@ -259,6 +341,14 @@ final class InboxMessageIndex
 		return (int) $statement->fetchColumn();
 	}
 
+	/**
+	 * Remove all index rows and synchronization state for the scoped mailbox.
+	 *
+	 * @param int $accountId The application user identifier owning the indexed mailbox.
+	 * @param int $account The mail account number; null selects the main preference root where supported.
+	 * @param string $folderKey The stable hash identifying the indexed mailbox folder.
+	 * @return void No value is returned.
+	 */
 	private function deleteMailbox(int $accountId, int $account, string $folderKey): void
 	{
 		$statement = $this->db->prepare(
@@ -268,6 +358,16 @@ final class InboxMessageIndex
 		$statement->execute(['account_id' => $accountId, 'mail_account' => $account, 'mailbox_key' => $folderKey]);
 	}
 
+	/**
+	 * Remove stale index rows within a scoped UID range.
+	 *
+	 * @param int $accountId The application user identifier owning the indexed mailbox.
+	 * @param int $account The mail account number; null selects the main preference root where supported.
+	 * @param string $folderKey The stable hash identifying the indexed mailbox folder.
+	 * @param int $firstUid The first message UID included in the requested interval.
+	 * @param int $lastUid The last message UID included in the requested interval.
+	 * @return void No value is returned.
+	 */
 	private function deleteUidRange(int $accountId, int $account, string $folderKey, int $firstUid, int $lastUid): void
 	{
 		$statement = $this->db->prepare(
@@ -284,6 +384,18 @@ final class InboxMessageIndex
 		]);
 	}
 
+	/**
+	 * Persist the mailbox validity, next UID, and message count used for synchronization.
+	 *
+	 * @param int $accountId The application user identifier owning the indexed mailbox.
+	 * @param int $account The mail account number; null selects the main preference root where supported.
+	 * @param string $folderKey The stable hash identifying the indexed mailbox folder.
+	 * @param string $folder The mailbox folder name in the representation expected by the mail runtime.
+	 * @param int $uidValidity The mailbox UID-validity value identifying the current UID generation.
+	 * @param int $uidNext The next UID reported by the mailbox, bounding the imported range.
+	 * @param int $total The mailbox message count to persist in synchronization state.
+	 * @return void No value is returned.
+	 */
 	private function saveState(int $accountId, int $account, string $folderKey, string $folder, int $uidValidity, int $uidNext, int $total): void
 	{
 		$this->deleteUidRange($accountId, $account, $folderKey, 0, 0);

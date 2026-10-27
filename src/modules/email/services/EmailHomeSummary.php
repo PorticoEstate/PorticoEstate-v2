@@ -20,6 +20,13 @@ namespace App\modules\email\services;
  */
 final class EmailHomeSummary
 {
+	/**
+	 * Collect inbox counts, message links, and folder choices for the enabled home widget.
+	 *
+	 * @param object $mail The active mail runtime used for mailbox access and header decoding.
+	 * @param callable $link The callback accepting a route and parameter array and returning its navigation URL.
+	 * @return array|null The home-summary data, or null when the widget is disabled.
+	 */
 	public function collect(object $mail, callable $link): ?array
 	{
 		if (!filter_var($mail->get_pref_value('mainscreen_showmail', 0), FILTER_VALIDATE_BOOLEAN))

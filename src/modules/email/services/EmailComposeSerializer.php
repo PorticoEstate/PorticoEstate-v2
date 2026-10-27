@@ -21,6 +21,13 @@ final class EmailComposeSerializer
 	private const MSGBALL_FIELDS = ['acctnum', 'folder', 'msgnum', 'part_no'];
 	private const FLDBALL_FIELDS = ['acctnum', 'folder'];
 
+	/**
+	 * Validate compose input and normalize recipients, content, and source references.
+	 *
+	 * @param array $input The submitted request values to validate and normalize.
+	 * @param bool $requireRecipients Whether at least one recipient is required for this payload.
+	 * @return array|null The normalized compose payload, or null when validation fails.
+	 */
 	public static function normalize(array $input, bool $requireRecipients = true): ?array
 	{
 		$payload = [];

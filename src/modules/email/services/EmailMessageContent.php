@@ -17,6 +17,16 @@ namespace App\modules\email\services;
 
 final class EmailMessageContent
 {
+	/**
+	 * Fetch and prepare visible MIME bodies, inline images, and attachment descriptors.
+	 *
+	 * @param object $mail The active mail runtime used for mailbox access and header decoding.
+	 * @param array $msgball The source message reference containing acctnum, folder, and msgnum.
+	 * @param object $headers The decoded message envelope or parsed header values used by the operation.
+	 * @param callable $attachmentUrl The callback accepting a MIME part number and inline flag and returning an attachment URL.
+	 * @param callable|null $formatDate The optional callback converting a Unix timestamp to display text.
+	 * @return array Message-level data and classified MIME parts for serialization.
+	 */
 	public function build(object $mail, array $msgball, object $headers, callable $attachmentUrl, ?callable $formatDate = null): array
 	{
 		$structure = $mail->phpgw_fetchstructure($msgball, false);

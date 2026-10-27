@@ -20,6 +20,11 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 
 class EmailAttachmentController
 {
+	/**
+	 * Resolve the attachment store for the current compose session.
+	 *
+	 * @return \App\modules\email\services\EmailAttachmentStorage The session-scoped compose attachment store.
+	 */
 	private function storage(): \App\modules\email\services\EmailAttachmentStorage
 	{
 		$bootstrap = \CreateObject('email.msg_bootstrap');
@@ -28,6 +33,13 @@ class EmailAttachmentController
 		return new \App\modules\email\services\EmailAttachmentStorage($mail->att_files_dir);
 	}
 
+	/**
+	 * List attachments available to the current compose session.
+	 *
+	 * @param Request $request The HTTP request containing query parameters, submitted values, and request attributes.
+	 * @param Response $response The response to populate with content, headers, and status.
+	 * @return Response Attachment descriptors or a storage error as JSON.
+	 */
 	public function index(Request $request, Response $response): Response
 	{
 		try
@@ -52,6 +64,13 @@ class EmailAttachmentController
 		}
 	}
 
+	/**
+	 * Validate and store uploaded compose attachments.
+	 *
+	 * @param Request $request The HTTP request containing query parameters, submitted values, and request attributes.
+	 * @param Response $response The response to populate with content, headers, and status.
+	 * @return Response Stored attachment descriptors or upload errors as JSON.
+	 */
 	public function upload(Request $request, Response $response): Response
 	{
 		$file = $_FILES['uploadedfile'] ?? null;
@@ -93,6 +112,13 @@ class EmailAttachmentController
 		}
 	}
 
+	/**
+	 * Remove selected attachments from the compose session.
+	 *
+	 * @param Request $request The HTTP request containing query parameters, submitted values, and request attributes.
+	 * @param Response $response The response to populate with content, headers, and status.
+	 * @return Response The deletion result or an attachment error as JSON.
+	 */
 	public function delete(Request $request, Response $response): Response
 	{
 		$input = $request->getParsedBody();
@@ -131,6 +157,14 @@ class EmailAttachmentController
 		}
 	}
 
+	/**
+	 * Encode an API payload and apply its JSON response headers and status.
+	 *
+	 * @param Response $response The response to populate with content, headers, and status.
+	 * @param array $data The response payload or template variables to render.
+	 * @param int $status The HTTP status code to return.
+	 * @return Response The JSON HTTP response.
+	 */
 	private function json(Response $response, array $data, int $status = 200): Response
 	{
 		$encoded = json_encode($data);

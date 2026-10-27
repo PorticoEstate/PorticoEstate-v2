@@ -17,11 +17,24 @@ namespace App\modules\email\services;
 
 final class EmailSpellcheckService
 {
+	/**
+	 * Check whether the configured spelling backend can open the requested dictionary.
+	 *
+	 * @param string $language The requested dictionary language code.
+	 * @return bool Whether spellchecking is available for the language.
+	 */
 	public static function available(string $language = 'en'): bool
 	{
 		return self::openDictionary($language) !== false;
 	}
 
+	/**
+	 * Find misspelled nonquoted message words and bounded replacement suggestions.
+	 *
+	 * @param string $text The compose text to check, including any quoted lines.
+	 * @param string $language The requested dictionary language code.
+	 * @return array Backend availability and spelling issues with suggestions.
+	 */
 	public function check(string $text, string $language): array
 	{
 		$link = self::openDictionary($language);
@@ -66,6 +79,12 @@ final class EmailSpellcheckService
 		return ['available' => true, 'issues' => $issues];
 	}
 
+	/**
+	 * Open a Pspell dictionary when the extension and language data are available.
+	 *
+	 * @param string $language The requested dictionary language code.
+	 * @return mixed The dictionary object or legacy handle, or false when unavailable.
+	 */
 	private static function openDictionary(string $language): mixed
 	{
 		if (!function_exists('pspell_new') || !function_exists('pspell_check') || !function_exists('pspell_suggest'))
@@ -76,6 +95,12 @@ final class EmailSpellcheckService
 		return @pspell_new($language, '', '', '', defined('PSPELL_FAST') ? PSPELL_FAST : 0);
 	}
 
+	/**
+	 * Exclude short tokens, addresses, URLs, and nonword content from spellchecking.
+	 *
+	 * @param string $word The candidate token to classify for spellchecking.
+	 * @return bool Whether the token should be checked.
+	 */
 	private function shouldCheck(string $word): bool
 	{
 		if (strlen(trim($word)) < 2 || preg_match('/[0-9_=@<>]/u', $word))

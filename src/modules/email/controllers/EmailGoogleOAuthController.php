@@ -25,6 +25,13 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 
 class EmailGoogleOAuthController
 {
+	/**
+	 * Start Google OAuth for the requested main or extra mail account.
+	 *
+	 * @param Request $request The HTTP request containing query parameters, submitted values, and request attributes.
+	 * @param Response $response The response to populate with content, headers, and status.
+	 * @return Response A Google consent redirect or a plain-text configuration error.
+	 */
 	public function authorize(Request $request, Response $response): Response
 	{
 		$account = filter_var($request->getQueryParams()['acctnum'] ?? 0, FILTER_VALIDATE_INT);
@@ -57,6 +64,13 @@ class EmailGoogleOAuthController
 		}
 	}
 
+	/**
+	 * Exchange the Google callback code and store the account's encrypted refresh token.
+	 *
+	 * @param Request $request The HTTP request containing query parameters, submitted values, and request attributes.
+	 * @param Response $response The response to populate with content, headers, and status.
+	 * @return Response An account-settings redirect or a plain-text authorization error.
+	 */
 	public function callback(Request $request, Response $response): Response
 	{
 		$query = $request->getQueryParams();
@@ -120,6 +134,12 @@ class EmailGoogleOAuthController
 		}
 	}
 
+	/**
+	 * Resolve the assigned mail profile and its effective Google callback URI.
+	 *
+	 * @param Request $request The HTTP request containing query parameters, submitted values, and request attributes.
+	 * @return array The resolved profile including its Google redirect URI.
+	 */
 	private function resolvedProfile(Request $request): array
 	{
 		$profile = \CreateObject('emailadmin.emailadmin_bo', true)->getResolvedProfileData('email');
@@ -136,6 +156,14 @@ class EmailGoogleOAuthController
 		return $profile;
 	}
 
+	/**
+	 * Build an escaped plain-text OAuth error response.
+	 *
+	 * @param Response $response The response to populate with content, headers, and status.
+	 * @param string $message The error message to expose in the response.
+	 * @param int $status The HTTP status code to return.
+	 * @return Response The error response with the requested HTTP status.
+	 */
 	private function error(Response $response, string $message, int $status): Response
 	{
 		$response->getBody()->write((string) htmlspecialchars($message, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'));

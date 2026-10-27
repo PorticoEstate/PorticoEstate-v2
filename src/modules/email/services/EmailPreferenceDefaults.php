@@ -24,12 +24,26 @@ final class EmailPreferenceDefaults
 {
 	private array $fields;
 
+	/**
+	 * Load the supplied or default preference schema used for value resolution.
+	 *
+	 * @param array|null $schema The optional standard/custom preference schema; null loads the shared schema.
+	 */
 	public function __construct(?array $schema = null)
 	{
 		$schema ??= (new EmailPreferenceSchema())->fields();
 		$this->fields = array_merge($schema['standard'], $schema['custom']);
 	}
 
+	/**
+	 * Fill missing scope-appropriate preference defaults from explicit schema tokens.
+	 *
+	 * @param array $values The existing values for the selected mail account.
+	 * @param int $account The mail account number; null selects the main preference root where supported.
+	 * @param array $user The user settings supplying identity and account default context.
+	 * @param array $server The server settings supplying connection and login defaults.
+	 * @return array The resolved preference values without persisting changes.
+	 */
 	public function resolve(array $values, int $account, array $user = [], array $server = []): array
 	{
 		$scope = $account === 0 ? 'default' : 'extra_accounts';

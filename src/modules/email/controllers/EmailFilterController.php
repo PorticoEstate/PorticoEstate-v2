@@ -21,6 +21,13 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 
 class EmailFilterController
 {
+	/**
+	 * Load account, folder, and rule values for the filter editor.
+	 *
+	 * @param Request $request The HTTP request containing query parameters, submitted values, and request attributes.
+	 * @param Response $response The response to populate with content, headers, and status.
+	 * @return Response Filter editor data or a missing-rule error as JSON.
+	 */
 	public function editor(Request $request, Response $response): Response
 	{
 		$query = $request->getQueryParams();
@@ -85,6 +92,13 @@ class EmailFilterController
 		}
 	}
 
+	/**
+	 * Validate and persist a new or edited mailbox filter.
+	 *
+	 * @param Request $request The HTTP request containing query parameters, submitted values, and request attributes.
+	 * @param Response $response The response to populate with content, headers, and status.
+	 * @return Response The saved filter identifier or validation errors as JSON.
+	 */
 	public function save(Request $request, Response $response): Response
 	{
 		$input = $request->getParsedBody();
@@ -201,6 +215,13 @@ class EmailFilterController
 		}
 	}
 
+	/**
+	 * List the current user's stored mailbox filters.
+	 *
+	 * @param Request $request The HTTP request containing query parameters, submitted values, and request attributes.
+	 * @param Response $response The response to populate with content, headers, and status.
+	 * @return Response Serialized filter entries or a loading error as JSON.
+	 */
 	public function index(Request $request, Response $response): Response
 	{
 		try
@@ -235,6 +256,13 @@ class EmailFilterController
 		}
 	}
 
+	/**
+	 * Apply a requested management action to a stored filter.
+	 *
+	 * @param Request $request The HTTP request containing query parameters, submitted values, and request attributes.
+	 * @param Response $response The response to populate with content, headers, and status.
+	 * @return Response The management result or an invalid-action error as JSON.
+	 */
 	public function action(Request $request, Response $response): Response
 	{
 		$input = $request->getParsedBody();
@@ -280,6 +308,13 @@ class EmailFilterController
 		}
 	}
 
+	/**
+	 * Run or test the selected mailbox filters against eligible accounts.
+	 *
+	 * @param Request $request The HTTP request containing query parameters, submitted values, and request attributes.
+	 * @param Response $response The response to populate with content, headers, and status.
+	 * @return Response Matching and action results or execution errors as JSON.
+	 */
 	public function run(Request $request, Response $response): Response
 	{
 		$input = $request->getParsedBody();
@@ -337,6 +372,14 @@ class EmailFilterController
 		}
 	}
 
+	/**
+	 * Encode an API payload and apply its JSON response headers and status.
+	 *
+	 * @param Response $response The response to populate with content, headers, and status.
+	 * @param array $data The response payload or template variables to render.
+	 * @param int $status The HTTP status code to return.
+	 * @return Response The JSON HTTP response.
+	 */
 	private function json(Response $response, array $data, int $status = 200): Response
 	{
 		$encoded = json_encode($data);

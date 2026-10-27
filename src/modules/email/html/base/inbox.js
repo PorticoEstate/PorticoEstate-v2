@@ -24,6 +24,7 @@
 	const selected = new Map();
 	const selectAll = document.getElementById('email-inbox-select-all');
 	const selectedCount = document.getElementById('email-inbox-selected');
+	const accountSelect = document.getElementById('email-inbox-account');
 	const targetAccount = document.getElementById('email-inbox-target-account');
 	const targetFolder = document.getElementById('email-inbox-target-folder');
 	const moveSelected = document.getElementById('email-inbox-move-selected');
@@ -34,6 +35,15 @@
 	let destinationsLoading = false;
 	let currentSort = String(selection.get('sort') || '1');
 	let currentOrder = String(selection.get('order') || '0');
+	accountSelect.addEventListener('change', () =>
+	{
+		if (Number(accountSelect.value) === activeAccount) return;
+		window.location.assign(window.emailLink(window.location.href, {
+			'fldball[acctnum]': accountSelect.value,
+			'fldball[folder]': 'INBOX',
+			start: null, sort: null, order: null, fldball_fake_uri: null
+		}));
+	});
 	root.querySelectorAll('[data-email-sort]').forEach(button =>
 	{
 		button.addEventListener('click', () =>
@@ -57,6 +67,7 @@
 
 	function updateSelection()
 	{
+		accountSelect.disabled = movePending || seenPending;
 		selectedCount.textContent = selected.size + ' selected';
 		const available = pageItems.filter(item => item.sourceFolder);
 		selectAll.checked = available.length > 0 && selected.size === available.length;

@@ -38,6 +38,14 @@
 	{% else %}
 		<div class="email-inbox-workspace">
 			<aside class="email-inbox-sidebar">
+				<label class="email-inbox-account" for="email-inbox-account">
+					{{ lang('Account') }}
+					<select id="email-inbox-account">
+						{% for account in accounts %}
+							<option value="{{ account.id }}"{% if account.id == active_account %} selected{% endif %}>{{ account.name|e }}</option>
+						{% endfor %}
+					</select>
+				</label>
 				<h2>{{ lang('Folders') }}</h2>
 				<p class="email-inbox-folder-status" id="email-inbox-folder-status" role="status">{{ lang('Loading folders') }}</p>
 				<p class="email-inbox-error" id="email-inbox-folder-error" role="alert" hidden></p>

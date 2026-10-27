@@ -2,8 +2,10 @@
 
 namespace App\modules\email\viewcontrollers;
 
+use App\modules\email\services\EmailAccountsSerializer;
 use App\modules\phpgwapi\helpers\LegacyViewHelper;
 use App\modules\phpgwapi\helpers\TwigHelper;
+use App\modules\phpgwapi\services\Preferences;
 use App\modules\phpgwapi\services\Settings;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
@@ -55,11 +57,21 @@ class EmailInboxViewController
 		}
 
 		$user = (array) Settings::getInstance()->get('user');
-		$emailPreferences = (array) ($user['preferences']['email'] ?? []);
+		$emailPreferences = (array) (Preferences::getInstance()->read()['email'] ?? []);
+		$accounts = EmailAccountsSerializer::serialize([
+			0 => [
+				'acctnum' => 0,
+				'status' => 'enabled',
+				'account_name' => $emailPreferences['account_name'] ?? '',
+				'fullname' => $user['fullname'] ?? lang('Account') . ' 0',
+			],
+		] + (array) ($emailPreferences['ex_accounts'] ?? []));
 		Settings::getInstance()->update('flags', ['app_header' => lang('E-Mail') . ': ' . lang('Inbox')]);
 
 		$html = $this->twig->render('@views/inbox.twig', [
 			'layout' => '@views/_bare.twig',
+			'accounts' => array_values(array_filter($accounts, static fn($account) => $account['status'] === 'enabled')),
+			'active_account' => (int) ($query['fldball']['acctnum'] ?? 0),
 			'api_url' => \phpgw::link('/email/api/inbox', [], true),
 			'folders_api_url' => \phpgw::link('/email/api/folders', [], true),
 			'move_url' => \phpgw::link('/email/api/messages/move', [], true),

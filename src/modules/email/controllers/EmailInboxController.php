@@ -321,7 +321,8 @@ class EmailInboxController
 					'msgball[part_no]' => $attachment['partNumber'],
 				], true);
 			}
-			if (!$mail->phpgw_set_flag($activeMsgball, '\\Seen', false))
+			$supportsFlags = method_exists($mail->getTransport((int) $activeMsgball['acctnum']), 'set_flag');
+			if ($supportsFlags && !$mail->phpgw_set_flag($activeMsgball, '\\Seen', false))
 			{
 				return $this->json($response, ['error' => lang('Unable to mark message as read')], 422);
 			}

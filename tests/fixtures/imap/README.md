@@ -1,6 +1,8 @@
-# Local IMAP test mailbox
+# Local IMAP and POP test mailboxes
 
 This fixture uses an isolated GreenMail IMAP server and seeds its disposable `INBOX` with 20 generated messages. It does not contact Outlook or any other live mail server.
+
+An independent optional POP server uses the same dataset and loader. See [POP testing](#pop-testing) below. Neither server simulates OAuth.
 
 ## Start the server and load messages
 
@@ -68,10 +70,109 @@ The search-criteria flow uses the application's criteria builder for combined bo
 
 Create an active standard IMAP emailadmin profile assigned to the test user or `felamimail` application. For the app running in the `portico_internal` Docker network, set server `imap-test`, port `3993`, SSL, and disable certificate verification for this local test profile. For a PHP app running directly on the host, use `127.0.0.1`, port `1993`. Use IMAP login `outlook-test`, email address `outlook-test@outlook.test`, and the test password above. This fixture exercises password-based IMAP behavior; it does not simulate Microsoft OAuth.
 
-Stop the optional server with:
+Stop only the optional IMAP fixture with:
 
 ```sh
-docker compose --profile email-test down
+docker compose --profile email-test stop imap-test-seed imap-test
 ```
 
 The service is opt-in and does not start with the normal application stack.
+
+## POP testing
+
+### Start and seed
+
+```sh
+docker compose --profile email-test up -d pop-test-seed
+docker compose --profile email-test logs pop-test-seed
+```
+
+This starts the separate `portico_pop_test` GreenMail container and a one-shot seeder. The seeder waits up to 60 seconds for the internal IMAPS listener and loads 20 messages only if INBOX is empty. POP has no APPEND command, so IMAPS is used only to load the mailbox; test clients retrieve the same messages through POP3 or POP3S. The seed IMAPS port is not published to the host.
+
+| Setting | Value |
+| --- | --- |
+| Username | `pop-test` |
+| Password | `local-test-password` |
+| Email address | `pop-test@pop.test` |
+| POP3 from the host | `127.0.0.1:1110` |
+| POP3S from the host | `127.0.0.1:1995` |
+| POP3 from the app container | `pop-test:3110` |
+| POP3S from the app container | `pop-test:3995` |
+| Internal IMAPS for seeding | `pop-test:3993` |
+
+The published POP ports bind to loopback only. These credentials and the self-signed TLS certificate are for local testing, not production.
+
+The POP fixture is isolated from `imap-test`: seeding or deleting its messages does not affect the IMAP fixture. It reuses the IMAP-named message subjects and dataset, with the recipient changed to `pop-test@pop.test`. There are plain/HTML messages, CC recipients, a subjectless message, and text attachments on messages 5, 12, and 19. IMAP Seen flags are not POP read/unread state.
+
+### Configure the Email application
+
+Create and enable an extra email account, or enable custom settings on the main account. Set **Email Account Name** to `pop-test`, **Email address** to `pop-test@pop.test`, authentication to **Password**, and the password shown above. When PHP runs in Docker, use **Mail Server** `pop-test` with **POP-3** and port `3110`, or **POP-3S** and port `3995`. When PHP runs on the host, use `127.0.0.1` with ports `1110` or `1995` respectively.
+
+Set the port explicitly: the application's standard POP defaults are 110/995, not GreenMail's test ports. The current POP transport requires the native PHP IMAP extension; the Python checks below can verify GreenMail independently of that extension. POP3S uses the fixture's self-signed certificate; certificate-validation exceptions must remain restricted to this local test server.
+
+There is no POP-specific emailadmin server preset. Do not select Microsoft or Google OAuth. This fixture tests the user Email POP settings and native POP transport, not cloud authentication or SMTP sending.
+
+The app exposes one remote INBOX for POP, not a local downloaded mailbox. Do not expect IMAP Sent/Drafts/Trash folders. Explicit deletion can permanently remove messages from this disposable server.
+
+### Read-only protocol check
+
+From the host, verify both published ports with Python's standard library:
+
+```sh
+python3 - <<'PY'
+import poplib
+import ssl
+from email import policy
+from email.parser import BytesParser
+
+for secure, port in [(False, 1110), (True, 1995)]:
+    server = (poplib.POP3_SSL("127.0.0.1", port, timeout=10,
+                             context=ssl._create_unverified_context())
+              if secure else poplib.POP3("127.0.0.1", port, timeout=10))
+    try:
+        server.user("pop-test")
+        server.pass_("local-test-password")
+        count, size = server.stat()
+        assert count > 0, "Mailbox is empty; run the seeder"
+        response, entries, octets = server.list()
+        assert len(entries) == count
+        response, lines, octets = server.retr(1)
+        message = BytesParser(policy=policy.default).parsebytes(b"\r\n".join(lines))
+        assert message["To"] == "pop-test@pop.test"
+        print(f"{'POP3S' if secure else 'POP3'}: {count} messages, first subject: {message['Subject']}")
+    finally:
+        server.quit()
+PY
+```
+
+A newly seeded mailbox has 20 messages. This check issues no DELE commands and does not remove messages. Verify attachment download in the app using fixture message 5, 12, or 19. The IMAP regression tests above still target `imap-test`; they do not exercise POP automatically.
+
+GreenMail 2.1.2 can leave Python `poplib` command responses misaligned after `RSET`. For deletion-cancellation tests, issue `RSET`, disconnect, and verify the count on a new connection rather than relying on same-session STAT/LIST responses. Do not mistake this fixture limitation for production POP behavior.
+
+### Reseed and reset
+
+Rerun the normal `up -d pop-test-seed` command to seed only an empty mailbox. If even one message remains, `--if-empty` skips seeding; it does not restore partially deleted mailboxes.
+
+To intentionally reset just the POP mailbox to 20 messages, deleting its current contents:
+
+```sh
+docker compose --profile email-test run --rm pop-test-seed \
+  python3 /fixtures/seed_mailbox.py --host pop-test --port 3993 \
+  --user pop-test --address pop-test@pop.test --wait-seconds 60
+```
+
+To validate generation without connecting to a server:
+
+```sh
+python3 tests/fixtures/imap/seed_mailbox.py --address pop-test@pop.test --dry-run
+```
+
+The server has no persistent mailbox volume; do not rely on messages surviving server restart or container recreation. A standalone `docker restart portico_pop_test` does not run the Compose seeder; rerun the normal startup command afterward.
+
+Stop only the POP fixture, leaving the application and IMAP fixture running:
+
+```sh
+docker compose --profile email-test stop pop-test-seed pop-test
+```
+
+Avoid `docker compose down` when you only intend to stop a mail fixture: it also tears down the other services in this Compose project.

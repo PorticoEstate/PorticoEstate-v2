@@ -1565,7 +1565,7 @@ class mail_msg_base
 		{
 			$this_acctnum = $check_streams[$i]['acctnum'];
 			if (($this->mail_msg_wrappers->get_isset_arg('mailsvr_stream', $this_acctnum) == True)
-				&& ((string)$this->mail_msg_wrappers->get_arg_value('mailsvr_stream', $this_acctnum) != '')
+				&& $this->mail_msg_wrappers->get_arg_value('mailsvr_stream', $this_acctnum)
 			)
 			{
 				$mailsvr_stream = $this->mail_msg_wrappers->get_arg_value('mailsvr_stream', $this_acctnum);
@@ -1646,7 +1646,7 @@ class mail_msg_base
 		$mailsvr_callstr = $this->mail_msg_wrappers->get_arg_value('mailsvr_callstr', $acctnum);
 
 		if (($this->mail_msg_wrappers->get_isset_arg('mailsvr_stream', $acctnum))
-			&& ((string)$this->mail_msg_wrappers->get_arg_value('mailsvr_stream', $acctnum) != '')
+			&& $this->mail_msg_wrappers->get_arg_value('mailsvr_stream', $acctnum)
 		)
 		{
 			$ctrl_info['first_open'] = False;

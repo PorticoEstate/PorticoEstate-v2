@@ -19,11 +19,11 @@ DEFAULT_ADDRESS = "outlook-test@outlook.test"
 DEFAULT_PASSWORD = "local-test-password"
 
 
-def build_message(number: int, now: datetime) -> tuple[EmailMessage, datetime]:
+def build_message(number: int, now: datetime, address: str = DEFAULT_ADDRESS) -> tuple[EmailMessage, datetime]:
 	date = now - timedelta(days=MESSAGE_COUNT - number, hours=number)
 	message = EmailMessage()
 	message["From"] = f"Sender {number:02d} <sender{number:02d}@example.test>"
-	message["To"] = DEFAULT_ADDRESS
+	message["To"] = address
 	message["Date"] = format_datetime(date)
 	message["Message-ID"] = f"<imap-fixture-{number:02d}@example.test>"
 	message["X-Test-Message"] = f"{number:02d}"
@@ -74,9 +74,9 @@ def subject_for(number: int) -> str:
 	}[number]
 
 
-def messages() -> list[tuple[EmailMessage, datetime]]:
+def messages(address: str = DEFAULT_ADDRESS) -> list[tuple[EmailMessage, datetime]]:
 	now = datetime.now(timezone.utc).replace(microsecond=0)
-	return [build_message(number, now) for number in range(1, MESSAGE_COUNT + 1)]
+	return [build_message(number, now, address) for number in range(1, MESSAGE_COUNT + 1)]
 
 
 def clear_inbox(server: imaplib.IMAP4) -> None:
@@ -95,7 +95,7 @@ def clear_inbox(server: imaplib.IMAP4) -> None:
 		server.expunge()
 
 
-def load_mailbox(host: str, port: int, username: str, password: str, if_empty: bool = False, wait_seconds: int = 0) -> None:
+def load_mailbox(host: str, port: int, username: str, password: str, if_empty: bool = False, wait_seconds: int = 0, address: str = DEFAULT_ADDRESS) -> None:
 	deadline = time.monotonic() + wait_seconds
 	while True:
 		try:
@@ -121,7 +121,7 @@ def load_mailbox(host: str, port: int, username: str, password: str, if_empty: b
 				return
 		else:
 			clear_inbox(server)
-		for index, (message, date) in enumerate(messages(), start=1):
+		for index, (message, date) in enumerate(messages(address), start=1):
 			flags = r"(\Seen)" if index % 2 == 0 else None
 			status, _ = server.append(
 				"INBOX",
@@ -147,6 +147,7 @@ def main() -> int:
 	parser.add_argument("--host", default=os.getenv("IMAP_TEST_HOST", "127.0.0.1"))
 	parser.add_argument("--port", type=int, default=int(os.getenv("IMAP_TEST_PORT", "1993")))
 	parser.add_argument("--user", default=os.getenv("IMAP_TEST_USER", DEFAULT_USER))
+	parser.add_argument("--address", default=os.getenv("IMAP_TEST_ADDRESS", DEFAULT_ADDRESS), help="Recipient address for generated fixture messages")
 	parser.add_argument("--password", default=os.getenv("IMAP_TEST_PASSWORD", DEFAULT_PASSWORD))
 	parser.add_argument("--dry-run", action="store_true", help="Build and summarize messages without connecting")
 	parser.add_argument("--if-empty", action="store_true", help="Seed only an empty INBOX; never clear existing messages")
@@ -154,12 +155,12 @@ def main() -> int:
 	args = parser.parse_args()
 
 	if args.dry_run:
-		fixture_messages = messages()
+		fixture_messages = messages(args.address)
 		print(f"Generated {len(fixture_messages)} RFC 5322 messages; {sum(bool(message.get_content_maintype() == 'multipart') for message, _ in fixture_messages)} are multipart.")
 		return 0
 
 	try:
-		load_mailbox(args.host, args.port, args.user, args.password, args.if_empty, args.wait_seconds)
+		load_mailbox(args.host, args.port, args.user, args.password, args.if_empty, args.wait_seconds, args.address)
 	except (OSError, imaplib.IMAP4.error, RuntimeError) as error:
 		print(f"Could not seed local IMAP mailbox: {error}", file=sys.stderr)
 		return 1

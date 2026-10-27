@@ -111,6 +111,53 @@ namespace Tests\Controllers
 			}
 		}
 
+		public function testEndRequestClosesObjectResourceAndStringHandles(): void
+		{
+			$resource = tmpfile();
+			try
+			{
+				foreach ([new \stdClass(), $resource, 'imap_test_connection'] as $handle)
+				{
+					foreach ([[], ['acctnum' => 2]] as $arguments)
+					{
+						$mail = $this->getMockBuilder(\mail_msg::class)->disableOriginalConstructor()
+							->onlyMethods(['get_isset_arg', 'get_arg_value', 'set_arg_value', 'getTransport'])->getMock();
+						$mail->mail_msg_wrappers = $mail;
+						$mail->extra_and_default_acounts = [['acctnum' => 2, 'status' => 'enabled']];
+						$mail->method('get_isset_arg')->with('mailsvr_stream', 2)->willReturn(true);
+						$mail->method('get_arg_value')->with('mailsvr_stream', 2)->willReturn($handle);
+						$transport = $this->getMockBuilder(\stdClass::class)->addMethods(['close'])->getMock();
+						$transport->expects($this->once())->method('close')->with($this->identicalTo($handle));
+						$mail->method('getTransport')->with(2)->willReturn($transport);
+						$mail->expects($this->once())->method('set_arg_value')->with('mailsvr_stream', '', 2);
+						$mail->end_request($arguments);
+					}
+				}
+			}
+			finally
+			{
+				if (is_resource($resource)) fclose($resource);
+			}
+		}
+
+		public function testEnsureStreamAndFolderReusesObjectHandle(): void
+		{
+			$handle = new \stdClass();
+			$mail = $this->getMockBuilder(\mail_msg::class)->disableOriginalConstructor()
+				->onlyMethods(['get_isset_arg', 'get_arg_value', 'getTransport', 'prep_folder_out'])->getMock();
+			$mail->mail_msg_wrappers = $mail;
+			$mail->method('get_isset_arg')->willReturn(true);
+			$mail->method('get_arg_value')->willReturnCallback(static fn($name) => match ($name) {
+				'mailsvr_stream' => $handle,
+				'folder' => 'INBOX',
+				'mailsvr_callstr' => '{pop-test:3995/pop3/ssl}INBOX',
+				default => '',
+			});
+			$mail->method('prep_folder_out')->willReturnArgument(0);
+			$mail->expects($this->never())->method('getTransport');
+			$this->assertSame($handle, $mail->ensure_stream_and_folder(['acctnum' => 2, 'folder' => 'INBOX']));
+		}
+
 		public function testModuleHasNoLegacyCacheBackend(): void
 		{
 			$violations = [];

@@ -27,11 +27,18 @@
  * application is read or written and a leak would ERROR instead of reaching real rows. The DSN user
  * needs CREATEDB; without it, or without HD_PG_DSN, the run prints SKIPPED and exits 3 - never green.
  *
+ * The arms DROP TABLE ... CASCADE on tables the application has too (phpgw_accounts, bb_user, bb_resource,
+ * ...), so an arm started by hand against the wrong database would wipe real data. Each arm therefore
+ * refuses, before it creates or drops anything, unless it is connected to a database that is (1) named
+ * like a scratch database the master makes, (2) the very one named in HD_ARM_DB, which only the master
+ * sets, and (3) holds no table this harness did not create. It then prints why on stderr and exits 2.
+ * The master tests that refusal end to end against decoy databases, with a canary that must survive.
+ *
  * Environment: HD_PG_DSN, HD_PG_USER, HD_PG_PASS (required); HD_ROOT = tree holding src/ (default:
  * this repo; mutate_tz.py points it at a mutated copy). Nothing here is read from the application's
- * own configuration and no credential is stored in the repo.
+ * own configuration and no credential is stored in the repo. HD_ARM and HD_ARM_DB belong to the master.
  *
- * Exit code: 0 all pass, 1 any failure, 2 bad environment, 3 skipped.
+ * Exit code: 0 all pass, 1 any failure, 2 bad environment (an arm: refused), 3 skipped.
  */
 
 const HD_UTC_DEFAULT = "(now() AT TIME ZONE 'UTC'::text)";
@@ -52,6 +59,18 @@ const HD_COLUMNS = [
     'bb_hospitality_order' => ['created', 'modified'],
     'bb_hospitality_order_changelog' => ['changed_at'],
 ];
+
+/** What the master calls a scratch database: hd_tz_<utc|oslo>_<its pid>_<6 hex>. An arm runs in nothing else. */
+const HD_SCRATCH_DB = '/^hd_tz_(utc|oslo)_[0-9]+_[0-9a-f]{6}$/D';
+
+/** Every table an arm creates, in the order it DROPs them first. A scratch database holds these and nothing else. */
+const HD_ARM_TABLES = [
+    'bb_hospitality_order_changelog', 'bb_hospitality_order_line', 'bb_hospitality_order', 'bb_hospitality', 'bb_hospitality_article',
+    'bb_article_mapping', 'bb_article_view', 'bb_resource', 'phpgw_accounts', 'bb_user',
+];
+
+/** How many checks each arm prints. A check that vanishes silently shows up as a shortfall instead of as a pass. */
+const HD_ARM_CHECKS = ['utc-db' => 136, 'oslo-db' => 140, 'client-zone' => 6];
 
 $root = getenv('HD_ROOT') ?: dirname(__DIR__, 2);
 spl_autoload_register(static function (string $class) use ($root): void {
@@ -109,10 +128,19 @@ function hd_master(string $root): int
         $record($name, $ok, $detail);
     }
 
+    // --- the arm guard's name pattern, no database --------------------------------------------
+    foreach (hd_scratch_name_checks() as [$name, $ok, $detail]) {
+        $record($name, $ok, $detail);
+    }
+
     // --- scratch databases ---------------------------------------------------------------------
     $suffix = getmypid() . '_' . bin2hex(random_bytes(3));
     $dbUtc = "hd_tz_utc_{$suffix}";
     $dbOslo = "hd_tz_oslo_{$suffix}";
+    // for the arm guard's own tests: a database whose name no arm may run in, and one with a name it would
+    // accept but that the master never hands to an arm
+    $dbDecoy = "hd_decoy_{$suffix}";
+    $dbSpare = 'hd_tz_utc_' . getmypid() . '_' . bin2hex(random_bytes(3));
     try {
         $admin = new PDO($dsn, $user, $pass, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
     } catch (Throwable $e) {
@@ -121,7 +149,7 @@ function hd_master(string $root): int
     }
     $created = [];
     try {
-        foreach ([$dbUtc, $dbOslo] as $name) {
+        foreach ([$dbUtc, $dbOslo, $dbDecoy, $dbSpare] as $name) {
             $admin->exec("CREATE DATABASE \"{$name}\" TEMPLATE template0");
             $created[] = $name;
         }
@@ -146,42 +174,27 @@ function hd_master(string $root): int
         foreach ($arms as $armName => $spec) {
             $env = array_merge(getenv(), $spec['env'], [
                 'HD_ARM' => $armName,
+                'HD_ARM_DB' => $spec['db'],
                 'HD_ROOT' => $root,
                 'HD_PG_DSN' => $dsnFor($spec['db']),
                 'HD_PG_USER' => (string)$user,
                 'HD_PG_PASS' => (string)$pass,
             ]);
-            // stderr goes to a file, not a pipe: the arm's PHP notices can outgrow a pipe buffer while we are
-            // still reading stdout, and that deadlocks both processes.
-            $errFile = (string)tempnam(sys_get_temp_dir(), 'hdtz');
-            $proc = proc_open(
-                [PHP_BINARY, '-d', 'display_errors=stderr', '-d', 'xdebug.mode=off', __FILE__],
-                [1 => ['pipe', 'w'], 2 => ['file', $errFile, 'w']],
-                $pipes,
-                null,
-                $env
-            );
-            $out = stream_get_contents($pipes[1]);
-            fclose($pipes[1]);
-            $rc = proc_close($proc);
-            $err = (string)file_get_contents($errFile);
-            @unlink($errFile);
-            $n = 0;
-            foreach (explode("\n", trim($out)) as $line) {
-                $row = json_decode($line, true);
-                if (is_array($row) && isset($row['n'])) {
-                    $record("[{$armName}] " . $row['n'], (bool)$row['ok'], (string)($row['d'] ?? ''));
-                    $n++;
-                }
+            [$rc, $out, $err] = hd_spawn_arm($env);
+            $rows = hd_arm_rows($out);
+            foreach ($rows as $row) {
+                $record("[{$armName}] " . $row['n'], (bool)$row['ok'], (string)($row['d'] ?? ''));
             }
+            $n = count($rows);
             $armsRun[] = "{$armName}={$n}";
             if ($rc !== 0 || $n === 0) {
-                $tail = implode(' | ', array_slice(array_values(array_filter(
-                    explode("\n", trim($err)),
-                    static fn($l) => $l !== '' && stripos($l, 'deprecated') === false
-                )), -4));
-                $record("[{$armName}] the arm ran to the end (exit {$rc}, {$n} checks)", false, $tail);
+                $record("[{$armName}] the arm ran to the end (exit {$rc}, {$n} checks)", false, hd_stderr_tail($err));
             }
+            $record("[{$armName}] the arm printed all " . HD_ARM_CHECKS[$armName] . ' of its checks', $n === HD_ARM_CHECKS[$armName], "printed {$n}");
+        }
+
+        foreach (hd_guard_checks($dsnFor, (string)$user, (string)$pass, $root, ['decoy' => $dbDecoy, 'spare' => $dbSpare, 'real' => $dbUtc], $arms['client-zone']['env']) as [$name, $ok, $detail]) {
+            $record($name, $ok, $detail);
         }
     } finally {
         foreach ($created as $name) {
@@ -236,6 +249,246 @@ function hd_conflict_checks(): array
     return $out;
 }
 
+/**
+ * One arm as a child process.
+ *
+ * stderr goes to a file, not a pipe: the arm's PHP notices can outgrow a pipe buffer while we are still
+ * reading stdout, and that deadlocks both processes.
+ *
+ * @param array<string,string> $env the complete environment of the child
+ * @return array{int,string,string} exit code, stdout, stderr
+ */
+function hd_spawn_arm(array $env): array
+{
+    $errFile = (string)tempnam(sys_get_temp_dir(), 'hdtz');
+    $proc = proc_open(
+        [PHP_BINARY, '-d', 'display_errors=stderr', '-d', 'xdebug.mode=off', __FILE__],
+        [1 => ['pipe', 'w'], 2 => ['file', $errFile, 'w']],
+        $pipes,
+        null,
+        $env
+    );
+    $out = stream_get_contents($pipes[1]);
+    fclose($pipes[1]);
+    $rc = proc_close($proc);
+    $err = (string)file_get_contents($errFile);
+    @unlink($errFile);
+    return [$rc, $out, $err];
+}
+
+/** The checks an arm printed: one JSON object per line. Anything else on stdout is not a check. */
+function hd_arm_rows(string $out): array
+{
+    $rows = [];
+    foreach (explode("\n", trim($out)) as $line) {
+        $row = json_decode($line, true);
+        if (is_array($row) && isset($row['n'])) {
+            $rows[] = $row;
+        }
+    }
+    return $rows;
+}
+
+/** The last lines of an arm's stderr, minus the deprecation notices, on one line. */
+function hd_stderr_tail(string $err): string
+{
+    return implode(' | ', array_slice(array_values(array_filter(
+        explode("\n", trim($err)),
+        static fn($l) => $l !== '' && stripos($l, 'deprecated') === false
+    )), -4));
+}
+
+// ======================================================================================================
+// the arm guard: an arm drops tables, so it must be sure which database it is in
+// ======================================================================================================
+
+/**
+ * The name pattern on its own, no database: the real application database, the maintenance databases and every
+ * near miss of a scratch name must be refused, and only a name exactly like the master's accepted.
+ *
+ * @return list<array{string,bool,string}>
+ */
+function hd_scratch_name_checks(): array
+{
+    $out = [];
+    $names = [
+        'hd_tz_utc_4242_0a1b2c' => true,
+        'hd_tz_oslo_7_ffffff' => true,
+        'portico_ebe' => false,
+        'postgres' => false,
+        'template1' => false,
+        '' => false,
+        'hd_decoy_4242_0a1b2c' => false,
+        'hd_tz_prod_4242_0a1b2c' => false,
+        'hd_tz_utc__0a1b2c' => false,
+        'hd_tz_utc_4242_0a1b2g' => false,
+        'hd_tz_utc_4242_0a1b2' => false,
+        'hd_tz_utc_4242_0a1b2c3' => false,
+        'HD_TZ_UTC_4242_0A1B2C' => false,
+        'xhd_tz_utc_4242_0a1b2c' => false,
+        'hd_tz_utc_4242_0a1b2c_x' => false,
+        "hd_tz_utc_4242_0a1b2c\n" => false,
+    ];
+    foreach ($names as $name => $accepted) {
+        $got = preg_match(HD_SCRATCH_DB, (string)$name) === 1;
+        $out[] = ['guard name pattern ' . ($accepted ? 'accepts ' : 'refuses ') . json_encode((string)$name), $got === $accepted, $got ? 'it matched' : 'it did not match'];
+    }
+    return $out;
+}
+
+/**
+ * A read on the connection, through prepare/execute: on a Db that goes straight to PDO, whereas Db::query() is
+ * the legacy method, which reads configuration the arm has not set yet.
+ *
+ * @param PDO|Db $connection
+ */
+function hd_select($connection, string $sql): PDOStatement
+{
+    $statement = $connection->prepare($sql);
+    $statement->execute();
+    return $statement;
+}
+
+/**
+ * Every table, view and the like outside the system schemas, as schema.name.
+ *
+ * @param PDO|Db $connection
+ * @return list<string>
+ */
+function hd_user_tables($connection): array
+{
+    return hd_select(
+        $connection,
+        "SELECT n.nspname || '.' || c.relname FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+         WHERE c.relkind IN ('r', 'p', 'v', 'm', 'f') AND left(n.nspname, 3) <> 'pg_' AND n.nspname <> 'information_schema'
+         ORDER BY 1"
+    )->fetchAll(PDO::FETCH_COLUMN);
+}
+
+/**
+ * Why an arm must NOT run on this connection, or null if it may. It only reads: nothing is created, changed
+ * or dropped before this has returned null.
+ *
+ * An arm runs only in the scratch database the master made for it: a name that looks like one of the master's,
+ * the very name the master passed in HD_ARM_DB, and nothing in it that the harness did not create.
+ */
+function hd_arm_refusal(Db $db, string $armDb): ?string
+{
+    if ($db->getAttribute(PDO::ATTR_DRIVER_NAME) !== 'pgsql') {
+        return 'the connection is not to Postgres, so there is no database name to check';
+    }
+    $current = (string)hd_select($db, 'SELECT current_database()')->fetchColumn();
+    if (preg_match(HD_SCRATCH_DB, $current) !== 1) {
+        return "it is connected to '{$current}', which is not a scratch database (hd_tz_utc_* or hd_tz_oslo_*, made by this harness)";
+    }
+    if ($armDb !== $current) {
+        return 'HD_ARM_DB is ' . ($armDb === '' ? 'not set' : "'{$armDb}'") . ", not the database this arm is connected to ('{$current}'); an arm runs only in the database its master made for it";
+    }
+    $foreign = array_diff(hd_user_tables($db), array_map(static fn(string $t): string => "public.{$t}", HD_ARM_TABLES));
+    if ($foreign) {
+        return "'{$current}' holds tables this harness did not create (" . implode(', ', array_slice($foreign, 0, 5)) . '); a scratch database holds only the ones the arms make';
+    }
+    return null;
+}
+
+/**
+ * The guard, tested end to end. An arm pointed at a database it must not touch has to exit 2, say why, run no
+ * check, and leave that database exactly as it was, down to a canary row. Each scenario isolates ONE of the
+ * guard's checks, so removing any one of them turns a scenario red. The last scenario is the control: with
+ * every check satisfied, the same arm DOES drop and recreate the canary, so "the canary survived" above could
+ * have said otherwise.
+ *
+ * Every database here is one the master created and drops. The decoys are why this is safe to mutate: with
+ * the guard removed, the arms run in them and nothing outside the harness is reached.
+ *
+ * @param callable(string):string $dsnFor database name => DSN
+ * @param array{decoy:string,spare:string,real:string} $names decoy: a name no arm may run in; spare: a scratch-style
+ *        name the master never hands to an arm; real: a scratch database the master did make
+ * @param array<string,string> $controlEnv the environment the client-zone arm needs, for the control
+ * @return list<array{string,bool,string}>
+ */
+function hd_guard_checks(callable $dsnFor, string $user, string $pass, string $root, array $names, array $controlEnv): array
+{
+    $out = [];
+    $add = static function (string $name, bool $ok, string $detail = '') use (&$out): void {
+        $out[] = [$name, $ok, $detail];
+    };
+    $open = static fn(string $db): PDO => new PDO($dsnFor($db), $user, $pass, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
+    $canary = static function (PDO $c): int {
+        try {
+            return (int)$c->query("SELECT count(*) FROM bb_user WHERE id = 424242 AND name = 'canary'")->fetchColumn();
+        } catch (PDOException) {
+            return 0; // the table is gone
+        }
+    };
+    /** @return array{int,string,string} */
+    $arm = static function (string $armName, ?string $dsn, ?string $armDb, array $extraEnv = []) use ($user, $pass, $root): array {
+        $env = array_merge(getenv(), $extraEnv, [
+            'HD_ARM' => $armName,
+            'HD_ROOT' => $root,
+            'HD_PG_DSN' => (string)$dsn,
+            'HD_PG_USER' => $user,
+            'HD_PG_PASS' => $pass,
+        ]);
+        unset($env['HD_ARM_DB']);
+        if ($armDb !== null) {
+            $env['HD_ARM_DB'] = $armDb;
+        }
+        return hd_spawn_arm($env);
+    };
+    $expectRefusal = static function (string $label, ?PDO $watch, string $armName, ?string $dsn, ?string $armDb, string $needle) use ($add, $arm, $canary): void {
+        $before = $watch ? hd_user_tables($watch) : [];
+        [$rc, $stdout, $stderr] = $arm($armName, $dsn, $armDb);
+        $ran = count(hd_arm_rows($stdout));
+        $add("guard [{$label}]: the arm exits 2", $rc === 2, "exit {$rc}: " . hd_stderr_tail($stderr));
+        $add("guard [{$label}]: it says REFUSES and why ('{$needle}')", str_contains($stderr, 'REFUSES') && str_contains($stderr, $needle), hd_stderr_tail($stderr));
+        $add("guard [{$label}]: it ran no check", $ran === 0, "{$ran} checks ran");
+        if ($watch) {
+            $add("guard [{$label}]: the canary row survived", $canary($watch) === 1);
+            $add("guard [{$label}]: no table was created or dropped", hd_user_tables($watch) === $before, 'before ' . implode(',', $before) . ' / after ' . implode(',', hd_user_tables($watch)));
+        }
+    };
+
+    // Back to one canary row in a table the arms DROP, and nothing else, before every scenario: a scenario that
+    // wrongly lets the arm run must not take the next scenario's canary with it.
+    $plant = static function (PDO $c): void {
+        foreach (HD_ARM_TABLES as $t) {
+            $c->exec("DROP TABLE IF EXISTS {$t} CASCADE");
+        }
+        $c->exec('DROP TABLE IF EXISTS bb_application');
+        $c->exec('CREATE TABLE bb_user (id int, name text)');
+        $c->exec("INSERT INTO bb_user VALUES (424242, 'canary')");
+    };
+    $decoy = $open($names['decoy']);
+    $spare = $open($names['spare']);
+
+    // the name is wrong; HD_ARM_DB agrees with it and nothing foreign is there, so ONLY the name check can refuse
+    $plant($decoy);
+    $expectRefusal('a database that is not named like a scratch one', $decoy, 'utc-db', $dsnFor($names['decoy']), $names['decoy'], 'not a scratch database');
+    // the name is right; ONLY HD_ARM_DB can refuse
+    $plant($spare);
+    $expectRefusal('HD_ARM_DB names a different database', $spare, 'utc-db', $dsnFor($names['spare']), $names['real'], 'HD_ARM_DB');
+    $plant($spare);
+    $expectRefusal('HD_ARM_DB is not set', $spare, 'utc-db', $dsnFor($names['spare']), null, 'HD_ARM_DB');
+    // name and HD_ARM_DB are right; ONLY the foreign table can refuse (the example from the brief: bb_application)
+    $plant($spare);
+    $spare->exec('CREATE TABLE bb_application (id int)');
+    $spare->exec('INSERT INTO bb_application VALUES (1)');
+    $expectRefusal('a table the harness did not create (bb_application)', $spare, 'utc-db', $dsnFor($names['spare']), $names['spare'], 'did not create');
+    // no DSN at all is the SQLite stand-in: no database name to check
+    $expectRefusal('no Postgres connection at all', null, 'utc-db', '', $names['spare'], 'not to Postgres');
+
+    // the control: every check satisfied, so the arm must run and the canary must go
+    $plant($spare);
+    $before = hd_user_tables($spare);
+    [$rc] = $arm('client-zone', $dsnFor($names['spare']), $names['spare'], $controlEnv);
+    $add('guard control: an arm that is allowed exits 0', $rc === 0, "exit {$rc}");
+    $add('guard control: ...and then the canary IS gone, so the canary checks above can fail', $canary($spare) === 0);
+    $add('guard control: ...and the tables DID change, so the table checks above can fail', hd_user_tables($spare) !== $before);
+
+    return $out;
+}
+
 // ======================================================================================================
 // an arm: one child process, one database, one session zone
 // ======================================================================================================
@@ -247,6 +500,13 @@ function hd_arm(string $arm, string $root): int
     };
 
     $db = Db::getInstance((string)getenv('HD_PG_DSN'), (string)getenv('HD_PG_USER'), (string)getenv('HD_PG_PASS'));
+    // Before anything else, and above all before the first DROP TABLE further down: that one would hit the
+    // application's own tables in whatever database this process happens to be connected to.
+    $refusal = hd_arm_refusal($db, (string)getenv('HD_ARM_DB'));
+    if ($refusal !== null) {
+        fwrite(STDERR, "run_tz.php: the '{$arm}' arm REFUSES to run: {$refusal}. Nothing was created, changed or dropped.\n");
+        return 2;
+    }
     $db->set_config(['db_type' => 'pgsql']);
     $emit('the arm talks to Postgres (not the SQLite stand-in)', $db->getAttribute(PDO::ATTR_DRIVER_NAME) === 'pgsql');
 
@@ -267,8 +527,7 @@ function hd_arm(string $arm, string $root): int
 
     // --- schema ----------------------------------------------------------------------------------
     $schema = static function (string $default) use ($exec): void {
-        foreach (['bb_hospitality_order_changelog', 'bb_hospitality_order_line', 'bb_hospitality_order', 'bb_hospitality', 'bb_hospitality_article',
-            'bb_article_mapping', 'bb_article_view', 'bb_resource', 'phpgw_accounts', 'bb_user'] as $t) {
+        foreach (HD_ARM_TABLES as $t) {
             $exec("DROP TABLE IF EXISTS {$t} CASCADE");
         }
         $exec("CREATE TABLE bb_resource (id int PRIMARY KEY, name text, cancellation_deadline_value int, cancellation_deadline_unit text)");

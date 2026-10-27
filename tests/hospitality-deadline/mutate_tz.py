@@ -9,6 +9,11 @@ must be green first, and every replacement must match exactly once.
 It needs the same Postgres as run_tz.php (HD_PG_DSN, HD_PG_USER, HD_PG_PASS) and prints SKIPPED when the
 harness does. PHP_BIN overrides the binary.
 
+The harness file itself is copied into that temp tree and run from there, so the arm guard (the refusal to
+run in any database but the scratch one the master made) and the per-arm check counts are mutated like any
+other code: Mz21-Mz29 take them away one at a time. With a guard missing the arms run in decoy databases
+the master created, so no mutation can reach anything outside the harness.
+
 One defect is NOT in the list because a sequential harness cannot see it: removing the table LOCK from the
 migration. That is a concurrency property; it is listed at the end as an expected survivor, not hidden.
 
@@ -38,6 +43,7 @@ FILES = [
     "src/modules/booking/services/HospitalityDeadlineCalculator.php",
     "src/modules/phpgwapi/services/Migration/Migration.php",
     "src/modules/phpgwapi/services/SchemaProc/SchemaProc.php",
+    "tests/hospitality-deadline/run_tz.php",
 ]
 
 H = "src/modules/booking/repositories/HospitalityRepository.php"
@@ -45,6 +51,7 @@ O = "src/modules/booking/repositories/HospitalityOrderRepository.php"
 M = "src/modules/booking/migrations/m20261027_hospitality_timestamps_to_utc.php"
 HM = "src/modules/booking/models/Hospitality.php"
 C = "src/modules/booking/controllers/HospitalityController.php"
+T = "tests/hospitality-deadline/run_tz.php"
 
 # (id, file, description, old, new)
 MUTATIONS = [
@@ -97,6 +104,26 @@ MUTATIONS = [
      "$serverTs = (new \\DateTimeImmutable($storedModified, $utc))->getTimestamp();", "$serverTs = strtotime($storedModified);"),
     ("Mz19", C, "an equal version counts as stale (< becomes <=)",
      "return $clientTs < $serverTs;", "return $clientTs <= $serverTs;"),
+
+    # --- the harness itself: the arm guard (arms DROP TABLE ... CASCADE on application table names) ---------
+    ("Mz21", T, "the arm no longer checks that the database is NAMED like a scratch one",
+     "    if (preg_match(HD_SCRATCH_DB, $current) !== 1) {", "    if (false) {"),
+    ("Mz22", T, "the arm no longer compares HD_ARM_DB (the master's name for it) with the database it is in",
+     "    if ($armDb !== $current) {", "    if (false) {"),
+    ("Mz23", T, "the arm no longer looks for tables the harness did not create (a second belt)",
+     "    if ($foreign) {", "    if (false) {"),
+    ("Mz24", T, "the refusal is computed but the arm runs on regardless (the guard, removed)",
+     "    if ($refusal !== null) {", "    if (false) {"),
+    ("Mz25", T, "a refusal exits 0 instead of 2",
+     "Nothing was created, changed or dropped.\\n\");\n        return 2;", "Nothing was created, changed or dropped.\\n\");\n        return 0;"),
+    ("Mz26", T, "the arm no longer insists on a Postgres connection before it asks for the database name",
+     "    if ($db->getAttribute(PDO::ATTR_DRIVER_NAME) !== 'pgsql') {", "    if (false) {"),
+    ("Mz27", T, "the scratch-name pattern accepts anything that starts with hd_tz_",
+     "const HD_SCRATCH_DB = '/^hd_tz_(utc|oslo)_[0-9]+_[0-9a-f]{6}$/D';", "const HD_SCRATCH_DB = '/^hd_tz_/D';"),
+    ("Mz28", T, "one check of an arm silently disappears (T4: '...and its modified'), so only the per-arm count can tell",
+     "        $emit('T4 new code first: ...and its modified (written with DEFAULT)', $near('bb_hospitality_order', 'modified', $pre));\n", ""),
+    ("Mz29", T, "the scratch-name pattern loses its end-of-string anchor: a trailing newline slips through",
+     "[0-9a-f]{6}$/D';", "[0-9a-f]{6}$/';"),
 ]
 
 # Not a failure of the harness: a property of what a sequential harness can see.
@@ -109,7 +136,8 @@ EXPECTED_SURVIVORS = [
 def run_harness(tree):
     env = dict(os.environ)
     env["HD_ROOT"] = tree
-    p = subprocess.run([PHP, "-d", "xdebug.mode=off", "-d", "display_errors=stderr", os.path.join(HERE, "run_tz.php")],
+    # the copy of the harness inside the temp tree, not the one in the repo: some mutations are of the harness itself
+    p = subprocess.run([PHP, "-d", "xdebug.mode=off", "-d", "display_errors=stderr", os.path.join(tree, T)],
                        env=env, capture_output=True, text=True)
     out = p.stdout.strip().splitlines()
     return p.returncode, (out[-1] if out else "")

@@ -19,6 +19,7 @@ import {
 import HospitalityOrderModal from '@/components/checkout/hospitality/hospitality-order-modal';
 import {useServerSettings} from '@/service/hooks/api-hooks';
 import {formatCurrency} from '@/utils/cost-utils';
+import {isCateringClosed} from '@/utils/catering-status';
 import {unescapeHTML} from '@/components/building-page/util/building-text-util';
 import styles from './application-details.module.scss';
 
@@ -100,14 +101,15 @@ interface CateringOverviewProps {
  * once a deadline has closed an action, says so and who to contact. It reuses the cart's order
  * dialog for adding and changing.
  *
- * Renders nothing when catering is switched off, when none is offered for the booked resources and
+ * Renders nothing when catering is switched off, on a rejected or cancelled application (no section
+ * and no orders listed, and no request is made), when none is offered for the booked resources and
  * nothing is ordered, while loading, and when the orders cannot be read (a visitor who holds only
  * the application's secret link is not let into the catering endpoints).
  */
 const CateringOverview: FC<CateringOverviewProps> = ({application}) => {
     const t = useTrans();
     const {data: serverSettings} = useServerSettings();
-    const enabled = !!serverSettings?.booking_config?.enable_hospitality;
+    const enabled = !!serverSettings?.booking_config?.enable_hospitality && !isCateringClosed(application.status);
 
     const ordersQuery = useHospitalityOrders(enabled ? application.id : undefined);
     const hospitalitiesQuery = useAvailableHospitalities(enabled ? application.id : undefined);

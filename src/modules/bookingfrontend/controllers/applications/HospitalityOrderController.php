@@ -15,6 +15,7 @@ use App\modules\booking\services\HospitalityOrderDiff;
 use App\modules\booking\services\CateringMailRenderer;
 use App\modules\bookingfrontend\models\User;
 use App\modules\bookingfrontend\services\applications\CateringChangeNotifier;
+use App\modules\bookingfrontend\services\applications\CitizenHospitalityOrder;
 use App\modules\booking\models\Hospitality;
 use App\modules\booking\models\HospitalityArticleGroup;
 use App\modules\booking\models\HospitalityArticle;
@@ -381,6 +382,41 @@ class HospitalityOrderController
 	}
 
 	/**
+	 * The order as it stands after a write that has ALREADY been committed, for the case entry, the
+	 * officer's mail and the response body.
+	 *
+	 * The handlers catch Exception only and the write cannot be undone from here: a throw from this
+	 * read — a PDOException as much as a PHP Error — must not turn a successful add, change or cancel
+	 * into a 500 that tells the applicant it failed (and, for an add, invites a second, duplicate
+	 * order). It is logged; null makes recordApplicantChange() skip the entry and the mail, and
+	 * orderBody() answer with the id alone.
+	 *
+	 * @param string $what add | change | cancel, for the log
+	 */
+	private function readAfterWrite(int $orderId, string $what): ?array
+	{
+		try {
+			return $this->orderRepo->getOrderWithLines($orderId);
+		} catch (\Throwable $e) {
+			error_log("Catering order re-read after {$what} failed for order {$orderId}: " . $e->getMessage());
+			return null;
+		}
+	}
+
+	/**
+	 * The body of a successful add or change: the order as the applicant may see it, or just its id
+	 * when the re-read after the write failed (the client takes nothing else from this response; it
+	 * re-fetches the orders).
+	 */
+	private function orderBody(?array $order, int $orderId): array
+	{
+		if ($order === null) {
+			return ['id' => $orderId];
+		}
+		return CitizenHospitalityOrder::present((new HospitalityOrder($order))->serialize());
+	}
+
+	/**
 	 * GET /bookingfrontend/applications/{id}/hospitalities
 	 * Returns active hospitalities serving the application's booked resources.
 	 */
@@ -523,17 +559,10 @@ class HospitalityOrderController
 
 			$orders = $this->orderRepo->getOrdersWithLinesByApplication($applicationId);
 
-			$serialized = array_map(function ($order) use ($application) {
-				$data = (new HospitalityOrder($order))->serialize();
-				// serialize() drops empty arrays, so an order with no lines used to come back with no
-				// `lines` key although the client types it as always present.
-				if (!isset($data['lines'])) {
-					$data['lines'] = [];
-				}
-				$data['actions'] = $this->actionsFor($application, $order);
-				$data['contact'] = $this->contactFor((int)$order['hospitality_id'], $application);
-				return $data;
-			}, $orders);
+			$serialized = array_map(fn($order) => CitizenHospitalityOrder::present((new HospitalityOrder($order))->serialize(), [
+				'actions' => $this->actionsFor($application, $order),
+				'contact' => $this->contactFor((int)$order['hospitality_id'], $application),
+			]), $orders);
 
 			return ResponseHelper::sendJSONResponse($serialized, 200, $response);
 		} catch (Exception $e) {
@@ -676,7 +705,7 @@ class HospitalityOrderController
 				$this->orderRepo->addOrderLine($lineData);
 			}
 
-			$order = $this->orderRepo->getOrderWithLines($orderId);
+			$order = $this->readAfterWrite($orderId, 'add');
 
 			if ($application['status'] === HospitalityOrderGuard::DRAFT_STATUS) {
 				// A draft in the cart: today's entry, and nothing to tell the officer yet.
@@ -698,7 +727,7 @@ class HospitalityOrderController
 				$this->recordApplicantChange(CateringMailRenderer::KIND_ADDED, $application, null, $order, $bookingUserId);
 			}
 
-			return ResponseHelper::sendJSONResponse((new HospitalityOrder($order))->serialize(), 201, $response);
+			return ResponseHelper::sendJSONResponse($this->orderBody($order, $orderId), 201, $response);
 		} catch (Exception $e) {
 			error_log("Error in createOrder: " . $e->getMessage());
 			return ResponseHelper::sendErrorResponse(['error' => 'Failed to create order'], 500, $response);
@@ -859,7 +888,7 @@ class HospitalityOrderController
 				}
 			}
 
-			$updatedOrder = $this->orderRepo->getOrderWithLines($orderId);
+			$updatedOrder = $this->readAfterWrite($orderId, 'change');
 
 			if ($isDraft) {
 				// A draft in the cart: today's entry, and nothing to tell the officer yet.
@@ -877,7 +906,7 @@ class HospitalityOrderController
 				$this->recordApplicantChange(CateringMailRenderer::KIND_CHANGED, $application, $before, $updatedOrder, $bookingUserId);
 			}
 
-			return ResponseHelper::sendJSONResponse((new HospitalityOrder($updatedOrder))->serialize(), 200, $response);
+			return ResponseHelper::sendJSONResponse($this->orderBody($updatedOrder, $orderId), 200, $response);
 		} catch (Exception $e) {
 			error_log("Error in updateOrder: " . $e->getMessage());
 			return ResponseHelper::sendErrorResponse(['error' => 'Failed to update order'], 500, $response);
@@ -948,7 +977,7 @@ class HospitalityOrderController
 					CateringMailRenderer::KIND_CANCELLED,
 					$application,
 					$before,
-					$this->orderRepo->getOrderWithLines($orderId),
+					$this->readAfterWrite($orderId, 'cancel'),
 					$bookingUserId
 				);
 			}

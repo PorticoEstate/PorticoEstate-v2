@@ -482,6 +482,16 @@ Kontroller:
 - proxy videresender `Authorization`
 - `slim`-containeren er restartet etter secret-endring
 
+Med Apache og PHP-FPM må PHP-handleren videresende Authorization-headeren med `CGIPassAuth On`. Dette er satt i prosjektets `php-fpm.conf`. Uten direktivet kan selv containerens eget token gi 401 fordi PHP ikke mottar headeren.
+
+Etter endring i denne konfigurasjonsfilen må imaget bygges på nytt, siden Dockerfile kopierer filen inn i imaget:
+
+```bash
+docker compose up -d --build --no-deps --force-recreate slim
+```
+
+Ved lokale curl-tester kan `--noproxy '*'` brukes for å unngå at hostens HTTP-proxy videresender localhost-kall. Bruk vanlige mellomrom i kommandoene. Nye Compose-miljøverdier krever at containeren opprettes på nytt; en vanlig restart laster dem ikke inn.
+
 ### Test Connection gir 503
 
 `SCIM_BEARER_TOKEN` mangler eller er tom i PHP-runtime.

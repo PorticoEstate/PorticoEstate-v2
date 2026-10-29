@@ -19,6 +19,8 @@ Produksjonsoppsett og praktisk bruk er dokumentert i `doc/scim_entra_production_
 
 ### Siste validering
 
+2026-10-29: `POST /Groups` kobler eksisterende grupper ved eksakt match mellom `displayName` og lokal `account_lid`. Koblingen bruker stabil `account_id` og avviser andre eller sperrede SCIM-mappinger. Tester dekker kobling uten ny konto, eksisterende mapping, tenant-konflikt, rollback og nyopprettelse. Endringen gjelder kun grupper.
+
 2026-09-24:
 
 - 27 fokuserte PHPUnit-tester med 70 assertions bestått

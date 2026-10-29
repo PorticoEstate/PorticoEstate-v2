@@ -6,6 +6,7 @@ use App\Database\Db;
 use App\modules\phpgwapi\controllers\Accounts\Accounts;
 use App\modules\phpgwapi\controllers\Accounts\phpgwapi_user;
 use App\modules\phpgwapi\controllers\Accounts\phpgwapi_group;
+use DomainException;
 use InvalidArgumentException;
 use PDO;
 use RuntimeException;
@@ -230,17 +231,47 @@ final class ScimProvisioningRepository implements ScimProvisioningStore
 		$this->db->transaction_begin();
 		try
 		{
-			$group = new phpgwapi_group();
-			$group->init([
-				'lid' => $data['displayName'],
-				'firstname' => $data['displayName'],
-				'passwd_hash' => '',
-				'enabled' => true,
-				'expires' => -1,
-				'person_id' => 0,
-				'quota' => -1,
-			]);
-			$accountId = (int) $this->accounts()->create_group_account($group);
+			$existing = $this->fetchOne(
+				'SELECT account_id, account_lid FROM phpgw_accounts'
+				. ' WHERE account_lid = :account_lid AND account_type = :account_type FOR UPDATE',
+				[':account_lid' => $data['displayName'], ':account_type' => 'g']
+			);
+			if ($existing !== null)
+			{
+				$accountId = (int) $existing['account_id'];
+				$mapping = $this->fetchOne(
+					"SELECT ext_user, location, status FROM phpgw_mapping"
+					. " WHERE account_id = :account_id AND auth_type = 'scim'",
+					[':account_id' => $accountId]
+				);
+				if ($mapping !== null)
+				{
+					if ($mapping['ext_user'] !== $data['externalId']
+						|| $mapping['location'] !== $this->tenantId || $mapping['status'] !== 'A')
+					{
+						throw new DomainException('Local group already has a different or disabled SCIM mapping');
+					}
+					$row = $this->findById($accountId, 'g')
+						?? throw new RuntimeException('Mapped SCIM group could not be read');
+					$this->db->transaction_commit();
+					return $row;
+				}
+			}
+			else
+			{
+				$accounts = $this->accounts();
+				$group = new phpgwapi_group();
+				$group->init([
+					'lid' => $data['displayName'],
+					'firstname' => $data['displayName'],
+					'passwd_hash' => '',
+					'enabled' => true,
+					'expires' => -1,
+					'person_id' => 0,
+					'quota' => -1,
+				]);
+				$accountId = (int) $accounts->create_group_account($group);
+			}
 
 			$statement = $this->db->prepare(
 				"INSERT INTO phpgw_mapping (ext_user, auth_type, status, location, account_lid, account_id)"
@@ -252,10 +283,11 @@ final class ScimProvisioningRepository implements ScimProvisioningStore
 				':account_lid' => $data['displayName'],
 				':account_id' => $accountId,
 			]);
+			$row = $this->findById($accountId, 'g')
+				?? throw new RuntimeException('Created SCIM group could not be read');
 			$this->db->transaction_commit();
 
-			return $this->findById($accountId, 'g')
-				?? throw new RuntimeException('Created SCIM group could not be read');
+			return $row;
 		}
 		catch (Throwable $exception)
 		{

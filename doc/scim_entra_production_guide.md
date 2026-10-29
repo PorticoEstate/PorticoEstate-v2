@@ -322,7 +322,7 @@ Første provisioning av en ny gruppe:
 
 1. Tildel Entra-gruppen til Enterprise Application.
 2. Entra sender `POST /Groups` med gruppens `objectId` som `externalId` og gruppenavnet som `displayName`.
-3. PorticoEstate oppretter en lokal gruppe i `phpgw_accounts` med `account_type = 'g'`. Lokal `account_id` blir SCIM `id`.
+3. PorticoEstate søker etter en lokal gruppe med `account_type = 'g'` og `account_lid` nøyaktig lik innkommende `displayName`. Finnes gruppen, gjenbrukes den. Ellers opprettes en ny gruppe. Lokal `account_id` blir SCIM `id`.
 4. PorticoEstate oppretter mapping i `phpgw_mapping` med `ext_user = externalId`, lokal `account_id`, `auth_type = 'scim'` og `location = SCIM_TENANT_ID`.
 
 Medlemskap synkroniseres separat etter at gruppen og brukerne finnes:
@@ -338,7 +338,13 @@ Gjenta add/remove-operasjoner er trygge: add er idempotent, og remove av en eksi
 
 Ved senere rename bruker Entra `PATCH /Groups/{id}` med `Replace displayName`. Lokal `account_lid` oppdateres; gruppens `account_id` og Entra `externalId` endres ikke.
 
-**Eksisterende lokale grupper:** De blir ikke automatisk overtatt eller synlige for Entra. Skal en eksisterende gruppe administreres av Entra, må den kobles kontrollert til Entra-gruppens `objectId` og få en SCIM-mapping før provisioning startes. Ikke opprett mapping ved å gjette på gruppenavn; gruppenavn kan endres og trenger ikke være unike.
+**Eksisterende lokale grupper:** `POST /Groups` kobler automatisk en eksisterende lokal gruppe dersom innkommende `displayName` matcher gruppens `account_lid` nøyaktig. Innledende og avsluttende mellomrom trimmes av controlleren; interne mellomrom og store/små bokstaver beholdes. For eksempel vil `Aktiv kommune Brukere` kobles til en lokal gruppe med akkurat dette påloggingsnavnet, uten å opprette en ny konto.
+
+Gruppens eksisterende `account_id`, status, medlemmer og rettigheter beholdes ved koblingen. Entra-gruppens `externalId` lagres i `phpgw_mapping` sammen med lokal `account_id` og konfigurert tenant. Før koblingen er gruppen fortsatt ikke synlig via `GET /Groups`; etter koblingen er den SCIM-administrert.
+
+Hvis gruppen allerede har en SCIM-mapping til en annen Entra-identitet eller tenant, eller mappingen er sperret, returneres HTTP 409. Mappingen overskrives ikke. Gjentatte kall for samme aktive mapping gjenbruker koblingen.
+
+Kontroller navnene og gruppenes lokale rettigheter før provisioning aktiveres: automatisk kobling gir Entra administrasjon av eksisterende grupper, også grupper med sensitive tilganger. Senere medlemskapsendringer fra Entra kan endre hvem som får disse tilgangene. Brukeropprettelse påvirkes ikke av denne gruppespesifikke navnematchingen.
 
 Ved `DELETE /Groups/{id}` settes den lokale gruppens `account_status` til `I`; gruppen slettes ikke fysisk, og mappingen beholdes for identitet og historikk. **Begrensning i dagens implementasjon:** `GET /Groups` filtrerer på `phpgw_mapping.status = 'A'`, men ikke på `phpgw_accounts.account_status`. En soft-deaktivert gruppe kan derfor fortsatt dukke opp i gruppelisten. Avklar dette i Entra-testen før produksjonsbruk av gruppesletting. Entra sender medlemskapsendringer via Group PATCH, ikke via brukerens `groups`-attributt.
 

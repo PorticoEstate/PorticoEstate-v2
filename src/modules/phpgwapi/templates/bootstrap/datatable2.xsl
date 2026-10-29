@@ -1435,6 +1435,7 @@
 						{
 						}
 					}
+					oData.search = clear_state !== true && params && params.search ? params.search : initial_search;
 					//	console.log(oData);
 					//traverse oData.columns and remove search value
 					{

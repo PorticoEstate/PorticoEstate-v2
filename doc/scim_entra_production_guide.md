@@ -188,6 +188,86 @@ https://portico.example.no/api/scim/v2
 
 Tenant URL er SCIM-base-URL-en, ikke `/Users` eller `/ServiceProviderConfig`.
 
+### 6.3 Slik ser SCIM-kallene fra Entra ut
+
+Alle kall bruker SCIM-base-URL-en fra **Tenant URL** og sender secret-tokenet som bearer-token. Entra sender ikke `SCIM_TENANT_ID`; PorticoEstate bruker tenant-ID-en som er konfigurert på serveren til å avgrense mappingene.
+
+Eksemplene under viser en gruppe med `displayName` `PRG_Aktiv_kommune_Brukere`. ID-ene er fra en lokal test og skal ikke kopieres som produksjonsverdier. Bruk aldri det faktiske bearer-tokenet i logger, dokumentasjon eller supportsaker.
+
+Entra kan først gjøre et oppslag etter gruppen. Nøyaktig rekkefølge og hvilke oppslag som sendes, avhenger av Entra-oppsettet:
+
+```http
+GET /api/scim/v2/Groups?filter=displayName%20eq%20%22PRG_Aktiv_kommune_Brukere%22
+Authorization: Bearer <SCIM_BEARER_TOKEN>
+Accept: application/scim+json
+```
+
+Ved første provisioning sender Entra typisk `POST /Groups` med Entra-gruppens object ID som `externalId`:
+
+```http
+POST /api/scim/v2/Groups
+Authorization: Bearer <SCIM_BEARER_TOKEN>
+Content-Type: application/scim+json
+Accept: application/scim+json
+```
+
+```json
+{
+  "schemas": [
+    "urn:ietf:params:scim:schemas:core:2.0:Group"
+  ],
+  "externalId": "eaa502ad-608d-4ac7-9420-06a6eeff8582",
+  "displayName": "PRG_Aktiv_kommune_Brukere"
+}
+```
+
+PorticoEstate kobler gruppen til en eksisterende lokal gruppe med nøyaktig navn hvis en finnes, ellers oppretter den en gruppe. Den lokale `account_id` blir SCIM `id`. Et første opprettelseskall svarer normalt med HTTP 201; et gjentatt kall for en allerede koblet gruppe kan svare med HTTP 200.
+
+```http
+HTTP/1.1 201 Created
+Content-Type: application/scim+json
+Location: https://portico.example.no/api/scim/v2/Groups/4836
+```
+
+```json
+{
+  "schemas": [
+    "urn:ietf:params:scim:schemas:core:2.0:Group"
+  ],
+  "id": "4836",
+  "externalId": "eaa502ad-608d-4ac7-9420-06a6eeff8582",
+  "displayName": "PRG_Aktiv_kommune_Brukere"
+}
+```
+
+Når medlemskap endres, sender Entra typisk `PATCH /Groups/{id}`. `value` viser til brukerens SCIM `id` i PorticoEstate, ikke Entra object ID:
+
+```http
+PATCH /api/scim/v2/Groups/4836
+Authorization: Bearer <SCIM_BEARER_TOKEN>
+Content-Type: application/scim+json
+Accept: application/scim+json
+```
+
+```json
+{
+  "schemas": [
+    "urn:ietf:params:scim:api:messages:2.0:PatchOp"
+  ],
+  "Operations": [
+    {
+      "op": "Add",
+      "path": "members",
+      "value": [
+        { "value": "<SCIM-id-for-brukeren>" }
+      ]
+    }
+  ]
+}
+```
+
+Fjerning bruker `op: "Remove"` med en sti som identifiserer medlemmet, for eksempel `members[value eq "<SCIM-id-for-brukeren>"]`. Medlemsbrukeren må allerede være provisionert og SCIM-mappet i samme tenant. Ikke anta at alle Entra-jobber sender et separat `GET` før `POST` eller bruker identisk rekkefølge; bruk Entra provisioning logs for å se den faktiske sekvensen.
+
 ## 7. Attributtmapping
 
 ### 7.1 Brukere
@@ -478,6 +558,31 @@ WHERE m.auth_type = 'scim'
 Avvik i siste spørring bryter ikke SCIM-oppslaget, siden `account_id` er autoritativt, men bør ryddes for konsistent administrasjon.
 
 ## 15. Feilsøking
+
+Start med **Provisioning logs** i Entra og åpne den feilede operasjonen. Kontroller metode, URL, statuskode, request body og response body. Sammenlign med eksemplene i kapittel 6.3. Masker bearer-token, e-postadresser og andre personopplysninger før logger deles.
+
+| Symptom | Kontroller først | Typisk årsak / neste steg |
+| --- | --- | --- |
+| Ingen SCIM-operasjon vises i loggen | Entra scope, tildeling og provisioning-jobb | Bruk **Provision on demand** for testressursen og kontroller at ressursen er innenfor scope. |
+| HTTP 401 | `Authorization: Bearer ...`, token i Entra og `SCIM_BEARER_TOKEN`, proxy/FastCGI | Ulikt token, whitespace eller Authorization-headeren blir ikke videresendt. Se 401-avsnittet under. |
+| HTTP 503 | Runtime-miljøet i `slim` | `SCIM_BEARER_TOKEN` mangler eller er tom. Se 503-avsnittet under. |
+| HTTP 400 / `invalidFilter` | Filterfelt og operator i request-URL-en | Kun `eq` på støttede felt er implementert. Se filteravsnittet under. |
+| HTTP 409 | `externalId`, tenant-mapping og lokal gruppe med samme navn | Identiteten er allerede koblet på en konfliktfylt måte, eller gruppen er koblet til en annen identitet/tenant. Ikke overskriv mappingen manuelt før konflikten er undersøkt. |
+| Gruppen finnes, men medlemskap feiler | PATCH-URL, gruppe-ID og `members[].value` | `members[].value` må være en eksisterende SCIM-bruker-ID i samme tenant, ikke Entra object ID. |
+| Kallet når ikke SCIM eller gir proxyfeil | DNS, TLS-sertifikat, reverse proxy/WAF og metode/body | Kontroller at `/api/scim/v2` nås offentlig, og at proxyen tillater `PATCH` og videresender request body. |
+| `meta.location` peker feil | `SCIM_PUBLIC_BASE_URL` og runtime | Sett offentlig HTTPS-base-URL og opprett `slim`-containeren på nytt. |
+
+Kjør eventuelt et lesekall fra en godkjent maskin for å skille Entra-konfigurasjon fra server/proxy-problemer. Kommandoen bruker miljøvariabelen for tokenet og skriver ikke tokenverdien ut:
+
+```bash
+curl --fail-with-body --get \
+  -H "Authorization: Bearer $SCIM_BEARER_TOKEN" \
+  -H 'Accept: application/scim+json' \
+  --data-urlencode 'filter=displayName eq "PRG_Aktiv_kommune_Brukere"' \
+  "$SCIM_PUBLIC_BASE_URL/Groups"
+```
+
+Sammenlign resultatet med `externalId` fra Entra og lokal SCIM `id`. Testverdiene i kapittel 6.3 er fra en lokal simulering; i produksjon skal du hente de faktiske verdiene fra Entra provisioning logs og PorticoEstate, ikke anta at ID-ene er de samme.
 
 ### Test Connection gir 401
 

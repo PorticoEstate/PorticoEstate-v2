@@ -106,6 +106,9 @@ MUTATIONS = [
      "implode(',', array_map($escape, $log_success))", "implode(',', $log_success)"),
     ("Mx3", "php", U, "the failed list is not escaped",
      "implode(',', array_map($escape, $log_error))", "implode(',', $log_error)"),
+    ("Mx4", "php", U, "only the returned message is escaped, the event-history comment gets the raw numbers",
+     "$this->bo->add_single_comment($id, \"SMS: $message\");",
+     "$this->bo->add_single_comment($id, \"SMS: \" . htmlspecialchars_decode($message));"),
     # --- event.js ---------------------------------------------------------------------------------------------
     ("Mj1", "js", E, "no ajax error callback (a 500 / die() body / HTML page is silent again)",
      "\t\t\terror: function ()", "\t\t\terrorX: function ()"),

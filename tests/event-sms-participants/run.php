@@ -495,6 +495,10 @@ namespace {
         $same('A10 markup in a phone number comes back escaped, in both lists', $r, ['status' => 'ok', 'message' => $msg]);
         $check('A10 the only tag in the message is the <br/> the server adds', substr_count((string)$r['message'], '<') === 1, (string)$r['message']);
         $same('A10 the stored comment carries the escaped text too', HdState::$boCalls, $comment($msg));
+        // the event history renders each comment with disable-output-escaping="yes" (event_edit.xsl): the same sink as .html()
+        $stored = (string)(HdState::$boCalls[0][2] ?? '');
+        $check('A10 the string handed to add_single_comment has the escaped number', str_contains($stored, '&lt;b&gt;1&lt;/b&gt;'), $stored);
+        $check('A10 ... and not the raw tag', !str_contains($stored, '<b>') && !str_contains($stored, '<img'), $stored);
         $same('A10 the number is sent to as typed (the escape is on the message, not on the recipient)', array_column(HdState::$attempts, 0), [$bold, $img]);
         [$r] = $run(['participants' => [$img], 'behaviour' => [$img => 'empty']]);
         $same('A10 all failed, markup: escaped', $r, ['status' => 'error', 'message' => 'SMS feilet for: &lt;img src=x onerror=alert(1)&gt;']);

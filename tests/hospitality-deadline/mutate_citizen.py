@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
-Mutation check for the citizen-catering harnesses (run_citizen.php and run_closed.mts, task 34384).
+Mutation check for the citizen-catering harnesses (run_citizen.php and run_closed.mts, task 34384; the
+run_closed.mts half rewritten for «read-only, not hidden» on a rejected or cancelled application, task 35894).
 
 Same idea as mutate_mail.py: one deliberate defect at a time, applied to a TEMP COPY of the files the
 harnesses read (never to the tree), and the matching harness must go red for each. The baseline on the
@@ -45,6 +46,9 @@ FILES = [
     "src/modules/bookingfrontend/client/src/service/types/api/hospitality.types.ts",
     "src/modules/bookingfrontend/client/src/utils/catering-status.ts",
     "src/modules/bookingfrontend/client/src/components/user/application/catering-overview.tsx",
+    "src/modules/bookingfrontend/setup/phpgw_no.lang",
+    "src/modules/bookingfrontend/setup/phpgw_en.lang",
+    "src/modules/bookingfrontend/setup/phpgw_nn.lang",
 ]
 
 C = "src/modules/bookingfrontend/controllers/applications/HospitalityOrderController.php"
@@ -54,6 +58,7 @@ R = "src/modules/bookingfrontend/routes/Routes.php"
 T = "src/modules/bookingfrontend/client/src/service/types/api/hospitality.types.ts"
 CS = "src/modules/bookingfrontend/client/src/utils/catering-status.ts"
 OV = "src/modules/bookingfrontend/client/src/components/user/application/catering-overview.tsx"
+LANG = "src/modules/bookingfrontend/setup/phpgw_{}.lang"
 
 GUARD_BLOCK = (
     "\t\ttry {\n"
@@ -125,24 +130,72 @@ MUTATIONS = [
      "$updatedOrder = $this->readAfterWrite($orderId, 'change');", "$updatedOrder = $this->orderRepo->getOrderWithLines($orderId);"),
     ("Md10", "php", C, "deleteOrder alone reads the order back unguarded (the original defect)",
      "$this->readAfterWrite($orderId, 'cancel'),", "$this->orderRepo->getOrderWithLines($orderId),"),
-    # --- (4) no catering on a rejected or cancelled application ---------------------------------
+    # --- (4) a rejected or cancelled application: the orders stay on view, read-only (task 35894) --
     ("Me1", "mts", CS, "CANCELLED is dropped from the list",
      "= ['REJECTED', 'CANCELLED'];", "= ['REJECTED'];"),
     ("Me2", "mts", CS, "REJECTED is misspelt (compiles: status is a string)",
      "= ['REJECTED', 'CANCELLED'];", "= ['REJECTD', 'CANCELLED'];"),
-    ("Me3", "mts", CS, "the comparison folds case (a lower-case status hides the section)",
+    ("Me3", "mts", CS, "the comparison folds case (a lower-case status turns read-only)",
      "CATERING_CLOSED_APPLICATION_STATUSES.includes(status);", "CATERING_CLOSED_APPLICATION_STATUSES.includes(status.toUpperCase());"),
-    ("Me4", "mts", CS, "another status (NEW) loses catering too",
+    ("Me4", "mts", CS, "another status (NEW) turns read-only too",
      "= ['REJECTED', 'CANCELLED'];", "= ['REJECTED', 'CANCELLED', 'NEW'];"),
-    ("Me5", "mts", CS, "a missing status hides the section instead of keeping today's behaviour",
+    ("Me5", "mts", CS, "a missing status turns read-only instead of keeping today's behaviour",
      "status !== null && status !== undefined && CATERING_CLOSED_APPLICATION_STATUSES.includes(status);",
      "status === null || status === undefined || CATERING_CLOSED_APPLICATION_STATUSES.includes(status);"),
-    ("Me6", "mts", OV, "the component no longer gates on the predicate",
-     " && !isCateringClosed(application.status);", ";"),
-    ("Me7", "mts", OV, "the orders query is no longer keyed on `enabled` (a closed application still fetches)",
+    ("Me6", "mts", OV, "the old gate is back in `enabled`: a closed application's orders are not fetched",
+     "const enabled = !!serverSettings?.booking_config?.enable_hospitality;",
+     "const enabled = !!serverSettings?.booking_config?.enable_hospitality && !isCateringClosed(application.status);"),
+    ("Me7", "mts", OV, "the orders query is no longer keyed on `enabled` (it fetches with the setting off)",
      "useHospitalityOrders(enabled ? application.id : undefined)", "useHospitalityOrders(application.id)"),
     ("Me8", "mts", OV, "HANDLEABLE_STATUSES changes (another status's behaviour moves)",
      "const HANDLEABLE_STATUSES = ['NEW', 'PENDING', 'ACCEPTED'];", "const HANDLEABLE_STATUSES = ['NEW', 'PENDING', 'ACCEPTED', 'REJECTED'];"),
+    # section or no section (the pure function)
+    ("Mf1", "mts", CS, "a closed application hides its orders again",
+     "orderCount > 0 || (!isCateringClosed(status) && hospitalityCount > 0)",
+     "!isCateringClosed(status) && (orderCount > 0 || hospitalityCount > 0)"),
+    ("Mf2", "mts", CS, "a closed application shows a section with no orders in it",
+     "orderCount > 0 || (!isCateringClosed(status) && hospitalityCount > 0)",
+     "orderCount > 0 || isCateringClosed(status) || hospitalityCount > 0"),
+    ("Mf3", "mts", CS, "something on offer alone brings a closed application's section back",
+     "(!isCateringClosed(status) && hospitalityCount > 0)", "hospitalityCount > 0"),
+    ("Mf4", "mts", CS, "an open application with something to add but no orders loses its section",
+     "orderCount > 0 || (!isCateringClosed(status) && hospitalityCount > 0)", "orderCount > 0"),
+    # the offer list is not fetched, and a switched-off query cannot blank the section
+    ("Mg1", "mts", OV, "the loading guard waits for the offer query on a closed application (blank on a react-query downgrade)",
+     "const hospitalitiesLoading = !readOnly && hospitalitiesQuery.isLoading;", "const hospitalitiesLoading = hospitalitiesQuery.isLoading;"),
+    ("Mg2", "mts", OV, "the offer query is keyed on `enabled` alone: a closed application fetches the offer list",
+     "useAvailableHospitalities(enabled && !readOnly ? application.id : undefined)", "useAvailableHospitalities(enabled ? application.id : undefined)"),
+    ("Mg3", "mts", OV, "the component stops asking the tested function (an inline rule again)",
+     "if (!showsCateringSection(application.status, orders.length, hospitalities.length)) {", "if (orders.length === 0 && hospitalities.length === 0) {"),
+    # no actions, hints or locked-Alert on a closed application
+    ("Mh1", "mts", OV, "`handleable` no longer ignores a read-only application",
+     "const handleable = !readOnly && HANDLEABLE_STATUSES.includes(application.status);", "const handleable = HANDLEABLE_STATUSES.includes(application.status);"),
+    ("Mh2", "mts", OV, "the locked-Alert is built from the server's reason on a read-only application",
+     "if (handleable && actions) {", "if (actions) {"),
+    ("Mh3", "mts", OV, "\"Rediger\" is offered on the server's word alone",
+     "const changeOpen = handleable && !!actions?.change.allowed && !!hospitality;", "const changeOpen = !!actions?.change.allowed && !!hospitality;"),
+    ("Mh4", "mts", OV, "\"Avbestill\" is offered on the server's word alone",
+     "const cancelOpen = handleable && !!actions?.cancel.allowed;", "const cancelOpen = !!actions?.cancel.allowed;"),
+    ("Mh5", "mts", OV, "\"Legg til\" is offered on any status that is not read-only (a draft, an unknown status)",
+     "const canAdd = handleable", "const canAdd = !readOnly"),
+    ("Mh6", "mts", OV, "the change deadline hint no longer needs an open action",
+     "{changeOpen && actions?.change.until && (", "{actions?.change.until && ("),
+    ("Mh7", "mts", OV, "the order dialog is mounted for a read-only application",
+     "{!readOnly && (", "{("),
+    # what a read-only application does show
+    ("Mi1", "mts", OV, "the note is shown on an open application instead of a read-only one",
+     "{readOnly && (", "{!readOnly && ("),
+    ("Mi2", "mts", OV, "the note says something else (a wrong key compiles)",
+     "{t('bookingfrontend.catering_application_closed')}", "{t('bookingfrontend.catering_overview_empty')}"),
+    ("Mi3", "mts", OV, "the kitchen contact is hidden on a read-only order",
+     "{readOnly && order.contact && (", "{!readOnly && order.contact && ("),
+    # the note's lang key must exist where the client reads it from
+    ("Mj1", "mts", LANG.format("no"), "the note's key is gone from the Norwegian (bokmål) file",
+     "catering_application_closed\tbookingfrontend\tno\t", "catering_application_closed_x\tbookingfrontend\tno\t"),
+    ("Mj2", "mts", LANG.format("en"), "the note's key is gone from the English file",
+     "catering_application_closed\tbookingfrontend\ten\t", "catering_application_closed_x\tbookingfrontend\ten\t"),
+    ("Mj3", "mts", LANG.format("nn"), "the note's key is gone from the Nynorsk file",
+     "catering_application_closed\tbookingfrontend\tnn\t", "catering_application_closed_x\tbookingfrontend\tnn\t"),
 ]
 
 

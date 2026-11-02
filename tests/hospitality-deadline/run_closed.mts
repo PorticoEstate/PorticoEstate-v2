@@ -1,12 +1,23 @@
 /**
- * The Min side rule «no catering on a REJECTED or CANCELLED application» (GH #1423 follow-up, task 34384).
+ * The Min side rule for a REJECTED or CANCELLED application: its catering orders stay on view,
+ * READ-ONLY, and nothing can be added, changed or cancelled (GH #1423, operator: "read-only"; this
+ * replaces the earlier "hidden" rule, task 35894).
  *
  *   node tests/hospitality-deadline/run_closed.mts
  *
- * tsc and ESLint cannot see the two things that matter here, because IApplication.status is a plain
- * string (a misspelt 'REJECTD' compiles and lints):
- *   1. the predicate, over every status the system knows and a few it must not trip on;
- *   2. that catering-overview.tsx really gates on it BEFORE any request is made.
+ * tsc and ESLint cannot see what matters here, because IApplication.status is a plain string (a
+ * misspelt 'REJECTD' compiles and lints). So this checks:
+ *   1. the predicate isCateringClosed, over every status the system knows and a few it must not trip on;
+ *   2. showsCateringSection, the one pure function that decides «section or no section»
+ *      (status × orders × offers);
+ *   3. that catering-overview.tsx really is built on those two, as source patterns: the orders are
+ *      fetched on a closed application, the offer list is not, every action / hint / locked-Alert and
+ *      the order dialog stay behind the status, the note and the kitchen contact are shown there, and
+ *      a disabled offer query cannot hold the section back;
+ *   4. that the note's lang key exists in no, en and nn.
+ *
+ * What it can NOT do is render the component: 1 and 2 are behaviour, 3 is text. Every pattern in 3
+ * has a control that must NOT match the shape it exists to forbid.
  *
  * The client code is plain TypeScript with type annotations only, so Node strips the types itself
  * (Node >= 22.18). HD_ROOT (optional) = a tree holding src/; mutate_citizen.py points it at a copy
@@ -30,6 +41,16 @@ const check = (name: string, ok: boolean, detail = ''): void => {
     if (!ok) failures.push(detail ? `${name} — ${detail}` : name);
 };
 
+// A missing file is a failed check, never a crash: a harness that dies has not looked at anything.
+const read = (path: string): string => {
+    try {
+        return readFileSync(path, 'utf8');
+    } catch (error) {
+        check(`can read ${path}`, false, String(error));
+        return '';
+    }
+};
+
 // Import through a temp copy named .mts so the module format is unambiguous whatever the nearest
 // package.json says (the same trick run.mts uses).
 const dir = mkdtempSync(join(tmpdir(), 'hd-closed-'));
@@ -39,14 +60,15 @@ const mod = await import(pathToFileURL(copy).href);
 
 check('the module exports isCateringClosed', typeof mod.isCateringClosed === 'function');
 check('the module exports the list', Array.isArray(mod.CATERING_CLOSED_APPLICATION_STATUSES));
+check('the module exports showsCateringSection', typeof mod.showsCateringSection === 'function');
 
-// 1. The predicate. The first three are the statuses that keep catering; the next two lose it.
+// 1. The predicate. The first three are the statuses that keep catering; the next two are read-only.
 const table: Array<[string | null | undefined, boolean, string]> = [
     ['NEW', false, 'a new application keeps catering'],
     ['PENDING', false, 'a pending application keeps catering'],
     ['ACCEPTED', false, 'an accepted application keeps catering'],
-    ['REJECTED', true, 'a rejected application loses it'],
-    ['CANCELLED', true, 'a cancelled application loses it'],
+    ['REJECTED', true, 'a rejected application is read-only'],
+    ['CANCELLED', true, 'a cancelled application is read-only'],
     // Anything else keeps today's behaviour: the section shows and the server decides.
     ['', false, 'an empty status'],
     ['NEWPARTIAL1', false, 'a draft status'],
@@ -64,20 +86,122 @@ check('the list is exactly REJECTED and CANCELLED (no other status changes)',
     JSON.stringify([...(mod.CATERING_CLOSED_APPLICATION_STATUSES ?? [])].sort()) === JSON.stringify(['CANCELLED', 'REJECTED']),
     JSON.stringify(mod.CATERING_CLOSED_APPLICATION_STATUSES));
 
-// 2. The component gates on it before the queries, so a closed application makes no request at all.
-const source = readFileSync(join(client, 'components/user/application/catering-overview.tsx'), 'utf8');
-const gate = /const enabled = [^;\n]*!isCateringClosed\(application\.status\)[^;\n]*;/;
-const queries = /use(?:HospitalityOrders|AvailableHospitalities)\(enabled \? application\.id : undefined\)/g;
-check('control: the gate pattern does NOT match a component without the check',
-    !gate.test("const enabled = !!serverSettings?.booking_config?.enable_hospitality;"));
-check('catering-overview.tsx imports isCateringClosed from @/utils/catering-status',
-    /import \{isCateringClosed\} from '@\/utils\/catering-status';/.test(source));
-check('catering-overview.tsx derives `enabled` from the setting AND !isCateringClosed(application.status)', gate.test(source));
-check('...and both queries are keyed on `enabled` (so a closed application fetches nothing)', (source.match(queries) ?? []).length === 2,
-    `found ${(source.match(queries) ?? []).length}`);
-check('control: the queries pattern finds them in the file at all', (source.match(queries) ?? []).length > 0);
-check('...and the component returns null when not enabled', /if \(!enabled \|\| /.test(source));
+// 2. Section or no section. «orders» are the non-cancelled orders the component counts, «offers» the
+//    hospitalities offered for the booked resources (what "Legg til" works from).
+const sectionTable: Array<[string | null | undefined, number, number, boolean, string]> = [
+    // A closed application: the orders already placed stay on view; nothing else brings the section back.
+    ['REJECTED', 2, 0, true, 'orders are shown'],
+    ['REJECTED', 2, 3, true, 'orders are shown (offers are irrelevant)'],
+    ['REJECTED', 0, 0, false, 'no orders, no section'],
+    ['REJECTED', 0, 3, false, 'offers alone do not bring the section back: nothing can be added'],
+    ['CANCELLED', 2, 0, true, 'orders are shown'],
+    ['CANCELLED', 2, 3, true, 'orders are shown (offers are irrelevant)'],
+    ['CANCELLED', 0, 0, false, 'no orders, no section'],
+    ['CANCELLED', 0, 3, false, 'offers alone do not bring the section back: nothing can be added'],
+    // The open statuses: today's rule, an order or something to add.
+    ['NEW', 0, 0, false, 'nothing ordered, nothing to add'],
+    ['NEW', 0, 3, true, 'something to add'],
+    ['NEW', 2, 0, true, 'orders'],
+    ['NEW', 2, 3, true, 'orders and something to add'],
+    ['PENDING', 0, 0, false, 'nothing ordered, nothing to add'],
+    ['PENDING', 0, 3, true, 'something to add'],
+    ['PENDING', 2, 0, true, 'orders'],
+    ['PENDING', 2, 3, true, 'orders and something to add'],
+    ['ACCEPTED', 0, 0, false, 'nothing ordered, nothing to add'],
+    ['ACCEPTED', 0, 3, true, 'something to add'],
+    ['ACCEPTED', 2, 0, true, 'orders'],
+    ['ACCEPTED', 2, 3, true, 'orders and something to add'],
+];
+// Statuses that are not on the deny-list behave exactly like an open one.
+for (const status of ['NEWPARTIAL1', '', 'rejected', 'Cancelled', ' REJECTED', 'DENIED', null, undefined]) {
+    sectionTable.push([status, 0, 0, false, 'nothing ordered, nothing to add']);
+    sectionTable.push([status, 0, 3, true, 'something to add (today\'s behaviour)']);
+    sectionTable.push([status, 2, 0, true, 'orders']);
+}
+for (const [status, orders, offers, want, why] of sectionTable) {
+    const got = mod.showsCateringSection?.(status, orders, offers);
+    check(`showsCateringSection(${JSON.stringify(status)}, orders ${orders}, offers ${offers}): ${why}`, got === want, `got ${got} want ${want}`);
+}
+
+// 3. The component is built on them. Source patterns, each with a control.
+const source = read(join(client, 'components/user/application/catering-overview.tsx'));
+const count = (re: RegExp): number => (source.match(re) ?? []).length;
+
+//    (a) the predicate and the function are imported.
+const importsFromStatus = (name: string): RegExp => new RegExp(`import \\{[^}]*\\b${name}\\b[^}]*\\} from '@/utils/catering-status';`);
+check('control: the import pattern does NOT match a file that imports neither',
+    !importsFromStatus('isCateringClosed').test("import {formatCurrency} from '@/utils/cost-utils';"));
+check('catering-overview.tsx imports isCateringClosed from @/utils/catering-status', importsFromStatus('isCateringClosed').test(source));
+check('catering-overview.tsx imports showsCateringSection from @/utils/catering-status', importsFromStatus('showsCateringSection').test(source));
+check('control: the `readOnly` pattern does NOT match a readOnly derived from something else',
+    !/const readOnly = isCateringClosed\(application\.status\);/.test('const readOnly = !!application.locked;'));
+check('`readOnly` is isCateringClosed(application.status)', /const readOnly = isCateringClosed\(application\.status\);/.test(source));
+
+//    (b) the orders are fetched on a closed application: `enabled` is the setting alone.
+const enabledLine = /const enabled = ([^;]*);/.exec(source)?.[1] ?? '';
+const mentionsStatus = /isCateringClosed|readOnly|application\.status/;
+check('control: the old gate (setting && !isCateringClosed) is recognised as a status term in `enabled`',
+    mentionsStatus.test('!!serverSettings?.booking_config?.enable_hospitality && !isCateringClosed(application.status)'));
+check('control: `enabled` was found at all', enabledLine.includes('enable_hospitality'), JSON.stringify(enabledLine));
+check('`enabled` is the setting alone: a closed application still fetches its orders', !mentionsStatus.test(enabledLine), enabledLine);
+check('the orders query is keyed on `enabled` only', count(/useHospitalityOrders\(enabled \? application\.id : undefined\)/g) === 1,
+    `found ${count(/useHospitalityOrders\(enabled \? application\.id : undefined\)/g)}`);
+
+//    (c) the offer list is NOT fetched on a closed application, and being disabled cannot blank the section.
+check('the offer query is keyed on `enabled && !readOnly`: a closed application does not fetch it',
+    count(/useAvailableHospitalities\(enabled && !readOnly \? application\.id : undefined\)/g) === 1,
+    `found ${count(/useAvailableHospitalities\(enabled && !readOnly \? application\.id : undefined\)/g)}`);
+check('control: the offer-query pattern finds the query at all', count(/useAvailableHospitalities\(/g) === 1, `found ${count(/useAvailableHospitalities\(/g)}`);
+// react-query v5 reports isLoading=false for a disabled query, v4 reports true. Whatever the version,
+// the loading guard must not wait for a query that is switched off on a closed application.
+check('the offer query\'s isLoading is read once, and only while it is enabled (a react-query downgrade cannot blank a closed application)',
+    count(/hospitalitiesQuery\.isLoading/g) === 1 && /const hospitalitiesLoading = !readOnly && hospitalitiesQuery\.isLoading;/.test(source),
+    `isLoading read ${count(/hospitalitiesQuery\.isLoading/g)} time(s)`);
+check('the loading guard uses that value, not the raw query state',
+    /if \(!enabled \|\| ordersQuery\.isLoading \|\| hospitalitiesLoading \|\| ordersQuery\.isError\) \{/.test(source));
+
+//    (d) section or no section is decided by the tested function; the old "no orders and no offers" test is gone.
+check('control: the old inline rule is recognised', /orders\.length === 0 && hospitalities\.length === 0/.test('if (orders.length === 0 && hospitalities.length === 0) {'));
+check('the component asks showsCateringSection(status, orders, offers) and returns null when it says no',
+    /if \(!showsCateringSection\(application\.status, orders\.length, hospitalities\.length\)\) \{\s*return null;\s*\}/.test(source));
+check('...and no longer decides it with its own inline rule', !/orders\.length === 0 && hospitalities\.length === 0/.test(source));
+
+//    (e) every action, hint and locked-Alert hangs off `handleable`, which a closed application never is.
+check('control: `handleable` without the status guard is NOT recognised as the guarded shape',
+    !/const handleable = !readOnly && /.test('const handleable = HANDLEABLE_STATUSES.includes(application.status);'));
+check('`handleable` is false for a read-only application, whatever HANDLEABLE_STATUSES holds',
+    /const handleable = !readOnly && HANDLEABLE_STATUSES\.includes\(application\.status\);/.test(source));
+check('"Legg til" needs `handleable`', /const canAdd = handleable\s*&&/.test(source));
+check('"Rediger" needs `handleable`', /const changeOpen = handleable && /.test(source));
+check('"Avbestill" needs `handleable`', /const cancelOpen = handleable && /.test(source));
+check('the locked reasons (and so the locked-Alert) need `handleable`: the server\'s `application_closed` is never turned into text',
+    /if \(handleable && actions\) \{/.test(source));
+check('the deadline hints need an open action', /\{changeOpen && actions\?\.change\.until && \(/.test(source) && /\{cancelOpen && actions\?\.cancel\.until && \(/.test(source));
 check('...and HANDLEABLE_STATUSES is untouched (no other status changes)', /const HANDLEABLE_STATUSES = \['NEW', 'PENDING', 'ACCEPTED'\];/.test(source));
+const handleable = [...(/const HANDLEABLE_STATUSES = \[([^\]]*)\];/.exec(source)?.[1] ?? '').matchAll(/'([^']+)'/g)].map(m => m[1]);
+check('control: the HANDLEABLE_STATUSES list was parsed', handleable.length === 3, JSON.stringify(handleable));
+check('...and none of REJECTED / CANCELLED is in it',
+    handleable.length > 0 && !handleable.some(s => (mod.CATERING_CLOSED_APPLICATION_STATUSES ?? []).includes(s)), JSON.stringify(handleable));
+
+//    (f) the read-only view: the note and the kitchen contact are shown, the order dialog is not mounted.
+check('control: the note pattern does NOT match a note shown on an open application',
+    !/\{readOnly && \(\s*<Paragraph[^>]*data-testid="catering-read-only"/.test('{!readOnly && (<Paragraph data-testid="catering-read-only">'));
+check('the read-only note is shown for a read-only application, with the existing lang key',
+    /\{readOnly && \(\s*<Paragraph[^>]*data-testid="catering-read-only"[^>]*>\s*\{t\('bookingfrontend\.catering_application_closed'\)\}\s*<\/Paragraph>\s*\)\}/.test(source));
+check('the kitchen contact stays visible on a read-only order (information, not an action)',
+    /\{readOnly && order\.contact && \(\s*<div[^>]*>\s*<KitchenContact contact=\{order\.contact\}\/>\s*<\/div>\s*\)\}/.test(source));
+check('the order dialog is not mounted for a read-only application',
+    /\{!readOnly && \(\s*<HospitalityOrderModal/.test(source) && count(/<HospitalityOrderModal/g) === 1,
+    `${count(/<HospitalityOrderModal/g)} mount(s)`);
+
+// 4. The note's lang key exists where the client reads it from.
+const langRow = (lang: string, key: string): RegExp => new RegExp(`^${key}\\tbookingfrontend\\t${lang}\\t\\S.*$`, 'm');
+check('control: the lang pattern does NOT match a key that is not there',
+    !langRow('no', 'catering_application_closed').test('catering_application_closed_x\tbookingfrontend\tno\tText'));
+for (const lang of ['no', 'en', 'nn']) {
+    const lines = read(join(root, `src/modules/bookingfrontend/setup/phpgw_${lang}.lang`));
+    check(`phpgw_${lang}.lang has bookingfrontend.catering_application_closed`, langRow(lang, 'catering_application_closed').test(lines));
+}
 
 if (failures.length) {
     for (const line of failures) console.log(`FAIL ${line}`);

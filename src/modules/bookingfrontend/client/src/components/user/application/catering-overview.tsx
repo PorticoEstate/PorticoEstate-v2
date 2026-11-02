@@ -19,7 +19,7 @@ import {
 import HospitalityOrderModal from '@/components/checkout/hospitality/hospitality-order-modal';
 import {useServerSettings} from '@/service/hooks/api-hooks';
 import {formatCurrency} from '@/utils/cost-utils';
-import {isCateringClosed} from '@/utils/catering-status';
+import {isCateringClosed, showsCateringSection} from '@/utils/catering-status';
 import {unescapeHTML} from '@/components/building-page/util/building-text-util';
 import styles from './application-details.module.scss';
 
@@ -101,18 +101,23 @@ interface CateringOverviewProps {
  * once a deadline has closed an action, says so and who to contact. It reuses the cart's order
  * dialog for adding and changing.
  *
- * Renders nothing when catering is switched off, on a rejected or cancelled application (no section
- * and no orders listed, and no request is made), when none is offered for the booked resources and
- * nothing is ordered, while loading, and when the orders cannot be read (a visitor who holds only
- * the application's secret link is not let into the catering endpoints).
+ * On a rejected or cancelled application (`readOnly`) the orders already placed stay on view, with
+ * a note and the kitchen's contact, but nothing is offered: no add, change or cancel, no deadline
+ * hints and no locked-Alert, and the offer list is not even fetched.
+ *
+ * Renders nothing when catering is switched off, when none is offered for the booked resources and
+ * nothing is ordered (on a read-only application: when nothing is ordered), while loading, and when
+ * the orders cannot be read (a visitor who holds only the application's secret link is not let into
+ * the catering endpoints).
  */
 const CateringOverview: FC<CateringOverviewProps> = ({application}) => {
     const t = useTrans();
     const {data: serverSettings} = useServerSettings();
-    const enabled = !!serverSettings?.booking_config?.enable_hospitality && !isCateringClosed(application.status);
+    const enabled = !!serverSettings?.booking_config?.enable_hospitality;
+    const readOnly = isCateringClosed(application.status);
 
     const ordersQuery = useHospitalityOrders(enabled ? application.id : undefined);
-    const hospitalitiesQuery = useAvailableHospitalities(enabled ? application.id : undefined);
+    const hospitalitiesQuery = useAvailableHospitalities(enabled && !readOnly ? application.id : undefined);
     const deleteMutation = useDeleteHospitalityOrder(application.id);
 
     const [modalOpen, setModalOpen] = useState(false);
@@ -130,14 +135,20 @@ const CateringOverview: FC<CateringOverviewProps> = ({application}) => {
         [ordersQuery.data]
     );
 
-    if (!enabled || ordersQuery.isLoading || hospitalitiesQuery.isLoading || ordersQuery.isError) {
+    // The offer query is switched off on a read-only application. react-query v5 reports isLoading
+    // false for a disabled query (v4 reported true), so do not depend on the version: never wait for it.
+    const hospitalitiesLoading = !readOnly && hospitalitiesQuery.isLoading;
+
+    if (!enabled || ordersQuery.isLoading || hospitalitiesLoading || ordersQuery.isError) {
         return null;
     }
-    if (orders.length === 0 && hospitalities.length === 0) {
+    if (!showsCateringSection(application.status, orders.length, hospitalities.length)) {
         return null;
     }
 
-    const handleable = HANDLEABLE_STATUSES.includes(application.status);
+    // A read-only application is never handleable, whatever HANDLEABLE_STATUSES holds: every button,
+    // hint and locked-Alert below hangs off this, and the server's `actions` are not consulted.
+    const handleable = !readOnly && HANDLEABLE_STATUSES.includes(application.status);
     const now = Date.now();
     const canAdd = handleable
         && hospitalities.length > 0
@@ -187,6 +198,12 @@ const CateringOverview: FC<CateringOverviewProps> = ({application}) => {
                     </Button>
                 )}
             </div>
+
+            {readOnly && (
+                <Paragraph data-size="sm" data-testid="catering-read-only">
+                    {t('bookingfrontend.catering_application_closed')}
+                </Paragraph>
+            )}
 
             {orders.length === 0 && (
                 <Paragraph>{t('bookingfrontend.catering_overview_empty')}</Paragraph>
@@ -297,6 +314,13 @@ const CateringOverview: FC<CateringOverviewProps> = ({application}) => {
                                 </Paragraph>
                             )}
 
+                            {/* Read-only: no actions, but who to ask about the order is information, not an action. */}
+                            {readOnly && order.contact && (
+                                <div style={{marginTop: 8}}>
+                                    <KitchenContact contact={order.contact}/>
+                                </div>
+                            )}
+
                             {cancelErrors[order.id] && (
                                 <Alert data-color="danger" data-size="sm" role="alert" style={{marginTop: 8}}>
                                     {cancelErrors[order.id]}
@@ -324,15 +348,17 @@ const CateringOverview: FC<CateringOverviewProps> = ({application}) => {
                 </Paragraph>
             )}
 
-            <HospitalityOrderModal
-                open={modalOpen}
-                onClose={closeModal}
-                hospitalities={hospitalities}
-                selectedHospitality={activeHospitality}
-                onHospitalitySelect={setActiveHospitality}
-                applications={applications}
-                existingOrder={editingOrder}
-            />
+            {!readOnly && (
+                <HospitalityOrderModal
+                    open={modalOpen}
+                    onClose={closeModal}
+                    hospitalities={hospitalities}
+                    selectedHospitality={activeHospitality}
+                    onHospitalitySelect={setActiveHospitality}
+                    applications={applications}
+                    existingOrder={editingOrder}
+                />
+            )}
         </div>
     );
 };

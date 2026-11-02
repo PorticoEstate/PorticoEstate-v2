@@ -748,7 +748,7 @@
 		$('#field_customer_identifier_type').attr("data-validation","customer_identifier").attr("data-validation-error-msg","<xsl:value-of select="php:function('lang', 'There is set a cost, but no invoice data is filled inn')" />");
 
 		var event_id = <xsl:value-of select="event/id"/>;
-		var lang = <xsl:value-of select="php:function('js_lang','Name', 'phone', 'email', 'Resource Type', 'quantity', 'from', 'to', 'send sms', 'article', 'Select', 'price', 'unit', 'tax', 'unit cost', 'quantity', 'Selected', 'Delete', 'Sum', 'tax code', 'percent')"/>;
+		var lang = <xsl:value-of select="php:function('js_lang','Name', 'phone', 'email', 'Resource Type', 'quantity', 'from', 'to', 'send sms', 'article', 'Select', 'price', 'unit', 'tax', 'unit cost', 'quantity', 'Selected', 'Delete', 'Sum', 'tax code', 'percent', 'sms_send_failed')"/>;
 
 
     <![CDATA[

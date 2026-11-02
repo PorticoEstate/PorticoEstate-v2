@@ -85,40 +85,157 @@ function subtractWorkingHours(eventTime: Date, value: number, open: Set<number>,
     return cursor;
 }
 
+/** Step back whole calendar days keeping the wall-clock time (DST-safe, unlike ms arithmetic). */
+function subtractCalendarDays(eventTime: Date, days: number): Date {
+    const cursor = new Date(eventTime);
+    cursor.setDate(cursor.getDate() - days);
+    return cursor;
+}
+
 /**
  * Compute the order/cancellation cutoff (orders must be placed at or before this instant),
  * honouring the open-days config. Returns null when no deadline is configured.
  *
+ * Kept in lock-step with HospitalityDeadlineCalculator::computeDeadline (PHP, authoritative);
+ * tests/hospitality-deadline runs both over one shared case file. Runs in the venue's wall clock:
+ * the browser is assumed to be in Europe/Oslo, as the server side reads it.
+ *
  * @param eventTime   When the catering is needed (serving time).
  * @param value       Lead-time value (null/<=0 → no deadline).
- * @param unit        'hours' | 'days' (the backend calc supports these; 'weeks' falls back to calendar).
+ * @param unit        'hours' | 'days' | 'weeks' (case-insensitive; anything else → no deadline).
+ *                    'hours' is elapsed time, 'days' and 'weeks' are calendar days on the wall
+ *                    clock, and 'weeks' ignores the open-days config (there is no working-week rule).
  * @param openDaysList Decoded open weekdays (ISO 1=Mon..7=Sun); undefined/empty → all open.
  * @param holidays    Closed calendar dates as 'YYYY-MM-DD' (default []).
  */
 export function computeHospitalityDeadline(
     eventTime: Date,
     value: number | null | undefined,
-    unit: DeadlineUnit | null | undefined,
+    unit: string | null | undefined,
     openDaysList?: number[] | null,
     holidays: string[] = []
 ): Date | null {
     if (!value || value <= 0 || !unit) return null;
 
+    const u = unit.toLowerCase();
+    if (u !== 'hours' && u !== 'days' && u !== 'weeks') return null;
+
+    // 'weeks': plain calendar arithmetic, open days and holidays do not apply.
+    if (u === 'weeks') return subtractCalendarDays(eventTime, value * 7);
+
     const open = openDaySet(openDaysList);
     const holidaySet = new Set(holidays);
     const allOpen = open.size === 7;
 
-    // Calendar fast path: 'weeks' (backend has no working-week rule), or all-open + no holidays.
-    if (unit === 'weeks' || (allOpen && holidaySet.size === 0)) {
-        const ms = unit === 'hours' ? value * 3600000
-            : unit === 'weeks' ? value * 604800000
-                : value * 86400000;
-        return new Date(eventTime.getTime() - ms);
+    // Calendar fast path: all-open + no holidays.
+    if (allOpen && holidaySet.size === 0) {
+        return u === 'hours'
+            ? new Date(eventTime.getTime() - value * 3600000)
+            : subtractCalendarDays(eventTime, value);
     }
 
-    return unit === 'days'
+    return u === 'days'
         ? subtractWorkingDays(eventTime, value, open, holidaySet)
         : subtractWorkingHours(eventTime, value, open, holidaySet);
+}
+
+/**
+ * Is an action still allowed at `now`, given its deadline? Open ⇔ now ≤ deadline: exactly AT the
+ * deadline is still open. A null deadline ("none configured") closes nothing.
+ */
+export function isDeadlineOpen(now: Date | number, deadline: Date | null): boolean {
+    if (deadline === null) return true;
+    const t = typeof now === 'number' ? now : now.getTime();
+    return t <= deadline.getTime();
+}
+
+export type HospitalityAction = 'add' | 'change' | 'cancel';
+
+export type HospitalityActionReason =
+    | 'order_cutoff_passed'
+    | 'cancellation_deadline_passed'
+    | 'serving_time_passed';
+
+export interface HospitalityActionInput {
+    /** S: the stored serving time (change/cancel) or the serving time being ordered (add). */
+    anchor: Date | null;
+    /** S': the new serving time of a change that moves it. */
+    movedTo?: Date | null;
+    /** bb_hospitality.order_by_time_* — the order cutoff C. */
+    orderBy?: { value: number | null | undefined; unit: string | null | undefined };
+    /** bb_resource.cancellation_deadline_* of the kitchen — the cancellation deadline X. */
+    cancelBy?: { value: number | null | undefined; unit: string | null | undefined };
+    openDays?: number[] | null;
+}
+
+export interface HospitalityActionWindow {
+    allowed: boolean;
+    reason: HospitalityActionReason | null;
+    /** The last instant the action is open; when refused, the instant that closed it. */
+    until: Date | null;
+}
+
+/**
+ * The deadline part of HospitalityOrderGuard::evaluate (PHP), without its locks (billed, paid,
+ * application/order status — the server alone knows those and returns them as `actions`).
+ *
+ *   add    open while now ≤ C(S')
+ *   change open while now ≤ C(S) AND now ≤ X(S); a change that moves S also needs now ≤ C(S')
+ *   cancel open while now ≤ X(S)
+ * and every action also needs now ≤ S: nothing is changed after the serving time has started.
+ *
+ * `reason` names the EARLIEST deadline that has already passed (a tie goes to the cancellation
+ * deadline, then the order cutoff, then the serving time), exactly as the PHP guard does.
+ */
+export function hospitalityActionWindow(
+    action: HospitalityAction,
+    input: HospitalityActionInput,
+    now: Date
+): HospitalityActionWindow {
+    const anchor = input.anchor;
+    if (anchor === null) return {allowed: false, reason: null, until: null};
+
+    const cutoff = computeHospitalityDeadline(
+        anchor, input.orderBy?.value, input.orderBy?.unit, input.openDays);
+    const cancelBy = computeHospitalityDeadline(
+        anchor, input.cancelBy?.value, input.cancelBy?.unit, input.openDays);
+
+    const closers: Array<[Date | null, HospitalityActionReason]> = [];
+    if (action === 'add') {
+        closers.push([cutoff, 'order_cutoff_passed']);
+    } else if (action === 'change') {
+        closers.push([cancelBy, 'cancellation_deadline_passed'], [cutoff, 'order_cutoff_passed']);
+    } else {
+        closers.push([cancelBy, 'cancellation_deadline_passed']);
+    }
+    closers.push([anchor, 'serving_time_passed']);
+
+    let until: Date | null = null;
+    let closedAt: Date | null = null;
+    let closedBy: HospitalityActionReason | null = null;
+    for (const [instant, reason] of closers) {
+        if (instant === null) continue;
+        if (until === null || instant < until) until = instant;
+        if (!isDeadlineOpen(now, instant) && (closedAt === null || instant < closedAt)) {
+            closedAt = instant;
+            closedBy = reason;
+        }
+    }
+    if (closedBy !== null) return {allowed: false, reason: closedBy, until: closedAt};
+
+    const movedTo = input.movedTo ?? null;
+    if (action === 'change' && movedTo !== null) {
+        const newCutoff = computeHospitalityDeadline(
+            movedTo, input.orderBy?.value, input.orderBy?.unit, input.openDays);
+        if (!isDeadlineOpen(now, newCutoff)) {
+            return {allowed: false, reason: 'order_cutoff_passed', until: newCutoff};
+        }
+        if (!isDeadlineOpen(now, movedTo)) {
+            return {allowed: false, reason: 'serving_time_passed', until: movedTo};
+        }
+    }
+
+    return {allowed: true, reason: null, until};
 }
 
 /**

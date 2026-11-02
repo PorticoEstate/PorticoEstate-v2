@@ -68,6 +68,34 @@ export interface IHospitalityArticle {
     effective_tax_code: number;
 }
 
+/** Why an action on an order is refused (HospitalityOrderGuard::REASON_*). */
+export type HospitalityActionReason =
+    | 'order_cutoff_passed'
+    | 'cancellation_deadline_passed'
+    | 'serving_time_passed'
+    | 'order_billed'
+    | 'order_paid_at_checkout'
+    | 'application_closed'
+    | 'order_status'
+    | 'no_deadline_basis';
+
+/** What the applicant may do with an order RIGHT NOW, as decided by the server. */
+export interface IHospitalityOrderAction {
+    allowed: boolean;
+    reason: HospitalityActionReason | null;
+    /** Last instant the action is open (ISO-8601); when refused, the instant that closed it. */
+    until: string | null;
+}
+
+/** Who to contact about an order once it is locked. */
+export interface IHospitalityOrderContact {
+    /** The kitchen resource's own contact_info, as stored (HTML-ish free text). */
+    info: string | null;
+    building_name: string | null;
+    building_email: string | null;
+    building_phone: string | null;
+}
+
 export interface IHospitalityOrder {
     id: number;
     application_id: number;
@@ -80,7 +108,11 @@ export interface IHospitalityOrder {
     hospitality_name: string;
     location_name: string;
     total_amount: number;
+    /** Always present from GET (an order without lines comes back as []). */
     lines: IHospitalityOrderLine[];
+    /** Only on GET /hospitality-orders; the write endpoints do not return it. */
+    actions?: { change: IHospitalityOrderAction; cancel: IHospitalityOrderAction };
+    contact?: IHospitalityOrderContact;
 }
 
 export interface IHospitalityOrderLine {

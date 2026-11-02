@@ -84,6 +84,11 @@ export function useCreateHospitalityOrder(applicationId: number | undefined) {
             queryClient.invalidateQueries({queryKey: ['externalPaymentEligibility']});
             queryClient.invalidateQueries({queryKey: ['partialApplications']});
         },
+        // A refusal (e.g. a deadline that passed while the page was open) changes what the server
+        // says is allowed: re-read the orders so the buttons follow it.
+        onError: () => {
+            queryClient.invalidateQueries({queryKey: ['hospitalityOrders', applicationId]});
+        },
     });
 }
 
@@ -112,6 +117,11 @@ export function useUpdateHospitalityOrder(applicationId: number | undefined) {
             queryClient.invalidateQueries({queryKey: ['externalPaymentEligibility']});
             queryClient.invalidateQueries({queryKey: ['partialApplications']});
         },
+        // A refusal (e.g. a deadline that passed while the page was open) changes what the server
+        // says is allowed: re-read the orders so the buttons follow it.
+        onError: () => {
+            queryClient.invalidateQueries({queryKey: ['hospitalityOrders', applicationId]});
+        },
     });
 }
 
@@ -134,6 +144,11 @@ export function useDeleteHospitalityOrder(applicationId: number) {
             queryClient.invalidateQueries({queryKey: ['hospitalityOrders', applicationId]});
             queryClient.invalidateQueries({queryKey: ['externalPaymentEligibility']});
             queryClient.invalidateQueries({queryKey: ['partialApplications']});
+        },
+        // A refusal (e.g. a deadline that passed while the page was open) changes what the server
+        // says is allowed: re-read the orders so the buttons follow it.
+        onError: () => {
+            queryClient.invalidateQueries({queryKey: ['hospitalityOrders', applicationId]});
         },
     });
 }

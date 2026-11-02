@@ -321,9 +321,9 @@ class booking_boevent extends booking_bocommon_authorized
 			}
 		}
 	}
-	public function add_single_comment($event_id, $comment, $type = 'comment')
+	public function add_single_comment($event_id, $comment, $type = 'comment', $author = null)
 	{
-		return $this->so->add_single_comment($event_id, $comment, $type);
+		return $this->so->add_single_comment($event_id, $comment, $type, $author);
 	}
 
 	/**

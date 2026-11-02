@@ -403,7 +403,7 @@ this.onActionsClick = function (action)
 		return;
 	}
 
-	var api = $('#datatable-container_1').dataTable().api();
+	var api = $('#datatable-container_1').DataTable();
 	var selected = api.rows({selected: true}).data();
 
 	var numSelected = selected.length;

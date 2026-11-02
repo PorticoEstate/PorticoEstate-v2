@@ -82,7 +82,7 @@ function process_list()
 
 function deleteOthersData(oArgs, parameters)
 {
-    var api = $('#datatable-container_0').dataTable().api();
+    var api = $('#datatable-container_0').DataTable();
     var selected = api.rows({selected: true}).data();
     var nTable = 0;
 

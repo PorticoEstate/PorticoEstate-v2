@@ -21,7 +21,7 @@ getRequestData = function (dataSelected, parameters)
 
 function clean()
 {
-    var api = $('#datatable-container_0').dataTable().api();
+    var api = $('#datatable-container_0').DataTable();
     api.rows().deselect();
     api.buttons('.record').enable(false);
     
@@ -35,7 +35,7 @@ function updateType(oArgs, parameters)
     var data = {};
     data['comm_type_description'] = $('#comm_type_description').val();
     
-    var api = $('#datatable-container_0').dataTable().api();
+    var api = $('#datatable-container_0').DataTable();
     var selected = api.rows({selected: true}).data();
     var nTable = 0;
 
@@ -55,7 +55,7 @@ function updateType(oArgs, parameters)
 
 function deleteType(oArgs, parameters)
 {
-    var api = $('#datatable-container_0').dataTable().api();
+    var api = $('#datatable-container_0').DataTable();
     var selected = api.rows({selected: true}).data();
     var nTable = 0;
 

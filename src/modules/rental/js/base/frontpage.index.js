@@ -110,7 +110,7 @@ getRequestData = function (dataSelected, parameters)
 dismissNotification = function (oArgs, parameters)
 {
 
-	var api = $('#datatable-container_5').dataTable().api();
+	var api = $('#datatable-container_5').DataTable();
 	var selected = api.rows({selected: true}).data();
 	var nTable = 5;
 
@@ -136,7 +136,7 @@ dismissNotification = function (oArgs, parameters)
 dismissNotificationAll = function (oArgs, parameters)
 {
 
-	var api = $('#datatable-container_5').dataTable().api();
+	var api = $('#datatable-container_5').DataTable();
 	var selected = api.rows({selected: true}).data();
 	var nTable = 5;
 

@@ -1355,3 +1355,5 @@ catering_field_location	booking	nn	Leveringsstad
 catering_field_comment	booking	nn	Kommentar
 catering_field_special_requirements	booking	nn	Spesielle krav
 catering_field_total	booking	nn	Sum
+sms_event_no_participants	booking	nn	Ingen deltakarar med telefonnummer er registrerte på arrangementet. SMS blir berre sendt til registrerte deltakarar.
+sms_send_failed	booking	nn	Kunne ikkje sende SMS. Prøv igjen, eller kontakt systemadministrator.

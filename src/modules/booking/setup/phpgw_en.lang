@@ -1380,3 +1380,5 @@ catering_field_location	booking	en	Delivery location
 catering_field_comment	booking	en	Comment
 catering_field_special_requirements	booking	en	Special requirements
 catering_field_total	booking	en	Total
+sms_event_no_participants	booking	en	No participants with a phone number are registered for the event. SMS is only sent to registered participants.
+sms_send_failed	booking	en	Could not send the SMS. Try again, or contact the system administrator.

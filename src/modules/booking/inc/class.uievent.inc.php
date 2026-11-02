@@ -968,7 +968,6 @@ class booking_uievent extends booking_uicommon
 		$message = 'Nothing...';
 		if ($send_sms && $sms_content)
 		{
-			$message = '';
 			$soparticipant = createObject('booking.soparticipant');
 			$params = array(
 				'results' => -1,
@@ -979,18 +978,55 @@ class booking_uievent extends booking_uicommon
 			);
 
 			$participants = $soparticipant->read($params);
-			if (!$participants['results'])
-			{
-				$message = lang('no records found.');
-			}
-
-			$sms_service = CreateObject('sms.sms');
 			$sms_recipients = array();
 			foreach ($participants['results'] as $participant)
 			{
-				$sms_recipients[] = $participant['phone'];
+				$phone = trim((string)$participant['phone']);
+				if ($phone !== '')
+				{
+					$sms_recipients[] = $phone;
+				}
 			}
 			$final_recipients = array_unique($sms_recipients);
+
+			// Nobody to send to: say so before anything else is touched. This is checked before the gateway, so an
+			// event without participants gets this message even where no gateway is configured.
+			if (!$final_recipients)
+			{
+				return array(
+					'status' => 'error',
+					'message' => lang('sms_event_no_participants')
+				);
+			}
+
+			// Checked before CreateObject('sms.sms'): including the sms class dies when no gateway module is available
+			// (see sms_is_configured). A named send module whose file is missing throws at include time instead.
+			if (!$this->sms_is_configured())
+			{
+				return array(
+					'status' => 'error',
+					'message' => lang('sms_not_configured')
+				);
+			}
+
+			try
+			{
+				$sms_service = CreateObject('sms.sms');
+			}
+			catch (\Throwable $e)
+			{
+				(new Log())->error(array(
+					'text'	 => "SMS service could not be created for event %1: %2",
+					'p1'	 => $id,
+					'p2'	 => $e->getMessage(),
+					'line'	 => __LINE__,
+					'file'	 => __FILE__
+				));
+				return array(
+					'status' => 'error',
+					'message' => lang('sms_not_configured')
+				);
+			}
 
 			$account_id = $this->current_account_id();
 			$log_success = array();
@@ -1009,24 +1045,55 @@ class booking_uievent extends booking_uicommon
 						$log_success[] = $final_recipient;
 					}
 				}
-				catch (Exception $ex)
+				catch (\Throwable $ex)
 				{
+					// A gateway Error (a PHP 8 TypeError) leaves websend2pv's transaction open, and while one is
+					// open the next recipient's send is never committed. Close it, so the failed recipient leaves
+					// no row and the ones after it are sent as usual (same as uicommon::send_reservation_sms).
+					$db = Db::getInstance();
+					if ($db->get_transaction())
+					{
+						$db->transaction_abort();
+					}
 					$log_error[] = $final_recipient;
 				}
 			}
 
+			// The numbers come from the public participant form and reach the officer's page through .html() in
+			// event.js: they are escaped here, once, on the way into the message.
+			$escape = static fn($phone) => htmlspecialchars((string)$phone, ENT_QUOTES, 'UTF-8');
+			$parts = array();
 			if ($log_success)
 			{
 				$status = 'ok';
-				$message .= 'SMS sendt til: ' . implode(',', $log_success);
-				$event = $this->bo->read_single($id);
+				$parts[] = 'SMS sendt til: ' . implode(',', array_map($escape, $log_success));
 			}
 			if ($log_error)
 			{
-				$message .= "<br/>SMS feilet for: " . implode(',', $log_error);
+				$parts[] = 'SMS feilet for: ' . implode(',', array_map($escape, $log_error));
 			}
-			$this->add_comment($event, "SMS: $message");
-			$this->bo->update($event);
+			$message = implode('<br/>', $parts);
+
+			// Only a send that went out is worth a comment on the event. Adding it is a single INSERT: the old
+			// read_single + bo->update of the whole event threw on an event that did not load (no id to
+			// authorize the write against) after the SMS had already gone, and the officer saw nothing.
+			if ($log_success)
+			{
+				try
+				{
+					$this->bo->add_single_comment($id, "SMS: $message");
+				}
+				catch (\Throwable $e)
+				{
+					(new Log())->error(array(
+						'text'	 => "SMS sent for event %1, but the comment could not be added: %2",
+						'p1'	 => $id,
+						'p2'	 => $e->getMessage(),
+						'line'	 => __LINE__,
+						'file'	 => __FILE__
+					));
+				}
+			}
 		}
 		return array(
 			'status' => $status,

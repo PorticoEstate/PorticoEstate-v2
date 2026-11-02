@@ -1381,3 +1381,5 @@ catering_field_location	booking	no	Leveringssted
 catering_field_comment	booking	no	Kommentar
 catering_field_special_requirements	booking	no	Spesielle krav
 catering_field_total	booking	no	Sum
+sms_event_no_participants	booking	no	Ingen deltakere med telefonnummer er registrert på arrangementet. SMS sendes bare til registrerte deltakere.
+sms_send_failed	booking	no	Kunne ikke sende SMS. Prøv igjen, eller kontakt systemadministrator.

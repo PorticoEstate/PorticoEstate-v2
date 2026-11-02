@@ -37,6 +37,9 @@
  *   H   the helper itself (App\modules\booking\helpers\CommentParts): only the closed vocabulary comes out, for
  *       any input, including invalid UTF-8 and NUL.
  *   X   deep nesting and a large comment finish, and stay inert.
+ *   A   the apostrophe (commit b): booking_soevent::add_single_comment() binds the comment exactly as given. The
+ *       real Db::insert() and Db::db_addslashes() run against a recording PDO whose quote() doubles an apostrophe
+ *       like PostgreSQL's does, so «It's» is bound as «It's» and read back by the real Db::f() as «It's», not «It''s».
  *   K   (HD_DB_HEADER set) the corpus: every stored bb_event_comment row of the local database through the real
  *       path; counts only, no content is printed. Visible text and links are unchanged against the old page's
  *       view of the same row (script/style text excluded), and nothing is LIVE afterwards.
@@ -131,6 +134,45 @@ namespace {
                 return true;
             }
             return false;
+        }
+    }
+
+    /** A statement that records what was bound to it (Db::insert() binds by reference, then executes). */
+    final class HdFakeStatement
+    {
+        /** @var array<int,array{0:mixed,1:int}> slot => [value, type] */
+        public array $bound = [];
+
+        public function __construct(public string $sql)
+        {
+        }
+
+        public function bindParam($field, &$value, $type = \PDO::PARAM_STR): bool
+        {
+            $this->bound[$field] = [$value, $type];
+            return true;
+        }
+
+        public function execute(): bool
+        {
+            return true;
+        }
+    }
+
+    /** The PDO as far as Db::insert() and Db::db_addslashes() can see it. quote() is PostgreSQL's: a quote doubles. */
+    final class HdFakePdo
+    {
+        /** @var list<HdFakeStatement> */
+        public array $statements = [];
+
+        public function prepare($sql): HdFakeStatement
+        {
+            return $this->statements[] = new HdFakeStatement((string)$sql);
+        }
+
+        public function quote($string): string
+        {
+            return "'" . str_replace("'", "''", (string)$string) . "'";
         }
     }
 
@@ -680,6 +722,52 @@ namespace {
             $check("X {$name}: finishes in under 30 s", $took < 30, sprintf('%.1f s', $took));
             $check("X {$name}: inert", $live($r['html']) === null, (string)$live($r['html']));
             $check("X {$name}: closed vocabulary", $closed($r['html']) === null, (string)$closed($r['html']));
+        }
+    });
+
+    // =================================================================================================
+    // A: the apostrophe
+    // =================================================================================================
+    $arm('A apostrophe', function () use ($same, $check) {
+        $pdo = new HdFakePdo();
+        $dbClass = new \ReflectionClass(\App\Database\Db::class);
+        $db = $dbClass->newInstanceWithoutConstructor();
+        $dbClass->getProperty('db')->setValue($db, $pdo);
+        $dbClass->getProperty('resultSet')->setValue($db, true);
+        $so = (new \ReflectionClass('booking_soevent'))->newInstanceWithoutConstructor();
+        (new \ReflectionProperty('booking_socommon', 'db'))->setValue($so, $db);
+        (new \ReflectionProperty('booking_socommon', 'userSettings'))->setValue($so, ['account_id' => 4711]);
+
+        // control: the fake PDO doubles a quote, as the old db_addslashes() relied on
+        $same('A control: the quote of the fake PDO doubles an apostrophe', $db->db_addslashes("It's"), "It''s");
+
+        $sql = 'INSERT INTO bb_event_comment (event_id, time, author, comment, type) VALUES (?, ?, ?, ?, ?)';
+        $inputs = [
+            'apostrophe' => "It's fine",
+            'apostrophes with markup and an ampersand' => "Åse O'Brien's <b>x</b> & y",
+            'two apostrophes in a row' => "rock ''n'' roll",
+            'double quotes and a link' => 'He said "hi" <a href="https://x.test/?a=1&b=2">x</a>',
+            'plain text' => 'Plain',
+            'padding' => '  padded  ',
+            'two lines' => "one\ntwo",
+            'a backslash' => 'back\\slash',
+            'empty' => '',
+        ];
+        foreach ($inputs as $name => $in) {
+            $pdo->statements = [];
+            $so->add_single_comment(EVENT_ID, $in);
+            $same("A {$name}: one statement prepared", count($pdo->statements), 1);
+            $st = $pdo->statements[0] ?? new HdFakeStatement('');
+            $same("A {$name}: the SQL is unchanged", $st->sql, $sql);
+            $same("A {$name}: the comment is bound exactly as given, as a string", $st->bound[4] ?? null, [$in, \PDO::PARAM_STR]);
+            $same("A {$name}: the event id is bound as an integer", $st->bound[1] ?? null, [EVENT_ID, \PDO::PARAM_INT]);
+            $same("A {$name}: the author is the account id, as an integer", $st->bound[3] ?? null, [4711, \PDO::PARAM_INT]);
+            $same("A {$name}: the type is «comment»", $st->bound[5] ?? null, ['comment', \PDO::PARAM_STR]);
+            if (str_contains($in, "'")) {
+                // what the history shows: the stored value through the real Db::f
+                $dbClass->getProperty('Record')->setValue($db, ['c' => $st->bound[4][0] ?? null]);
+                $same("A {$name}: read back by Db::f it is what was written", $db->f('c', true), $in);
+            }
         }
     });
 

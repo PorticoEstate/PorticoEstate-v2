@@ -38,6 +38,7 @@ FILES = [
     "src/modules/booking/helpers/CommentParts.php",
 ]
 
+SO = "src/modules/booking/inc/class.soevent.inc.php"
 U = "src/modules/booking/inc/class.uievent.inc.php"
 X = "src/modules/booking/templates/base/event_edit.xsl"
 H = "src/modules/booking/helpers/CommentParts.php"
@@ -118,6 +119,21 @@ MUTATIONS = [
      "'#^https?://[^\\s\"<>]+$#i'", "'#^https?://[^\\s\"<>]+#i'", False),
     ("H18", H, "https links are no longer accepted (http only)",
      "'#^https?://[^\\s\"<>]+$#i'", "'#^http://[^\\s\"<>]+$#i'", False),
+    # --- the apostrophe (add_single_comment) ----------------------------------------------------------
+    ("A1", SO, "db_addslashes is back on the comment (It's is stored as It''s)",
+     "\t\t\t\t\t'value'\t=> $comment,\n", "\t\t\t\t\t'value'\t=> $this->db->db_addslashes($comment),\n", False),
+    ("A2", SO, "the comment is bound as an integer",
+     "'value'\t=> $comment,\n\t\t\t\t\t'type'\t=> PDO::PARAM_STR", "'value'\t=> $comment,\n\t\t\t\t\t'type'\t=> PDO::PARAM_INT", False),
+    ("A3", SO, "the comment is HTML-escaped on the way in",
+     "\t\t\t\t\t'value'\t=> $comment,\n", "\t\t\t\t\t'value'\t=> htmlspecialchars($comment, ENT_QUOTES),\n", False),
+    ("A4", SO, "the comment is trimmed on the way in",
+     "\t\t\t\t\t'value'\t=> $comment,\n", "\t\t\t\t\t'value'\t=> trim($comment),\n", False),
+    ("A5", SO, "the apostrophe is doubled by hand",
+     "\t\t\t\t\t'value'\t=> $comment,\n", "\t\t\t\t\t'value'\t=> str_replace(\"'\", \"''\", $comment),\n", False),
+    ("A6", SO, "the comment slot carries the type",
+     "\t\t\t\t\t'value'\t=> $comment,\n", "\t\t\t\t\t'value'\t=> $type,\n", False),
+    ("A7", SO, "the INSERT names its columns in another order",
+     "INSERT INTO bb_event_comment (event_id, time, author, comment, type)", "INSERT INTO bb_event_comment (event_id, time, author, type, comment)", False),
     ("H19", H, "adjacent text is no longer merged (harmless to the text, so the harness must NOT notice; equivalent mutant control)",
      "\t\tif ($last >= 0 && $parts[$last]['k'] === 't')\n", "\t\tif (false)\n", False),
 ]

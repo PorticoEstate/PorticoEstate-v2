@@ -1,7 +1,7 @@
 var vendor_id_selection;
 
 var lang;
-var oArgs = {menuaction: 'eventplanner.uivendor.index', organization_number: true};
+var oArgs = { menuaction: 'eventplanner.uivendor.index', organization_number: true };
 var strURL = phpGWLink('index.php', oArgs, true);
 JqueryPortico.autocompleteHelper(strURL, 'vendor_name', 'vendor_id', 'vendor_container', 'name');
 
@@ -46,7 +46,7 @@ function populateVendorContact(vendor_id)
 			$("#contact_phone").val(result.contact_phone);
 
 		}, data, "POST", "json"
-		);
+	);
 }
 
 validate_submit = function ()
@@ -132,24 +132,24 @@ $(function ()
 
 	calculate_stage_size();
 
-//	$.formUtils.addValidator({
-//		name: 'naming',
-//		validatorFunction: function (value, $el, config, languaje, $form)
-//		{
-//			var v = false;
-//			var firstname = $('#firstname').val();
-//			var lastname = $('#lastname').val();
-//			var company_name = $('#company_name').val();
-//			var department = $('#department').val();
-//			if ((firstname != "" && lastname != "") || (company_name != "" && department != ""))
-//			{
-//				v = true;
-//			}
-//			return v;
-//		},
-//		errorMessage: lang['Name or company is required'],
-//		errorMessageKey: ''
-//	});
+	//	$.formUtils.addValidator({
+	//		name: 'naming',
+	//		validatorFunction: function (value, $el, config, languaje, $form)
+	//		{
+	//			var v = false;
+	//			var firstname = $('#firstname').val();
+	//			var lastname = $('#lastname').val();
+	//			var company_name = $('#company_name').val();
+	//			var department = $('#department').val();
+	//			if ((firstname != "" && lastname != "") || (company_name != "" && department != ""))
+	//			{
+	//				v = true;
+	//			}
+	//			return v;
+	//		},
+	//		errorMessage: lang['Name or company is required'],
+	//		errorMessageKey: ''
+	//	});
 
 
 	$("#from_").on('change', function ()
@@ -173,7 +173,7 @@ $(function ()
 
 	if ($("#center_content").length === 1)
 	{
-			$("#center_content").on('scroll', function ()
+		$("#center_content").on('scroll', function ()
 		{
 			if ($("#center_content").scrollTop() > offset.top)
 			{
@@ -192,7 +192,7 @@ $(function ()
 	}
 	else
 	{
-			$(window).on('scroll', function ()
+		$(window).on('scroll', function ()
 		{
 			if ($(window).scrollTop() > offset.top)
 			{
@@ -311,7 +311,7 @@ add_schedule = function ()
 	var requestUrl = phpGWLink('index.php', oArgs, true);
 	var htmlString = '';
 	$("#receipt").html("");
-	var data = {from_: from_, active: 1};
+	var data = { from_: from_, active: 1 };
 
 	JqueryPortico.execute_ajax(requestUrl,
 		function (result)
@@ -343,7 +343,7 @@ add_schedule = function ()
 			JqueryPortico.updateinlineTableHelper('datatable-container_1');
 
 		}, data, "POST", "json"
-		);
+	);
 
 };
 
@@ -354,13 +354,13 @@ update_schedule = function (id)
 	{
 		return;
 	}
-	oArgs = {menuaction: 'eventplanner.uicalendar.update_schedule'};
+	oArgs = { menuaction: 'eventplanner.uicalendar.update_schedule' };
 
 	var requestUrl = phpGWLink('index.php', oArgs, true);
 	var htmlString = '';
 	$("#receipt").html("");
 
-	var data = {from_: from_, id: id};
+	var data = { from_: from_, id: id };
 
 	JqueryPortico.execute_ajax(requestUrl,
 		function (result)
@@ -390,7 +390,7 @@ update_schedule = function (id)
 			JqueryPortico.updateinlineTableHelper('datatable-container_1');
 
 		}, data, "POST", "json"
-		);
+	);
 
 };
 
@@ -404,7 +404,7 @@ this.onActionsClick = function (action)
 	}
 
 	var api = $('#datatable-container_1').DataTable();
-	var selected = api.rows({selected: true}).data();
+	var selected = api.rows({ selected: true }).data();
 
 	var numSelected = selected.length;
 
@@ -433,9 +433,9 @@ this.onActionsClick = function (action)
 
 	if (ids.length > 0)
 	{
-		var data = {"ids": ids, "action": action, from_: $("#from_").val()};
+		var data = { "ids": ids, "action": action, from_: $("#from_").val() };
 
-		oArgs = {menuaction: 'eventplanner.uicalendar.update_active_status'};
+		oArgs = { menuaction: 'eventplanner.uicalendar.update_active_status' };
 
 		var requestUrl = phpGWLink('index.php', oArgs, true);
 
@@ -470,7 +470,7 @@ this.onActionsClick = function (action)
 				JqueryPortico.updateinlineTableHelper('datatable-container_1');
 
 			}, data, "POST", "json"
-			);
+		);
 	}
 };
 
@@ -509,7 +509,8 @@ this.fileuploader = function (section)
 {
 	multi_upload_parans.section = section;
 	var sUrl = phpGWLink('index.php', multi_upload_parans);
-	TINY.box.show({iframe: sUrl, boxid: 'frameless', width:Math.round($(window).width()*0.9), height:Math.round($(window).height()*0.9), fixed: false, maskid: 'darkmask', maskopacity: 40, mask: true, animate: true,
+	TINY.box.show({
+		iframe: sUrl, boxid: 'frameless', width: Math.round($(window).width() * 0.9), height: Math.round($(window).height() * 0.9), fixed: false, maskid: 'darkmask', maskopacity: 40, mask: true, animate: true,
 		close: true,
 		closejs: function ()
 		{

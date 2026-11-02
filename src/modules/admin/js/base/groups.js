@@ -83,7 +83,7 @@ removeUser = function (oArgs, parameters)
 	JqueryPortico.execute_ajax(requestUrl, function (result)
 	{
 
-	//		JqueryPortico.show_message(nTable, result);
+		//		JqueryPortico.show_message(nTable, result);
 
 		oTable1.api().draw();
 		oTable2.api().draw();

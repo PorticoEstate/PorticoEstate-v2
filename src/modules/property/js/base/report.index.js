@@ -1,13 +1,13 @@
 
 $(function ()
 {
-	  $('#list_dataset').on('change', function()
+	$('#list_dataset').on('change', function ()
 	{
 		paramsTable0['dataset_id'] = $('#list_dataset').val();
 
-		oTable0.api().draw();		
+		oTable0.api().draw();
 	});
-	
+
 });
 
 function newReport(oArgs)
@@ -27,7 +27,7 @@ function newDataset(oArgs)
 function download(oArgs)
 {
 	var api = $('#datatable-container_0').DataTable();
-	var selected = api.rows({selected: true}).data();
+	var selected = api.rows({ selected: true }).data();
 
 	if (selected.length == 0)
 	{
@@ -39,13 +39,13 @@ function download(oArgs)
 	{
 		return false;
 	}
-	
+
 	var requestUrl = '';
 	for (var n = 0; n < selected.length; ++n)
 	{
 		var aData = selected[n];
 		oArgs['id'] = aData['id'];
-		
+
 		requestUrl = phpGWLink('index.php', oArgs);
 		window.open(requestUrl, '_self');
 	}

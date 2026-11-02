@@ -1,7 +1,7 @@
 var vendor_id_selection;
 
 var lang;
-var oArgs = {menuaction: 'eventplannerfrontend.uivendor.index', organization_number: true};
+var oArgs = { menuaction: 'eventplannerfrontend.uivendor.index', organization_number: true };
 var strURL = phpGWLink('eventplannerfrontend/', oArgs, true);
 JqueryPortico.autocompleteHelper(strURL, 'vendor_name', 'vendor_id', 'vendor_container', 'name');
 
@@ -38,7 +38,7 @@ function populateVendorContact()
 			$("#contact_phone").val(result.contact_phone);
 
 		}, data, "POST", "json"
-		);
+	);
 }
 
 validate_submit = function ()
@@ -111,24 +111,24 @@ $(function ()
 
 	calculate_stage_size();
 
-//	$.formUtils.addValidator({
-//		name: 'naming',
-//		validatorFunction: function (value, $el, config, languaje, $form)
-//		{
-//			var v = false;
-//			var firstname = $('#firstname').val();
-//			var lastname = $('#lastname').val();
-//			var company_name = $('#company_name').val();
-//			var department = $('#department').val();
-//			if ((firstname != "" && lastname != "") || (company_name != "" && department != ""))
-//			{
-//				v = true;
-//			}
-//			return v;
-//		},
-//		errorMessage: lang['Name or company is required'],
-//		errorMessageKey: ''
-//	});
+	//	$.formUtils.addValidator({
+	//		name: 'naming',
+	//		validatorFunction: function (value, $el, config, languaje, $form)
+	//		{
+	//			var v = false;
+	//			var firstname = $('#firstname').val();
+	//			var lastname = $('#lastname').val();
+	//			var company_name = $('#company_name').val();
+	//			var department = $('#department').val();
+	//			if ((firstname != "" && lastname != "") || (company_name != "" && department != ""))
+	//			{
+	//				v = true;
+	//			}
+	//			return v;
+	//		},
+	//		errorMessage: lang['Name or company is required'],
+	//		errorMessageKey: ''
+	//	});
 
 
 	$("#from_").on('change', function ()
@@ -146,49 +146,49 @@ $(function ()
 		"background - color": '#FFF',
 		display: "block"
 	});
-/*
-	var offset = $("#submitbox").offset();
-	var topPadding = 180;
-
-	if ($("#center_content").length === 1)
-	{
-			$("#center_content").on('scroll', function ()
+	/*
+		var offset = $("#submitbox").offset();
+		var topPadding = 180;
+	
+		if ($("#center_content").length === 1)
 		{
-			if ($("#center_content").scrollTop() > offset.top)
+				$("#center_content").on('scroll', function ()
 			{
-				$("#submitbox").stop().animate({
-					marginTop: $("#center_content").scrollTop() - offset.top + topPadding
-				}, 100);
-			}
-			else
-			{
-				$("#submitbox").stop().animate({
-					marginTop: 0
-				}, 100);
-			}
-			;
-		});
-	}
-	else
-	{
-			$(window).on('scroll', function ()
+				if ($("#center_content").scrollTop() > offset.top)
+				{
+					$("#submitbox").stop().animate({
+						marginTop: $("#center_content").scrollTop() - offset.top + topPadding
+					}, 100);
+				}
+				else
+				{
+					$("#submitbox").stop().animate({
+						marginTop: 0
+					}, 100);
+				}
+				;
+			});
+		}
+		else
 		{
-			if ($(window).scrollTop() > offset.top)
+				$(window).on('scroll', function ()
 			{
-				$("#submitbox").stop().animate({
-					marginTop: $(window).scrollTop() - offset.top + topPadding
-				}, 100);
-			}
-			else
-			{
-				$("#submitbox").stop().animate({
-					marginTop: 0
-				}, 100);
-			}
-			;
-		});
-	}
-*/
+				if ($(window).scrollTop() > offset.top)
+				{
+					$("#submitbox").stop().animate({
+						marginTop: $(window).scrollTop() - offset.top + topPadding
+					}, 100);
+				}
+				else
+				{
+					$("#submitbox").stop().animate({
+						marginTop: 0
+					}, 100);
+				}
+				;
+			});
+		}
+	*/
 });
 
 check_button_names = function ()
@@ -198,44 +198,44 @@ check_button_names = function ()
 
 	if (tab === 'calendar')
 	{
-//		$("#floating-box").hide();
+		//		$("#floating-box").hide();
 		$("#submit_group_bottom").hide();
 	}
 	else if (tab === 'first_tab')
 	{
 		if (id > 0)
 		{
-	//		$("#save_button").val(lang['send']);
+			//		$("#save_button").val(lang['send']);
 			$("#save_button_bottom").val(lang['send']);
 		}
 		else
 		{
-	//		$("#save_button").val(lang['next']);
+			//		$("#save_button").val(lang['next']);
 			$("#save_button_bottom").val(lang['next']);
 		}
-//		$("#floating-box").show();
+		//		$("#floating-box").show();
 		$("#submit_group_bottom").show();
 	}
 	else if (tab === 'demands')
 	{
 		if (id > 0)
 		{
-//			$("#save_button").val(lang['send']);
+			//			$("#save_button").val(lang['send']);
 			$("#save_button_bottom").val(lang['send']);
 		}
 		else
 		{
-//			$("#save_button").val(lang['next']);
+			//			$("#save_button").val(lang['next']);
 			$("#save_button_bottom").val(lang['next']);
 		}
-//		$("#floating-box").show();
+		//		$("#floating-box").show();
 		$("#submit_group_bottom").show();
 	}
 	else
 	{
-//		$("#save_button").val(lang['send']);
+		//		$("#save_button").val(lang['send']);
 		$("#save_button_bottom").val(lang['send']);
-//		$("#floating-box").show();
+		//		$("#floating-box").show();
 		$("#submit_group_bottom").show();
 	}
 };
@@ -290,7 +290,7 @@ add_schedule = function ()
 	var requestUrl = phpGWLink('eventplannerfrontend/', oArgs, true);
 	var htmlString = '';
 	$("#receipt").html("");
-	var data = {from_: from_, active: 1};
+	var data = { from_: from_, active: 1 };
 
 	JqueryPortico.execute_ajax(requestUrl,
 		function (result)
@@ -322,7 +322,7 @@ add_schedule = function ()
 			JqueryPortico.updateinlineTableHelper('datatable-container_1');
 
 		}, data, "POST", "json"
-		);
+	);
 
 };
 
@@ -333,13 +333,13 @@ update_schedule = function (id)
 	{
 		return;
 	}
-	oArgs = {menuaction: 'eventplannerfrontend.uicalendar.update_schedule'};
+	oArgs = { menuaction: 'eventplannerfrontend.uicalendar.update_schedule' };
 
 	var requestUrl = phpGWLink('eventplannerfrontend/', oArgs, true);
 	var htmlString = '';
 	$("#receipt").html("");
 
-	var data = {from_: from_, id: id};
+	var data = { from_: from_, id: id };
 
 	JqueryPortico.execute_ajax(requestUrl,
 		function (result)
@@ -360,7 +360,7 @@ update_schedule = function (id)
 			JqueryPortico.updateinlineTableHelper('datatable-container_1');
 
 		}, data, "POST", "json"
-		);
+	);
 
 };
 
@@ -374,7 +374,7 @@ this.onActionsClick = function (action)
 	}
 
 	var api = $('#datatable-container_1').DataTable();
-	var selected = api.rows({selected: true}).data();
+	var selected = api.rows({ selected: true }).data();
 
 	var numSelected = selected.length;
 
@@ -403,9 +403,9 @@ this.onActionsClick = function (action)
 
 	if (ids.length > 0)
 	{
-		var data = {"ids": ids, "action": action, from_: $("#from_").val()};
+		var data = { "ids": ids, "action": action, from_: $("#from_").val() };
 
-		oArgs = {menuaction: 'eventplannerfrontend.uicalendar.update_active_status'};
+		oArgs = { menuaction: 'eventplannerfrontend.uicalendar.update_active_status' };
 
 		var requestUrl = phpGWLink('eventplannerfrontend/', oArgs, true);
 
@@ -440,7 +440,7 @@ this.onActionsClick = function (action)
 				JqueryPortico.updateinlineTableHelper('datatable-container_1');
 
 			}, data, "POST", "json"
-			);
+		);
 	}
 };
 
@@ -544,7 +544,8 @@ this.fileuploader = function (section)
 {
 	multi_upload_parans.section = section;
 	var sUrl = phpGWLink('eventplannerfrontend/', multi_upload_parans);
-	TINY.box.show({iframe: sUrl, boxid: 'frameless', width:Math.round($(window).width()*0.9), height:Math.round($(window).height()*0.9), fixed: false, maskid: 'darkmask', maskopacity: 40, mask: true, animate: true,
+	TINY.box.show({
+		iframe: sUrl, boxid: 'frameless', width: Math.round($(window).width() * 0.9), height: Math.round($(window).height() * 0.9), fixed: false, maskid: 'darkmask', maskopacity: 40, mask: true, animate: true,
 		close: true,
 		closejs: function ()
 		{
@@ -556,7 +557,7 @@ this.fileuploader = function (section)
 this.refresh_files = function (section)
 {
 	var container = 'datatable-container_3';;
-	if(section === 'cv')
+	if (section === 'cv')
 	{
 		container = 'datatable-container_2';
 	}

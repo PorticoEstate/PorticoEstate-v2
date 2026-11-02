@@ -1,44 +1,44 @@
 
 $(function ()
 {
-    $('.selector-add').on('click', function() 
+    $('.selector-add').on('click', function () 
     {
         var options = [];
-        $("#all_persons option:selected").each(function() 
+        $("#all_persons option:selected").each(function () 
         {
-            options.push({'id': $(this).val(), 'text': $(this).text()})
+            options.push({ 'id': $(this).val(), 'text': $(this).text() })
             $(this).remove();
-        });        
-        
-        $.each(options, function(i, e) 
+        });
+
+        $.each(options, function (i, e) 
         {
-            $('#current_persons').append($("<option></option>").attr("value", e.id).text(e.text));             
+            $('#current_persons').append($("<option></option>").attr("value", e.id).text(e.text));
             //$('#preferred_org').append($("<option></option>").attr("value", e.id).text(e.text));
         });
     });
 
-    $('.selector-remove').on('click', function() 
+    $('.selector-remove').on('click', function () 
     {
         var options = [];
-        $("#current_persons option:selected").each(function() 
+        $("#current_persons option:selected").each(function () 
         {
-            options.push({'id': $(this).val(), 'text': $(this).text()})
+            options.push({ 'id': $(this).val(), 'text': $(this).text() })
             $(this).remove();
         });
- 
-        $.each(options, function(i, e) 
+
+        $.each(options, function (i, e) 
         {
-            $('#all_persons').append($("<option></option>").attr("value", e.id).text(e.text));             
+            $('#all_persons').append($("<option></option>").attr("value", e.id).text(e.text));
             //$('#preferred_org option[value="'+ e.id +'"]').remove();
         });
     });
-    
-    $('.selector-add-categories').on('click', function() 
+
+    $('.selector-add-categories').on('click', function () 
     {
         $('#all_categories option:selected').remove().appendTo('#current_categories').removeAttr("selected");
     });
 
-    $('.selector-remove-categories').on('click', function() 
+    $('.selector-remove-categories').on('click', function () 
     {
         $('#current_categories option:selected').remove().appendTo('#all_categories').removeAttr("selected");
     });
@@ -50,16 +50,16 @@ getRequestData = function (dataSelected, parameters)
 
     $.each(parameters.parameter, function (i, val)
     {
-            data[val.name] = {};
+        data[val.name] = {};
     });
 
     var n = 0;
     for (var n = 0; n < dataSelected.length; ++n)
     {
-            $.each(parameters.parameter, function (i, val)
-            {
-                    data[val.name][n] = dataSelected[n][val.source];
-            });
+        $.each(parameters.parameter, function (i, val)
+        {
+            data[val.name][n] = dataSelected[n][val.source];
+        });
     }
 
     return data;
@@ -67,12 +67,14 @@ getRequestData = function (dataSelected, parameters)
 
 function process_list()
 {
-    $("#current_persons").each(function(){
-        $('#current_persons option').prop("selected",true);
+    $("#current_persons").each(function ()
+    {
+        $('#current_persons option').prop("selected", true);
     });
 
-    $("#current_categories").each(function(){
-        $('#current_categories option').prop("selected",true);
+    $("#current_categories").each(function ()
+    {
+        $('#current_categories option').prop("selected", true);
     });
 
     return true;
@@ -81,7 +83,7 @@ function process_list()
 function deleteOthersData(oArgs, parameters)
 {
     var api = $('#datatable-container_0').DataTable();
-    var selected = api.rows({selected: true}).data();
+    var selected = api.rows({ selected: true }).data();
     var nTable = 0;
 
     if (selected.length == 0)
@@ -116,7 +118,7 @@ function addOthersData()
     data['value'] = $('#value').val();
     data['contact_id'] = $('#contact_id').val();
 
-    var oArgs = {"menuaction": "addressbook.uiaddressbook_organizations.add_others", "phpgw_return_as": "json"};
+    var oArgs = { "menuaction": "addressbook.uiaddressbook_organizations.add_others", "phpgw_return_as": "json" };
     var requestUrl = phpGWLink('index.php', oArgs);
 
     JqueryPortico.execute_ajax(requestUrl, function (result)

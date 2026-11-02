@@ -68,7 +68,21 @@
 										<xsl:value-of select="php:function('pretty_timestamp', time)"/>: <xsl:value-of select="author"/>
 									</label>
 									<span>
-										<xsl:value-of select="comment" disable-output-escaping="yes"/>
+										<xsl:for-each select="parts">
+											<xsl:choose>
+												<xsl:when test="k = 'br'">
+													<br/>
+												</xsl:when>
+												<xsl:when test="k = 'a'">
+													<a href="{href}" rel="noopener noreferrer">
+														<xsl:value-of select="v"/>
+													</a>
+												</xsl:when>
+												<xsl:otherwise>
+													<xsl:value-of select="v"/>
+												</xsl:otherwise>
+											</xsl:choose>
+										</xsl:for-each>
 									</span>
 								</div>
 							</xsl:for-each>

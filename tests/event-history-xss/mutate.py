@@ -1,0 +1,236 @@
+#!/usr/bin/env python3
+"""
+Mutation check for the event-history XSS harness (run.php, task 36226).
+
+Same idea as tests/event-sms-participants/mutate.py: one deliberate defect at a time, applied to a TEMP COPY of
+the files the harness reads (never to the tree), and run.php must go red for each. The baseline on the same copy
+must be green first, and every replacement must match exactly once. A mutation counts as caught only when the
+harness exits 1 with a FAIL line: any other exit (a crash, a fatal error) is reported as CRASH and fails the run,
+because a harness that dies has not looked at anything.
+
+Every mutation runs HERMETIC first (no database). When HD_DB_HEADER is set the corpus arm K is run too, and the
+mutations marked K must make a «FAIL K » line appear: that is what proves the corpus counts can fail. Without
+HD_DB_HEADER the corpus part is NOT RUN and the script says so and exits 2 (a silent skip would read as green);
+pass --no-corpus to accept that explicitly.
+
+Usage:  python3 tests/event-history-xss/mutate.py
+        HD_DB_HEADER=…/config/header.inc.php HD_DB_HOST=127.0.0.1 HD_DB_PORT=5435 python3 tests/event-history-xss/mutate.py
+        (PHP_BIN overrides the binary)
+"""
+import os
+import re
+import shutil
+import subprocess
+import sys
+import tempfile
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+ROOT = os.path.abspath(os.path.join(HERE, "..", ".."))
+PHP = os.environ.get("PHP_BIN", "php")
+
+# Everything the harness reads from HD_ROOT.
+FILES = [
+    "src/Database/Db.php",
+    "src/modules/phpgwapi/inc/class.xmlhelper.inc.php",
+    "src/modules/booking/inc/class.soevent.inc.php",
+    "src/modules/booking/inc/class.uievent.inc.php",
+    "src/modules/booking/templates/base/event_edit.xsl",
+    "src/modules/booking/helpers/CommentParts.php",
+]
+
+U = "src/modules/booking/inc/class.uievent.inc.php"
+X = "src/modules/booking/templates/base/event_edit.xsl"
+H = "src/modules/booking/helpers/CommentParts.php"
+
+R = re.compile  # a regex mutation: (pattern, replacement), the pattern must match exactly once
+
+# (id, file, description, old, new, k)   old: str (exact, once) or R(pattern); k: the corpus arm must catch it too
+MUTATIONS = [
+    # --- the stylesheet ---------------------------------------------------------------------------------
+    ("X1", X, "d-o-e on the text branch of the parts",
+     R(r'(<xsl:otherwise>\s*<xsl:value-of select="v")(/>)'), r'\1 disable-output-escaping="yes"\2', False),
+    ("X2", X, "d-o-e on the link text",
+     R(r'(<a href="\{href\}" rel="noopener noreferrer">\s*<xsl:value-of select="v")(/>)'), r'\1 disable-output-escaping="yes"\2', False),
+    ("X3", X, "the raw `comment` is printed again, with d-o-e, beside the parts",
+     '<xsl:for-each select="parts">', '<xsl:value-of select="comment" disable-output-escaping="yes"/><xsl:for-each select="parts">', False),
+    ("X4", X, "the link loses rel=noopener noreferrer",
+     ' rel="noopener noreferrer"', '', False),
+    ("X5", X, "a break prints nothing",
+     R(r"(<xsl:when test=\"k = 'br'\">)\s*<br/>"), r'\1', False),
+    ("X6", X, "the link text is not printed",
+     R(r'(<a href="\{href\}" rel="noopener noreferrer">)\s*<xsl:value-of select="v"/>'), r'\1', True),
+    ("X7", X, "the href is taken from the link text",
+     '<a href="{href}"', '<a href="{v}"', False),
+    ("X8", X, "the link branch is gone: links print as text",
+     "test=\"k = 'a'\"", "test=\"k = 'z'\"", False),
+    ("X9", X, "d-o-e on the author of the history block",
+     R(r'(<xsl:value-of select="author")(/>\s*</label>\s*<span>\s*<xsl:for-each select="parts">)'), r'\1 disable-output-escaping="yes"\2', False),
+    ("X10", X, "a second d-o-e elsewhere in the file (the harness counts them)",
+     '<xsl:value-of select="php:function(\'lang\', \'History and comments (%1)\', count(comments/author))" />',
+     '<xsl:value-of select="php:function(\'lang\', \'History and comments (%1)\', count(comments/author))" disable-output-escaping="yes"/>', False),
+    # --- edit() ----------------------------------------------------------------------------------------
+    ("U1", U, "the raw `comment` is still emitted (no unset)",
+     "\t\t\tunset($comment['comment']);\n", "", False),
+    ("U2", U, "the parts are not set: a history row loses its text",
+     "\t\t\t$comment['parts'] = CommentParts::parse($comment['comment']);\n", "", True),
+    ("U3", U, "the host rewrite is lost before the parse",
+     "$comment['comment'] = str_replace($external_site_address, $internal_site_address, $comment['comment']);",
+     "$comment['comment'] = $comment['comment'];", False),
+    ("U4", U, "edit() no longer imports the helper",
+     "use App\\modules\\booking\\helpers\\CommentParts;\n", "", False),
+    # --- the helper -------------------------------------------------------------------------------------
+    ("H1", H, "any href scheme is accepted",
+     "'#^https?://[^\\s\"<>]+$#i'", "'#^[a-z][a-z0-9+.-]*:[^\\s\"<>]+$#i'", False),
+    ("H2", H, "control characters are not stripped from the href",
+     "'/[\\x00-\\x1F\\x7F]+/'", "'/^$/'", False),
+    ("H3", H, "script text is kept",
+     "'script', 'style',", "'style',", False),
+    ("H4", H, "style text is kept",
+     "'script', 'style',", "'script',", False),
+    ("H5", H, "svg is not dropped (its text is kept)",
+     "'svg', 'math',", "'math',", False),
+    ("H6", H, "nothing is dropped",
+     "if (in_array($name, self::DROPPED, true))", "if (false)", False),
+    ("H7", H, "unknown elements drop their text",
+     "\t\t\t$before = count($parts);\n\t\t\tself::collect($child, $parts);\n", "\t\t\t$before = count($parts);\n", True),
+    ("H8", H, "an <a> without a usable href loses its words",
+     "\t\t\t\t// no usable link: the words stay\n\t\t\t\tself::collect($child, $parts);\n", "", False),
+    ("H20", H, "the link keeps its href but its text is dropped (the declared drop_link_text arm)",
+     "'v' => self::plainText($child)", "'v' => ''", True),
+    ("H9", H, "the stored string is not entity-decoded once",
+     "$text = html_entity_decode($stored, ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML401, 'UTF-8');", "$text = $stored;", False),
+    ("H10", H, "the stored string is entity-decoded twice",
+     "$text = html_entity_decode($stored, ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML401, 'UTF-8');",
+     "$text = html_entity_decode(html_entity_decode($stored, ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML401, 'UTF-8'), ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML401, 'UTF-8');", False),
+    ("H11", H, "<p> ends in no line break",
+     "if ($name === 'p' && count($parts) > $before)", "if (false)", False),
+    ("H12", H, "a line break becomes a blank",
+     "if ($name === 'br')\n\t\t\t{\n\t\t\t\t$parts[] = array('k' => 'br');", "if ($name === 'br')\n\t\t\t{\n\t\t\t\t$parts[] = array('k' => 't', 'v' => ' ');", False),
+    ("H13", H, "the link text is the element's textContent (script text inside the link is kept)",
+     "'v' => self::plainText($child)", "'v' => $child->textContent", False),
+    ("H14", H, "the link carries the raw href, not the stripped one",
+     "$parts[] = array('k' => 'a', 'href' => $href,", "$parts[] = array('k' => 'a', 'href' => $child->getAttribute('href'),", False),
+    ("H15", H, "characters XML cannot hold are kept",
+     "'/[\\x00-\\x08\\x0B\\x0C\\x0E-\\x1F]|\\xEF\\xBF[\\xBE\\xBF]/'", "'/^$/'", False),
+    ("H16", H, "the href check is not anchored at the start",
+     "'#^https?://[^\\s\"<>]+$#i'", "'#https?://[^\\s\"<>]+$#i'", False),
+    ("H17", H, "the href check is not anchored at the end",
+     "'#^https?://[^\\s\"<>]+$#i'", "'#^https?://[^\\s\"<>]+#i'", False),
+    ("H18", H, "https links are no longer accepted (http only)",
+     "'#^https?://[^\\s\"<>]+$#i'", "'#^http://[^\\s\"<>]+$#i'", False),
+    ("H19", H, "adjacent text is no longer merged (harmless to the text, so the harness must NOT notice; equivalent mutant control)",
+     "\t\tif ($last >= 0 && $parts[$last]['k'] === 't')\n", "\t\tif (false)\n", False),
+]
+
+# H19 is the control for the harness's own sensitivity: merging is a size optimisation, the visible text is the same.
+EQUIVALENT = {"H19"}
+
+
+def run_harness(tree, corpus):
+    env = dict(os.environ)
+    env["HD_ROOT"] = tree
+    env["XDEBUG_MODE"] = "off"
+    if not corpus:
+        env.pop("HD_DB_HEADER", None)
+    p = subprocess.run([PHP, os.path.join(HERE, "run.php")], env=env, capture_output=True, text=True)
+    out = (p.stdout + p.stderr).strip().splitlines()
+    return p.returncode, (out[-1] if out else ""), p.stdout
+
+
+def apply(original, old, new):
+    if isinstance(old, str):
+        n = original.count(old)
+        return n, original.replace(old, new, 1)
+    mutated, n = old.subn(new, original)
+    return n, mutated
+
+
+def main():
+    no_corpus = "--no-corpus" in sys.argv
+    have_db = bool(os.environ.get("HD_DB_HEADER"))
+    tmp = tempfile.mkdtemp(prefix="event-history-mut-")
+    try:
+        tree = os.path.join(tmp, "tree")
+        for rel in FILES:
+            dst = os.path.join(tree, rel)
+            os.makedirs(os.path.dirname(dst), exist_ok=True)
+            shutil.copyfile(os.path.join(ROOT, rel), dst)
+
+        rc, tail, _ = run_harness(tree, False)
+        print(f"baseline hermetic rc={rc}  {tail}")
+        if rc != 0:
+            print("BASELINE IS RED - mutation results would mean nothing")
+            return 1
+        if have_db:
+            rc, tail, _ = run_harness(tree, True)
+            print(f"baseline corpus   rc={rc}  {tail}")
+            if rc != 0:
+                print("CORPUS BASELINE IS RED - mutation results would mean nothing")
+                return 1
+
+        survived, crashed, k_missed = [], [], []
+        for mid, rel, desc, old, new, k in MUTATIONS:
+            path = os.path.join(tree, rel)
+            original = open(path, encoding="utf-8").read()
+            n, mutated = apply(original, old, new)
+            if n != 1:
+                print(f"{mid}: MUTATION DID NOT APPLY - pattern matched {n} times (need exactly 1): {desc}")
+                return 1
+            open(path, "w", encoding="utf-8").write(mutated)
+            try:
+                rc, tail, stdout = run_harness(tree, False)
+                if have_db:
+                    krc, ktail, kstdout = run_harness(tree, True)
+            finally:
+                open(path, "w", encoding="utf-8").write(original)
+            m = re.search(r"FAIL (\d+) of (\d+)", tail)
+            if mid in EQUIVALENT:
+                if rc == 0:
+                    print(f"{mid:4} equivalent, harness stays green as it must  {desc}")
+                else:
+                    print(f"{mid:4} EQUIVALENT MUTANT TURNED THE HARNESS RED rc={rc}  {tail[:100]}  {desc}")
+                    survived.append(mid)
+                continue
+            if rc == 1 and m and "FAIL " in stdout:
+                line = f"{mid:4} caught   rc={rc}  {m.group(1):>3} of {m.group(2)} checks fail"
+            elif rc == 0:
+                print(f"{mid:4} SURVIVED rc={rc}  {desc}")
+                survived.append(mid)
+                continue
+            else:
+                print(f"{mid:4} CRASH    rc={rc}  {tail[:120]}  {desc}")
+                crashed.append(mid)
+                continue
+            if have_db:
+                kfails = len(re.findall(r"^FAIL K ", kstdout, re.M))
+                if k:
+                    if krc == 1 and kfails:
+                        line += f"  | corpus: {kfails} K checks fail"
+                    else:
+                        line += "  | corpus: K DID NOT FAIL"
+                        k_missed.append(mid)
+                else:
+                    line += f"  | corpus: {kfails} K fail"
+            print(f"{line}  {desc}")
+
+        if survived or crashed or k_missed:
+            if survived:
+                print("SURVIVING MUTATIONS:", ", ".join(survived))
+            if crashed:
+                print("CRASHED (harness died instead of failing a check):", ", ".join(crashed))
+            if k_missed:
+                print("THE CORPUS ARM DID NOT CATCH:", ", ".join(k_missed))
+            return 1
+        real = len(MUTATIONS) - len(EQUIVALENT)
+        if not have_db:
+            print(f"all {real} mutations caught by the hermetic harness, 0 crashes. THE CORPUS ARM WAS NOT RUN (no HD_DB_HEADER): "
+                  "the K-marked mutations are unproven against the corpus.")
+            return 0 if no_corpus else 2
+        print(f"all {real} mutations caught (the K-marked ones by the corpus arm too), 0 crashes; {len(EQUIVALENT)} equivalent-mutant control stays green; both baselines green")
+        return 0
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+if __name__ == "__main__":
+    sys.exit(main())

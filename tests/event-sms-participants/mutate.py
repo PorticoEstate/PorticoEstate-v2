@@ -28,6 +28,9 @@ FILES = [
     "src/helpers/Sanitizer.php",
     "src/modules/booking/inc/class.uicommon.inc.php",
     "src/modules/booking/inc/class.uievent.inc.php",
+    "src/modules/booking/inc/class.soevent.inc.php",
+    "src/modules/booking/inc/class.boevent.inc.php",
+    "src/modules/booking/inc/class.async_task_send_access_request.inc.php",
     "src/modules/booking/js/base/event.js",
     "src/modules/booking/templates/base/event_edit.xsl",
     "src/modules/booking/setup/phpgw_no.lang",
@@ -36,12 +39,18 @@ FILES = [
 ]
 
 U = "src/modules/booking/inc/class.uievent.inc.php"
+SO = "src/modules/booking/inc/class.soevent.inc.php"
+BO = "src/modules/booking/inc/class.boevent.inc.php"
+ASYNC = "src/modules/booking/inc/class.async_task_send_access_request.inc.php"
 G = "src/modules/booking/inc/class.uicommon.inc.php"
+
+# The one call the button makes; the author mutations below rewrite it.
+CALL = "$this->bo->add_single_comment($id, \"SMS: $message\", 'comment', $this->current_account_fullname());"
 E = "src/modules/booking/js/base/event.js"
 X = "src/modules/booking/templates/base/event_edit.xsl"
 LANG = "src/modules/booking/setup/phpgw_{}.lang"
 
-# (id, harness, file, description, old, new)
+# (id, harness, file, description, old, new); old None = ADD the file `file` with the content `new`
 MUTATIONS = [
     # --- nobody to send to ---------------------------------------------------------------------------
     ("Mp1", "php", U, "no early return when there is nobody to send to",
@@ -90,7 +99,7 @@ MUTATIONS = [
     ("Mp16", "php", U, "a comment is written when everything failed too",
      "\t\t\tif ($log_success)\n\t\t\t{\n\t\t\t\ttry\n", "\t\t\tif ($log_success || $log_error)\n\t\t\t{\n\t\t\t\ttry\n"),
     ("Mp17", "php", U, "the old audit is back: read_single + add_comment + bo->update of the whole event",
-     "$this->bo->add_single_comment($id, \"SMS: $message\");",
+     CALL,
      "$event = $this->bo->read_single($id); $this->add_comment($event, \"SMS: $message\"); $this->bo->update($event);"),
     ("Mp18", "php", U, "a throw from the comment insert is no longer contained",
      "\t\t\t\tcatch (\\Throwable $e)\n\t\t\t\t{\n\t\t\t\t\t(new Log())->error(array(\n\t\t\t\t\t\t'text'\t => \"SMS sent for event",
@@ -107,8 +116,35 @@ MUTATIONS = [
     ("Mx3", "php", U, "the failed list is not escaped",
      "implode(',', array_map($escape, $log_error))", "implode(',', $log_error)"),
     ("Mx4", "php", U, "only the returned message is escaped, the event-history comment gets the raw numbers",
-     "$this->bo->add_single_comment($id, \"SMS: $message\");",
-     "$this->bo->add_single_comment($id, \"SMS: \" . htmlspecialchars_decode($message));"),
+     CALL,
+     "$this->bo->add_single_comment($id, \"SMS: \" . htmlspecialchars_decode($message), 'comment', $this->current_account_fullname());"),
+    # --- the author of the audit comment (opus final 36166, F2) --------------------------------------------
+    ("Ma1", "php", U, "the button drops the author (back to the default: the account id)",
+     CALL, "$this->bo->add_single_comment($id, \"SMS: $message\");"),
+    ("Ma2", "php", U, "the button passes the account id as the author",
+     CALL, "$this->bo->add_single_comment($id, \"SMS: $message\", 'comment', $this->current_account_id());"),
+    ("Ma3", "php", U, "the button passes the author in the type's place",
+     CALL, "$this->bo->add_single_comment($id, \"SMS: $message\", $this->current_account_fullname(), 'comment');"),
+    ("Ma4", "php", SO, "the so binds a given author as PARAM_INT",
+     "'value'\t=> (string)$author,\n\t\t\t\t\t\t'type'\t=> PDO::PARAM_STR",
+     "'value'\t=> (string)$author,\n\t\t\t\t\t\t'type'\t=> PDO::PARAM_INT"),
+    ("Ma5", "php", SO, "the so ignores a given author (always the account id)",
+     "3\t=> $author === null", "3\t=> true"),
+    ("Ma6", "php", SO, "the so treats an empty name as not given",
+     "3\t=> $author === null", "3\t=> ($author === null || $author === '')"),
+    ("Ma7", "php", SO, "the omitted-author path is changed: the account id is bound as a string",
+     "'value'\t=> $this->userSettings['account_id'],\n\t\t\t\t\t\t'type'\t=> PDO::PARAM_INT",
+     "'value'\t=> $this->userSettings['account_id'],\n\t\t\t\t\t\t'type'\t=> PDO::PARAM_STR"),
+    ("Ma8", "php", SO, "the so quotes a given name through db_addslashes again (O'Brien -> O''Brien)",
+     "'value'\t=> (string)$author,", "'value'\t=> $this->db->db_addslashes((string)$author),"),
+    ("Ma9", "php", BO, "the bo does not forward the author",
+     "$this->so->add_single_comment($event_id, $comment, $type, $author);",
+     "$this->so->add_single_comment($event_id, $comment, $type);"),
+    ("Ma10", "php", ASYNC, "an access-request reminder starts passing an author (no longer the default path)",
+     "i adgangskontrollen.\");", "i adgangskontrollen.\", 'comment', 'Cron');"),
+    ("Ma11", "php", "src/modules/booking/inc/class.zz_new_caller.inc.php",
+     "a new caller of add_single_comment appears in a file nobody listed (it would silently take the default path)",
+     None, "<?php\n$bo->add_single_comment($id, 'comment text');\n"),
     # --- event.js ---------------------------------------------------------------------------------------------
     ("Mj1", "js", E, "no ajax error callback (a 500 / die() body / HTML page is silent again)",
      "\t\t\terror: function ()", "\t\t\terrorX: function ()"),
@@ -179,16 +215,27 @@ def main():
         survived, crashed = [], []
         for mid, kind, rel, desc, old, new in MUTATIONS:
             path = os.path.join(tree, rel)
-            original = open(path, encoding="utf-8").read()
-            n = original.count(old)
-            if n != 1:
-                print(f"{mid}: MUTATION DID NOT APPLY - pattern matched {n} times (need exactly 1): {desc}")
-                return 1
-            open(path, "w", encoding="utf-8").write(original.replace(old, new, 1))
+            if old is None:
+                # the mutation ADDS a file the tree does not have; it must not exist yet
+                if os.path.exists(path):
+                    print(f"{mid}: MUTATION DID NOT APPLY - {rel} already exists: {desc}")
+                    return 1
+                original, mutated = None, new
+            else:
+                original = open(path, encoding="utf-8").read()
+                n = original.count(old)
+                if n != 1:
+                    print(f"{mid}: MUTATION DID NOT APPLY - pattern matched {n} times (need exactly 1): {desc}")
+                    return 1
+                mutated = original.replace(old, new, 1)
+            open(path, "w", encoding="utf-8").write(mutated)
             try:
                 rc, tail, stdout = run_harness(kind, tree)
             finally:
-                open(path, "w", encoding="utf-8").write(original)
+                if original is None:
+                    os.remove(path)
+                else:
+                    open(path, "w", encoding="utf-8").write(original)
             m = re.search(r"FAIL (\d+) of (\d+)", tail)
             if rc == 1 and m and "FAIL " in stdout:
                 print(f"{mid:5} caught   rc={rc}  {kind:3}  {m.group(1):>2} of {m.group(2)} checks fail  {desc}")

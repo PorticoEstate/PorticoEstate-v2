@@ -27,7 +27,14 @@
  *   A6  the comment insert throws after the send went out: the send's result is still returned, and logged.
  *   A9  an event that does not load (read_single gives nothing) no longer crashes after the SMS has gone.
  *   A10 the phone numbers come from a public form and reach the officer's DOM through .html(): escaped.
+ *   A11 the audit comment's AUTHOR is the officer's full name (event_edit.xsl prints it verbatim), the same
+ *       string the old add_comment() stored, never the account id.
  *   A7/A8 pins that are GREEN on master too: sms app disabled gives false; no send_sms gives «Nothing...».
+ *   S   the REAL booking_boevent / booking_soevent add_single_comment on a recording Db (nothing is run):
+ *       an author given is bound as a string, raw; an author omitted (or null) writes exactly the valueset
+ *       it wrote before the parameter existed (the account id, PARAM_INT), through the bo too.
+ *   C   every call of ->add_single_comment( in src/ and its argument count: the async access-request
+ *       reminders (4 calls, 2 arguments, so the default path), the bo forward and this button.
  *
  * Input goes through $_REQUEST: Sanitizer::get_var reads it (a POST-only fixture gives a clean wrong
  * «Nothing...» on every arm).
@@ -107,9 +114,15 @@ namespace {
 
     $root = getenv('HD_ROOT') ?: dirname(__DIR__, 2);
 
+    /** The officer the stub parent reports (current_account_fullname) and the account id it differs from. */
+    const OFFICER = 'Harness Officer';
+    const ACCOUNT_ID = 4711;
+
     // --- the state every stub records into --------------------------------------------------------------
     final class HdState
     {
+        /** the logged-in officer's full name, as current_account_fullname() answers */
+        public static string $officer = OFFICER;
         /** @var list<string> */
         public static array $constructed = [];
         /** @var list<array> */
@@ -143,6 +156,7 @@ namespace {
             self::$participants = self::$gateway = self::$behaviour = [];
             self::$smsCreateThrows = self::$commentThrows = null;
             self::$eventLoads = true;
+            self::$officer = OFFICER;
             Db::forget();
         }
     }
@@ -223,9 +237,9 @@ namespace {
     /** booking_boevent as far as send_sms_participants can see it. */
     final class HdBo
     {
-        public function add_single_comment($event_id, $comment, $type = 'comment')
+        public function add_single_comment($event_id, $comment, $type = 'comment', $author = null)
         {
-            HdState::$boCalls[] = ['add_single_comment', $event_id, $comment, $type];
+            HdState::$boCalls[] = ['add_single_comment', $event_id, $comment, $type, $author];
             if (HdState::$commentThrows) {
                 throw (HdState::$commentThrows)();
             }
@@ -247,6 +261,71 @@ namespace {
             }
             return [];
         }
+    }
+
+    /** The Db as far as add_single_comment can see it: the insert is recorded, never run. */
+    final class HdRecDb
+    {
+        /** @var list<array{0:string,1:array}> [sql, valueset] */
+        public array $inserts = [];
+
+        public function insert($sql, $valueset, $line = '', $file = '')
+        {
+            $this->inserts[] = [$sql, $valueset];
+            return true;
+        }
+
+        /** What Db::db_addslashes does: the PDO-quoted string without its outer quotes (a single quote doubles). */
+        public function db_addslashes($string)
+        {
+            return ($string === '' || $string === null) ? '' : str_replace("'", "''", $string);
+        }
+    }
+
+    /** The parents of the two REAL classes: only the properties add_single_comment reads. */
+    class booking_socommon
+    {
+        protected $db;
+        protected $userSettings;
+    }
+
+    class booking_bocommon_authorized
+    {
+        public $so;
+    }
+
+    /** The number of top-level arguments of the call whose "(" ends just before $from (quotes and nesting respected). */
+    function hd_count_args(string $src, int $from): int
+    {
+        $depth = 0;
+        $args = 0;
+        $seen = false;
+        for ($i = $from, $n = strlen($src); $i < $n; $i++) {
+            $c = $src[$i];
+            if ($c === "'" || $c === '"') {
+                $seen = true;
+                for ($i++; $i < $n && $src[$i] !== $c; $i++) {
+                    if ($src[$i] === '\\') {
+                        $i++;
+                    }
+                }
+                continue;
+            }
+            if ($c === '(' || $c === '[' || $c === '{') {
+                $depth++;
+                $seen = true;
+            } elseif ($c === ')' || $c === ']' || $c === '}') {
+                if ($depth === 0) {
+                    return $seen ? $args + 1 : 0;
+                }
+                $depth--;
+            } elseif ($c === ',' && $depth === 0) {
+                $args++;
+            } elseif (!ctype_space($c)) {
+                $seen = true;
+            }
+        }
+        return -1; // never closed
     }
 
     // --- the real guard, the real Sanitizer, the real class ---------------------------------------------
@@ -287,15 +366,20 @@ namespace {
             public $bo;
             public $apps = [];
             public static function current_account_id() { return 7; }
-            public static function current_account_fullname() { return "Harness Officer"; }
+            public static function current_account_fullname() { return \HdState::$officer; }
             ' . $guardSource . '
         }');
 
-    if (!is_file($root . '/src/helpers/Sanitizer.php') || !is_file($root . '/src/modules/booking/inc/class.uievent.inc.php')) {
-        $fatal('Sanitizer.php or class.uievent.inc.php is missing under ' . $root);
+    foreach (['src/helpers/Sanitizer.php', 'src/modules/booking/inc/class.uievent.inc.php',
+              'src/modules/booking/inc/class.boevent.inc.php', 'src/modules/booking/inc/class.soevent.inc.php'] as $needed) {
+        if (!is_file($root . '/' . $needed)) {
+            $fatal($needed . ' is missing under ' . $root);
+        }
     }
     require_once $root . '/src/helpers/Sanitizer.php';
     require_once $root . '/src/modules/booking/inc/class.uievent.inc.php';
+    require_once $root . '/src/modules/booking/inc/class.soevent.inc.php';
+    require_once $root . '/src/modules/booking/inc/class.boevent.inc.php';
 
     // --- driving it ------------------------------------------------------------------------------------
     const EVENT_ID = 84227;
@@ -319,6 +403,7 @@ namespace {
         HdState::$smsCreateThrows = $o['smsCreateThrows'] ?? null;
         HdState::$commentThrows = $o['commentThrows'] ?? null;
         HdState::$eventLoads = $o['eventLoads'] ?? true;
+        HdState::$officer = $o['officer'] ?? OFFICER;
 
         $_GET = $_POST = [];
         $_REQUEST = $o['request'] ?? ['id' => (string)EVENT_ID, 'send_sms' => '1', 'sms_content' => 'Hei'];
@@ -340,7 +425,7 @@ namespace {
         }
     };
     $err = static fn(string $key): array => ['status' => 'error', 'message' => "[lang:{$key}]"];
-    $comment = static fn(string $text): array => [['add_single_comment', EVENT_ID, "SMS: {$text}", 'comment']];
+    $comment = static fn(string $text): array => [['add_single_comment', EVENT_ID, "SMS: {$text}", 'comment', OFFICER]];
     $didNotThrow = static function (string $name, ?\Throwable $t) use (&$failures): void {
         if ($t !== null) {
             $failures[] = $name . ' — threw ' . get_class($t) . ': ' . $t->getMessage();
@@ -429,7 +514,7 @@ namespace {
             $msg = 'SMS sendt til: ' . P2 . '<br/>SMS feilet for: ' . P1;
             $same("A3 after [{$what}] the next recipient is sent and the failed one listed", $r, ['status' => 'ok', 'message' => $msg]);
             $same("A3 after [{$what}] the next recipient's send was really committed", HdState::$committed, [P2]);
-            $same("A3 after [{$what}] one comment", HdState::$boCalls, [['add_single_comment', EVENT_ID, "SMS: {$msg}", 'comment']]);
+            $same("A3 after [{$what}] one comment", HdState::$boCalls, [['add_single_comment', EVENT_ID, "SMS: {$msg}", 'comment', OFFICER]]);
         }
     });
 
@@ -504,6 +589,133 @@ namespace {
         $same('A10 all failed, markup: escaped', $r, ['status' => 'error', 'message' => 'SMS feilet for: &lt;img src=x onerror=alert(1)&gt;']);
     });
 
+    // ===== A11: the audit comment's author is the officer's NAME ========================================
+    // add_single_comment() without an author writes the account id; event_edit.xsl prints `author` verbatim,
+    // so the history would read «7» where it always read the officer's name.
+    $arm('A11', function () use ($run, $same, $check, $didNotThrow) {
+        foreach ([OFFICER, "Åse O'Brien-Lund"] as $name) {
+            [$r, $t] = $run(['participants' => [P1], 'officer' => $name]);
+            $didNotThrow("A11 [{$name}]", $t);
+            $call = HdState::$boCalls[0] ?? [];
+            $same("A11 [{$name}] one add_single_comment call, with a type and an author", count($call), 5);
+            $same("A11 [{$name}] the author handed over is the officer's full name", $call[4] ?? null, $name);
+            $check("A11 [{$name}] ... not the account id (7), as a number or as digits",
+                ($call[4] ?? null) !== 7 && ($call[4] ?? null) !== '7' && !ctype_digit((string)($call[4] ?? '')), var_export($call[4] ?? null, true));
+            $same("A11 [{$name}] the type is still the default 'comment'", $call[3] ?? null, 'comment');
+
+            // the same string the old audit path stored: uievent::add_comment() puts current_account_fullname() in 'author'
+            $ui = (new \ReflectionClass('booking_uievent'))->newInstanceWithoutConstructor();
+            $event = ['comments' => []];
+            (new \ReflectionMethod($ui, 'add_comment'))->invokeArgs($ui, [&$event, 'x']);
+            $same("A11 [{$name}] ... the very author the old add_comment() stored", $call[4] ?? null, $event['comments'][0]['author'] ?? null);
+        }
+    });
+
+    // ===== S: the REAL add_single_comment (bo -> so) on a recording Db ==================================
+    $arm('S', function () use ($same, $check) {
+        $newSo = static function (): array {
+            $so = (new \ReflectionClass('booking_soevent'))->newInstanceWithoutConstructor();
+            $db = new HdRecDb();
+            (new \ReflectionProperty('booking_socommon', 'db'))->setValue($so, $db);
+            (new \ReflectionProperty('booking_socommon', 'userSettings'))->setValue($so, ['account_id' => ACCOUNT_ID]);
+            return [$so, $db];
+        };
+        $newBo = static function () use ($newSo): array {
+            [$so, $db] = $newSo();
+            $bo = (new \ReflectionClass('booking_boevent'))->newInstanceWithoutConstructor();
+            $bo->so = $so;
+            return [$bo, $db];
+        };
+        $sql = 'INSERT INTO bb_event_comment (event_id, time, author, comment, type) VALUES (?, ?, ?, ?, ?)';
+        // The single valueset as it was before the author parameter existed: the account id, PARAM_INT. The
+        // time is the clock, so it is shape-checked in $took and masked to «T» here.
+        $before = static fn(string $comment, string $type, ?array $author = null): array => [[
+            1 => ['value' => EVENT_ID, 'type' => PDO::PARAM_INT],
+            2 => ['value' => 'T', 'type' => PDO::PARAM_STR],
+            3 => $author ?? ['value' => ACCOUNT_ID, 'type' => PDO::PARAM_INT],
+            4 => ['value' => $comment, 'type' => PDO::PARAM_STR],
+            5 => ['value' => $type, 'type' => PDO::PARAM_STR],
+        ]];
+        $took = static function (string $what, HdRecDb $db) use ($same, $check, $sql): array {
+            $same("S [{$what}] exactly one insert", count($db->inserts), 1);
+            [$seenSql, $valueset] = $db->inserts[0] ?? ['', [[]]];
+            $same("S [{$what}] the SQL is unchanged", $seenSql, $sql);
+            $time = (string)($valueset[0][2]['value'] ?? '');
+            $check("S [{$what}] the time is a UTC «Y-m-d H:i»", preg_match('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/', $time) === 1, $time);
+            if (isset($valueset[0][2])) {
+                $valueset[0][2]['value'] = 'T';
+            }
+            return $valueset;
+        };
+        $str = static fn(string $value): array => ['value' => $value, 'type' => PDO::PARAM_STR];
+
+        // the author omitted: byte for byte what the async callers have always written
+        [$so, $db] = $newSo();
+        $so->add_single_comment(EVENT_ID, 'c');
+        $same('S so, no author: the account id as PARAM_INT, nothing else changed', $took('so, no author', $db), $before('c', 'comment'));
+        [$so, $db] = $newSo();
+        $so->add_single_comment(EVENT_ID, 'c', 'system');
+        $same('S so, a type and no author: the same, with the type', $took('so, type', $db), $before('c', 'system'));
+        [$so, $db] = $newSo();
+        $so->add_single_comment(EVENT_ID, 'c', 'comment', null);
+        $same('S so, author null: the same as omitted', $took('so, null', $db), $before('c', 'comment'));
+
+        // the author given: bound as a string, the rest unchanged
+        [$so, $db] = $newSo();
+        $so->add_single_comment(EVENT_ID, 'c', 'comment', OFFICER);
+        $same('S so, an author: PARAM_STR with the name, nothing else changed', $took('so, author', $db), $before('c', 'comment', $str(OFFICER)));
+        [$so, $db] = $newSo();
+        $so->add_single_comment(EVENT_ID, 'c', 'system', "Åse O'Brien-Lund");
+        $same("S so, a name with an apostrophe is bound raw (a bound value is not quoted again)", $took('so, apostrophe', $db), $before('c', 'system', $str("Åse O'Brien-Lund")));
+        [$so, $db] = $newSo();
+        $so->add_single_comment(EVENT_ID, 'c', 'comment', '');
+        $same('S so, an empty name IS given: PARAM_STR «», not the account id', $took('so, empty', $db), $before('c', 'comment', $str('')));
+
+        // through the real bo
+        [$bo, $db] = $newBo();
+        $bo->add_single_comment(EVENT_ID, 'c');
+        $same('S bo, no author: reaches the so as no author (the account id)', $took('bo, no author', $db), $before('c', 'comment'));
+        [$bo, $db] = $newBo();
+        $bo->add_single_comment(EVENT_ID, 'c', 'comment', OFFICER);
+        $same('S bo, an author: reaches the so', $took('bo, author', $db), $before('c', 'comment', $str(OFFICER)));
+
+        // control: the recording Db is reached by the call (a call that stops before the insert records nothing)
+        [$so, $db] = $newSo();
+        $check('S control: nothing is recorded before a call', $db->inserts === []);
+    });
+
+    // ===== C: who calls ->add_single_comment( and with how many arguments ===============================
+    $arm('C', function () use ($root, $same, $check) {
+        $found = [];
+        $files = new \RecursiveIteratorIterator(new \RecursiveCallbackFilterIterator(
+            new \RecursiveDirectoryIterator($root . '/src', \FilesystemIterator::SKIP_DOTS),
+            static fn(\SplFileInfo $f) => !in_array($f->getFilename(), ['node_modules', 'vendor', '.next'], true)
+        ));
+        foreach ($files as $file) {
+            if ($file->getExtension() !== 'php') {
+                continue;
+            }
+            $src = (string)file_get_contents($file->getPathname());
+            if (!str_contains($src, 'add_single_comment')) {
+                continue;
+            }
+            preg_match_all('/->add_single_comment\(/', $src, $hits, PREG_OFFSET_CAPTURE);
+            foreach ($hits[0] as [$hit, $at]) {
+                $found[substr($file->getPathname(), strlen($root) + 1)][] = hd_count_args($src, $at + strlen($hit));
+            }
+        }
+        ksort($found);
+        // control: the so file holds the DEFINITION (the name is in it) and the scan walked it, but a definition is not a call
+        $soPath = 'src/modules/booking/inc/class.soevent.inc.php';
+        $check('C control: the so file defines add_single_comment and is not counted as a caller',
+            str_contains((string)file_get_contents($root . '/' . $soPath), 'function add_single_comment(') && !isset($found[$soPath]));
+        $same('C the callers of add_single_comment: the 4 access-request reminders pass 2 arguments (the default author), the bo forwards 4, this button passes 4', $found, [
+            'src/modules/booking/inc/class.async_task_send_access_request.inc.php' => [2, 2, 2, 2],
+            'src/modules/booking/inc/class.boevent.inc.php' => [4],
+            'src/modules/booking/inc/class.uievent.inc.php' => [4],
+        ]);
+    });
+
     // ===== controls: the instrument can fail ============================================================
     $arm('controls', function () use ($run, $same, $check) {
         // the stub models a leaked transaction: while open, an ok-looking send is not committed
@@ -528,6 +740,12 @@ namespace {
         $check('control: the same flag in $_REQUEST IS seen', Sanitizer::get_var('send_sms', 'bool') === true);
         // the guard text was really lifted from the tree's uicommon
         $check('control: the parent carries the lifted sms_is_configured()', method_exists('booking_uicommon', 'sms_is_configured'));
+        // the argument counter of arm C: nesting, quotes holding commas and parens, a call spread over lines
+        $src = "->f(\$a, g(1, 2), \"x,y)\", 'p(q', [1, 2]); ->h(); ->k(\n  \$a,\n  \$b\n);";
+        $count = static fn(string $call): int => hd_count_args($src, strpos($src, $call) + strlen($call));
+        $same('control: argument counter, nested call + quoted commas and parens + array', $count('->f('), 5);
+        $same('control: argument counter, no arguments', $count('->h('), 0);
+        $same('control: argument counter, a call over several lines', $count('->k('), 2);
         // a call that must succeed does succeed, so the arms above are not all red or all green by construction
         [$r, $t] = $run(['participants' => [P1]]);
         $same('control: the plain happy path is green', [$t, $r['status'] ?? null], [null, 'ok']);

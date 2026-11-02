@@ -267,7 +267,11 @@
 			}
 		}
 
-		public function add_single_comment( $event_id, $comment, $type = 'comment'  )
+		/**
+		 * @param string|null $author the name stored as the comment's author (event_edit.xsl prints it verbatim).
+		 *   Omitted, the column gets the logged-in account's id, as it always did for the async callers.
+		 */
+		public function add_single_comment( $event_id, $comment, $type = 'comment', $author = null )
 		{
 			$sql = "INSERT INTO bb_event_comment (event_id, time, author, comment, type) VALUES (?, ?, ?, ?, ?)";
 			$valueset=array();
@@ -287,11 +291,17 @@
 					'value'	=> gmdate('Y-m-d H:i'),
 					'type'	=> PDO::PARAM_STR
 				),
-				3	=> array
-				(
-					'value'	=> $this->userSettings['account_id'],
-					'type'	=> PDO::PARAM_INT
-				),
+				3	=> $author === null
+					? array
+					(
+						'value'	=> $this->userSettings['account_id'],
+						'type'	=> PDO::PARAM_INT
+					)
+					: array
+					(
+						'value'	=> (string)$author,
+						'type'	=> PDO::PARAM_STR
+					),
 				4	=> array
 				(
 					'value'	=> $this->db->db_addslashes($comment),

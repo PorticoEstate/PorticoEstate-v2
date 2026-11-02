@@ -1077,11 +1077,13 @@ class booking_uievent extends booking_uicommon
 			// Only a send that went out is worth a comment on the event. Adding it is a single INSERT: the old
 			// read_single + bo->update of the whole event threw on an event that did not load (no id to
 			// authorize the write against) after the SMS had already gone, and the officer saw nothing.
+			// The author is the officer's name, as add_comment() always stored: event_edit.xsl prints it verbatim,
+			// and add_single_comment() without one writes the account id.
 			if ($log_success)
 			{
 				try
 				{
-					$this->bo->add_single_comment($id, "SMS: $message");
+					$this->bo->add_single_comment($id, "SMS: $message", 'comment', $this->current_account_fullname());
 				}
 				catch (\Throwable $e)
 				{

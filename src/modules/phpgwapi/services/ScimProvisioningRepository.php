@@ -470,7 +470,7 @@ final class ScimProvisioningRepository implements ScimProvisioningStore
 	{
 		$statement = $this->db->prepare(
 			'INSERT INTO phpgw_accounts_data (account_id, account_data)'
-			. " VALUES (:account_id, jsonb_build_object('scim_email', :email))"
+			. " VALUES (:account_id, jsonb_build_object('scim_email', CAST(:email AS text)))"
 			. ' ON CONFLICT (account_id) DO UPDATE SET account_data ='
 			. " COALESCE(phpgw_accounts_data.account_data, '{}'::jsonb)"
 			. " || jsonb_build_object('scim_email', EXCLUDED.account_data->>'scim_email')"

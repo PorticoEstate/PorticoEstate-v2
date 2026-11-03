@@ -304,7 +304,9 @@
 					),
 				4	=> array
 				(
-					'value'	=> $this->db->db_addslashes($comment),
+					// bound, so raw: db_addslashes doubled an apostrophe on top of the binding and
+					// the history showed «It''s»
+					'value'	=> $comment,
 					'type'	=> PDO::PARAM_STR
 				),
 				5	=> array

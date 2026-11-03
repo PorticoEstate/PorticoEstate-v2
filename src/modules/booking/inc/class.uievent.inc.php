@@ -5,6 +5,7 @@ use App\modules\phpgwapi\services\Settings;
 use App\modules\phpgwapi\services\Log;
 use App\modules\phpgwapi\services\Cache;
 use App\Database\Db;
+use App\modules\booking\helpers\CommentParts;
 
 phpgw::import_class('booking.uicommon');
 
@@ -1727,6 +1728,10 @@ class booking_uievent extends booking_uicommon
 		foreach ($comments as  &$comment)
 		{
 			$comment['comment'] = str_replace($external_site_address, $internal_site_address, $comment['comment']);
+			// The history prints the parts, never the stored string: it is HTML that people outside the
+			// building can write into, and event_edit.xsl has no way to print it that is safe.
+			$comment['parts'] = CommentParts::parse($comment['comment']);
+			unset($comment['comment']);
 		}
 		/**
 		 * End hack

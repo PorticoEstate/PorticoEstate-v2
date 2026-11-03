@@ -8,6 +8,13 @@ import {useResourceArticles, useUpdatePartialApplication} from '@/service/hooks/
 import {ResourceUsesTimeSlots} from '@/components/building-calendar/util/calender-helpers';
 import PriceChoiceField from '@/components/price-choice/price-choice-field';
 import {formatCurrency} from '@/utils/cost-utils';
+import {
+    formatMinutes,
+    formatTotalWithHourlyRate,
+    hourlyRateOfOrderLine,
+    isAmountOnlyLabel,
+    isMinuteUnit
+} from '@/utils/article-pricing';
 import styles from './articles-section.module.scss';
 
 interface ArticlesSectionProps {
@@ -22,6 +29,9 @@ interface ArticleLine {
     total: number;
     currency: string;
     isAddOn: boolean;
+    isMinuteUnit: boolean;
+    /** Hourly price incl. VAT of a minute-priced line, shown instead of its per-minute price */
+    hourlyRate: number | null;
     priceLabel: string | null;
     /** Set when the applicant chooses this room's price here */
     priceChoice: IArticle | null;
@@ -94,7 +104,10 @@ const getArticleLines = (application: IApplication, articles: IArticle[]): Artic
                 total: Number(line.amount) + Number(line.tax),
                 currency: line.currency,
                 isAddOn: Number(line.article_cat_id) === 2,
-                priceLabel: line.price_label ?? null,
+                isMinuteUnit: isMinuteUnit(line.unit),
+                hourlyRate: isMinuteUnit(line.unit) ? hourlyRateOfOrderLine(line) : null,
+                // A bare amount as label is the per-minute price on a minute line: never shown
+                priceLabel: isMinuteUnit(line.unit) && isAmountOnlyLabel(line.price_label) ? null : line.price_label ?? null,
                 priceChoice: choosable && article ? article : null,
                 pricePending,
                 index,
@@ -172,11 +185,11 @@ const ArticlesSection: FC<ArticlesSectionProps> = ({applications, showPriceChoic
                                                 </Paragraph>
                                             )}
                                         </Table.Cell>
-                                        <Table.Cell>{line.quantity}</Table.Cell>
+                                        <Table.Cell>{line.isMinuteUnit ? formatMinutes(line.quantity, t) : line.quantity}</Table.Cell>
                                         <Table.Cell>
                                             {line.pricePending
                                                 ? t('bookingfrontend.price_pending')
-                                                : line.total > 0 ? formatCurrency(line.total, line.currency) : '-'}
+                                                : line.total > 0 ? formatTotalWithHourlyRate(line.total, line.hourlyRate, line.currency, t) : '-'}
                                         </Table.Cell>
                                     </Table.Row>
                                     {line.priceChoice && (
@@ -188,6 +201,8 @@ const ArticlesSection: FC<ArticlesSectionProps> = ({applications, showPriceChoic
                                                     value={applicationLines(application)[line.index].article_price_id ?? null}
                                                     onChange={(priceId) => choosePrice(application, line.index, priceId)}
                                                     quantity={line.quantity}
+                                                    unit={line.priceChoice.unit}
+                                                    taxPercent={line.priceChoice.tax_percent}
                                                     disabled={updateMutation.isPending}
                                                     error={showPriceChoiceErrors && line.pricePending
                                                         ? t('bookingfrontend.price_choice_required')

@@ -1192,3 +1192,5 @@ catering_order_cutoff_passed	bookingfrontend	nn	Fristen for å bestille eller en
 catering_cancellation_deadline_passed	bookingfrontend	nn	Fristen for å endre eller avbestille bevertninga er ute.
 catering_serving_time_passed	bookingfrontend	nn	Serveringstidspunktet er passert.
 catering_application_closed	bookingfrontend	nn	Søknaden er avslutta, så bevertninga kan ikkje endrast.
+kr_per_hour	bookingfrontend	nn	kr/time
+minutes_short	bookingfrontend	nn	min

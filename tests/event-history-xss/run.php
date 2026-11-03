@@ -40,12 +40,24 @@
  *   A   the apostrophe (commit b): booking_soevent::add_single_comment() binds the comment exactly as given. The
  *       real Db::insert() and Db::db_addslashes() run against a recording PDO whose quote() doubles an apostrophe
  *       like PostgreSQL's does, so «It's» is bound as «It's» and read back by the real Db::f() as «It's», not «It''s».
+ *   F   U+FFFE and U+FFFF (the follow-up, task 36276): the page loads the XML that toXML() gives with the framework's
+ *       own steps (class.xslttemplates.inc.php:436-438: strip the control characters, then DOMDocument::loadXML; a
+ *       failed load is the «Systemfeil» page). A reference to either character, stored at 0 to 6 levels of entity
+ *       encoding, as decimal or hexadecimal with leading zeros, in text, in a link text and in an href, split by a
+ *       comment or an element, or around another one that would rebuild it if it were removed, must not fail that
+ *       load; the characters next to them (U+FFFD, U+1FFFE, ...) must stay. Task 36448 adds the spellings only strtol
+ *       reads («&#x0xFFFE;»: a «0x» after the «x»), a sweep of 6,240 spellings sorted by the decoder itself, and the
+ *       two-decode shape («&amp;#xFFFE;», which only toXML's single decode keeps from being the character). Task
+ *       36487 adds the characters themselves when the HTML step makes them after the strip has run (a «<meta
+ *       charset="utf-7">» and «+//4-» or «+//8-» in an href, stored at 0 to 6 levels, read through the real
+ *       Db::stripslashes) and, for the v of a part, which libxml2 2.9 never lets them reach, parts built by hand.
  *   K   (HD_DB_HEADER set) the corpus: every stored bb_event_comment row of the local database through the real
  *       path; counts only, no content is printed. Visible text and links are unchanged against the old page's
  *       view of the same row (script/style text excluded), and nothing is LIVE afterwards.
  *
  * Red first: run it against a tree that does not have the fix, e.g.
  *   git archive 1116d6db2 src | tar -x -C /tmp/hd-base && HD_ROOT=/tmp/hd-base php tests/event-history-xss/run.php
+ * (the F arm against d806848ff, the tree before the follow-up).
  *
  * Environment (all optional): HD_ROOT = tree holding src/ (default: this repo); mutate.py points it at a copy
  * carrying one deliberate defect and expects this harness to go red. HD_DB_HEADER = path to config/header.inc.php
@@ -388,12 +400,32 @@ namespace {
     };
 
     /**
-     * Rows (stored strings) through the real feeder, the verbatim edit() block, the real toXML and a sheet.
+     * How the page loads the XML that toXML() gives (class.xslttemplates.inc.php:436-438): the same strip, then
+     * DOMDocument::loadXML. When the load fails the document is empty, the stylesheet gives nothing and the page shows
+     * «Systemfeil», so a failed load throws here. (Not SimpleXMLElement: it also refuses what the strip removes.)
+     */
+    $load = static function (string $xml): \DOMDocument {
+        $doc = new \DOMDocument();
+        $stripped = mb_ereg_replace('[\x00-\x09\x0B-\x0C\x0E-\x1F\x7F]', '', $xml); // remove unsupported characters but keep line breaks
+        $prev = libxml_use_internal_errors(true);
+        try {
+            if (!is_string($stripped) || !$doc->loadXML($stripped)) {
+                throw new \RuntimeException('the page would show «Systemfeil»: loadXML failed: ' . trim((string)(libxml_get_errors()[0]->message ?? 'mb_ereg_replace failed')));
+            }
+        } finally {
+            libxml_clear_errors();
+            libxml_use_internal_errors($prev);
+        }
+        return $doc;
+    };
+
+    /**
+     * Rows (stored strings) through the real feeder, the verbatim edit() block, the real toXML, the page's load and a sheet.
      *
      * @param list<array{comment:string,author?:string}> $rows
      * @return array{pre:array,post:array,xml:string,html:string,canon:list<string>,spans:list<string>}
      */
-    $path = static function (array $rows, ?\XSLTProcessor $processor = null, array $config = [], bool $runBlockToo = true) use ($runBlock, $realSheet, $dom, $canon, $collapse): array {
+    $path = static function (array $rows, ?\XSLTProcessor $processor = null, array $config = [], bool $runBlockToo = true) use ($runBlock, $realSheet, $dom, $canon, $collapse, $load): array {
         $db = new HdRowDb();
         (new \ReflectionProperty(\App\Database\Db::class, 'resultSet'))->setValue($db, true);
         $db->rows = array_map(static fn(array $r) => [
@@ -404,16 +436,7 @@ namespace {
         $pre = $so->get_ordered_comments(EVENT_ID);
         $post = $runBlockToo ? $runBlock->call(new HdUi(), $pre, $config) : $pre;
         $xml = \phpgwapi_xmlhelper::toXML(['data' => ['comments' => $post]], 'PHPGW');
-        $prev = libxml_use_internal_errors(true);
-        try {
-            $tree = new \SimpleXMLElement($xml);
-        } catch (\Exception $e) {
-            $why = trim((string)(libxml_get_errors()[0]->message ?? $e->getMessage()));
-            throw new \RuntimeException('toXML gave XML that does not parse (the whole page would fail): ' . $why);
-        } finally {
-            libxml_clear_errors();
-            libxml_use_internal_errors($prev);
-        }
+        $tree = $load($xml);
         $html = (string)($processor ?? $realSheet)->transformToXml($tree);
         $canons = [];
         $spans = [];
@@ -722,6 +745,265 @@ namespace {
             $check("X {$name}: finishes in under 30 s", $took < 30, sprintf('%.1f s', $took));
             $check("X {$name}: inert", $live($r['html']) === null, (string)$live($r['html']));
             $check("X {$name}: closed vocabulary", $closed($r['html']) === null, (string)$closed($r['html']));
+        }
+        // 60,000 references, each inside the next: a cleaning that removes them and goes on until none is left needs one
+        // pass per level, about 14 s here; one pass over the text takes milliseconds
+        $four = '&amp;amp;amp;amp;'; // the «&» of a reference at 4 levels, the one that reaches the helper as a literal «&#x»
+        $t = microtime(true);
+        $r = $one(str_repeat($four . '#x', 60000) . $four . '#xFFFE;' . str_repeat('FFFE;', 60000));
+        $took = microtime(true) - $t;
+        $check('X 60,000 nested references (960 KB): finishes in under 5 s', $took < 5, sprintf('%.1f s', $took));
+        $check('X 60,000 nested references: inert', $live($r['html']) === null, (string)$live($r['html']));
+        $check('X 60,000 nested references: closed vocabulary', $closed($r['html']) === null, (string)$closed($r['html']));
+    });
+
+    // =================================================================================================
+    // F: U+FFFE and U+FFFF (the page's own load of the XML must not fail)
+    // =================================================================================================
+    $arm('F U+FFFE and U+FFFF', function () use ($one, $live, $closed, $check, $same, $E, $load) {
+        // «&» and k times «amp;» before the rest of a reference: the same reference at k levels of encoding. The
+        // markup around it is NOT encoded, so each level reaches the helper in another shape: a character the
+        // first strip removes (k 0-2), text the HTML step drops (3), text the HTML step leaves and toXML decodes
+        // (4: without the fix the page fails to load here), text that stays text (5 and more).
+        $amp = static fn(int $k): string => '&' . str_repeat('amp;', $k);
+        $refs = ['#xFFFE;', '#xFFFF;', '#xfffe;', '#XFFFF;', '#65534;', '#65535;', '#x00000FFFE;', '#0000065535;', '#x0fffF;'];
+        // [shape => [stored string around a reference, what is shown when the reference shows as X]]
+        $shapes = [
+            'text' => [static fn(string $e): string => 'a' . $e . 'b', static fn(string $x): string => 'a' . $x . 'b'],
+            'link text' => [static fn(string $e): string => '<a href="https://x.test/">p' . $e . 'q</a>', static fn(string $x): string => '⟦p' . $x . 'q→https://x.test/⟧'],
+            // the stylesheet's HTML output writes a non-ASCII character of an href percent-encoded
+            'href' => [static fn(string $e): string => '<a href="https://x.test/?q=' . $e . '">t</a>', static fn(string $x): string => '⟦t→https://x.test/?q=' . str_replace("\u{FFFD}", '%EF%BF%BD', $x) . '⟧'],
+        ];
+        $page = function (string $name, string $stored) use ($one, $live, $closed, $check): ?array {
+            try {
+                $r = $one($stored);
+            } catch (\Throwable $e) {
+                $check("{$name}: the page loads", false, $e->getMessage());
+                return null;
+            }
+            $check("{$name}: the page loads", true);
+            $check("{$name}: inert", $live($r['html']) === null, (string)$live($r['html']));
+            $check("{$name}: closed vocabulary", $closed($r['html']) === null, (string)$closed($r['html']));
+            return $r;
+        };
+        foreach ($shapes as $shape => [$build, $want]) {
+            foreach ($refs as $ref) {
+                foreach (range(0, 6) as $k) {
+                    $name = "F {$shape} «{$ref}» @{$k}x";
+                    $r = $page($name, $build($amp($k) . $ref));
+                    if ($r !== null) {
+                        // up to level 3 the strip or the HTML step has already dropped the reference; at 4 the helper replaces it by
+                        // U+FFFD; from level 5 it is shown as typed, one level less encoded than stored
+                        $same("{$name}: what is shown", $r['canon'][0] ?? null, $want($k <= 3 ? '' : ($k === 4 ? "\u{FFFD}" : $amp($k - 5) . $ref)));
+                    }
+                }
+            }
+        }
+
+        // a reference whose pieces are only joined by the helper's own steps: text on both sides of a comment, a
+        // tag, a script that is dropped (the pieces are one text only after the helper joins them: whether it does is
+        // its business, so what is shown is not pinned, only that the page loads and holds neither character); a tab
+        // inside an href; and a reference that another one would rebuild if it were removed instead of replaced
+        $joined = [
+            'split by a comment' => [static fn(string $a): string => 'a' . $a . '#xFF<!---->FE;b', null],
+            'split by a tag' => [static fn(string $a): string => 'a' . $a . '#xFF<b>FE;</b>b', null],
+            'split by a dropped script' => [static fn(string $a): string => 'a' . $a . '#xFF<script>1</script>FE;b', null],
+            'split in a link text' => [static fn(string $a): string => '<a href="https://x.test/">' . $a . '#xFF<b>FE;</b></a>', null],
+            'split by a tab in an href' => [static fn(string $a): string => '<a href="https://x.test/?q=' . $a . '#xFF&#9;FE;">t</a>', static fn(): string => '⟦t→https://x.test/?q=%EF%BF%BD⟧'],
+            // with the inner reference gone the pieces around it must not be a reference: «&#x» + U+FFFD + «FFFE;»
+            'rebuilt by the replacement of another (text)' => [static fn(string $a): string => 'a' . $a . '#x' . $a . '#xFFFE;FFFE;b', static fn(): string => "a&#x\u{FFFD}FFFE;b"],
+            'rebuilt by the replacement of another (href)' => [static fn(string $a): string => '<a href="https://x.test/?q=' . $a . '#6' . $a . '#65534;5534;">t</a>', static fn(): string => '⟦t→https://x.test/?q=&#6%EF%BF%BD5534;⟧'],
+        ];
+        foreach ($joined as $shape => [$build, $want]) {
+            foreach (range(0, 6) as $k) {
+                $r = $page("F {$shape} @{$k}x", $build($amp($k)));
+                if ($r === null) {
+                    continue;
+                }
+                $check("F {$shape} @{$k}x: the output holds neither U+FFFE nor U+FFFF", preg_match('/\xEF\xBF[\xBE\xBF]/', $r['html']) !== 1, 'it is in the page');
+                if ($want !== null && $k === 4) {
+                    // at the other levels what the HTML step makes of a half reference is its own business; the page only has to load
+                    $same("F {$shape} @4x: what is shown", $r['canon'][0] ?? null, $want());
+                }
+            }
+        }
+
+        // the characters themselves, not a reference to them: the strip before the HTML step takes them out
+        foreach (["\xEF\xBF\xBE" => 'U+FFFE', "\xEF\xBF\xBF" => 'U+FFFF'] as $bytes => $label) {
+            foreach ([
+                'text' => ['a' . $bytes . 'b', 'ab'],
+                'link text' => ['<a href="https://x.test/">p' . $bytes . 'q</a>', '⟦pq→https://x.test/⟧'],
+                'href' => ['<a href="https://x.test/?q=' . $bytes . '">t</a>', '⟦t→https://x.test/?q=⟧'],
+                'text beside a reference' => ['a' . $bytes . '&#xFFFE;b', 'ab'],
+            ] as $shape => [$stored, $want]) {
+                $r = $page("F the character {$label} in {$shape}", $stored);
+                $same("F the character {$label} in {$shape}: what is shown", $r['canon'][0] ?? null, $want);
+            }
+        }
+
+        // the characters made INSIDE the HTML step (task 36487): the strip above runs before it, and a «<meta charset="utf-7">»
+        // makes loadHTML read the rest of the comment as UTF-7, where «+//4-» is U+FFFE and «+//8-» is U+FFFF. libxml2 2.9
+        // keeps the character inside an attribute value (an href) and drops it from text and link text, so without the fix
+        // only the href rows fail the page's load; the text rows are there for a libxml that keeps it in text too (and cannot
+        // fail on this one: the parts built by hand below are what reaches a v). The meta works only while the tag reaches the
+        // helper unencoded: Db::stripslashes decodes the stored value twice and the helper once more, so it works stored at 0
+        // to 3 levels and from level 4 on the tag is text. At 0 to 3 the href must hold U+FFFD where the character was: that
+        // pins that a character was there (a libxml that dropped it would leave none) and that it was replaced, neither kept
+        // nor removed.
+        $metas = [
+            'charset' => '<meta charset="utf-7">',
+            'unquoted' => '<meta charset=utf-7>',
+            'http-equiv' => '<meta http-equiv="Content-Type" content="text/html; charset=utf-7">',
+            'alias' => '<meta charset="UNICODE-1-1-UTF-7">',
+        ];
+        $utf7 = ['+//4-' => 'U+FFFE', '+//8-' => 'U+FFFF'];
+        foreach ($metas as $metaName => $meta) {
+            foreach ($utf7 as $coded => $label) {
+                foreach (range(0, 6) as $k) {
+                    $name = "F utf-7 {$metaName} {$label} in an href @{$k}x";
+                    $r = $page($name, $E($meta . '<a href="https://e.test/' . $coded . '">x</a>', $k));
+                    if ($r === null) {
+                        continue;
+                    }
+                    $check("{$name}: the output holds neither U+FFFE nor U+FFFF", preg_match('/\xEF\xBF[\xBE\xBF]/', $r['html']) !== 1, 'it is in the page');
+                    if ($k <= 3) {
+                        $same("{$name}: the href holds U+FFFD where the character was", $r['post'][0]['parts'][0]['href'] ?? null, "https://e.test/\u{FFFD}");
+                    }
+                }
+            }
+        }
+        foreach ($utf7 as $coded => $label) {
+            foreach ([
+                'text' => 'a' . $coded . 'b',
+                'link text' => '<a href="https://e.test/">p' . $coded . 'q</a>',
+            ] as $shape => $body) {
+                foreach (range(0, 6) as $k) {
+                    $name = "F utf-7 charset {$label} in {$shape} @{$k}x";
+                    $r = $page($name, $E($metas['charset'] . $body, $k));
+                    if ($r !== null) {
+                        $check("{$name}: the output holds neither U+FFFE nor U+FFFF", preg_match('/\xEF\xBF[\xBE\xBF]/', $r['html']) !== 1, 'it is in the page');
+                    }
+                }
+            }
+        }
+
+        // the same characters in a v and in an href without libxml: libxml2 2.9 never lets one reach a v (and no newer libxml2
+        // was tried), so parts are built by hand and given to the two private steps that clean them. What the page depends on
+        // is that cleaning, not the parser's habit of dropping the character from text. The controls: the same parts uncleaned,
+        // a v alone and an href alone, make the page's load fail, or a cleaned part that loads would prove nothing.
+        $step = static fn(string $name): \ReflectionMethod => new \ReflectionMethod(HELPER, $name);
+        $page36487 = static function (array $parts) use ($load): ?string {
+            $xml = \phpgwapi_xmlhelper::toXML(['data' => ['comments' => [['time' => 't', 'author' => 'A', 'type' => 'comment', 'parts' => $parts]]]], 'PHPGW');
+            try {
+                $load($xml);
+                return null;
+            } catch (\RuntimeException $e) {
+                return $e->getMessage();
+            }
+        };
+        foreach (["\u{FFFE}" => 'U+FFFE', "\u{FFFF}" => 'U+FFFF'] as $char => $label) {
+            $dirtyV = [['k' => 't', 'v' => "a{$char}b"], ['k' => 'a', 'href' => 'https://e.test/', 'v' => "p{$char}q"]];
+            $dirtyHref = [['k' => 'a', 'href' => "https://e.test/?q={$char}z", 'v' => 'p']];
+            $check("F synthetic: control: a v that holds a raw {$label} fails the page's load", $page36487($dirtyV) !== null, 'it loaded');
+            $check("F synthetic: control: an href that holds a raw {$label} fails the page's load", $page36487($dirtyHref) !== null, 'it loaded');
+
+            $cleanV = $step('withoutNonCharacterReferences')->invoke(null, $dirtyV);
+            $same("F synthetic: a raw {$label} in a text v is replaced by U+FFFD", $cleanV[0]['v'] ?? null, "a\u{FFFD}b");
+            $same("F synthetic: a raw {$label} in a link text v is replaced by U+FFFD", $cleanV[1]['v'] ?? null, "p\u{FFFD}q");
+            $failed = $page36487($cleanV);
+            $check("F synthetic: the page loads with the cleaned v of a raw {$label}", $failed === null, (string)$failed);
+
+            $href = $step('httpHref')->invoke(null, $dirtyHref[0]['href']);
+            $same("F synthetic: a raw {$label} in an href is replaced by U+FFFD", $href, "https://e.test/?q=\u{FFFD}z");
+            $failed = $page36487([['k' => 'a', 'href' => $href, 'v' => 'p']]);
+            $check("F synthetic: the page loads with the cleaned href of a raw {$label}", $failed === null, (string)$failed);
+        }
+
+        // what must NOT go: characters next to the two. They are fine in XML: levels 0-4 give the character, 5 and more the text
+        $keep = ['#xFFFD;' => 0xFFFD, '#65533;' => 0xFFFD, '#xFFFC;' => 0xFFFC, '#65532;' => 0xFFFC, '#x1FFFE;' => 0x1FFFE, '#131070;' => 0x1FFFE, '#xFFFEF;' => 0xFFFEF,
+                 '#xFFF;' => 0xFFF, '#6553;' => 6553, '#x10FFFF;' => 0x10FFFF, '#xFFFE0;' => 0xFFFE0, '#x0FFFD;' => 0xFFFD];
+        foreach ($keep as $ref => $cp) {
+            foreach (range(0, 6) as $k) {
+                $name = "F «{$ref}» is kept @{$k}x";
+                $r = $page($name, 'a' . $amp($k) . $ref . 'b');
+                if ($r !== null) {
+                    $same("{$name}: what is shown", $r['canon'][0] ?? null, 'a' . ($k <= 4 ? mb_chr($cp, 'UTF-8') : $amp($k - 5) . $ref) . 'b');
+                }
+            }
+        }
+
+        // strtol (task 36448): PHP reads a hexadecimal reference with strtol, which also takes a «0x» after the «x», so
+        // «&#x0xFFFE;» is U+FFFE for the decoder whatever a pattern for the canonical spelling says. Level 4 is where it
+        // fails the page; below it the strip or the HTML step has dealt with it already (what the HTML step makes of the
+        // half reference «&#x0» is its own business, so there only the load and the absence of the characters are pinned),
+        // from level 5 it is shown as typed.
+        $strtol = ['#x0xFFFE;', '#x0XFFFF;', '#X0xfffe;', '#X0XFFFF;', '#x0x0000FFFE;', '#x0X0fffF;'];
+        foreach ($shapes as $shape => [$build, $want]) {
+            foreach ($strtol as $ref) {
+                foreach (range(0, 6) as $k) {
+                    $name = "F strtol {$shape} «{$ref}» @{$k}x";
+                    $r = $page($name, $build($amp($k) . $ref));
+                    if ($r === null) {
+                        continue;
+                    }
+                    $check("{$name}: the output holds neither U+FFFE nor U+FFFF", preg_match('/\xEF\xBF[\xBE\xBF]/', $r['html']) !== 1, 'it is in the page');
+                    if ($k >= 4) {
+                        $same("{$name}: what is shown", $r['canon'][0] ?? null, $want($k === 4 ? "\u{FFFD}" : $amp($k - 5) . $ref));
+                    }
+                }
+            }
+        }
+
+        // the grammar sweep: spellings of a reference, found by asking the decoder (html_entity_decode, the call toXML makes)
+        // which of them are U+FFFE or U+FFFF, then each one at 4 levels through the real path. A candidate the decoder reads
+        // and the helper missed is a page that fails to load. The control: the sweep holds such spellings, among them some
+        // that only strtol reads (a «0x» prefix), or an empty sweep would pass.
+        $pre = ['', 'x', 'X', 'x0x', 'x0X', 'X0x', 'X0X', 'x00x', 'x0x0x', '0x', 'x ', 'x+', 'x-', ' x', "x\t", 'x0x+', 'x0x ', 'x0x-', '+', '-', ' ', "\t", '0', 'x0', 'x0b', 'x0o', '0b', '0o', 'xx', 'x0xx'];
+        $zeros = ['', '0', '000', str_repeat('0', 40)];
+        $cores = ['fffe', 'FFFF', 'fFfE', '65534', '65535', 'fffe0', 'ffff ', '65534 ', 'FFFE.', '1fffe', '10fffe', 'fffe_', 'ff_fe'];
+        $ends = [';', ' ;', '', ';;'];
+        $candidates = 0;
+        $decoded = 0;
+        $quirk = 0;
+        $missed = [];
+        foreach ($pre as $p) {
+            foreach ($zeros as $z) {
+                foreach ($cores as $c) {
+                    foreach ($ends as $e) {
+                        $ref = '&#' . $p . $z . $c . $e;
+                        $candidates++;
+                        $isCharacter = preg_match('/\xEF\xBF[\xBE\xBF]/', html_entity_decode($ref)) === 1;
+                        $decoded += $isCharacter ? 1 : 0;
+                        $quirk += $isCharacter && preg_match('/^&#x0x/i', $ref) === 1 ? 1 : 0;
+                        try {
+                            $one('a' . $amp(4) . substr($ref, 1) . 'b');
+                        } catch (\Throwable $ex) {
+                            $missed[] = json_encode($ref) . ($isCharacter ? ' (decoded)' : '');
+                        }
+                    }
+                }
+            }
+        }
+        $check('F sweep: control: the candidates hold spellings the decoder reads as U+FFFE or U+FFFF', $decoded > 0, "{$decoded} of {$candidates}");
+        $check('F sweep: control: some of them are read only because strtol takes a «0x» prefix', $quirk > 0, "{$quirk} of {$decoded}");
+        $check("F sweep: the page loads at 4 levels for every candidate ({$candidates})", $missed === [], count($missed) . ' fail: ' . implode(' ', array_slice($missed, 0, 8)));
+
+        // two decodes (validation 36431): the helper leaves «&amp;#xFFFE;» in a part, which one decode turns into the eight
+        // characters «&#xFFFE;» and two turn into the character. The page is safe because exactly one decode follows (toXML)
+        // and its output is escaped; so the part must still hold the reference one level encoded, the control must show that
+        // two decodes of it WOULD be the character, and the page must load and show the eight characters.
+        foreach (['#xFFFE;', '#x0xFFFE;', '#65534;'] as $ref) {
+            $name = "F two decodes «{$ref}» @5x";
+            $r = $page($name, 'a' . $amp(5) . $ref . 'b');
+            if ($r === null) {
+                continue;
+            }
+            $v = $r['post'][0]['parts'][0]['v'] ?? null;
+            $same("{$name}: the part holds the reference one level encoded", $v, 'a&amp;' . $ref . 'b');
+            $check("{$name}: control: one decode of the part is no character, two are", is_string($v)
+                && !str_contains(html_entity_decode($v), "\u{FFFE}") && !str_contains(html_entity_decode($v), "\u{FFFF}")
+                && preg_match('/\xEF\xBF[\xBE\xBF]/', html_entity_decode(html_entity_decode($v))) === 1, var_export($v, true));
+            $same("{$name}: what is shown", $r['canon'][0] ?? null, 'a&' . $ref . 'b');
         }
     });
 

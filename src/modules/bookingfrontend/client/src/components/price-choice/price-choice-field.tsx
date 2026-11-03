@@ -4,6 +4,13 @@ import {Field, Label, Paragraph, Select, ValidationMessage} from '@digdir/design
 import {useTrans} from '@/app/i18n/ClientTranslationProvider';
 import {IPriceOption} from '@/service/types/api/order-articles.types';
 import {formatCurrency} from '@/utils/cost-utils';
+import {
+	formatHourlyRate,
+	formatTotalWithHourlyRate,
+	hourlyRateOfMinuteArticle,
+	isMinuteUnit,
+	minuteArticleTotal
+} from '@/utils/article-pricing';
 
 interface PriceChoiceFieldProps {
 	/** The prices the resource offers today */
@@ -13,8 +20,12 @@ interface PriceChoiceFieldProps {
 	onChange: (priceId: number) => void;
 	/** Appended to the label when several rooms each need a choice */
 	resourceName?: string;
-	/** What the price is multiplied by for the price line (hours for an hourly room) */
+	/** What the price is multiplied by for the price line (hours for an hourly room, minutes for a minute-priced one) */
 	quantity?: number;
+	/** The room's unit. A 'minute' price is never shown per minute, but as the hourly price */
+	unit?: string;
+	/** The room's VAT percent; a minute price is worked out from its ex-VAT price */
+	taxPercent?: number;
 	/** Shown at the field when a required choice is missing */
 	error?: string;
 	disabled?: boolean;
@@ -32,6 +43,8 @@ const PriceChoiceField = forwardRef<HTMLSelectElement, PriceChoiceFieldProps>(({
 	onChange,
 	resourceName,
 	quantity = 1,
+	unit,
+	taxPercent = 0,
 	error,
 	disabled,
 	id
@@ -39,10 +52,25 @@ const PriceChoiceField = forwardRef<HTMLSelectElement, PriceChoiceFieldProps>(({
 	const t = useTrans();
 	const chosen = options.find(option => option.price_id === value);
 
+	const isMinute = isMinuteUnit(unit);
+	const hourlyRateOf = (option: IPriceOption) =>
+		hourlyRateOfMinuteArticle({ex_tax_price: option.ex_tax_price, tax_percent: taxPercent});
+
 	const optionText = (option: IPriceOption) => {
-		const amount = formatCurrency(parseFloat(option.price));
+		const amount = isMinute
+			? formatHourlyRate(hourlyRateOf(option), t)
+			: formatCurrency(parseFloat(option.price));
 		return option.remark ? `${option.remark} – ${amount}` : amount;
 	};
+
+	const chosenPriceText = (option: IPriceOption) => isMinute
+		? formatTotalWithHourlyRate(
+			minuteArticleTotal({ex_tax_price: option.ex_tax_price, tax_percent: taxPercent}, quantity),
+			hourlyRateOf(option),
+			'NOK',
+			t
+		)
+		: formatCurrency(parseFloat(option.price) * quantity);
 
 	return (
 		<Field>
@@ -74,7 +102,7 @@ const PriceChoiceField = forwardRef<HTMLSelectElement, PriceChoiceFieldProps>(({
 			{error && <ValidationMessage>{error}</ValidationMessage>}
 			<Paragraph data-size="sm" aria-live="polite">
 				{t('bookingfrontend.price')}: {chosen
-					? formatCurrency(parseFloat(chosen.price) * quantity)
+					? chosenPriceText(chosen)
 					: t('bookingfrontend.price_pending')}
 			</Paragraph>
 		</Field>

@@ -6,6 +6,17 @@ import {ArticleOrder, IArticle} from '@/service/types/api/order-articles.types';
 import {IOrder} from '@/service/types/api/application.types';
 import {useTrans} from '@/app/i18n/ClientTranslationProvider';
 import {DateTime} from 'luxon';
+import {
+	bookedMinutes,
+	formatHourlyRate,
+	formatMinutes,
+	formatTotalWithHourlyRate,
+	hourlyRateOfMinuteArticle,
+	hourlyRateOfOrderLine,
+	isMinuteUnit,
+	minuteArticleTotal
+} from '@/utils/article-pricing';
+import {formatCurrency} from '@/utils/cost-utils';
 import {MinusCircleIcon, PlusCircleIcon} from '@navikt/aksel-icons';
 import styles from './article-table.module.scss';
 
@@ -44,6 +55,27 @@ const ArticleTable: React.FC<ArticleTableProps> = ({
 		return Math.ceil(diffInHours);
 	}, [startTime, endTime]);
 
+	// Minute-priced articles bill the exact booked minutes, never the rounded-up hours above
+	const durationMinutes = useMemo(() => bookedMinutes(startTime, endTime), [startTime, endTime]);
+
+	// The quantity a mandatory resource article is billed at, or null when the quantity is the
+	// applicant's own choice. Hourly articles bill whole started hours, minute articles exact minutes.
+	const mandatoryQuantity = (article: IArticle): number | null => {
+		const isMandatoryResource = article.resource_id &&
+			(article.mandatory === 1 || article.mandatory === '1');
+
+		if (!isMandatoryResource) {
+			return null;
+		}
+		if (article.unit === 'hour') {
+			return durationHours;
+		}
+		if (isMinuteUnit(article.unit)) {
+			return durationMinutes;
+		}
+		return null;
+	};
+
 	// Create a map for easier lookup of selected articles
 	const selectedArticlesMap = useMemo(() => {
 		return new Map(selectedArticles?.map(article => [article.id, article]));
@@ -59,6 +91,17 @@ const ArticleTable: React.FC<ArticleTableProps> = ({
 		const priceId = selectedArticlesMap.get(article.id)?.price_id ?? article.default_price_id;
 		const option = options.find(o => o.price_id === priceId);
 		return option ? parseFloat(option.price) : null;
+	}, [selectedArticlesMap]);
+
+	// The ex-VAT price per unit that applies to a minute-priced article: the applicant's choice (or the
+	// default) for a room with several prices, null while nothing is chosen
+	const exTaxPriceOf = useCallback((article: IArticle): string | null => {
+		const options = article.price_options ?? [];
+		if (options.length < 2) {
+			return article.ex_tax_price;
+		}
+		const priceId = selectedArticlesMap.get(article.id)?.price_id ?? article.default_price_id;
+		return options.find(o => o.price_id === priceId)?.ex_tax_price ?? null;
 	}, [selectedArticlesMap]);
 
 	// Fetch articles for selected resources (only in articles mode)
@@ -80,6 +123,7 @@ const ArticleTable: React.FC<ArticleTableProps> = ({
 						unit_price: line.unit_price.toString(),
 						quantity: line.quantity,
 						amount: line.amount,
+						tax: line.tax,
 						currency: line.currency,
 						unit: line.unit
 					});
@@ -166,51 +210,41 @@ const ArticleTable: React.FC<ArticleTableProps> = ({
 		);
 	}, [articles, orders, mode]);
 
-	// Function to update mandatory hourly articles
-	const updateMandatoryHourlyArticles = () => {
+	// Function to update mandatory duration-priced (hourly and minute) articles
+	const updateMandatoryDurationArticles = () => {
 		if (!articles || !articles.length || !onArticlesChange) return;
 
 		// Always create a fresh copy of articles to ensure updates
 		const updatedArticles = [...selectedArticles];
 		let hasUpdates = false;
 
-		// First, handle mandatory hourly articles with resource_id that aren't selected yet
-		const mandatoryHourlyArticlesToAdd = articles.filter(article =>
-			article.unit === 'hour' &&
-			article.resource_id &&
-			(article.mandatory === 1 || article.mandatory === '1') &&
-			!selectedArticlesMap.has(article.id)
-		);
-
-		// Add any missing mandatory hourly articles
-		if (mandatoryHourlyArticlesToAdd.length > 0) {
-			mandatoryHourlyArticlesToAdd.forEach(article => {
-				updatedArticles.push({
-					id: article.id,
-					quantity: durationHours,
-					parent_id: article.parent_mapping_id || null,
-					// The preselected price; none while the applicant must choose
-					price_id: article.default_price_id ?? null
-				});
+		// First, add the mandatory articles with resource_id that aren't selected yet
+		articles.forEach(article => {
+			const quantity = mandatoryQuantity(article);
+			if (quantity === null || selectedArticlesMap.has(article.id)) {
+				return;
+			}
+			updatedArticles.push({
+				id: article.id,
+				quantity,
+				parent_id: article.parent_mapping_id || null,
+				// The preselected price; none while the applicant must choose
+				price_id: article.default_price_id ?? null
 			});
 			hasUpdates = true;
-		}
+		});
 
 		// Then update quantities for already selected articles if needed
 		for (let i = 0; i < updatedArticles.length; i++) {
 			const articleOrder = updatedArticles[i];
 			const article = articles.find(a => a.id === articleOrder.id);
+			const quantity = article ? mandatoryQuantity(article) : null;
 
-			if (article &&
-				article.unit === 'hour' &&
-				article.resource_id &&
-				(article.mandatory === 1 || article.mandatory === '1') &&
-				articleOrder.quantity !== durationHours) {
-
+			if (quantity !== null && articleOrder.quantity !== quantity) {
 				// Update the quantity to match duration
 				updatedArticles[i] = {
 					...articleOrder,
-					quantity: durationHours
+					quantity
 				};
 				hasUpdates = true;
 			}
@@ -228,26 +262,24 @@ const ArticleTable: React.FC<ArticleTableProps> = ({
 		if ((articles?.length || 0) > 0) {
 			// Use setTimeout to ensure this runs after React's rendering cycle
 			setTimeout(() => {
-				updateMandatoryHourlyArticles();
+				updateMandatoryDurationArticles();
 			}, 0);
 		}
-	}, [articles, durationHours, selectedArticles.length]);
+	}, [articles, durationHours, durationMinutes, selectedArticles.length]);
 
 	// Also run when selected articles map changes (for deeper dependency checking)
 	useEffect(() => {
 		if ((articles?.length || 0) > 0) {
-			updateMandatoryHourlyArticles();
+			updateMandatoryDurationArticles();
 		}
 	}, [selectedArticlesMap]);
 
 	const handleQuantityChange = (article: IArticle, quantity: number) => {
-		// Only prevent editing for mandatory hourly articles with resource_id
-		const isMandatoryHourly = article.unit === 'hour' &&
-			article.resource_id &&
-			(article.mandatory === 1 || article.mandatory === '1');
+		// Only prevent editing for mandatory duration-priced articles with resource_id
+		const isMandatoryDuration = mandatoryQuantity(article) !== null;
 
-		if (isMandatoryHourly || !onArticlesChange) {
-			return; // Can't change mandatory hourly articles
+		if (isMandatoryDuration || !onArticlesChange) {
+			return; // Can't change mandatory duration-priced articles
 		}
 
 		const newArticles = [...selectedArticles];
@@ -280,11 +312,15 @@ const ArticleTable: React.FC<ArticleTableProps> = ({
 		const total = selectedArticles.reduce((total, articleOrder) => {
 			const article = articles?.find(a => a.id === articleOrder.id);
 			if (article) {
-				const isMandatoryHourly = article.unit === 'hour' &&
-					article.resource_id &&
-					(article.mandatory === 1 || article.mandatory === '1');
-
-				const quantity = isMandatoryHourly ? durationHours : articleOrder.quantity;
+				const quantity = mandatoryQuantity(article) ?? articleOrder.quantity;
+				if (isMinuteUnit(article.unit)) {
+					const exTaxPrice = exTaxPriceOf(article);
+					if (exTaxPrice === null) {
+						pending = true;
+						return total;
+					}
+					return total + minuteArticleTotal({ex_tax_price: exTaxPrice, tax_percent: article.tax_percent}, quantity);
+				}
 				const unitPrice = unitPriceOf(article);
 				if (unitPrice === null) {
 					pending = true;
@@ -295,16 +331,14 @@ const ArticleTable: React.FC<ArticleTableProps> = ({
 			return total;
 		}, 0).toFixed(2);
 		return {totalPrice: total, pricePending: pending};
-	}, [selectedArticles, articles, durationHours, unitPriceOf]);
+	}, [selectedArticles, articles, durationHours, durationMinutes, unitPriceOf, exTaxPriceOf]);
 
 	// Helper functions for incrementing and decrementing quantity
 	const incrementQuantity = (article: IArticle) => {
-		const isMandatoryHourly = article.unit === 'hour' &&
-			article.resource_id &&
-			(article.mandatory === 1 || article.mandatory === '1');
+		const isMandatoryDuration = mandatoryQuantity(article) !== null;
 
-		if (isMandatoryHourly || !onArticlesChange) {
-			return; // Can't change mandatory hourly articles
+		if (isMandatoryDuration || !onArticlesChange) {
+			return; // Can't change mandatory duration-priced articles
 		}
 
 		const newArticles = [...selectedArticles];
@@ -326,12 +360,10 @@ const ArticleTable: React.FC<ArticleTableProps> = ({
 	};
 
 	const decrementQuantity = (article: IArticle) => {
-		const isMandatoryHourly = article.unit === 'hour' &&
-			article.resource_id &&
-			(article.mandatory === 1 || article.mandatory === '1');
+		const isMandatoryDuration = mandatoryQuantity(article) !== null;
 
-		if (isMandatoryHourly || !onArticlesChange) {
-			return; // Can't change mandatory hourly articles
+		if (isMandatoryDuration || !onArticlesChange) {
+			return; // Can't change mandatory duration-priced articles
 		}
 
 		const newArticles = [...selectedArticles];
@@ -387,6 +419,21 @@ const ArticleTable: React.FC<ArticleTableProps> = ({
 						<Table.Body>
 							{groupItems.map((item: any) => {
 								if (mode === 'orders') {
+									// A minute-priced line shows the hourly price and the total incl. VAT, never the
+									// per-minute price. Every other line keeps its stored ex-VAT price and amount.
+									if (isMinuteUnit(item.unit)) {
+										const lineTotal = Number(item.amount) + Number(item.tax || 0);
+										const hourlyRate = hourlyRateOfOrderLine(item);
+										return (
+											<Table.Row key={item.id}>
+												<Table.Cell>{item.name}</Table.Cell>
+												<Table.Cell>{hourlyRate ? formatHourlyRate(hourlyRate, t) : '-'}</Table.Cell>
+												<Table.Cell>{formatMinutes(Number(item.quantity), t)}</Table.Cell>
+												<Table.Cell>{formatTotalWithHourlyRate(lineTotal, hourlyRate, item.currency, t)}</Table.Cell>
+											</Table.Row>
+										);
+									}
+
 									return (
 										<Table.Row key={item.id}>
 											<Table.Cell>{item.name}</Table.Cell>
@@ -404,18 +451,35 @@ const ArticleTable: React.FC<ArticleTableProps> = ({
 								const isSelected = quantity > 0;
 
 								const isMandatory = article.mandatory === 1 || article.mandatory === '1';
-								const isMandatoryHourly = isMandatory &&
-									article.unit === 'hour' &&
-									article.resource_id;
+								const mandatoryDuration = mandatoryQuantity(article);
+								const isMandatoryDuration = mandatoryDuration !== null;
+								const isMinute = isMinuteUnit(article.unit);
 
-								// For mandatory hourly articles, calculate total based on duration
-								const calculatedQuantity = isMandatoryHourly ? durationHours : quantity;
+								// For mandatory duration-priced articles, calculate total based on duration
+								const calculatedQuantity = mandatoryDuration ?? quantity;
 								const unitPrice = unitPriceOf(article);
-								const total = unitPrice === null ? null : (unitPrice * calculatedQuantity).toFixed(2);
-								// The price incl. tax, as the chosen option has it
-								const displayPrice = (article.price_options?.length ?? 0) > 1
-									? (unitPrice === null ? null : unitPrice.toFixed(2))
-									: article.price;
+								let priceText: string | null;
+								let totalText: string | null;
+								if (isMinute) {
+									// A minute article never shows its per-minute price: the hourly price, and the
+									// total explained by it. Null while the applicant has not chosen a price.
+									const exTaxPrice = exTaxPriceOf(article);
+									const priceInput = exTaxPrice === null
+										? null
+										: {ex_tax_price: exTaxPrice, tax_percent: article.tax_percent};
+									const hourlyRate = priceInput === null ? null : hourlyRateOfMinuteArticle(priceInput);
+									priceText = hourlyRate === null ? null : formatHourlyRate(hourlyRate, t);
+									totalText = priceInput === null
+										? null
+										: formatTotalWithHourlyRate(minuteArticleTotal(priceInput, calculatedQuantity), hourlyRate, 'NOK', t);
+								} else {
+									// The price incl. tax, as the chosen option has it
+									const displayPrice = (article.price_options?.length ?? 0) > 1
+										? (unitPrice === null ? null : unitPrice.toFixed(2))
+										: article.price;
+									priceText = displayPrice === null ? null : `${displayPrice} kr`;
+									totalText = unitPrice === null ? null : `${(unitPrice * calculatedQuantity).toFixed(2)} kr`;
+								}
 
 								return (
 									<Table.Row key={article.id}>
@@ -427,12 +491,12 @@ const ArticleTable: React.FC<ArticleTableProps> = ({
 											)}
 										</Table.Cell>
 										<Table.Cell>
-											{displayPrice === null ? t('bookingfrontend.price_pending') : `${displayPrice} kr`}
+											{priceText === null ? t('bookingfrontend.price_pending') : priceText}
 										</Table.Cell>
 										{!readOnly && (
 											<Table.Cell>
 												<div className={styles.quantityControls}>
-													{isMandatoryHourly ? (
+													{isMandatoryDuration ? (
 														<>
 															<span className={styles.hiddenButton}>
 																<Button
@@ -446,7 +510,7 @@ const ArticleTable: React.FC<ArticleTableProps> = ({
 																</Button>
 															</span>
 															<span className={styles.quantityValue}>
-																{durationHours}
+																{isMinute ? formatMinutes(durationMinutes, t) : durationHours}
 															</span>
 															<span className={styles.hiddenButton}>
 																<Button
@@ -473,7 +537,7 @@ const ArticleTable: React.FC<ArticleTableProps> = ({
 																<MinusCircleIcon aria-hidden="true"/>
 															</Button>
 															<span className={styles.quantityValue}>
-																{isSelected ? quantity : 0}
+																{isSelected ? (isMinute ? formatMinutes(quantity, t) : quantity) : 0}
 															</span>
 															<Button
 																variant="tertiary"
@@ -491,7 +555,7 @@ const ArticleTable: React.FC<ArticleTableProps> = ({
 											</Table.Cell>
 										)}
 										<Table.Cell>
-											{!isSelected ? '-' : total === null ? t('bookingfrontend.price_pending') : `${total} kr`}
+											{!isSelected ? '-' : totalText === null ? t('bookingfrontend.price_pending') : totalText}
 										</Table.Cell>
 									</Table.Row>
 								);
@@ -504,14 +568,14 @@ const ArticleTable: React.FC<ArticleTableProps> = ({
 			{mode === 'articles' && (pricePending || parseFloat(totalPrice) > 0) && (
 				<div className={styles.totalSection} aria-live="polite">
 					<strong>{t('bookingfrontend.total')}:</strong>
-					<span>{pricePending ? t('bookingfrontend.price_pending') : `${totalPrice} kr`}</span>
+					<span>{pricePending ? t('bookingfrontend.price_pending') : formatCurrency(parseFloat(totalPrice))}</span>
 				</div>
 			)}
 			
 			{mode === 'orders' && orders.length > 0 && (
 				<div className={styles.totalSection}>
 					<strong>{t('bookingfrontend.total')}:</strong>
-					<span>{orders.reduce((sum, order) => sum + order.sum, 0)} {orders[0]?.lines[0]?.currency || 'kr'}</span>
+					<span>{formatCurrency(orders.reduce((sum, order) => sum + Number(order.sum), 0), orders[0]?.lines[0]?.currency || 'NOK')}</span>
 				</div>
 			)}
 		</div>

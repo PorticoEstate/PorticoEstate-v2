@@ -40,6 +40,7 @@ import {ApplicationFormData, createApplicationFormSchema} from './application-fo
 import {IBookingUser, IDelegate} from "@/service/types/api.types";
 import ArticleTable from "@/components/article-table/article-table";
 import PriceChoiceField from "@/components/price-choice/price-choice-field";
+import {bookedMinutes, isMinuteUnit} from "@/utils/article-pricing";
 import {ArticleOrder, IArticle} from "@/service/types/api/order-articles.types";
 import {isDevMode, phpGWLink} from "@/service/util";
 import {IEvent} from "@/service/pecalendar.types";
@@ -727,10 +728,14 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 		setValue('articles', updated, {shouldDirty: true});
 	};
 
-	// The quantity the room's price line is multiplied by: whole hours for an hourly room
+	// The quantity the room's price line is multiplied by: whole hours for an hourly room,
+	// the exact booked minutes for a minute-priced one
 	const priceQuantityOf = (article: IArticle): number => {
 		if (article.unit === 'hour' && startTime && endTime) {
 			return Math.max(1, Math.ceil(DateTime.fromJSDate(endTime).diff(DateTime.fromJSDate(startTime), 'hours').hours));
+		}
+		if (isMinuteUnit(article.unit) && startTime && endTime) {
+			return bookedMinutes(startTime, endTime);
 		}
 		return watchedArticles?.find(a => a.id === article.id)?.quantity || 1;
 	};
@@ -1689,6 +1694,8 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 								onChange={(priceId) => choosePrice(article, priceId)}
 								resourceName={priceChoiceArticles.length > 1 ? article.name : undefined}
 								quantity={priceQuantityOf(article)}
+								unit={article.unit}
+								taxPercent={article.tax_percent}
 								error={priceChoiceSubmitted && priceChoiceOf(article) === null
 									? t('bookingfrontend.price_choice_required')
 									: undefined}

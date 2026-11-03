@@ -753,7 +753,9 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 	};
 
 	useEffect(() => {
-		if (chosenCategoryId === null) {
+		// While the rooms just chosen are still loading, the query has no data and the
+		// rooms seem to share nothing; deciding then would drop the choice for good
+		if (chosenCategoryId === null || resourceArticles === undefined) {
 			return;
 		}
 		if (!sharedPriceCategories.some(category => category.id === chosenCategoryId)) {
@@ -769,7 +771,7 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 		if (behind) {
 			applyCategory(chosenCategoryId);
 		}
-	}, [chosenCategoryId, sharedPriceCategories, chosenResourceArticles, watchedArticles, applyCategory]);
+	}, [chosenCategoryId, resourceArticles, sharedPriceCategories, chosenResourceArticles, watchedArticles, applyCategory]);
 
 	// The quantity the room's price line is multiplied by: whole hours for an hourly room,
 	// the exact booked minutes for a minute-priced one

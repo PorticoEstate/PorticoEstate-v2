@@ -3,7 +3,7 @@ import { createHash, randomBytes } from 'crypto';
 import { DatabaseService } from '../../database/database.service';
 import { RedisService } from '../notification/redis.service';
 import { FreeTimeService } from '../freetime/freetime.service';
-import { getEligibleResourcePrices, preselectedPrice, priceLabel } from './resource-price';
+import { getEligibleResourcePrices, preselectedPrice, priceCategoriesInstalled, priceLabel } from './resource-price';
 
 /**
  * A booking takes milliseconds. A statement in its transaction that runs longer than
@@ -1509,16 +1509,20 @@ export class BookingService implements OnModuleInit {
       const amount = unitPrice * quantity;
       const tax = amount * (taxPercent / 100);
 
+      // The category the line was priced in (ref #1477): the chosen row's, once the column exists
+      const withCategory = await priceCategoriesInstalled(client);
+
       await client.query(
         `INSERT INTO bb_purchase_order_line (
           order_id, article_mapping_id, quantity,
           tax_code, unit_price, parent_mapping_id, amount, tax, currency,
-          article_price_id, price_label
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'NOK', $9, $10)`,
+          article_price_id, price_label${withCategory ? ', category_id' : ''}
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'NOK', $9, $10${withCategory ? ', $11' : ''})`,
         [
           orderId, article.id, quantity, mapping.tax_code, unitPrice, article.parent_id, amount, tax,
           chosen ? chosen.id : null,
           chosen ? priceLabel(chosen, options.length) : null,
+          ...(withCategory ? [chosen?.category_id ?? null] : []),
         ],
       );
     }

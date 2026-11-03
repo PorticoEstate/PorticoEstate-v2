@@ -1382,3 +1382,11 @@ catering_field_special_requirements	booking	en	Special requirements
 catering_field_total	booking	en	Total
 sms_event_no_participants	booking	en	No participants with a phone number are registered for the event. SMS is only sent to registered participants.
 sms_send_failed	booking	en	Could not send the SMS. Try again, or contact the system administrator.
+price_category_none	booking	en	No category
+price_category_new	booking	en	New category
+price_category_name	booking	en	Name of the category
+price_category_add	booking	en	Add
+price_category_exists	booking	en	The category already existed and has been chosen
+price_category_invalid	booking	en	Enter a name of up to 100 characters that is not just a number
+price_category_add_failed	booking	en	The category was not added. Reload the page and try again.
+price_category_unknown_not_saved	booking	en	The new price was not saved: the category does not exist

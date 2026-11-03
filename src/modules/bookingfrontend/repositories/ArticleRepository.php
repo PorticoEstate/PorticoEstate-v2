@@ -2,6 +2,7 @@
 namespace App\modules\bookingfrontend\repositories;
 
 use App\Database\Db;
+use App\modules\booking\repositories\PriceCategoryRepository;
 use App\modules\bookingfrontend\helpers\PriceChoiceException;
 use App\modules\bookingfrontend\models\Article;
 use PDO;
@@ -52,16 +53,25 @@ class ArticleRepository
      * The timeslot path runs the same query in its node port
      * (WebSocket/node/src/modules/booking/resource-price.ts); keep them identical.
      *
-     * @return array Rows of id, price (ex. tax), remark and default_
+     * Each row carries its price category (ref #1477), null without one or
+     * before the migration that adds categories has run.
+     *
+     * @return array Rows of id, price (ex. tax), remark, default_, category_id and category_name
      */
     public function getEligibleResourcePrices(int $mappingId): array
     {
-        $sql = "SELECT id, price, remark, default_
-                FROM bb_article_price
-                WHERE article_mapping_id = :mapping_id
-                AND active = 1
-                AND from_ < (now() AT TIME ZONE 'Europe/Oslo')::date + 1
-                ORDER BY price, id";
+        $category = PriceCategoryRepository::isInstalled()
+            ? "p.category_id, c.name AS category_name
+                FROM bb_article_price p
+                LEFT JOIN bb_price_category c ON c.id = p.category_id"
+            : "NULL AS category_id, NULL AS category_name
+                FROM bb_article_price p";
+
+        $sql = "SELECT p.id, p.price, p.remark, p.default_, {$category}
+                WHERE p.article_mapping_id = :mapping_id
+                AND p.active = 1
+                AND p.from_ < (now() AT TIME ZONE 'Europe/Oslo')::date + 1
+                ORDER BY p.price, p.id";
         $stmt = $this->db->prepare($sql);
         $stmt->execute([':mapping_id' => $mappingId]);
 
@@ -85,9 +95,21 @@ class ArticleRepository
     }
 
     /**
+     * What a price is called where the citizen sees it: its category's name
+     * when it has one, otherwise the remark as the admin wrote it (ref #1477).
+     */
+    public static function optionLabel(array $option): string
+    {
+        $categoryName = trim((string)($option['category_name'] ?? ''));
+
+        return $categoryName !== '' ? $categoryName : trim((string)($option['remark'] ?? ''));
+    }
+
+    /**
      * The label stored with the order line, so the case officer sees what the
-     * citizen picked. Only a real choice gets one: the remark, or the amount when
-     * the remark is empty. A single price was never chosen and gets none.
+     * citizen picked. Only a real choice gets one: the option's label (its
+     * category, or else its remark), or the amount when that is empty. A single
+     * price was never chosen and gets none.
      */
     public static function priceLabel(array $option, int $optionCount): ?string
     {
@@ -95,9 +117,9 @@ class ArticleRepository
             return null;
         }
 
-        $remark = trim((string)($option['remark'] ?? ''));
+        $label = self::optionLabel($option);
 
-        return $remark !== '' ? $remark : number_format((float)$option['price'], 2, '.', '');
+        return $label !== '' ? $label : number_format((float)$option['price'], 2, '.', '');
     }
 
     /**
@@ -251,15 +273,18 @@ class ArticleRepository
                     'tax_code' => $mapping['tax_code'] ?? null,
                     'tax_percent' => (float)($mapping['tax_percent'] ?? 0),
                     'article_price_id' => null,
-                    'price_label' => null
+                    'price_label' => null,
+                    'category_id' => null
                 ];
 
                 if ((int)$mapping['article_cat_id'] === 1) {
-                    // The resource itself: billed at the price row the citizen chose
+                    // The resource itself: billed at the price row the citizen chose.
+                    // Its category is the row's, never one the client sends
                     $price = $this->resolveResourcePrice((int)$article['id'], $priceId);
                     $line['ex_tax_price'] = $price['price'] ?? 0;
                     $line['article_price_id'] = $price ? (int)$price['id'] : null;
                     $line['price_label'] = $price ? self::priceLabel($price, $price['option_count']) : null;
+                    $line['category_id'] = isset($price['category_id']) ? (int)$price['category_id'] : null;
                 } elseif ($priceId !== null) {
                     // Only the resource has a price choice; services keep their own price
                     throw new PriceChoiceException(PriceChoiceException::INVALID, (int)$article['id']);
@@ -339,14 +364,19 @@ class ArticleRepository
      */
     private function savePurchaseOrderLine(int $orderId, array $line): void
     {
+        // The category the line was priced in (ref #1477), once the column exists
+        $withCategory = PriceCategoryRepository::isInstalled();
+        $categoryColumn = $withCategory ? ', category_id' : '';
+        $categoryValue = $withCategory ? ', :category_id' : '';
+
         $sql = "INSERT INTO bb_purchase_order_line (
             order_id, article_mapping_id, quantity,
             tax_code, unit_price, parent_mapping_id, amount, tax, currency,
-            article_price_id, price_label
+            article_price_id, price_label{$categoryColumn}
         ) VALUES (
             :order_id, :article_mapping_id, :quantity,
             :tax_code, :unit_price, :parent_mapping_id, :amount, :tax, :currency,
-            :article_price_id, :price_label
+            :article_price_id, :price_label{$categoryValue}
         )";
 
         // Calculate the amount based on unit price and quantity
@@ -358,8 +388,7 @@ class ArticleRepository
         $taxPercent = $line['tax_percent'] ?? 0;
         $tax = $amount * ($taxPercent / 100);
 
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute([
+        $params = [
             ':order_id' => $orderId,
             ':article_mapping_id' => $line['article_mapping_id'],
             ':quantity' => $line['quantity'],
@@ -371,7 +400,13 @@ class ArticleRepository
             ':currency' => 'NOK', // Default currency
             ':article_price_id' => $line['article_price_id'] ?? null,
             ':price_label' => $line['price_label'] ?? null
-        ]);
+        ];
+        if ($withCategory) {
+            $params[':category_id'] = $line['category_id'] ?? null;
+        }
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
     }
 
     /**
@@ -495,7 +530,7 @@ class ArticleRepository
                 // a choice is required.
                 $options = $this->getEligibleResourcePrices((int)$articleData['id']);
                 $preselected = self::preselectedPrice($options);
-                $price = $preselected ? ['price' => $preselected['price'], 'remark' => $preselected['remark']] : false;
+                $price = $preselected ? ['price' => $preselected['price'], 'remark' => self::optionLabel($preselected)] : false;
 
                 $taxPercent = (float)$articleData['tax_percent'];
                 $articleData['price_options'] = array_map(function ($option) use ($taxPercent) {
@@ -503,6 +538,8 @@ class ArticleRepository
                     return [
                         'price_id' => (int)$option['id'],
                         'remark' => $option['remark'] ?? '',
+                        'category_id' => isset($option['category_id']) ? (int)$option['category_id'] : null,
+                        'category_name' => $option['category_name'] ?? null,
                         'ex_tax_price' => number_format($exTaxPrice, 2, '.', ''),
                         'tax' => number_format($exTaxPrice * ($taxPercent / 100), 2, '.', ''),
                         'price' => number_format($exTaxPrice * (1 + ($taxPercent / 100)), 2, '.', ''),

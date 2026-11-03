@@ -40,7 +40,9 @@ import {ApplicationFormData, createApplicationFormSchema} from './application-fo
 import {IBookingUser, IDelegate} from "@/service/types/api.types";
 import ArticleTable from "@/components/article-table/article-table";
 import PriceChoiceField from "@/components/price-choice/price-choice-field";
+import SharedPriceCategoryField from "@/components/price-choice/shared-price-category-field";
 import {bookedMinutes, isMinuteUnit} from "@/utils/article-pricing";
+import {categoryInForce, hasPriceChoice, optionInCategory, sharedCategories, withPriceChoice} from "@/utils/price-category";
 import {ArticleOrder, IArticle} from "@/service/types/api/order-articles.types";
 import {isDevMode, phpGWLink} from "@/service/util";
 import {IEvent} from "@/service/pecalendar.types";
@@ -721,12 +723,53 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 	const missingPriceChoice = priceChoiceArticles.find(article => priceChoiceOf(article) === null);
 
 	const choosePrice = (article: IArticle, priceId: number) => {
-		const current = getValues('articles') ?? [];
-		const updated: ArticleOrder[] = current.some(a => a.id === article.id)
-			? current.map(a => a.id === article.id ? {...a, price_id: priceId} : a)
-			: [...current, {id: article.id, quantity: 1, parent_id: article.parent_mapping_id || null, price_id: priceId}];
-		setValue('articles', updated, {shouldDirty: true});
+		setValue('articles', withPriceChoice(getValues('articles') ?? [], article, priceId), {shouldDirty: true});
 	};
+
+	// One price category for all the chosen rooms (#1477), when every room with a
+	// choice offers the same ones; otherwise each room keeps its own choice above.
+	// Only the rooms chosen right now take part, so a removed room is never priced.
+	const chosenResourceArticles = useMemo(() => (resourceArticles ?? []).filter(article =>
+		article.resource_id && selectedResources.includes(String(article.resource_id))
+	), [resourceArticles, selectedResources]);
+	const sharedPriceCategories = useMemo(() => sharedCategories(chosenResourceArticles), [chosenResourceArticles]);
+	const sharedPriceChoice = sharedPriceCategories.length > 0;
+	const sharedPriceChoiceRef = useRef<HTMLSelectElement>(null);
+	// The category the applicant chose, kept so that a room added afterwards follows it
+	const [chosenCategoryId, setChosenCategoryId] = useState<number | null>(null);
+
+	// Each room with a choice gets its own price in the category
+	const applyCategory = useCallback((categoryId: number) => {
+		const updated = chosenResourceArticles.filter(hasPriceChoice).reduce((articles, article) => {
+			const option = optionInCategory(article, categoryId);
+			return option ? withPriceChoice(articles, article, option.price_id) : articles;
+		}, getValues('articles') ?? []);
+		setValue('articles', updated, {shouldDirty: true});
+	}, [chosenResourceArticles, getValues, setValue]);
+
+	const chooseCategory = (categoryId: number) => {
+		setChosenCategoryId(categoryId);
+		applyCategory(categoryId);
+	};
+
+	useEffect(() => {
+		if (chosenCategoryId === null) {
+			return;
+		}
+		if (!sharedPriceCategories.some(category => category.id === chosenCategoryId)) {
+			// The chosen rooms no longer share it: the choice is dropped, but every
+			// room keeps the price it has, so nothing changes price by itself
+			setChosenCategoryId(null);
+			return;
+		}
+		const behind = chosenResourceArticles.filter(hasPriceChoice).some(article => {
+			const inForce = watchedArticles?.find(a => a.id === article.id)?.price_id ?? article.default_price_id;
+			return inForce !== optionInCategory(article, chosenCategoryId)?.price_id;
+		});
+		if (behind) {
+			applyCategory(chosenCategoryId);
+		}
+	}, [chosenCategoryId, sharedPriceCategories, chosenResourceArticles, watchedArticles, applyCategory]);
 
 	// The quantity the room's price line is multiplied by: whole hours for an hourly room,
 	// the exact booked minutes for a minute-priced one
@@ -746,7 +789,7 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 		setPriceChoiceSubmitted(true);
 		await handleSubmit(onSubmit)(event);
 		if (missingPriceChoice) {
-			priceChoiceRefs.current.get(missingPriceChoice.id)?.focus();
+			(sharedPriceChoice ? sharedPriceChoiceRef.current : priceChoiceRefs.current.get(missingPriceChoice.id))?.focus();
 		}
 	};
 
@@ -1679,7 +1722,21 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 						)}
 					</div>
 
-					{priceChoiceArticles.map(article => (
+					{sharedPriceChoice && (
+						<div className={`${styles.formGroup} ${styles.wide}`}>
+							<SharedPriceCategoryField
+								ref={sharedPriceChoiceRef}
+								categories={sharedPriceCategories}
+								value={categoryInForce(chosenResourceArticles, priceChoiceOf)}
+								onChange={chooseCategory}
+								error={priceChoiceSubmitted && missingPriceChoice
+									? t('bookingfrontend.price_choice_required')
+									: undefined}
+							/>
+						</div>
+					)}
+
+					{!sharedPriceChoice && priceChoiceArticles.map(article => (
 						<div key={article.id} className={`${styles.formGroup} ${styles.wide}`}>
 							<PriceChoiceField
 								ref={(select) => {

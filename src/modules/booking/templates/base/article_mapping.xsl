@@ -24,7 +24,7 @@
 			</xsl:variable>
 
 			<script type="text/javascript">
-				var lang = <xsl:value-of select="php:function('js_lang', 'Name or company is required', 'next', 'save', 'Name', 'Resource Type', 'Select', 'Active', 'price_incl_vat_nearest', 'vat_rate_missing')"/>;
+				var lang = <xsl:value-of select="php:function('js_lang', 'Name or company is required', 'next', 'save', 'Name', 'Resource Type', 'Select', 'Active', 'price_incl_vat_nearest', 'vat_rate_missing', 'price_category_new', 'price_category_name', 'price_category_add', 'price_category_exists', 'price_category_invalid', 'price_category_add_failed')"/>;
 				var initialSelection = <xsl:value-of select="resources_json"/>;
 				var tax_percentages = <xsl:value-of select="tax_percentages_json"/>;
 
@@ -265,6 +265,30 @@
 								<input type="text" id="remark" name="article_prizing[remark]" value="{article_prizing/remark}" class="pure-input-1-2" >
 								</input>
 							</div>
+							<!-- Price category (ref #1477): a resource's prices only, once categories are installed.
+								 #price-category-config tells article_mapping.js where to add a new one, with its CSRF token. -->
+							<xsl:if test="price_category/url != ''">
+								<div class="pure-control-group">
+									<label for="price_category_id">
+										<xsl:value-of select="php:function('lang', 'price_category')"/>
+									</label>
+									<select id="price_category_id" name="article_prizing[category_id]" class="ds-input price-category-select" data-size="sm">
+										<option value="">
+											<xsl:value-of select="php:function('lang', 'price_category_none')"/>
+										</option>
+										<xsl:for-each select="price_category/options">
+											<option value="{id}">
+												<xsl:value-of select="name"/>
+											</option>
+										</xsl:for-each>
+									</select>
+									<xsl:text> </xsl:text>
+									<button type="button" class="ds-button price-category-new" data-variant="tertiary" data-color="accent" data-size="sm">
+										<xsl:value-of select="php:function('lang', 'price_category_new')"/>
+									</button>
+								</div>
+								<div id="price-category-config" hidden="hidden" data-url="{price_category/url}" data-csrf-name="{price_category/csrf_name}" data-csrf-value="{price_category/csrf_value}"></div>
+							</xsl:if>
 
 							<div class="pure-control-group">
 								<label>

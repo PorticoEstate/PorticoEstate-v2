@@ -61,7 +61,9 @@ const PriceChoiceField = forwardRef<HTMLSelectElement, PriceChoiceFieldProps>(({
 		const amount = isMinute
 			? formatHourlyRate(hourlyRateOf(option), t)
 			: formatCurrency(parseFloat(option.price));
-		return option.remark ? `${option.remark} – ${amount}` : amount;
+		// A price in a category is called by the category's name, otherwise by its remark
+		const label = option.category_name || option.remark;
+		return label ? `${label} – ${amount}` : amount;
 	};
 
 	const chosenPriceText = (option: IPriceOption) => isMinute

@@ -1196,3 +1196,4 @@ kr_per_hour	bookingfrontend	nn	kr/time
 minutes_short	bookingfrontend	nn	min
 catering_no_serving_time	bookingfrontend	nn	Utan serveringstid
 prices_incl_vat	bookingfrontend	nn	Alle prisar er oppgjevne inkl. mva
+price_category_shared_help	bookingfrontend	nn	Valet gjeld alle ressursane du har valt.

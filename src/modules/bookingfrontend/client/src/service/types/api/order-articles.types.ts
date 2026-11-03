@@ -25,6 +25,12 @@ export interface IPriceOption {
 	/** What the price is for, as the admin wrote it; may be empty */
 	remark: string;
 
+	/** The price category the row belongs to; null (or absent from an older server) when it has none */
+	category_id?: number | null;
+
+	/** The category's name. When set, the price is called by it instead of by the remark */
+	category_name?: string | null;
+
 	/** Price before tax */
 	ex_tax_price: string;
 

@@ -31,6 +31,8 @@ use App\modules\booking\controllers\HospitalityController;
 use App\modules\booking\controllers\HospitalityArticleController;
 use App\modules\booking\controllers\HospitalityOrderController;
 use App\modules\booking\controllers\ArticleMappingController;
+use App\modules\booking\controllers\PriceCategoryController;
+use Slim\Csrf\Guard;
 use App\modules\booking\viewcontrollers\HospitalityViewController;
 use App\modules\booking\viewcontrollers\HospitalityOrderViewController;
 
@@ -318,6 +320,42 @@ $app->group('/booking/hospitality-orders', function (RouteCollectorProxy $group)
 $app->group('/booking/article-mappings', function (RouteCollectorProxy $group) {
 	$group->post('', ArticleMappingController::class . ':store');
 	$group->put('/{id:[0-9]+}', ArticleMappingController::class . ':update');
+})
+	->addMiddleware(new AccessVerifier($container))
+	->addMiddleware(new SessionsMiddleware($container));
+
+// A write from a legacy page needs the CSRF token that page was given
+// (booking_uiarticle_mapping::edit mints it into the session's csrf store).
+// The token comes as X-CSRF-NAME / X-CSRF-VALUE, since nginx drops header
+// names with underscores, and goes to the guard as the csrf_name / csrf_value
+// headers it reads. Same guard and storage as the messenger module.
+$bookingCsrfMiddleware = function ($request, $handler) use ($app)
+{
+	$name = $request->getHeaderLine('X-CSRF-NAME');
+	$value = $request->getHeaderLine('X-CSRF-VALUE');
+	if ($name !== '')
+	{
+		$request = $request->withHeader('csrf_name', $name);
+	}
+	if ($value !== '')
+	{
+		$request = $request->withHeader('csrf_value', $value);
+	}
+
+	$failureHandler = function ($request, $handler) use ($app)
+	{
+		$response = $app->getResponseFactory()->createResponse(400);
+		$response->getBody()->write(json_encode(['error' => 'Failed CSRF check']));
+		return $response->withHeader('Content-Type', 'application/json');
+	};
+
+	$csrfStorage = null;
+	$guard = new Guard($app->getResponseFactory(), 'csrf', $csrfStorage, $failureHandler, 200, 16, true);
+	return $guard->process($request, $handler);
+};
+
+$app->group('/booking/price-categories', function (RouteCollectorProxy $group) use ($bookingCsrfMiddleware) {
+	$group->post('', PriceCategoryController::class . ':store')->add($bookingCsrfMiddleware);
 })
 	->addMiddleware(new AccessVerifier($container))
 	->addMiddleware(new SessionsMiddleware($container));

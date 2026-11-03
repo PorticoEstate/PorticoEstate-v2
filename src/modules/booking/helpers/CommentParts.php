@@ -197,6 +197,12 @@ class CommentParts
 	 * reads can be, and no candidate can start inside another one. («&#x&#xFFFE;» holds one, the second «&#».) A
 	 * stretch is one pattern match with no backtracking, so a comment of any size is read in a single linear pass.
 	 *
+	 * Each stretch is judged by html_entity_decode, exactly as toXML() calls it, so every spelling the decoder accepts
+	 * is caught. Do not replace that with a pattern for the spelling (it misses the strtol forms, «&#x0xFFFE;»), and do
+	 * not add a pattern prefilter in front of it: one with a backtracking tail, /&#[^&;]*(?:fff[ef]|6553[45]);/i, hits
+	 * PREG_BACKTRACK_LIMIT on «&#» followed by a run of «a» (1 MB is enough), preg returns NULL, and the (string) cast
+	 * turns the whole comment into an empty string (fact 36455).
+	 *
 	 * Not removed: that can join the pieces around a reference into a new one («&#x&#xFFFE;FFFE;»), one pass would
 	 * then not be enough, and a loop that goes on until none is left is quadratic on a comment built for it (40,000
 	 * levels, 640 KB: 6 s). A character cannot be joined into a reference, so one pass is enough.

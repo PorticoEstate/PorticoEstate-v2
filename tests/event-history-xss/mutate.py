@@ -5,8 +5,9 @@ Mutation check for the event-history XSS harness (run.php, task 36226).
 Same idea as tests/event-sms-participants/mutate.py: one deliberate defect at a time, applied to a TEMP COPY of
 the files the harness reads (never to the tree), and run.php must go red for each. The baseline on the same copy
 must be green first, and every replacement must match exactly once. A mutation counts as caught only when the
-harness exits 1 with a FAIL line: any other exit (a crash, a fatal error) is reported as CRASH and fails the run,
-because a harness that dies has not looked at anything.
+harness exits 1 with a FAIL line: any other exit (a crash, a fatal error, a run that does not finish within
+MUTATE_TIMEOUT seconds) is reported as CRASH and fails the run, because a harness that dies or hangs has not
+looked at anything.
 
 Every mutation runs HERMETIC first (no database). When HD_DB_HEADER is set the corpus arm K is run too, and the
 mutations marked K must make a «FAIL K » line appear: that is what proves the corpus counts can fail. Without
@@ -27,6 +28,7 @@ import tempfile
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.abspath(os.path.join(HERE, "..", ".."))
 PHP = os.environ.get("PHP_BIN", "php")
+TIMEOUT = int(os.environ.get("MUTATE_TIMEOUT", "180"))  # seconds per harness run (a run takes under a minute, with the corpus arm)
 
 # Everything the harness reads from HD_ROOT.
 FILES = [
@@ -43,7 +45,25 @@ U = "src/modules/booking/inc/class.uievent.inc.php"
 X = "src/modules/booking/templates/base/event_edit.xsl"
 H = "src/modules/booking/helpers/CommentParts.php"
 
+# the one statement of CommentParts::replaceNonCharacterReferences() that N16 and N17 replace as a whole
+CALLBACK = ("\t\treturn (string)preg_replace_callback('/&#[^&;]*;/', static function ( array $reference ): string\n\t\t{\n"
+            "\t\t\treturn in_array(html_entity_decode($reference[0]), array(\"\\u{FFFE}\", \"\\u{FFFF}\"), true) ? \"\\u{FFFD}\" : $reference[0];\n"
+            "\t\t}, $value);\n")
+
+# the statement of the same function that replaces the characters U+FFFE and U+FFFF themselves (task 36487)
+RAW = "\t\t$value = str_replace(array(\"\\u{FFFE}\", \"\\u{FFFF}\"), \"\\u{FFFD}\", $value);\n"
+
 R = re.compile  # a regex mutation: (pattern, replacement), the pattern must match exactly once
+
+
+class Multi:
+    """Several exact replacements in one file, applied in order; every one must match exactly once."""
+
+    def __init__(self, *pairs):
+        self.pairs = pairs
+
+
+M = Multi  # M((old, new), (old, new)): `old` of a mutation, `new` is then ignored
 
 # (id, file, description, old, new, k)   old: str (exact, once) or R(pattern); k: the corpus arm must catch it too
 MUTATIONS = [
@@ -134,12 +154,83 @@ MUTATIONS = [
      "\t\t\t\t\t'value'\t=> $comment,\n", "\t\t\t\t\t'value'\t=> $type,\n", False),
     ("A7", SO, "the INSERT names its columns in another order",
      "INSERT INTO bb_event_comment (event_id, time, author, comment, type)", "INSERT INTO bb_event_comment (event_id, time, author, type, comment)", False),
+    # --- the follow-up (task 36276): U+FFFE / U+FFFF; the references are judged by html_entity_decode (task 36448) ----
+    ("N1", H, "the references to U+FFFE and U+FFFF are not replaced at all",
+     "? \"\\u{FFFD}\" : $reference[0];", "? $reference[0] : $reference[0];", False),
+    ("N2", H, "removed instead of replaced: the pieces around a reference join into a new one («&#x&#xFFFE;FFFE;»)",
+     "? \"\\u{FFFD}\" : $reference[0];", "? '' : $reference[0];", False),
+    ("N16", H, "removed and repeated until none is left (the first version): rebuilt references go too, but one pass per level makes it quadratic",
+     CALLBACK,
+     "\t\t$removed = 0;\n\t\tdo\n\t\t{\n\t\t\t$removed = 0;\n"
+     "\t\t\t$value = (string)preg_replace_callback('/&#[^&;]*;/', static function ( array $reference ) use ( &$removed ): string\n\t\t\t{\n"
+     "\t\t\t\tif (in_array(html_entity_decode($reference[0]), array(\"\\u{FFFE}\", \"\\u{FFFF}\"), true))\n\t\t\t\t{\n\t\t\t\t\t$removed++;\n\t\t\t\t\treturn '';\n\t\t\t\t}\n"
+     "\t\t\t\treturn $reference[0];\n\t\t\t}, $value);\n\t\t}\n\t\twhile ($removed > 0);\n\t\treturn $value;\n", False),
+    ("N3", H, "hexadecimal references only (a decimal one is not a candidate)",
+     "'/&#[^&;]*;/'", "'/&#[xX][^&;]*;/'", False),
+    ("N4", H, "decimal references only (a hexadecimal one is not a candidate)",
+     "'/&#[^&;]*;/'", "'/&#[0-9][^&;]*;/'", False),
+    ("N5", H, "U+FFFE only (U+FFFF stays)",
+     "array(\"\\u{FFFE}\", \"\\u{FFFF}\"), true)", "array(\"\\u{FFFE}\"), true)", False),
+    ("N6", H, "a leading zero ends the candidate (no leading zeros allowed)",
+     "'/&#[^&;]*;/'", "'/&#[xX]?[1-9a-fA-F][^&;]*;/'", False),
+    ("N7", H, "a capital X is not a candidate (case-sensitive)",
+     "'/&#[^&;]*;/'", "'/&#[^&;X]*;/'", False),
+    ("N8", H, "too greedy: U+FFFC and U+FFFD are replaced too",
+     "array(\"\\u{FFFE}\", \"\\u{FFFF}\"), true)", "array(\"\\u{FFFC}\", \"\\u{FFFD}\", \"\\u{FFFE}\", \"\\u{FFFF}\"), true)", False),
+    ("N8e", H, "U+FFFD is replaced too (by U+FFFD, the character toXML would make of it: harmless, so the harness must NOT notice; equivalent mutant control)",
+     "array(\"\\u{FFFE}\", \"\\u{FFFF}\"), true)", "array(\"\\u{FFFD}\", \"\\u{FFFE}\", \"\\u{FFFF}\"), true)", False),
+    ("N9", H, "too greedy: any code point that ends in FFFE or FFFF goes (U+1FFFE, U+FFFFE ...)",
+     "in_array(html_entity_decode($reference[0]), array(\"\\u{FFFE}\", \"\\u{FFFF}\"), true)", "(mb_ord(html_entity_decode($reference[0]), 'UTF-8') & 0xFFFF) >= 0xFFFE", False),
+    # --- the strtol «0x» forms (task 36448) ---------------------------------------------------------------
+    ("N17", H, "the old spelling pattern is back: «&#x0xFFFE;» (a «0x» after the «x», which strtol takes) is missed",
+     CALLBACK, "\t\treturn (string)preg_replace('/&#(?:x0*fff[ef]|0*6553[45]);/i', \"\\u{FFFD}\", $value);\n", False),
+    ("N18", H, "only plain digits after the x are a candidate (a «0x» stretch is none)",
+     "'/&#[^&;]*;/'", "'/&#[xX]?[0-9A-Fa-f]+;/'", False),
+    ("N19", H, "judged with ENT_HTML5, which refuses these two characters: the decoder toXML calls does not",
+     "html_entity_decode($reference[0]), array(", "html_entity_decode($reference[0], ENT_QUOTES | ENT_HTML5), array(", False),
+    ("N20", H, "a candidate may hold an «&»: «&#x&#xFFFE;» is judged as a whole and is not one character",
+     "'/&#[^&;]*;/'", "'/&#[^;]*;/'", False),
+    ("N10", H, "the v of the parts is not cleaned (the href still is)",
+     "\t\t\t\t$part['v'] = self::replaceNonCharacterReferences($part['v']);\n", "\t\t\t\t$part['v'] = $part['v'];\n", False),
+    ("N11", H, "the href is not cleaned (the v still is)",
+     "trim(self::replaceNonCharacterReferences((string)preg_replace('/[\\x00-\\x1F\\x7F]+/', '', $raw)))",
+     "trim((string)preg_replace('/[\\x00-\\x1F\\x7F]+/', '', $raw))", False),
+    ("N12", H, "the href is cleaned before its control characters are stripped (a tab inside a reference hides it)",
+     "trim(self::replaceNonCharacterReferences((string)preg_replace('/[\\x00-\\x1F\\x7F]+/', '', $raw)))",
+     "trim((string)preg_replace('/[\\x00-\\x1F\\x7F]+/', '', self::replaceNonCharacterReferences($raw)))", False),
+    ("N13", H, "cleaned before the HTML step instead of after it (the old place of the strip)",
+     M(("\t\t$text = (string)preg_replace('/[\\x00-\\x08\\x0B\\x0C\\x0E-\\x1F]|\\xEF\\xBF[\\xBE\\xBF]/', '', mb_scrub($text, 'UTF-8'));\n",
+        "\t\t$text = (string)preg_replace('/[\\x00-\\x08\\x0B\\x0C\\x0E-\\x1F]|\\xEF\\xBF[\\xBE\\xBF]/', '', mb_scrub($text, 'UTF-8'));\n\t\t$text = self::replaceNonCharacterReferences($text);\n"),
+       ("\t\t\t\t$part['v'] = self::replaceNonCharacterReferences($part['v']);\n", "\t\t\t\t$part['v'] = $part['v'];\n"),
+       ("trim(self::replaceNonCharacterReferences((string)preg_replace('/[\\x00-\\x1F\\x7F]+/', '', $raw)))",
+        "trim((string)preg_replace('/[\\x00-\\x1F\\x7F]+/', '', $raw))")), None, False),
+    ("N14", H, "cleaned per text node, before the pieces are joined (a comment, tag or dropped script between «&#x» and «FFFE;» hides a reference)",
+     M(("\t\t\t\tself::addText($parts, (string)$child->nodeValue);\n", "\t\t\t\tself::addText($parts, self::replaceNonCharacterReferences((string)$child->nodeValue));\n"),
+       ("\t\t\t\t$part['v'] = self::replaceNonCharacterReferences($part['v']);\n", "\t\t\t\t$part['v'] = $part['v'];\n")), None, False),
+    ("N15", H, "the link text is cleaned per text node, before plainText joins the pieces",
+     M(("\t\t\t\t$text .= $child->nodeValue;\n", "\t\t\t\t$text .= self::replaceNonCharacterReferences((string)$child->nodeValue);\n"),
+       ("\t\t\t\t$part['v'] = self::replaceNonCharacterReferences($part['v']);\n", "\t\t\t\t$part['v'] = $part['v'];\n")), None, False),
+    # --- the characters themselves, made by the HTML step (a <meta charset="utf-7"> and «+//4-»; task 36487) ----------
+    ("N21", H, "the characters U+FFFE and U+FFFF themselves are not replaced (the references still are): an href that a UTF-7 meta gave one fails the page's load",
+     RAW, "", False),
+    ("N22", H, "U+FFFE only (a raw U+FFFF stays)",
+     RAW, RAW.replace("array(\"\\u{FFFE}\", \"\\u{FFFF}\")", "\"\\u{FFFE}\""), False),
+    ("N23", H, "U+FFFF only (a raw U+FFFE stays)",
+     RAW, RAW.replace("array(\"\\u{FFFE}\", \"\\u{FFFF}\")", "\"\\u{FFFF}\""), False),
+    ("N24", H, "removed instead of replaced (the href loses the character instead of holding U+FFFD)",
+     RAW, RAW.replace("\"\\u{FFFD}\", $value", "'', $value"), False),
+    ("N21e", H, "the characters are replaced after the references are judged instead of before (the same result: a replaced character is neither part of a reference nor joins one; equivalent mutant control)",
+     M((RAW, ""),
+       (CALLBACK, CALLBACK.replace("return (string)preg_replace_callback(", "return str_replace(array(\"\\u{FFFE}\", \"\\u{FFFF}\"), \"\\u{FFFD}\", (string)preg_replace_callback(")
+                          .replace("}, $value);\n", "}, $value));\n"))), None, False),
     ("H19", H, "adjacent text is no longer merged (harmless to the text, so the harness must NOT notice; equivalent mutant control)",
      "\t\tif ($last >= 0 && $parts[$last]['k'] === 't')\n", "\t\tif (false)\n", False),
 ]
 
-# H19 is the control for the harness's own sensitivity: merging is a size optimisation, the visible text is the same.
-EQUIVALENT = {"H19"}
+# H19, N8e and N21e are the controls for the harness's own sensitivity: merging is a size optimisation and the visible text
+# is the same (H19); replacing a reference to U+FFFD by U+FFFD changes nothing a reader or the page could tell (N8e); the
+# order of the two steps of replaceNonCharacterReferences() changes nothing when the characters are replaced (N21e).
+EQUIVALENT = {"H19", "N8e", "N21e"}
 
 
 def run_harness(tree, corpus):
@@ -148,12 +239,24 @@ def run_harness(tree, corpus):
     env["XDEBUG_MODE"] = "off"
     if not corpus:
         env.pop("HD_DB_HEADER", None)
-    p = subprocess.run([PHP, os.path.join(HERE, "run.php")], env=env, capture_output=True, text=True)
+    try:
+        p = subprocess.run([PHP, os.path.join(HERE, "run.php")], env=env, capture_output=True, text=True, timeout=TIMEOUT)
+    except subprocess.TimeoutExpired:
+        # a mutant that makes the code loop has not been looked at by anything: a CRASH, never a catch
+        return 124, f"TIMEOUT after {TIMEOUT} s", ""
     out = (p.stdout + p.stderr).strip().splitlines()
     return p.returncode, (out[-1] if out else ""), p.stdout
 
 
 def apply(original, old, new):
+    if isinstance(old, Multi):
+        text = original
+        for o, nw in old.pairs:
+            c = text.count(o)
+            if c != 1:
+                return c, original
+            text = text.replace(o, nw, 1)
+        return 1, text
     if isinstance(old, str):
         n = original.count(old)
         return n, original.replace(old, new, 1)

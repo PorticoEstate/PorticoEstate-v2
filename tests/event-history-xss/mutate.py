@@ -45,6 +45,11 @@ U = "src/modules/booking/inc/class.uievent.inc.php"
 X = "src/modules/booking/templates/base/event_edit.xsl"
 H = "src/modules/booking/helpers/CommentParts.php"
 
+# the one statement of CommentParts::replaceNonCharacterReferences() that N16 and N17 replace as a whole
+CALLBACK = ("\t\treturn (string)preg_replace_callback('/&#[^&;]*;/', static function ( array $reference ): string\n\t\t{\n"
+            "\t\t\treturn in_array(html_entity_decode($reference[0]), array(\"\\u{FFFE}\", \"\\u{FFFF}\"), true) ? \"\\u{FFFD}\" : $reference[0];\n"
+            "\t\t}, $value);\n")
+
 R = re.compile  # a regex mutation: (pattern, replacement), the pattern must match exactly once
 
 
@@ -146,30 +151,42 @@ MUTATIONS = [
      "\t\t\t\t\t'value'\t=> $comment,\n", "\t\t\t\t\t'value'\t=> $type,\n", False),
     ("A7", SO, "the INSERT names its columns in another order",
      "INSERT INTO bb_event_comment (event_id, time, author, comment, type)", "INSERT INTO bb_event_comment (event_id, time, author, type, comment)", False),
-    # --- the follow-up (task 36276): U+FFFE / U+FFFF -------------------------------------------------------
+    # --- the follow-up (task 36276): U+FFFE / U+FFFF; the references are judged by html_entity_decode (task 36448) ----
     ("N1", H, "the references to U+FFFE and U+FFFF are not replaced at all",
-     "'/&#(?:x0*fff[ef]|0*6553[45]);/i'", "'/(?!)/'", False),
+     "? \"\\u{FFFD}\" : $reference[0];", "? $reference[0] : $reference[0];", False),
     ("N2", H, "removed instead of replaced: the pieces around a reference join into a new one («&#x&#xFFFE;FFFE;»)",
-     "\"\\u{FFFD}\", $value);", "'', $value);", False),
+     "? \"\\u{FFFD}\" : $reference[0];", "? '' : $reference[0];", False),
     ("N16", H, "removed and repeated until none is left (the first version): rebuilt references go too, but one pass per level makes it quadratic",
-     "\t\treturn (string)preg_replace('/&#(?:x0*fff[ef]|0*6553[45]);/i', \"\\u{FFFD}\", $value);\n",
-     "\t\tdo\n\t\t{\n\t\t\t$value = (string)preg_replace('/&#(?:x0*fff[ef]|0*6553[45]);/i', '', $value, -1, $dropped);\n\t\t}\n\t\twhile ($dropped > 0);\n\t\treturn $value;\n", False),
-    ("N3", H, "hexadecimal references only",
-     "'/&#(?:x0*fff[ef]|0*6553[45]);/i'", "'/&#x0*fff[ef];/i'", False),
-    ("N4", H, "decimal references only",
-     "'/&#(?:x0*fff[ef]|0*6553[45]);/i'", "'/&#0*6553[45];/i'", False),
+     CALLBACK,
+     "\t\t$removed = 0;\n\t\tdo\n\t\t{\n\t\t\t$removed = 0;\n"
+     "\t\t\t$value = (string)preg_replace_callback('/&#[^&;]*;/', static function ( array $reference ) use ( &$removed ): string\n\t\t\t{\n"
+     "\t\t\t\tif (in_array(html_entity_decode($reference[0]), array(\"\\u{FFFE}\", \"\\u{FFFF}\"), true))\n\t\t\t\t{\n\t\t\t\t\t$removed++;\n\t\t\t\t\treturn '';\n\t\t\t\t}\n"
+     "\t\t\t\treturn $reference[0];\n\t\t\t}, $value);\n\t\t}\n\t\twhile ($removed > 0);\n\t\treturn $value;\n", False),
+    ("N3", H, "hexadecimal references only (a decimal one is not a candidate)",
+     "'/&#[^&;]*;/'", "'/&#[xX][^&;]*;/'", False),
+    ("N4", H, "decimal references only (a hexadecimal one is not a candidate)",
+     "'/&#[^&;]*;/'", "'/&#[0-9][^&;]*;/'", False),
     ("N5", H, "U+FFFE only (U+FFFF stays)",
-     "'/&#(?:x0*fff[ef]|0*6553[45]);/i'", "'/&#(?:x0*fffe|0*65534);/i'", False),
-    ("N6", H, "no leading zeros allowed",
-     "'/&#(?:x0*fff[ef]|0*6553[45]);/i'", "'/&#(?:xfff[ef]|6553[45]);/i'", False),
-    ("N7", H, "case-sensitive (a capital X or capital hex digits stay)",
-     "'/&#(?:x0*fff[ef]|0*6553[45]);/i'", "'/&#(?:x0*fff[ef]|0*6553[45]);/'", False),
-    ("N8", H, "too greedy: U+FFFC and U+FFFD are replaced too (fff[c-f])",
-     "'/&#(?:x0*fff[ef]|0*6553[45]);/i'", "'/&#(?:x0*fff[c-f]|0*6553[2-5]);/i'", False),
+     "array(\"\\u{FFFE}\", \"\\u{FFFF}\"), true)", "array(\"\\u{FFFE}\"), true)", False),
+    ("N6", H, "a leading zero ends the candidate (no leading zeros allowed)",
+     "'/&#[^&;]*;/'", "'/&#[xX]?[1-9a-fA-F][^&;]*;/'", False),
+    ("N7", H, "a capital X is not a candidate (case-sensitive)",
+     "'/&#[^&;]*;/'", "'/&#[^&;X]*;/'", False),
+    ("N8", H, "too greedy: U+FFFC and U+FFFD are replaced too",
+     "array(\"\\u{FFFE}\", \"\\u{FFFF}\"), true)", "array(\"\\u{FFFC}\", \"\\u{FFFD}\", \"\\u{FFFE}\", \"\\u{FFFF}\"), true)", False),
     ("N8e", H, "U+FFFD is replaced too (by U+FFFD, the character toXML would make of it: harmless, so the harness must NOT notice; equivalent mutant control)",
-     "'/&#(?:x0*fff[ef]|0*6553[45]);/i'", "'/&#(?:x0*fff[def]|0*6553[345]);/i'", False),
+     "array(\"\\u{FFFE}\", \"\\u{FFFF}\"), true)", "array(\"\\u{FFFD}\", \"\\u{FFFE}\", \"\\u{FFFF}\"), true)", False),
     ("N9", H, "too greedy: any code point that ends in FFFE or FFFF goes (U+1FFFE, U+FFFFE ...)",
-     "'/&#(?:x0*fff[ef]|0*6553[45]);/i'", "'/&#(?:x[0-9a-f]*fff[ef]|0*6553[45]);/i'", False),
+     "in_array(html_entity_decode($reference[0]), array(\"\\u{FFFE}\", \"\\u{FFFF}\"), true)", "(mb_ord(html_entity_decode($reference[0]), 'UTF-8') & 0xFFFF) >= 0xFFFE", False),
+    # --- the strtol «0x» forms (task 36448) ---------------------------------------------------------------
+    ("N17", H, "the old spelling pattern is back: «&#x0xFFFE;» (a «0x» after the «x», which strtol takes) is missed",
+     CALLBACK, "\t\treturn (string)preg_replace('/&#(?:x0*fff[ef]|0*6553[45]);/i', \"\\u{FFFD}\", $value);\n", False),
+    ("N18", H, "only plain digits after the x are a candidate (a «0x» stretch is none)",
+     "'/&#[^&;]*;/'", "'/&#[xX]?[0-9A-Fa-f]+;/'", False),
+    ("N19", H, "judged with ENT_HTML5, which refuses these two characters: the decoder toXML calls does not",
+     "html_entity_decode($reference[0]), array(", "html_entity_decode($reference[0], ENT_QUOTES | ENT_HTML5), array(", False),
+    ("N20", H, "a candidate may hold an «&»: «&#x&#xFFFE;» is judged as a whole and is not one character",
+     "'/&#[^&;]*;/'", "'/&#[^;]*;/'", False),
     ("N10", H, "the v of the parts is not cleaned (the href still is)",
      "\t\t\t\t$part['v'] = self::replaceNonCharacterReferences($part['v']);\n", "\t\t\t\t$part['v'] = $part['v'];\n", False),
     ("N11", H, "the href is not cleaned (the v still is)",

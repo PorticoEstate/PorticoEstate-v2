@@ -45,7 +45,9 @@
  *       failed load is the «Systemfeil» page). A reference to either character, stored at 0 to 6 levels of entity
  *       encoding, as decimal or hexadecimal with leading zeros, in text, in a link text and in an href, split by a
  *       comment or an element, or around another one that would rebuild it if it were removed, must not fail that
- *       load; the characters next to them (U+FFFD, U+1FFFE, ...) must stay.
+ *       load; the characters next to them (U+FFFD, U+1FFFE, ...) must stay. Task 36448 adds the spellings only strtol
+ *       reads («&#x0xFFFE;»: a «0x» after the «x»), a sweep of 6,240 spellings sorted by the decoder itself, and the
+ *       two-decode shape («&amp;#xFFFE;», which only toXML's single decode keeps from being the character).
  *   K   (HD_DB_HEADER set) the corpus: every stored bb_event_comment row of the local database through the real
  *       path; counts only, no content is printed. Visible text and links are unchanged against the old page's
  *       view of the same row (script/style text excluded), and nothing is LIVE afterwards.
@@ -847,6 +849,80 @@ namespace {
                     $same("{$name}: what is shown", $r['canon'][0] ?? null, 'a' . ($k <= 4 ? mb_chr($cp, 'UTF-8') : $amp($k - 5) . $ref) . 'b');
                 }
             }
+        }
+
+        // strtol (task 36448): PHP reads a hexadecimal reference with strtol, which also takes a «0x» after the «x», so
+        // «&#x0xFFFE;» is U+FFFE for the decoder whatever a pattern for the canonical spelling says. Level 4 is where it
+        // fails the page; below it the strip or the HTML step has dealt with it already (what the HTML step makes of the
+        // half reference «&#x0» is its own business, so there only the load and the absence of the characters are pinned),
+        // from level 5 it is shown as typed.
+        $strtol = ['#x0xFFFE;', '#x0XFFFF;', '#X0xfffe;', '#X0XFFFF;', '#x0x0000FFFE;', '#x0X0fffF;'];
+        foreach ($shapes as $shape => [$build, $want]) {
+            foreach ($strtol as $ref) {
+                foreach (range(0, 6) as $k) {
+                    $name = "F strtol {$shape} «{$ref}» @{$k}x";
+                    $r = $page($name, $build($amp($k) . $ref));
+                    if ($r === null) {
+                        continue;
+                    }
+                    $check("{$name}: the output holds neither U+FFFE nor U+FFFF", preg_match('/\xEF\xBF[\xBE\xBF]/', $r['html']) !== 1, 'it is in the page');
+                    if ($k >= 4) {
+                        $same("{$name}: what is shown", $r['canon'][0] ?? null, $want($k === 4 ? "\u{FFFD}" : $amp($k - 5) . $ref));
+                    }
+                }
+            }
+        }
+
+        // the grammar sweep: spellings of a reference, found by asking the decoder (html_entity_decode, the call toXML makes)
+        // which of them are U+FFFE or U+FFFF, then each one at 4 levels through the real path. A candidate the decoder reads
+        // and the helper missed is a page that fails to load. The control: the sweep holds such spellings, among them some
+        // that only strtol reads (a «0x» prefix), or an empty sweep would pass.
+        $pre = ['', 'x', 'X', 'x0x', 'x0X', 'X0x', 'X0X', 'x00x', 'x0x0x', '0x', 'x ', 'x+', 'x-', ' x', "x\t", 'x0x+', 'x0x ', 'x0x-', '+', '-', ' ', "\t", '0', 'x0', 'x0b', 'x0o', '0b', '0o', 'xx', 'x0xx'];
+        $zeros = ['', '0', '000', str_repeat('0', 40)];
+        $cores = ['fffe', 'FFFF', 'fFfE', '65534', '65535', 'fffe0', 'ffff ', '65534 ', 'FFFE.', '1fffe', '10fffe', 'fffe_', 'ff_fe'];
+        $ends = [';', ' ;', '', ';;'];
+        $candidates = 0;
+        $decoded = 0;
+        $quirk = 0;
+        $missed = [];
+        foreach ($pre as $p) {
+            foreach ($zeros as $z) {
+                foreach ($cores as $c) {
+                    foreach ($ends as $e) {
+                        $ref = '&#' . $p . $z . $c . $e;
+                        $candidates++;
+                        $isCharacter = preg_match('/\xEF\xBF[\xBE\xBF]/', html_entity_decode($ref)) === 1;
+                        $decoded += $isCharacter ? 1 : 0;
+                        $quirk += $isCharacter && preg_match('/^&#x0x/i', $ref) === 1 ? 1 : 0;
+                        try {
+                            $one('a' . $amp(4) . substr($ref, 1) . 'b');
+                        } catch (\Throwable $ex) {
+                            $missed[] = json_encode($ref) . ($isCharacter ? ' (decoded)' : '');
+                        }
+                    }
+                }
+            }
+        }
+        $check('F sweep: control: the candidates hold spellings the decoder reads as U+FFFE or U+FFFF', $decoded > 0, "{$decoded} of {$candidates}");
+        $check('F sweep: control: some of them are read only because strtol takes a «0x» prefix', $quirk > 0, "{$quirk} of {$decoded}");
+        $check("F sweep: the page loads at 4 levels for every candidate ({$candidates})", $missed === [], count($missed) . ' fail: ' . implode(' ', array_slice($missed, 0, 8)));
+
+        // two decodes (validation 36431): the helper leaves «&amp;#xFFFE;» in a part, which one decode turns into the eight
+        // characters «&#xFFFE;» and two turn into the character. The page is safe because exactly one decode follows (toXML)
+        // and its output is escaped; so the part must still hold the reference one level encoded, the control must show that
+        // two decodes of it WOULD be the character, and the page must load and show the eight characters.
+        foreach (['#xFFFE;', '#x0xFFFE;', '#65534;'] as $ref) {
+            $name = "F two decodes «{$ref}» @5x";
+            $r = $page($name, 'a' . $amp(5) . $ref . 'b');
+            if ($r === null) {
+                continue;
+            }
+            $v = $r['post'][0]['parts'][0]['v'] ?? null;
+            $same("{$name}: the part holds the reference one level encoded", $v, 'a&amp;' . $ref . 'b');
+            $check("{$name}: control: one decode of the part is no character, two are", is_string($v)
+                && !str_contains(html_entity_decode($v), "\u{FFFE}") && !str_contains(html_entity_decode($v), "\u{FFFF}")
+                && preg_match('/\xEF\xBF[\xBE\xBF]/', html_entity_decode(html_entity_decode($v))) === 1, var_export($v, true));
+            $same("{$name}: what is shown", $r['canon'][0] ?? null, 'a&' . $ref . 'b');
         }
     });
 

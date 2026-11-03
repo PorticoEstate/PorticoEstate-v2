@@ -187,14 +187,29 @@ class CommentParts
 	}
 
 	/**
-	 * Decimal or hexadecimal, any number of leading zeros, any case, each replaced by U+FFFD, the replacement
-	 * character. Not removed: that can join the pieces around a reference into a new one («&#x&#xFFFE;FFFE;»), one
-	 * pass would then not be enough, and a loop that goes on until none is left is quadratic on a comment built
-	 * for it (40,000 levels, 640 KB: 6 s). A character cannot be joined into a reference, so one pass is enough,
-	 * and no further decode of the result can bring either character back.
+	 * Every reference that html_entity_decode turns into U+FFFE or U+FFFF, each replaced by U+FFFD, the replacement
+	 * character. A reference is judged by that function, called as toXML() calls it (class.xmlhelper.inc.php:94, no
+	 * flags: ENT_HTML5 would refuse these two characters and so hide them), and not by a pattern for how it is
+	 * spelled: PHP reads a hexadecimal reference with strtol, which also takes a «0x» after the «x» («&#x0xFFFE;»,
+	 * «&#X0Xffff;», «&#x0x0000FFFE;»), and a pattern for the spelling is outrun by the next quirk like it.
+	 *
+	 * The candidates are the stretches «&#» … «;» that hold no «&» and no «;»: that is all a reference the decoder
+	 * reads can be, and no candidate can start inside another one. («&#x&#xFFFE;» holds one, the second «&#».) A
+	 * stretch is one pattern match with no backtracking, so a comment of any size is read in a single linear pass.
+	 *
+	 * Not removed: that can join the pieces around a reference into a new one («&#x&#xFFFE;FFFE;»), one pass would
+	 * then not be enough, and a loop that goes on until none is left is quadratic on a comment built for it (40,000
+	 * levels, 640 KB: 6 s). A character cannot be joined into a reference, so one pass is enough.
+	 *
+	 * What can still be a reference after this is text for the one decode that follows: toXML() decodes once and
+	 * escapes the result, so «&amp;#xFFFE;», which two decodes would turn into the character, reaches the page as
+	 * the eight characters «&#xFFFE;» it says.
 	 */
 	private static function replaceNonCharacterReferences( string $value ): string
 	{
-		return (string)preg_replace('/&#(?:x0*fff[ef]|0*6553[45]);/i', "\u{FFFD}", $value);
+		return (string)preg_replace_callback('/&#[^&;]*;/', static function ( array $reference ): string
+		{
+			return in_array(html_entity_decode($reference[0]), array("\u{FFFE}", "\u{FFFF}"), true) ? "\u{FFFD}" : $reference[0];
+		}, $value);
 	}
 }

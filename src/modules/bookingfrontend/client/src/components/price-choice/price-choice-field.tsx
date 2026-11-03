@@ -9,6 +9,7 @@ import {
 	formatTotalWithHourlyRate,
 	hourlyRateOfMinuteArticle,
 	isMinuteUnit,
+	lineTotalOre,
 	minuteArticleTotal
 } from '@/utils/article-pricing';
 
@@ -24,8 +25,8 @@ interface PriceChoiceFieldProps {
 	quantity?: number;
 	/** The room's unit. A 'minute' price is never shown per minute, but as the hourly price */
 	unit?: string;
-	/** The room's VAT percent; a minute price is worked out from its ex-VAT price */
-	taxPercent?: number;
+	/** The room's VAT percent. Required: every price line is worked out from the ex-VAT price to the øre, and a missing one would silently drop the VAT */
+	taxPercent: number;
 	/** Shown at the field when a required choice is missing */
 	error?: string;
 	disabled?: boolean;
@@ -44,7 +45,7 @@ const PriceChoiceField = forwardRef<HTMLSelectElement, PriceChoiceFieldProps>(({
 	resourceName,
 	quantity = 1,
 	unit,
-	taxPercent = 0,
+	taxPercent,
 	error,
 	disabled,
 	id
@@ -70,7 +71,7 @@ const PriceChoiceField = forwardRef<HTMLSelectElement, PriceChoiceFieldProps>(({
 			'NOK',
 			t
 		)
-		: formatCurrency(parseFloat(option.price) * quantity);
+		: formatCurrency(lineTotalOre({ex_tax_price: option.ex_tax_price, tax_percent: taxPercent}, quantity) / 100);
 
 	return (
 		<Field>

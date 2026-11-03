@@ -32,32 +32,69 @@ export const bookedMinutes = (start?: Date, end?: Date): number => {
 const toOre = (kroner: string | number): number => Math.round(Number(kroner) * 100);
 
 /**
- * Total incl. VAT, in kroner, for `minutes` of a minute article. Mirrors how the server stores the
- * line (ArticleRepository::savePurchaseOrderLine): amount = ex-VAT price x quantity and
+ * What a line of `quantity` units costs incl. VAT, in whole øre, for ANY unit. Mirrors how the server
+ * stores the line (ArticleRepository::savePurchaseOrderLine): amount = ex-VAT price x quantity and
  * tax = amount x VAT%, each to the øre. The ex-VAT price has two decimals and the quantity is whole,
- * so the amount is exact and the tax is the only rounding. The API's own unit_price/price are
- * already rounded to two decimals and must not be multiplied.
+ * so the amount is exact and the tax is the only rounding. The API's own unit_price/price are already
+ * rounded to two decimals incl. VAT and must never be multiplied: 136.99 ex at 25 % is served as
+ * 171.24, and 3 x 171.24 = 513.72, while the server stores 410.97 + 102.74 = 513.71.
+ *
+ * Sum lines in øre and divide ONCE at the end; never round a line before adding it to a total.
  */
-export const minuteArticleTotal = (article: Pick<IArticle, 'ex_tax_price' | 'tax_percent'>, minutes: number): number => {
-    const amountOre = toOre(article.ex_tax_price) * minutes;
+export const lineTotalOre = (article: Pick<IArticle, 'ex_tax_price' | 'tax_percent'>, quantity: number): number => {
+    const amountOre = toOre(article.ex_tax_price) * quantity;
     const taxOre = Math.round(amountOre * Number(article.tax_percent) / 100);
-    return (amountOre + taxOre) / 100;
+    return amountOre + taxOre;
 };
+
+/** Total incl. VAT, in kroner, for `minutes` of a minute article. */
+export const minuteArticleTotal = (article: Pick<IArticle, 'ex_tax_price' | 'tax_percent'>, minutes: number): number =>
+    lineTotalOre(article, minutes) / 100;
 
 /** Hourly price incl. VAT of a minute article that has not been booked yet (the form). */
 export const hourlyRateOfMinuteArticle = (article: Pick<IArticle, 'ex_tax_price' | 'tax_percent'>): number =>
     Math.round(toOre(article.ex_tax_price) * MINUTES_PER_HOUR * (100 + Number(article.tax_percent)) / 100) / 100;
 
+/** A stored order line's total incl. VAT in kroner: its amount plus its tax, each already to the øre. */
+export const orderLineTotal = (line: Pick<IOrderLine, 'amount' | 'tax'>): number =>
+    (toOre(line.amount) + toOre(line.tax || 0)) / 100;
+
 /**
- * Hourly price incl. VAT of a booked order line: what was billed per minute, times 60. The API serves
- * numeric fields as strings, so everything is coerced. Null when there is nothing to divide by.
+ * The VAT % a stored order line was billed at. OrderLine does not carry it, so it is read back from the
+ * line: tax / amount, rounded to a whole percent (the rates in use are whole). Null when there is no
+ * amount to divide by. BOUND: a line under about 0.20 kr has a tax that rounds to 0, so it reads as 0 %,
+ * and a line whose stored tax contradicts its tax code reads as what was actually stored.
  */
-export const hourlyRateOfOrderLine = (line: Pick<IOrderLine, 'amount' | 'tax' | 'quantity'>): number | null => {
-    const quantity = Number(line.quantity);
+export const taxPercentOfOrderLine = (line: Pick<IOrderLine, 'amount' | 'tax'>): number | null => {
     const amount = Number(line.amount);
-    if (!(quantity > 0) || !(amount > 0)) return null;
-    const total = amount + Number(line.tax || 0);
-    return Math.round(total * MINUTES_PER_HOUR / quantity * 100) / 100;
+    if (!(amount > 0)) return null;
+    return Math.round(100 * Number(line.tax || 0) / amount);
+};
+
+/**
+ * Hourly price incl. VAT of a booked minute line, worked out exactly as the form works it out for an
+ * unbooked one (hourlyRateOfMinuteArticle): the stored ex-VAT minute price x 60 x (1 + VAT%), rounded
+ * once. Not (amount + tax) / quantity x 60: the line's tax is rounded to the øre, so that drifts by an
+ * øre for an odd-øre price (3.33 ex at 25 % over 30 min gives 249.76 against the form's 249.75).
+ * unit_price is the billed ex-VAT price on every path that writes a line, an officer's manual price
+ * included. The VAT % is read back from the line (taxPercentOfOrderLine). Null when it cannot be.
+ */
+export const hourlyRateOfOrderLine = (line: Pick<IOrderLine, 'unit_price' | 'amount' | 'tax'>): number | null => {
+    const taxPercent = taxPercentOfOrderLine(line);
+    if (taxPercent === null || !(Number(line.unit_price) > 0)) return null;
+    return hourlyRateOfMinuteArticle({ex_tax_price: String(line.unit_price), tax_percent: taxPercent});
+};
+
+/**
+ * The unit price incl. VAT of a stored order line, to the øre, as the form shows it. A free line is 0.
+ * Null when the VAT % cannot be read back (no amount to divide by): the caller shows «-», because the
+ * stored unit price is ex-VAT and must not stand in for an incl. price.
+ */
+export const unitPriceInclOfOrderLine = (line: Pick<IOrderLine, 'unit_price' | 'amount' | 'tax'>): number | null => {
+    if (Number(line.unit_price) === 0) return 0;
+    const taxPercent = taxPercentOfOrderLine(line);
+    if (taxPercent === null) return null;
+    return Math.round(toOre(line.unit_price) * (100 + taxPercent) / 100) / 100;
 };
 
 // A non-breaking space keeps a number and its unit on one line, as Intl does for «705 kr».

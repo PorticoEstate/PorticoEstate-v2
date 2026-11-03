@@ -5,8 +5,9 @@ Mutation check for the event-history XSS harness (run.php, task 36226).
 Same idea as tests/event-sms-participants/mutate.py: one deliberate defect at a time, applied to a TEMP COPY of
 the files the harness reads (never to the tree), and run.php must go red for each. The baseline on the same copy
 must be green first, and every replacement must match exactly once. A mutation counts as caught only when the
-harness exits 1 with a FAIL line: any other exit (a crash, a fatal error) is reported as CRASH and fails the run,
-because a harness that dies has not looked at anything.
+harness exits 1 with a FAIL line: any other exit (a crash, a fatal error, a run that does not finish within
+MUTATE_TIMEOUT seconds) is reported as CRASH and fails the run, because a harness that dies or hangs has not
+looked at anything.
 
 Every mutation runs HERMETIC first (no database). When HD_DB_HEADER is set the corpus arm K is run too, and the
 mutations marked K must make a «FAIL K » line appear: that is what proves the corpus counts can fail. Without
@@ -27,6 +28,7 @@ import tempfile
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.abspath(os.path.join(HERE, "..", ".."))
 PHP = os.environ.get("PHP_BIN", "php")
+TIMEOUT = int(os.environ.get("MUTATE_TIMEOUT", "180"))  # seconds per harness run (a run takes under a minute, with the corpus arm)
 
 # Everything the harness reads from HD_ROOT.
 FILES = [
@@ -44,6 +46,16 @@ X = "src/modules/booking/templates/base/event_edit.xsl"
 H = "src/modules/booking/helpers/CommentParts.php"
 
 R = re.compile  # a regex mutation: (pattern, replacement), the pattern must match exactly once
+
+
+class Multi:
+    """Several exact replacements in one file, applied in order; every one must match exactly once."""
+
+    def __init__(self, *pairs):
+        self.pairs = pairs
+
+
+M = Multi  # M((old, new), (old, new)): `old` of a mutation, `new` is then ignored
 
 # (id, file, description, old, new, k)   old: str (exact, once) or R(pattern); k: the corpus arm must catch it too
 MUTATIONS = [
@@ -134,12 +146,57 @@ MUTATIONS = [
      "\t\t\t\t\t'value'\t=> $comment,\n", "\t\t\t\t\t'value'\t=> $type,\n", False),
     ("A7", SO, "the INSERT names its columns in another order",
      "INSERT INTO bb_event_comment (event_id, time, author, comment, type)", "INSERT INTO bb_event_comment (event_id, time, author, type, comment)", False),
+    # --- the follow-up (task 36276): U+FFFE / U+FFFF -------------------------------------------------------
+    ("N1", H, "the references to U+FFFE and U+FFFF are not replaced at all",
+     "'/&#(?:x0*fff[ef]|0*6553[45]);/i'", "'/(?!)/'", False),
+    ("N2", H, "removed instead of replaced: the pieces around a reference join into a new one («&#x&#xFFFE;FFFE;»)",
+     "\"\\u{FFFD}\", $value);", "'', $value);", False),
+    ("N16", H, "removed and repeated until none is left (the first version): rebuilt references go too, but one pass per level makes it quadratic",
+     "\t\treturn (string)preg_replace('/&#(?:x0*fff[ef]|0*6553[45]);/i', \"\\u{FFFD}\", $value);\n",
+     "\t\tdo\n\t\t{\n\t\t\t$value = (string)preg_replace('/&#(?:x0*fff[ef]|0*6553[45]);/i', '', $value, -1, $dropped);\n\t\t}\n\t\twhile ($dropped > 0);\n\t\treturn $value;\n", False),
+    ("N3", H, "hexadecimal references only",
+     "'/&#(?:x0*fff[ef]|0*6553[45]);/i'", "'/&#x0*fff[ef];/i'", False),
+    ("N4", H, "decimal references only",
+     "'/&#(?:x0*fff[ef]|0*6553[45]);/i'", "'/&#0*6553[45];/i'", False),
+    ("N5", H, "U+FFFE only (U+FFFF stays)",
+     "'/&#(?:x0*fff[ef]|0*6553[45]);/i'", "'/&#(?:x0*fffe|0*65534);/i'", False),
+    ("N6", H, "no leading zeros allowed",
+     "'/&#(?:x0*fff[ef]|0*6553[45]);/i'", "'/&#(?:xfff[ef]|6553[45]);/i'", False),
+    ("N7", H, "case-sensitive (a capital X or capital hex digits stay)",
+     "'/&#(?:x0*fff[ef]|0*6553[45]);/i'", "'/&#(?:x0*fff[ef]|0*6553[45]);/'", False),
+    ("N8", H, "too greedy: U+FFFC and U+FFFD are replaced too (fff[c-f])",
+     "'/&#(?:x0*fff[ef]|0*6553[45]);/i'", "'/&#(?:x0*fff[c-f]|0*6553[2-5]);/i'", False),
+    ("N8e", H, "U+FFFD is replaced too (by U+FFFD, the character toXML would make of it: harmless, so the harness must NOT notice; equivalent mutant control)",
+     "'/&#(?:x0*fff[ef]|0*6553[45]);/i'", "'/&#(?:x0*fff[def]|0*6553[345]);/i'", False),
+    ("N9", H, "too greedy: any code point that ends in FFFE or FFFF goes (U+1FFFE, U+FFFFE ...)",
+     "'/&#(?:x0*fff[ef]|0*6553[45]);/i'", "'/&#(?:x[0-9a-f]*fff[ef]|0*6553[45]);/i'", False),
+    ("N10", H, "the v of the parts is not cleaned (the href still is)",
+     "\t\t\t\t$part['v'] = self::replaceNonCharacterReferences($part['v']);\n", "\t\t\t\t$part['v'] = $part['v'];\n", False),
+    ("N11", H, "the href is not cleaned (the v still is)",
+     "trim(self::replaceNonCharacterReferences((string)preg_replace('/[\\x00-\\x1F\\x7F]+/', '', $raw)))",
+     "trim((string)preg_replace('/[\\x00-\\x1F\\x7F]+/', '', $raw))", False),
+    ("N12", H, "the href is cleaned before its control characters are stripped (a tab inside a reference hides it)",
+     "trim(self::replaceNonCharacterReferences((string)preg_replace('/[\\x00-\\x1F\\x7F]+/', '', $raw)))",
+     "trim((string)preg_replace('/[\\x00-\\x1F\\x7F]+/', '', self::replaceNonCharacterReferences($raw)))", False),
+    ("N13", H, "cleaned before the HTML step instead of after it (the old place of the strip)",
+     M(("\t\t$text = (string)preg_replace('/[\\x00-\\x08\\x0B\\x0C\\x0E-\\x1F]|\\xEF\\xBF[\\xBE\\xBF]/', '', mb_scrub($text, 'UTF-8'));\n",
+        "\t\t$text = (string)preg_replace('/[\\x00-\\x08\\x0B\\x0C\\x0E-\\x1F]|\\xEF\\xBF[\\xBE\\xBF]/', '', mb_scrub($text, 'UTF-8'));\n\t\t$text = self::replaceNonCharacterReferences($text);\n"),
+       ("\t\t\t\t$part['v'] = self::replaceNonCharacterReferences($part['v']);\n", "\t\t\t\t$part['v'] = $part['v'];\n"),
+       ("trim(self::replaceNonCharacterReferences((string)preg_replace('/[\\x00-\\x1F\\x7F]+/', '', $raw)))",
+        "trim((string)preg_replace('/[\\x00-\\x1F\\x7F]+/', '', $raw))")), None, False),
+    ("N14", H, "cleaned per text node, before the pieces are joined (a comment, tag or dropped script between «&#x» and «FFFE;» hides a reference)",
+     M(("\t\t\t\tself::addText($parts, (string)$child->nodeValue);\n", "\t\t\t\tself::addText($parts, self::replaceNonCharacterReferences((string)$child->nodeValue));\n"),
+       ("\t\t\t\t$part['v'] = self::replaceNonCharacterReferences($part['v']);\n", "\t\t\t\t$part['v'] = $part['v'];\n")), None, False),
+    ("N15", H, "the link text is cleaned per text node, before plainText joins the pieces",
+     M(("\t\t\t\t$text .= $child->nodeValue;\n", "\t\t\t\t$text .= self::replaceNonCharacterReferences((string)$child->nodeValue);\n"),
+       ("\t\t\t\t$part['v'] = self::replaceNonCharacterReferences($part['v']);\n", "\t\t\t\t$part['v'] = $part['v'];\n")), None, False),
     ("H19", H, "adjacent text is no longer merged (harmless to the text, so the harness must NOT notice; equivalent mutant control)",
      "\t\tif ($last >= 0 && $parts[$last]['k'] === 't')\n", "\t\tif (false)\n", False),
 ]
 
-# H19 is the control for the harness's own sensitivity: merging is a size optimisation, the visible text is the same.
-EQUIVALENT = {"H19"}
+# H19 and N8e are the controls for the harness's own sensitivity: merging is a size optimisation and the visible text is
+# the same (H19); replacing a reference to U+FFFD by U+FFFD changes nothing a reader or the page could tell (N8e).
+EQUIVALENT = {"H19", "N8e"}
 
 
 def run_harness(tree, corpus):
@@ -148,12 +205,24 @@ def run_harness(tree, corpus):
     env["XDEBUG_MODE"] = "off"
     if not corpus:
         env.pop("HD_DB_HEADER", None)
-    p = subprocess.run([PHP, os.path.join(HERE, "run.php")], env=env, capture_output=True, text=True)
+    try:
+        p = subprocess.run([PHP, os.path.join(HERE, "run.php")], env=env, capture_output=True, text=True, timeout=TIMEOUT)
+    except subprocess.TimeoutExpired:
+        # a mutant that makes the code loop has not been looked at by anything: a CRASH, never a catch
+        return 124, f"TIMEOUT after {TIMEOUT} s", ""
     out = (p.stdout + p.stderr).strip().splitlines()
     return p.returncode, (out[-1] if out else ""), p.stdout
 
 
 def apply(original, old, new):
+    if isinstance(old, Multi):
+        text = original
+        for o, nw in old.pairs:
+            c = text.count(o)
+            if c != 1:
+                return c, original
+            text = text.replace(o, nw, 1)
+        return 1, text
     if isinstance(old, str):
         n = original.count(old)
         return n, original.replace(old, new, 1)

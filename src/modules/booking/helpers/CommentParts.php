@@ -27,6 +27,11 @@ use DOMText;
  * Text is kept; elements that run or load something (script, style, iframe, svg ...) are dropped with everything
  * inside them; an <a> is kept only when its href, with the control characters a browser would drop removed,
  * is a plain http or https URL; <p> ends in a line break; every other element is unwrapped and its text kept.
+ *
+ * What the helper returns is entity-decoded once more by toXML() and then loaded by the page as XML, which fails,
+ * and shows «Systemfeil» instead of the event, on U+FFFE and U+FFFF. The references to those two characters are
+ * therefore replaced (by U+FFFD) in every v and href here, after the HTML step: only then do they have their final
+ * shape.
  */
 class CommentParts
 {
@@ -60,12 +65,12 @@ class CommentParts
 		if (!$body)
 		{
 			// not parseable at all: show the text as it is, escaped by the stylesheet
-			return array(array('k' => 't', 'v' => $text));
+			return self::withoutNonCharacterReferences(array(array('k' => 't', 'v' => $text)));
 		}
 
 		$parts = array();
 		self::collect($body, $parts);
-		return $parts;
+		return self::withoutNonCharacterReferences($parts);
 	}
 
 	private static function collect( DOMNode $node, array &$parts ): void
@@ -149,12 +154,47 @@ class CommentParts
 	}
 
 	/**
-	 * The href as a browser would read it (control characters dropped, surrounding blanks trimmed) when it is a
-	 * plain http(s) URL, else null. No quote, angle bracket or blank is allowed inside it.
+	 * The href as a browser would read it (control characters dropped, surrounding blanks trimmed, references to
+	 * U+FFFE and U+FFFF replaced) when it is a plain http(s) URL, else null. No quote, angle bracket or blank is
+	 * allowed inside it. What is checked is what is returned.
 	 */
 	private static function httpHref( string $raw ): ?string
 	{
-		$href = trim((string)preg_replace('/[\x00-\x1F\x7F]+/', '', $raw));
+		$href = trim(self::replaceNonCharacterReferences((string)preg_replace('/[\x00-\x1F\x7F]+/', '', $raw)));
 		return preg_match('#^https?://[^\s"<>]+$#i', $href) === 1 ? $href : null;
+	}
+
+	/**
+	 * Replaces the references to U+FFFE and U+FFFF in every v. The page cannot load a document that holds either
+	 * (class.xslttemplates.inc.php:436-438), toXML() turns a reference into the character, and the references that
+	 * reach this point are the ones the HTML step left as text, so this is the last place to see them. It is done
+	 * on the finished parts, where adjacent text has been joined: «&#x», a comment and «FFFE;» are one reference
+	 * only now. (An href is cleaned where it is read, before it is checked.)
+	 *
+	 * @param list<array{k:string,v?:string,href?:string}> $parts
+	 * @return list<array{k:string,v?:string,href?:string}>
+	 */
+	private static function withoutNonCharacterReferences( array $parts ): array
+	{
+		foreach ($parts as &$part)
+		{
+			if (isset($part['v']))
+			{
+				$part['v'] = self::replaceNonCharacterReferences($part['v']);
+			}
+		}
+		return $parts;
+	}
+
+	/**
+	 * Decimal or hexadecimal, any number of leading zeros, any case, each replaced by U+FFFD, the replacement
+	 * character. Not removed: that can join the pieces around a reference into a new one («&#x&#xFFFE;FFFE;»), one
+	 * pass would then not be enough, and a loop that goes on until none is left is quadratic on a comment built
+	 * for it (40,000 levels, 640 KB: 6 s). A character cannot be joined into a reference, so one pass is enough,
+	 * and no further decode of the result can bring either character back.
+	 */
+	private static function replaceNonCharacterReferences( string $value ): string
+	{
+		return (string)preg_replace('/&#(?:x0*fff[ef]|0*6553[45]);/i', "\u{FFFD}", $value);
 	}
 }

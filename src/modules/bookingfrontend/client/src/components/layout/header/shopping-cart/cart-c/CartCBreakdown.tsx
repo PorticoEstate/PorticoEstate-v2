@@ -2,6 +2,8 @@
 import React from 'react';
 import { PencilIcon, TrashIcon } from '@navikt/aksel-icons';
 import ColourCircle from '@/components/building-calendar/modules/colour-circle/colour-circle';
+import { useTrans } from '@/app/i18n/ClientTranslationProvider';
+import { formatTotalWithHourlyRate } from '@/utils/article-pricing';
 import { CartItem, totalForApp, fmtKr } from './cart-c-utils';
 import styles from './cart-c.module.scss';
 
@@ -20,6 +22,7 @@ const CartCBreakdown: React.FC<CartCBreakdownProps> = ({
     onEdit,
     onRemove,
 }) => {
+    const t = useTrans();
     const isRecurring = !!item.recurring;
     const itemTotal = totalForApp(item);
     const insetClass = dateTile === 'block' ? styles.breakdownInsetBlock : styles.breakdownInsetOther;
@@ -39,7 +42,9 @@ const CartCBreakdown: React.FC<CartCBreakdownProps> = ({
                                             {rc.name}
                                         </span>
                                         {rc.total > 0 && (
-                                            <span className={styles.breakdownValue}>{fmtKr(rc.total)}</span>
+                                            <span className={styles.breakdownValue}>
+                                                {rc.hourlyRate ? formatTotalWithHourlyRate(rc.total, rc.hourlyRate, 'NOK', t) : fmtKr(rc.total)}
+                                            </span>
                                         )}
                                     </div>
                                 ))}

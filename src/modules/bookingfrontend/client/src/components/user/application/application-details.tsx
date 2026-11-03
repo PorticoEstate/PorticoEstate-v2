@@ -38,6 +38,7 @@ import {getDocumentLink} from "@/service/api/building";
 import ApplicationCrud from "@/components/building-calendar/modules/event/edit/application-crud";
 import {FCallTempEvent, HighlightEntity} from "@/components/building-calendar/building-calendar.types";
 import ArticleTable from "@/components/article-table/article-table";
+import {formatCurrency} from "@/utils/cost-utils";
 import CateringOverview from "./catering-overview";
 import {ENABLE_COMBINED_APPLICATIONS} from '@/service/feature-flags';
 import {getStatusColor, StatusColor} from './status-utils';
@@ -1351,7 +1352,7 @@ const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
                     {application.orders && application.orders.length > 0 && (
                         <Details defaultOpen>
                             <Details.Summary>
-                                {t('bookingfrontend.orders_articles')} — {orderTotal.toLocaleString('no-NO')} kr
+                                {t('bookingfrontend.orders_articles')} — {formatCurrency(orderTotal)}
                             </Details.Summary>
                             <Details.Content>
                                 <ArticleTable

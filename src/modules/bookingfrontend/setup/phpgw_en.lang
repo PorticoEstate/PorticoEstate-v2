@@ -1192,3 +1192,5 @@ catering_order_cutoff_passed	bookingfrontend	en	The deadline for ordering or cha
 catering_cancellation_deadline_passed	bookingfrontend	en	The deadline for changing or cancelling the catering has passed.
 catering_serving_time_passed	bookingfrontend	en	The serving time has passed.
 catering_application_closed	bookingfrontend	en	The application is closed, so the catering can no longer be changed.
+kr_per_hour	bookingfrontend	en	kr/hour
+minutes_short	bookingfrontend	en	min

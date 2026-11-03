@@ -47,7 +47,10 @@
  *       comment or an element, or around another one that would rebuild it if it were removed, must not fail that
  *       load; the characters next to them (U+FFFD, U+1FFFE, ...) must stay. Task 36448 adds the spellings only strtol
  *       reads («&#x0xFFFE;»: a «0x» after the «x»), a sweep of 6,240 spellings sorted by the decoder itself, and the
- *       two-decode shape («&amp;#xFFFE;», which only toXML's single decode keeps from being the character).
+ *       two-decode shape («&amp;#xFFFE;», which only toXML's single decode keeps from being the character). Task
+ *       36487 adds the characters themselves when the HTML step makes them after the strip has run (a «<meta
+ *       charset="utf-7">» and «+//4-» or «+//8-» in an href, stored at 0 to 6 levels, read through the real
+ *       Db::stripslashes) and, for the v of a part, which libxml2 2.9 never lets them reach, parts built by hand.
  *   K   (HD_DB_HEADER set) the corpus: every stored bb_event_comment row of the local database through the real
  *       path; counts only, no content is printed. Visible text and links are unchanged against the old page's
  *       view of the same row (script/style text excluded), and nothing is LIVE afterwards.
@@ -757,7 +760,7 @@ namespace {
     // =================================================================================================
     // F: U+FFFE and U+FFFF (the page's own load of the XML must not fail)
     // =================================================================================================
-    $arm('F U+FFFE and U+FFFF', function () use ($one, $live, $closed, $check, $same) {
+    $arm('F U+FFFE and U+FFFF', function () use ($one, $live, $closed, $check, $same, $E, $load) {
         // «&» and k times «amp;» before the rest of a reference: the same reference at k levels of encoding. The
         // markup around it is NOT encoded, so each level reaches the helper in another shape: a character the
         // first strip removes (k 0-2), text the HTML step drops (3), text the HTML step leaves and toXML decodes
@@ -836,6 +839,84 @@ namespace {
                 $r = $page("F the character {$label} in {$shape}", $stored);
                 $same("F the character {$label} in {$shape}: what is shown", $r['canon'][0] ?? null, $want);
             }
+        }
+
+        // the characters made INSIDE the HTML step (task 36487): the strip above runs before it, and a «<meta charset="utf-7">»
+        // makes loadHTML read the rest of the comment as UTF-7, where «+//4-» is U+FFFE and «+//8-» is U+FFFF. libxml2 2.9
+        // keeps the character inside an attribute value (an href) and drops it from text and link text, so without the fix
+        // only the href rows fail the page's load; the text rows are there for a libxml that keeps it in text too (and cannot
+        // fail on this one: the parts built by hand below are what reaches a v). The meta works only while the tag reaches the
+        // helper unencoded: Db::stripslashes decodes the stored value twice and the helper once more, so it works stored at 0
+        // to 3 levels and from level 4 on the tag is text. At 0 to 3 the href must hold U+FFFD where the character was: that
+        // pins that a character was there (a libxml that dropped it would leave none) and that it was replaced, neither kept
+        // nor removed.
+        $metas = [
+            'charset' => '<meta charset="utf-7">',
+            'unquoted' => '<meta charset=utf-7>',
+            'http-equiv' => '<meta http-equiv="Content-Type" content="text/html; charset=utf-7">',
+            'alias' => '<meta charset="UNICODE-1-1-UTF-7">',
+        ];
+        $utf7 = ['+//4-' => 'U+FFFE', '+//8-' => 'U+FFFF'];
+        foreach ($metas as $metaName => $meta) {
+            foreach ($utf7 as $coded => $label) {
+                foreach (range(0, 6) as $k) {
+                    $name = "F utf-7 {$metaName} {$label} in an href @{$k}x";
+                    $r = $page($name, $E($meta . '<a href="https://e.test/' . $coded . '">x</a>', $k));
+                    if ($r === null) {
+                        continue;
+                    }
+                    $check("{$name}: the output holds neither U+FFFE nor U+FFFF", preg_match('/\xEF\xBF[\xBE\xBF]/', $r['html']) !== 1, 'it is in the page');
+                    if ($k <= 3) {
+                        $same("{$name}: the href holds U+FFFD where the character was", $r['post'][0]['parts'][0]['href'] ?? null, "https://e.test/\u{FFFD}");
+                    }
+                }
+            }
+        }
+        foreach ($utf7 as $coded => $label) {
+            foreach ([
+                'text' => 'a' . $coded . 'b',
+                'link text' => '<a href="https://e.test/">p' . $coded . 'q</a>',
+            ] as $shape => $body) {
+                foreach (range(0, 6) as $k) {
+                    $name = "F utf-7 charset {$label} in {$shape} @{$k}x";
+                    $r = $page($name, $E($metas['charset'] . $body, $k));
+                    if ($r !== null) {
+                        $check("{$name}: the output holds neither U+FFFE nor U+FFFF", preg_match('/\xEF\xBF[\xBE\xBF]/', $r['html']) !== 1, 'it is in the page');
+                    }
+                }
+            }
+        }
+
+        // the same characters in a v and in an href without libxml: libxml2 2.9 never lets one reach a v (and no newer libxml2
+        // was tried), so parts are built by hand and given to the two private steps that clean them. What the page depends on
+        // is that cleaning, not the parser's habit of dropping the character from text. The controls: the same parts uncleaned,
+        // a v alone and an href alone, make the page's load fail, or a cleaned part that loads would prove nothing.
+        $step = static fn(string $name): \ReflectionMethod => new \ReflectionMethod(HELPER, $name);
+        $page36487 = static function (array $parts) use ($load): ?string {
+            $xml = \phpgwapi_xmlhelper::toXML(['data' => ['comments' => [['time' => 't', 'author' => 'A', 'type' => 'comment', 'parts' => $parts]]]], 'PHPGW');
+            try {
+                $load($xml);
+                return null;
+            } catch (\RuntimeException $e) {
+                return $e->getMessage();
+            }
+        };
+        foreach (["\u{FFFE}" => 'U+FFFE', "\u{FFFF}" => 'U+FFFF'] as $char => $label) {
+            $dirtyV = [['k' => 't', 'v' => "a{$char}b"], ['k' => 'a', 'href' => 'https://e.test/', 'v' => "p{$char}q"]];
+            $dirtyHref = [['k' => 'a', 'href' => "https://e.test/?q={$char}z", 'v' => 'p']];
+            $check("F synthetic: control: a v that holds a raw {$label} fails the page's load", $page36487($dirtyV) !== null, 'it loaded');
+            $check("F synthetic: control: an href that holds a raw {$label} fails the page's load", $page36487($dirtyHref) !== null, 'it loaded');
+
+            $cleanV = $step('withoutNonCharacterReferences')->invoke(null, $dirtyV);
+            $same("F synthetic: a raw {$label} in a text v is replaced by U+FFFD", $cleanV[0]['v'] ?? null, "a\u{FFFD}b");
+            $same("F synthetic: a raw {$label} in a link text v is replaced by U+FFFD", $cleanV[1]['v'] ?? null, "p\u{FFFD}q");
+            $failed = $page36487($cleanV);
+            $check("F synthetic: the page loads with the cleaned v of a raw {$label}", $failed === null, (string)$failed);
+
+            $href = $step('httpHref')->invoke(null, $dirtyHref[0]['href']);
+            $same("F synthetic: a raw {$label} in an href is replaced by U+FFFD", $href, "https://e.test/?q=\u{FFFD}z");
+            $failed = $page36487([['k' => 'a', 'href' => $href, 'v' => 'p']]);
+            $check("F synthetic: the page loads with the cleaned href of a raw {$label}", $failed === null, (string)$failed);
         }
 
         // what must NOT go: characters next to the two. They are fine in XML: levels 0-4 give the character, 5 and more the text

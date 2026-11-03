@@ -50,6 +50,9 @@ CALLBACK = ("\t\treturn (string)preg_replace_callback('/&#[^&;]*;/', static func
             "\t\t\treturn in_array(html_entity_decode($reference[0]), array(\"\\u{FFFE}\", \"\\u{FFFF}\"), true) ? \"\\u{FFFD}\" : $reference[0];\n"
             "\t\t}, $value);\n")
 
+# the statement of the same function that replaces the characters U+FFFE and U+FFFF themselves (task 36487)
+RAW = "\t\t$value = str_replace(array(\"\\u{FFFE}\", \"\\u{FFFF}\"), \"\\u{FFFD}\", $value);\n"
+
 R = re.compile  # a regex mutation: (pattern, replacement), the pattern must match exactly once
 
 
@@ -207,13 +210,27 @@ MUTATIONS = [
     ("N15", H, "the link text is cleaned per text node, before plainText joins the pieces",
      M(("\t\t\t\t$text .= $child->nodeValue;\n", "\t\t\t\t$text .= self::replaceNonCharacterReferences((string)$child->nodeValue);\n"),
        ("\t\t\t\t$part['v'] = self::replaceNonCharacterReferences($part['v']);\n", "\t\t\t\t$part['v'] = $part['v'];\n")), None, False),
+    # --- the characters themselves, made by the HTML step (a <meta charset="utf-7"> and «+//4-»; task 36487) ----------
+    ("N21", H, "the characters U+FFFE and U+FFFF themselves are not replaced (the references still are): an href that a UTF-7 meta gave one fails the page's load",
+     RAW, "", False),
+    ("N22", H, "U+FFFE only (a raw U+FFFF stays)",
+     RAW, RAW.replace("array(\"\\u{FFFE}\", \"\\u{FFFF}\")", "\"\\u{FFFE}\""), False),
+    ("N23", H, "U+FFFF only (a raw U+FFFE stays)",
+     RAW, RAW.replace("array(\"\\u{FFFE}\", \"\\u{FFFF}\")", "\"\\u{FFFF}\""), False),
+    ("N24", H, "removed instead of replaced (the href loses the character instead of holding U+FFFD)",
+     RAW, RAW.replace("\"\\u{FFFD}\", $value", "'', $value"), False),
+    ("N21e", H, "the characters are replaced after the references are judged instead of before (the same result: a replaced character is neither part of a reference nor joins one; equivalent mutant control)",
+     M((RAW, ""),
+       (CALLBACK, CALLBACK.replace("return (string)preg_replace_callback(", "return str_replace(array(\"\\u{FFFE}\", \"\\u{FFFF}\"), \"\\u{FFFD}\", (string)preg_replace_callback(")
+                          .replace("}, $value);\n", "}, $value));\n"))), None, False),
     ("H19", H, "adjacent text is no longer merged (harmless to the text, so the harness must NOT notice; equivalent mutant control)",
      "\t\tif ($last >= 0 && $parts[$last]['k'] === 't')\n", "\t\tif (false)\n", False),
 ]
 
-# H19 and N8e are the controls for the harness's own sensitivity: merging is a size optimisation and the visible text is
-# the same (H19); replacing a reference to U+FFFD by U+FFFD changes nothing a reader or the page could tell (N8e).
-EQUIVALENT = {"H19", "N8e"}
+# H19, N8e and N21e are the controls for the harness's own sensitivity: merging is a size optimisation and the visible text
+# is the same (H19); replacing a reference to U+FFFD by U+FFFD changes nothing a reader or the page could tell (N8e); the
+# order of the two steps of replaceNonCharacterReferences() changes nothing when the characters are replaced (N21e).
+EQUIVALENT = {"H19", "N8e", "N21e"}
 
 
 def run_harness(tree, corpus):

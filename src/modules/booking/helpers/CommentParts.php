@@ -29,9 +29,10 @@ use DOMText;
  * is a plain http or https URL; <p> ends in a line break; every other element is unwrapped and its text kept.
  *
  * What the helper returns is entity-decoded once more by toXML() and then loaded by the page as XML, which fails,
- * and shows «Systemfeil» instead of the event, on U+FFFE and U+FFFF. The references to those two characters are
- * therefore replaced (by U+FFFD) in every v and href here, after the HTML step: only then do they have their final
- * shape.
+ * and shows «Systemfeil» instead of the event, on U+FFFE and U+FFFF. Those two characters, and the references to
+ * them, are therefore replaced (by U+FFFD) in every v and href here, after the HTML step: only then do they have
+ * their final shape. (The strip before the HTML step is not enough: the HTML step can make the characters itself,
+ * as a <meta charset="utf-7"> makes it read «+//4-» as U+FFFE.)
  */
 class CommentParts
 {
@@ -49,7 +50,8 @@ class CommentParts
 	{
 		$text = html_entity_decode($stored, ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML401, 'UTF-8');
 		// valid UTF-8, and none of the characters XML 1.0 cannot hold: toXML would otherwise give the stylesheet a
-		// document that does not parse, and the whole page fails
+		// document that does not parse, and the whole page fails (the HTML step below can make U+FFFE and U+FFFF
+		// again: replaceNonCharacterReferences() deals with them on the finished parts)
 		$text = (string)preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F]|\xEF\xBF[\xBE\xBF]/', '', mb_scrub($text, 'UTF-8'));
 		if ($text === '')
 		{
@@ -154,9 +156,9 @@ class CommentParts
 	}
 
 	/**
-	 * The href as a browser would read it (control characters dropped, surrounding blanks trimmed, references to
-	 * U+FFFE and U+FFFF replaced) when it is a plain http(s) URL, else null. No quote, angle bracket or blank is
-	 * allowed inside it. What is checked is what is returned.
+	 * The href as a browser would read it (control characters dropped, surrounding blanks trimmed, U+FFFE and
+	 * U+FFFF and the references to them replaced) when it is a plain http(s) URL, else null. No quote, angle bracket
+	 * or blank is allowed inside it. What is checked is what is returned.
 	 */
 	private static function httpHref( string $raw ): ?string
 	{
@@ -165,11 +167,11 @@ class CommentParts
 	}
 
 	/**
-	 * Replaces the references to U+FFFE and U+FFFF in every v. The page cannot load a document that holds either
-	 * (class.xslttemplates.inc.php:436-438), toXML() turns a reference into the character, and the references that
-	 * reach this point are the ones the HTML step left as text, so this is the last place to see them. It is done
-	 * on the finished parts, where adjacent text has been joined: «&#x», a comment and «FFFE;» are one reference
-	 * only now. (An href is cleaned where it is read, before it is checked.)
+	 * Replaces U+FFFE and U+FFFF, and the references to them, in every v. The page cannot load a document that
+	 * holds either (class.xslttemplates.inc.php:436-438), toXML() turns a reference into the character, and the
+	 * references that reach this point are the ones the HTML step left as text, so this is the last place to see
+	 * them. It is done on the finished parts, where adjacent text has been joined: «&#x», a comment and «FFFE;» are
+	 * one reference only now. (An href is cleaned where it is read, before it is checked.)
 	 *
 	 * @param list<array{k:string,v?:string,href?:string}> $parts
 	 * @return list<array{k:string,v?:string,href?:string}>
@@ -187,9 +189,18 @@ class CommentParts
 	}
 
 	/**
-	 * Every reference that html_entity_decode turns into U+FFFE or U+FFFF, each replaced by U+FFFD, the replacement
-	 * character. A reference is judged by that function, called as toXML() calls it (class.xmlhelper.inc.php:94, no
-	 * flags: ENT_HTML5 would refuse these two characters and so hide them), and not by a pattern for how it is
+	 * First the characters U+FFFE and U+FFFF themselves, each replaced by U+FFFD, the replacement character. The strip
+	 * in parse() ran before the HTML step, and that step can make them: a <meta charset="utf-7"> makes loadHTML read
+	 * the rest of the comment as UTF-7, where «+//4-» is U+FFFE and «+//8-» is U+FFFF, and libxml2 2.9 keeps the
+	 * character inside an attribute value, which is how an href comes to hold one. It drops it from text, so no v is
+	 * known to hold one; newer libxml2 versions were not tried, and v and href take the same step so that neither
+	 * depends on that. It comes first, so that the references are judged on the string that is returned, whatever
+	 * this step did to the pieces around a character; replaced, a character cannot be part of a reference or join
+	 * one, so the result is the same in either order.
+	 *
+	 * Then every reference that html_entity_decode turns into U+FFFE or U+FFFF, each replaced by U+FFFD too. A
+	 * reference is judged by that function, called as toXML() calls it (class.xmlhelper.inc.php:94, no flags:
+	 * ENT_HTML5 would refuse these two characters and so hide them), and not by a pattern for how it is
 	 * spelled: PHP reads a hexadecimal reference with strtol, which also takes a «0x» after the «x» («&#x0xFFFE;»,
 	 * «&#X0Xffff;», «&#x0x0000FFFE;»), and a pattern for the spelling is outrun by the next quirk like it.
 	 *
@@ -213,6 +224,7 @@ class CommentParts
 	 */
 	private static function replaceNonCharacterReferences( string $value ): string
 	{
+		$value = str_replace(array("\u{FFFE}", "\u{FFFF}"), "\u{FFFD}", $value);
 		return (string)preg_replace_callback('/&#[^&;]*;/', static function ( array $reference ): string
 		{
 			return in_array(html_entity_decode($reference[0]), array("\u{FFFE}", "\u{FFFF}"), true) ? "\u{FFFD}" : $reference[0];

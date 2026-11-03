@@ -121,7 +121,7 @@ Forventet:
 - HTTP 200
 - `Content-Type: application/scim+json`
 - `patch.supported` er `true`
-- `bulk.supported` er `false`
+- `bulk.supported` er `false` — Entra sender derfor alltid enkeltkall per ressurs, aldri kombinerte bulk-operasjoner (se seksjon 6.3)
 - `filter.maxResults` er `100`
 
 Negativ kontroll med feil token skal gi HTTP 401:
@@ -192,7 +192,81 @@ Tenant URL er SCIM-base-URL-en, ikke `/Users` eller `/ServiceProviderConfig`.
 
 Alle kall bruker SCIM-base-URL-en fra **Tenant URL** og sender secret-tokenet som bearer-token. Entra sender ikke `SCIM_TENANT_ID`; PorticoEstate bruker tenant-ID-en som er konfigurert på serveren til å avgrense mappingene.
 
-Eksemplene under viser en gruppe med `displayName` `PRG_Aktiv_kommune_Brukere`. ID-ene er fra en lokal test og skal ikke kopieres som produksjonsverdier. Bruk aldri det faktiske bearer-tokenet i logger, dokumentasjon eller supportsaker.
+Eksemplene under viser en bruker og en gruppe med `displayName` `PRG_Aktiv_kommune_Brukere`. ID-ene er fra en lokal test og skal ikke kopieres som produksjonsverdier. Bruk aldri det faktiske bearer-tokenet i logger, dokumentasjon eller supportsaker.
+
+#### Kallmønster og rekkefølge
+
+Entra sender **ett HTTP-kall per ressurs per endring**. Brukere, grupper og medlemskap kommer aldri i samme operasjon:
+
+1. **Brukere** provisioneres enkeltvis: eventuelt `GET /Users?filter=...`-oppslag, deretter `POST /Users` hvis brukeren ikke finnes. Kallet inneholder kun brukerattributter — ingen gruppeinformasjon.
+2. **Grupper** provisioneres enkeltvis og uavhengig av brukerne: eventuelt `GET /Groups?filter=...`-oppslag, deretter `POST /Groups`. Kallet inneholder normalt ikke `members`.
+3. **Medlemskap** synkroniseres til slutt med `PATCH /Groups/{id}`, etter at både gruppen og medlemsbrukerne er provisionert og Entra kjenner deres lokale SCIM-`id`.
+
+SCIM Bulk brukes ikke; serveren annonserer `bulk.supported: false` (se seksjon 5), og Entra kombinerer derfor aldri flere ressurser i én request. Medlemskap sendes alltid som Group PATCH, aldri via brukerens `groups`-attributt.
+
+Ordinær provisioning kjører som en inkrementell synkroniseringssyklus, typisk cirka hvert 40. minutt. Endringer i Entra er derfor ikke umiddelbart synlige lokalt. Bruk **Provision on demand** når en enkeltressurs skal provisioneres med en gang, for eksempel under testing.
+
+#### Brukeropprettelse
+
+Ved første provisioning av en bruker sender Entra typisk `POST /Users` med Entra-brukerens object ID som `externalId`:
+
+```http
+POST /api/scim/v2/Users
+Authorization: ******
+Content-Type: application/scim+json
+Accept: application/scim+json
+```
+
+```json
+{
+  "schemas": [
+    "urn:ietf:params:scim:schemas:core:2.0:User"
+  ],
+  "externalId": "0c3de38f-33d1-4a11-bdc8-66b55bbb0c13",
+  "userName": "kari.nordmann@example.no",
+  "active": true,
+  "name": {
+    "givenName": "Kari",
+    "familyName": "Nordmann"
+  },
+  "displayName": "Kari Nordmann",
+  "emails": [
+    { "type": "work", "value": "kari.nordmann@example.no", "primary": true }
+  ]
+}
+```
+
+PorticoEstate oppretter kontoen og svarer med HTTP 201. `id` i responsen er den lokale `account_id`-en, og det er denne verdien Entra senere bruker i `members[].value` ved gruppemedlemskap:
+
+```http
+HTTP/1.1 201 Created
+Content-Type: application/scim+json
+Location: https://portico.example.no/api/scim/v2/Users/1234
+```
+
+```json
+{
+  "schemas": [
+    "urn:ietf:params:scim:schemas:core:2.0:User"
+  ],
+  "id": "1234",
+  "externalId": "0c3de38f-33d1-4a11-bdc8-66b55bbb0c13",
+  "userName": "kari.nordmann@example.no",
+  "active": true,
+  "name": {
+    "givenName": "Kari",
+    "familyName": "Nordmann"
+  },
+  "displayName": "Kari Nordmann",
+  "emails": [
+    { "type": "work", "value": "kari.nordmann@example.no", "primary": true }
+  ]
+}
+```
+
+Se seksjon 10 for hva som skjer lokalt i databasen ved brukeropprettelse.
+
+#### Gruppeopprettelse
 
 Entra kan først gjøre et oppslag etter gruppen. Nøyaktig rekkefølge og hvilke oppslag som sendes, avhenger av Entra-oppsettet:
 
@@ -240,7 +314,9 @@ Location: https://portico.example.no/api/scim/v2/Groups/4836
 }
 ```
 
-Når medlemskap endres, sender Entra typisk `PATCH /Groups/{id}`. `value` viser til brukerens SCIM `id` i PorticoEstate, ikke Entra object ID:
+#### Gruppemedlemskap
+
+Når medlemskap endres, sender Entra typisk `PATCH /Groups/{id}`. `value` viser til brukerens SCIM `id` i PorticoEstate (for eksempel `1234` fra brukereksempelet over), ikke Entra object ID:
 
 ```http
 PATCH /api/scim/v2/Groups/4836

@@ -286,7 +286,7 @@ final class ScimController
 	 *     operationId="scimCreateUser",
 	 *     tags={"SCIM 2.0 Users"},
 	 *     summary="Create a provisioned user",
-	 *     description="Idempotent by externalId within the configured Entra tenant.",
+	 *     description="Idempotent by externalId within the configured Entra tenant. Adopts an existing local user when userName matches its account_lid exactly and the user has no SCIM mapping.",
 	 *     security={{"scimBearerAuth": {}}},
 	 *     @OA\RequestBody(required=true, @OA\JsonContent(ref="#/components/schemas/ScimUser")),
 	 *     @OA\Response(response=201, description="User created", @OA\JsonContent(ref="#/components/schemas/ScimUser")),
@@ -315,6 +315,10 @@ final class ScimController
 		catch (InvalidArgumentException $exception)
 		{
 			return ScimResponse::error(400, $exception->getMessage(), 'invalidValue');
+		}
+		catch (DomainException $exception)
+		{
+			return ScimResponse::error(409, $exception->getMessage(), 'uniqueness');
 		}
 		catch (PDOException $exception)
 		{

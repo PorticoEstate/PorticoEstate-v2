@@ -98,7 +98,7 @@ class ScimProvisioningRepositoryTest extends TestCase
 	public function testNewGroupIsCreatedWhenNameDoesNotMatch(): void
 	{
 		$row = ['account_id' => 8, 'account_lid' => 'New Staff', 'account_type' => 'g', 'external_id' => 'entra-8'];
-		$db = new ScimRepositoryFakeDatabase([], [[], [], [$row]]);
+		$db = new ScimRepositoryFakeDatabase([], [[], [], [], [$row]]);
 		$accounts = new class {
 			public array $created = [];
 
@@ -112,7 +112,150 @@ class ScimProvisioningRepositoryTest extends TestCase
 
 		$this->assertSame($row, $repository->createGroup(['displayName' => 'New Staff', 'externalId' => 'entra-8']));
 		$this->assertSame(['New Staff'], $accounts->created);
-		$this->assertSame(8, $db->statements[1]->executeParams[':account_id']);
+		$this->assertStringContainsString('LOWER(account_lid)', $db->statements[1]->sql);
+		$this->assertSame(8, $db->statements[2]->executeParams[':account_id']);
+		$this->assertSame(['begin', 'commit'], $db->transactions);
+	}
+
+	public function testMatchingUserNameCreatesMappingWithoutCreatingAccount(): void
+	{
+		$row = ['account_id' => 9, 'account_lid' => 'existing.user', 'account_type' => 'u', 'external_id' => 'entra-9'];
+		$db = new ScimRepositoryFakeDatabase([], [
+			[$row], [], [], [], [$row],
+		]);
+		$repository = new ScimProvisioningRepository($db, 'tenant-1', new \stdClass());
+
+		$this->assertSame($row, $repository->createUser([
+			'userName' => 'existing.user',
+			'externalId' => 'entra-9',
+			'givenName' => 'Existing',
+			'familyName' => 'User',
+			'active' => true,
+			'email' => 'existing.user@example.no',
+		]));
+		$this->assertStringContainsString('FOR UPDATE', $db->statements[0]->sql);
+		$this->assertSame([':account_lid' => 'existing.user', ':account_type' => 'u'], $db->statements[0]->executeParams);
+		$this->assertStringContainsString('INSERT INTO phpgw_mapping', $db->statements[2]->sql);
+		$this->assertSame(9, $db->statements[2]->executeParams[':account_id']);
+		$this->assertSame('entra-9', $db->statements[2]->executeParams[':external_id']);
+		$this->assertSame('tenant-1', $db->statements[2]->executeParams[':tenant_id']);
+		$this->assertSame(['begin', 'commit'], $db->transactions);
+	}
+
+	public function testMatchingUserRejectsAnotherEntraIdentity(): void
+	{
+		$db = new ScimRepositoryFakeDatabase([], [
+			[['account_id' => 9, 'account_lid' => 'existing.user']],
+			[['ext_user' => 'other-entra-id', 'location' => 'tenant-1', 'status' => 'A']],
+		]);
+		$repository = new ScimProvisioningRepository($db, 'tenant-1', new \stdClass());
+
+		$this->expectException(DomainException::class);
+		try
+		{
+			$repository->createUser([
+				'userName' => 'existing.user',
+				'externalId' => 'entra-9',
+				'givenName' => 'Existing',
+				'familyName' => 'User',
+				'active' => true,
+				'email' => '',
+			]);
+		}
+		finally
+		{
+			$this->assertCount(2, $db->statements);
+			$this->assertSame(['begin', 'rollback'], $db->transactions);
+		}
+	}
+
+	public function testMatchingUserRetryKeepsExistingMapping(): void
+	{
+		$row = ['account_id' => 9, 'account_lid' => 'existing.user', 'account_type' => 'u', 'external_id' => 'entra-9'];
+		$db = new ScimRepositoryFakeDatabase([], [
+			[$row],
+			[['ext_user' => 'entra-9', 'location' => 'tenant-1', 'status' => 'A']],
+			[$row],
+		]);
+		$repository = new ScimProvisioningRepository($db, 'tenant-1', new \stdClass());
+
+		$this->assertSame($row, $repository->createUser([
+			'userName' => 'existing.user',
+			'externalId' => 'entra-9',
+			'givenName' => 'Existing',
+			'familyName' => 'User',
+			'active' => true,
+			'email' => '',
+		]));
+		$this->assertCount(3, $db->statements);
+		$this->assertSame(['begin', 'commit'], $db->transactions);
+	}
+
+	public function testCaseInsensitiveUserAdoptionUpdatesLocalCasing(): void
+	{
+		$stored = ['account_id' => 9, 'account_lid' => 'Existing.User'];
+		$updated = ['account_id' => 9, 'account_lid' => 'existing.user', 'account_type' => 'u', 'external_id' => 'entra-9'];
+		$db = new ScimRepositoryFakeDatabase([], [
+			[], [$stored], [], [], [], [], [$updated],
+		]);
+		$repository = new ScimProvisioningRepository($db, 'tenant-1', new \stdClass());
+
+		$this->assertSame($updated, $repository->createUser([
+			'userName' => 'existing.user',
+			'externalId' => 'entra-9',
+			'givenName' => 'Existing',
+			'familyName' => 'User',
+			'active' => true,
+			'email' => '',
+		]));
+		$this->assertStringContainsString('LOWER(account_lid)', $db->statements[1]->sql);
+		$this->assertStringContainsString('UPDATE phpgw_accounts SET account_lid', $db->statements[3]->sql);
+		$this->assertSame('existing.user', $db->statements[3]->executeParams[':account_lid']);
+		$this->assertSame(9, $db->statements[3]->executeParams[':account_id']);
+		$this->assertStringContainsString('INSERT INTO phpgw_mapping', $db->statements[4]->sql);
+		$this->assertSame(['begin', 'commit'], $db->transactions);
+	}
+
+	public function testAmbiguousCaseInsensitiveUserMatchIsRejected(): void
+	{
+		$db = new ScimRepositoryFakeDatabase([], [
+			[],
+			[['account_id' => 9, 'account_lid' => 'Existing.User'], ['account_id' => 10, 'account_lid' => 'EXISTING.USER']],
+		]);
+		$repository = new ScimProvisioningRepository($db, 'tenant-1', new \stdClass());
+
+		$this->expectException(DomainException::class);
+		try
+		{
+			$repository->createUser([
+				'userName' => 'existing.user',
+				'externalId' => 'entra-9',
+				'givenName' => 'Existing',
+				'familyName' => 'User',
+				'active' => true,
+				'email' => '',
+			]);
+		}
+		finally
+		{
+			$this->assertSame(['begin', 'rollback'], $db->transactions);
+		}
+	}
+
+	public function testCaseInsensitiveGroupAdoptionUpdatesLocalCasing(): void
+	{
+		$stored = ['account_id' => 7, 'account_lid' => 'existing staff'];
+		$updated = ['account_id' => 7, 'account_lid' => 'Existing Staff', 'account_type' => 'g', 'external_id' => 'entra-7'];
+		$db = new ScimRepositoryFakeDatabase([], [
+			[], [$stored], [], [], [], [$updated],
+		]);
+		$repository = new ScimProvisioningRepository($db, 'tenant-1', new \stdClass());
+
+		$this->assertSame($updated, $repository->createGroup(['displayName' => 'Existing Staff', 'externalId' => 'entra-7']));
+		$this->assertStringContainsString('LOWER(account_lid)', $db->statements[1]->sql);
+		$this->assertStringContainsString('UPDATE phpgw_accounts SET account_lid', $db->statements[3]->sql);
+		$this->assertStringContainsString('account_firstname = :account_lid', $db->statements[3]->sql);
+		$this->assertSame('Existing Staff', $db->statements[3]->executeParams[':account_lid']);
 		$this->assertSame(['begin', 'commit'], $db->transactions);
 	}
 

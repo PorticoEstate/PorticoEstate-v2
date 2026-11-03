@@ -1414,6 +1414,7 @@
 						}
 					}
 //					console.log(oData);
+					oData.search = clear_state !== true && params && params.search ? params.search : initial_search;
 					//traverse oData.columns and remove search value
 				//	if (clear_state == true)
 					{

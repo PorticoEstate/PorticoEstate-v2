@@ -163,6 +163,7 @@ class booking_uiarticle_mapping extends phpgwapi_uicommon
 		$reservation_id		 = Sanitizer::get_var('reservation_id', 'int', 'GET');
 		$alloc_template_id	 = Sanitizer::get_var('alloc_template_id', 'int', 'GET');
 		$collection			 = Sanitizer::get_var('collection', 'bool', 'GET');
+		$edit				 = Sanitizer::get_var('edit', 'bool', 'GET');
 
 		if ($alloc_template_id)
 		{
@@ -270,7 +271,7 @@ class booking_uiarticle_mapping extends phpgwapi_uicommon
 		}
 
 		// Filter out articles with no cost when viewing application (not editing)
-		if ($application_id && !$reservation_type && !$reservation_id)
+		if ($application_id && !$reservation_type && !$reservation_id && !$edit)
 		{
 			$articles = array_filter($articles, function ($article)
 			{

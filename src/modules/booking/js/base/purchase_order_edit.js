@@ -2,7 +2,7 @@
 /* global lang, alertify, tax_code_list, template_set, initialSelection, date_format */
 var custom_tax_code;
 
-function populateTableChkArticles(selection, resources, application_id, reservation_type, reservation_id, alloc_template_id = null)
+function populateTableChkArticles(selection, resources, application_id, reservation_type, reservation_id, alloc_template_id = null, edit = false)
 {
 
 	var oArgs = {
@@ -11,7 +11,8 @@ function populateTableChkArticles(selection, resources, application_id, reservat
 		application_id: application_id,
 		reservation_type: reservation_type,
 		reservation_id: reservation_id,
-		alloc_template_id: alloc_template_id
+		alloc_template_id: alloc_template_id,
+		edit: edit
 	};
 	var url = phpGWLink('index.php', oArgs, true);
 
@@ -24,16 +25,16 @@ function populateTableChkArticles(selection, resources, application_id, reservat
 	var colDefsRegulations = [
 		{//0
 			label: lang['Select'],
-			attrs: [{name: 'class', value: "align-middle"}],
+			attrs: [{ name: 'class', value: "align-middle" }],
 			object: [
 				{
 					type: 'button',
 					attrs: [
-						{name: 'type', value: 'button'},
+						{ name: 'type', value: 'button' },
 						//		{name: 'disabled', value: true},
-						{name: 'class', value: 'btn btn-success'},
-						{name: 'onClick', value: 'add_to_bastet(this);'},
-						{name: 'innerHTML', value: 'Legg til <i class="fas fa-shopping-basket"></i>'}
+						{ name: 'class', value: 'btn btn-success' },
+						{ name: 'onClick', value: 'add_to_bastet(this);' },
+						{ name: 'innerHTML', value: 'Legg til <i class="fas fa-shopping-basket"></i>' }
 					]
 				}
 			]
@@ -42,10 +43,11 @@ function populateTableChkArticles(selection, resources, application_id, reservat
 			/**
 			 * Hidden field for holding article id
 			 */
-			attrs: [{name: 'style', value: "display:none;"}],
+			attrs: [{ name: 'style', value: "display:none;" }],
 			object: [
-				{type: 'input', attrs: [
-						{name: 'type', value: 'hidden'}
+				{
+					type: 'input', attrs: [
+						{ name: 'type', value: 'hidden' }
 					]
 				}
 			], value: 'id'
@@ -53,78 +55,81 @@ function populateTableChkArticles(selection, resources, application_id, reservat
 		{//2
 			key: 'name',
 			label: lang['article'],
-			attrs: [{name: 'class', value: "align-middle"}]
+			attrs: [{ name: 'class', value: "align-middle" }]
 		},
 		{//3
 			key: 'unit',
 			label: lang['unit'],
 			attrs: [
-				{name: 'class', value: "unit"}, {name: 'style', value: "display:none;"}
+				{ name: 'class', value: "unit" }, { name: 'style', value: "display:none;" }
 			]
 		},
 		{//4
 			key: 'lang_unit',
 			label: lang['unit'],
 			attrs: [
-				{name: 'class', value: "align-middle"}, {name: 'style', value: "text-align:center;"}
+				{ name: 'class', value: "align-middle" }, { name: 'style', value: "text-align:center;" }
 			]
 		},
 		{//5
 			key: 'tax_code',
 			label: lang['tax code'],
 			attrs: [
-				{name: 'class', value: "align-middle"}, {name: 'style', value: "text-align:center;"}
+				{ name: 'class', value: "align-middle" }, { name: 'style', value: "text-align:center;" }
 			]
 		},
 		{//6
 			key: 'tax_percent',
 			label: lang['percent'],
 			attrs: [
-				{name: 'class', value: "align-middle"}, {name: 'style', value: "text-align:center;"}
+				{ name: 'class', value: "align-middle" }, { name: 'style', value: "text-align:center;" }
 			]
 		},
 		{//7
 			key: 'ex_tax_price',
 			label: lang['unit cost'],
 			attrs: [
-				{name: 'class', value: "align-middle"}, {name: 'style', value: "text-align:right;"}
+				{ name: 'class', value: "align-middle" }, { name: 'style', value: "text-align:right;" }
 			]
 		},
 		{//8
 			key: 'tax',
 			label: lang['tax'],
 			attrs: [
-				{name: 'class', value: "text-right align-middle"}, {name: 'style', value: "text-align:right;"}
+				{ name: 'class', value: "text-right align-middle" }, { name: 'style', value: "text-align:right;" }
 			]
 		},
 		{//9
 			key: 'quantity',
 			label: lang['quantity'],
-			attrs: [{name: 'class', value: "align-middle"}],
+			attrs: [{ name: 'class', value: "align-middle" }],
 			object: [
-				{type: 'input', attrs: [
-						{name: 'type', value: 'number'},
-						{name: 'min', value: 1},
-						{name: 'value', value: 1},
-						{name: 'size', value: 3},
-						{name: 'class', value: 'quantity form-control'}
+				{
+					type: 'input', attrs: [
+						{ name: 'type', value: 'number' },
+						{ name: 'min', value: 1 },
+						{ name: 'value', value: 1 },
+						{ name: 'size', value: 3 },
+						{ name: 'class', value: 'quantity form-control' }
 					]
 				}
-			]},
+			]
+		},
 		{//10
 			key: 'selected_quantity',
 			label: lang['Selected'],
 			attrs: [
-				{name: 'class', value: "selected_quantity text-right align-middle"}, {name: 'style', value: "text-align:right;"}
+				{ name: 'class', value: "selected_quantity text-right align-middle" }, { name: 'style', value: "text-align:right;" }
 			]
 		},
 		{//11
 			label: 'hidden',
-			attrs: [{name: 'style', value: "display:none;"}],
+			attrs: [{ name: 'style', value: "display:none;" }],
 			object: [
-				{type: 'input', attrs: [
-						{name: 'type', value: 'text'},
-						{name: 'name', value: 'selected_articles[]'}
+				{
+					type: 'input', attrs: [
+						{ name: 'type', value: 'text' },
+						{ name: 'name', value: 'selected_articles[]' }
 					]
 				}
 			], value: 'selected_article_quantity'
@@ -133,21 +138,21 @@ function populateTableChkArticles(selection, resources, application_id, reservat
 			key: 'selected_sum',
 			label: lang['Sum'],
 			attrs: [
-				{name: 'class', value: "text-right align-middle selected_sum"}, {name: 'style', value: "text-align:right;"}
+				{ name: 'class', value: "text-right align-middle selected_sum" }, { name: 'style', value: "text-align:right;" }
 			]
 		},
 		{//13
 			label: lang['Delete'],
-			attrs: [{name: 'class', value: "align-middle"}],
+			attrs: [{ name: 'class', value: "align-middle" }],
 			object: [
 				{
 					type: 'button',
 					attrs: [
-						{name: 'type', value: 'button'},
-						{name: 'disabled', value: true},
-						{name: 'class', value: 'btn btn-danger'},
-						{name: 'onClick', value: 'empty_from_bastet(this);'},
-						{name: 'innerHTML', value: 'Slett <i class="far fa-trash-alt"></i>'}
+						{ name: 'type', value: 'button' },
+						{ name: 'disabled', value: true },
+						{ name: 'class', value: 'btn btn-danger' },
+						{ name: 'onClick', value: 'empty_from_bastet(this);' },
+						{ name: 'innerHTML', value: 'Slett <i class="far fa-trash-alt"></i>' }
 					]
 				}
 			]
@@ -156,11 +161,12 @@ function populateTableChkArticles(selection, resources, application_id, reservat
 			/**
 			 * Hidden field for holding information on mandatory items
 			 */
-			attrs: [{name: 'style', value: "display:none;"}],
+			attrs: [{ name: 'style', value: "display:none;" }],
 			object: [
-				{type: 'input', attrs: [
-						{name: 'type', value: 'hidden'},
-						{name: 'class', value: "mandatory"}
+				{
+					type: 'input', attrs: [
+						{ name: 'type', value: 'hidden' },
+						{ name: 'class', value: "mandatory" }
 					]
 				}
 			],
@@ -170,11 +176,12 @@ function populateTableChkArticles(selection, resources, application_id, reservat
 			/**
 			 * Hidden field for holding information on parent_mapping_id
 			 */
-			attrs: [{name: 'style', value: "display:none;"}],
+			attrs: [{ name: 'style', value: "display:none;" }],
 			object: [
-				{type: 'input', attrs: [
-						{name: 'type', value: 'hidden'},
-						{name: 'class', value: "parent_mapping_id"}
+				{
+					type: 'input', attrs: [
+						{ name: 'type', value: 'hidden' },
+						{ name: 'class', value: "parent_mapping_id" }
 					]
 				}
 			],
@@ -246,7 +253,7 @@ $("#articles_container").on("click", ".resource", function (event)
 	setTimeout(function ()
 	{
 		alert('click');
-//			post_handle_order_table();
+		//			post_handle_order_table();
 	}, 500);
 });
 
@@ -273,7 +280,7 @@ function set_mandatory(xTable)
 	var day;
 	var days = [];
 
-	for (var j = 0; j < datetime.length; )
+	for (var j = 0; j < datetime.length;)
 	{
 		if (!datetime[j + 1].value)
 		{
@@ -288,7 +295,7 @@ function set_mandatory(xTable)
 
 		sum_minutes = timespan * 60;
 		sum_hours += Math.ceil(timespan);
-//		sum_days += Math.ceil(sum_hours / 24);
+		//		sum_days += Math.ceil(sum_hours / 24);
 
 		day = new Date(from).toISOString().split('T')[0];
 		if (!days.includes(day))
@@ -381,7 +388,7 @@ function set_mandatory(xTable)
 					selected_sum.innerHTML = parseFloat(ex_tax_price.innerHTML) * selected_quantity * (1 + (new_percent / 100));
 
 					var _tr = tax_code_cell.parentNode;
-//					set_basket(_tr);
+					//					set_basket(_tr);
 					set_sum(xTable);
 
 					alertify.success('Ok');
@@ -398,7 +405,7 @@ function set_mandatory(xTable)
 			var unit_price_cell = this;
 			var tr = this.parentNode;
 			var mapping_id = tr.childNodes[1].childNodes[0].value;
-			var requestURL = phpGWLink('index.php', {menuaction: "booking.uiarticle_mapping.get_pricing", id: mapping_id, filter_active: true}, true);
+			var requestURL = phpGWLink('index.php', { menuaction: "booking.uiarticle_mapping.get_pricing", id: mapping_id, filter_active: true }, true);
 
 			$.getJSON(requestURL, function (result)
 			{
@@ -429,8 +436,8 @@ function set_mandatory(xTable)
 							value: $(unit_price_cell).html(),
 							min: 0,
 							step: 0.01
-							}
-						})
+						}
+					})
 						.set('onclose', function (closeEvent)
 						{
 							var unit_price_value = $('#unit_price_select').val();
@@ -438,7 +445,8 @@ function set_mandatory(xTable)
 							// Optional: read the custom number field value if provided
 							var custom_amount = $("input[name='custom_amount']").val();
 
-							if (custom_amount) {
+							if (custom_amount)
+							{
 								unit_price_value = parseFloat(custom_amount);
 							}
 
@@ -460,7 +468,7 @@ function set_mandatory(xTable)
 							selected_sum.innerHTML = parseFloat(ex_tax_price) * selected_quantity * (1 + (tax_percent / 100));
 
 							var _tr = unit_price_cell.parentNode;
-//							set_basket(_tr);
+							//							set_basket(_tr);
 							set_sum(xTable);
 
 							alertify.success('Ok');
@@ -491,7 +499,7 @@ function set_mandatory(xTable)
 					tr.classList.remove("table-success");
 					tr.classList.add("table-danger");
 					selected_quantity.innerHTML = sum_minutes;
-//					set_basket(tr);
+					//					set_basket(tr);
 				}
 			}
 			if (unit.innerHTML === 'hour')
@@ -504,7 +512,7 @@ function set_mandatory(xTable)
 					tr.classList.remove("table-success");
 					tr.classList.add("table-danger");
 					selected_quantity.innerHTML = sum_hours;
-//					set_basket(tr);
+					//					set_basket(tr);
 				}
 			}
 			if (unit.innerHTML === 'day')
@@ -517,7 +525,7 @@ function set_mandatory(xTable)
 					tr.classList.remove("table-success");
 					tr.classList.add("table-danger");
 					selected_quantity.innerHTML = sum_days;
-//					set_basket(tr);
+					//					set_basket(tr);
 				}
 			}
 		}
@@ -536,7 +544,7 @@ function set_basket(tr)
 	var price = parseFloat(tr.childNodes[7].innerText) + parseFloat(tr.childNodes[8].innerText);
 
 	var parent_mapping_id = tr.getElementsByClassName('parent_mapping_id')[0].value;
-//	var selected_quantity = parseInt(quantity);
+	//	var selected_quantity = parseInt(quantity);
 
 	/**
 	 * the value selected_articles[]
@@ -566,9 +574,9 @@ function set_basket(tr)
 	var sum_cell = tr.childNodes[12];
 	sum_cell.innerText = (selected_quantity * parseFloat(price)).toFixed(2);
 
-//	var xTable = tr.parentNode.parentNode;
+	//	var xTable = tr.parentNode.parentNode;
 
-//	set_sum(xTable);
+	//	set_sum(xTable);
 }
 
 function add_to_bastet(element)
@@ -626,7 +634,7 @@ function add_to_bastet(element)
 
 	var elem = element.parentNode.parentNode.childNodes[10];
 
-// add text
+	// add text
 	elem.innerText = selected_quantity;
 
 	var sum_cell = element.parentNode.parentNode.childNodes[12];
@@ -708,7 +716,7 @@ function empty_from_bastet(element)
 	/**
 	 * Reset button to disabled
 	 */
-//	element.parentNode.parentNode.childNodes[0].childNodes[0].setAttribute('disabled', true);
+	//	element.parentNode.parentNode.childNodes[0].childNodes[0].setAttribute('disabled', true);
 	element.parentNode.parentNode.childNodes[13].childNodes[0].setAttribute('disabled', true);
 
 	var xTableBody = element.parentNode.parentNode.parentNode;
@@ -764,7 +772,7 @@ if (!alertify.myAlert)
 	//define a new dialog
 	alertify.dialog('myAlert', function factory()
 	{
-		return{
+		return {
 			main: function (select_options, opts)
 			{
 				var wrap = document.createElement('div');
@@ -774,9 +782,11 @@ if (!alertify.myAlert)
 				if (select_options instanceof HTMLElement)
 				{
 					wrap.appendChild(select_options);
-					if (select_options.tagName && select_options.tagName.toLowerCase() === 'select') {
+					if (select_options.tagName && select_options.tagName.toLowerCase() === 'select')
+					{
 						selectEl = select_options;
-					} else if (select_options.querySelector) {
+					} else if (select_options.querySelector)
+					{
 						selectEl = select_options.querySelector('select');
 					}
 				}
@@ -809,9 +819,11 @@ if (!alertify.myAlert)
 					if (nf.value != null) input.value = nf.value;
 					if (nf.min != null) input.min = nf.min;
 					if (nf.max != null) input.max = nf.max;
-					if (nf.step != null) {
+					if (nf.step != null)
+					{
 						input.step = nf.step;
-					} else {
+					} else
+					{
 						input.step = '0.01'; // default to two decimals
 					}
 					// Help mobile keyboards and browsers accept decimals
@@ -822,13 +834,17 @@ if (!alertify.myAlert)
 					wrap.appendChild(input);
 
 					// When the user selects an option, set the custom input to the selected value
-					if (selectEl) {
-						selectEl.addEventListener('change', function () {
+					if (selectEl)
+					{
+						selectEl.addEventListener('change', function ()
+						{
 							var v = selectEl.value;
-							if (v !== undefined && v !== null && v !== '') {
+							if (v !== undefined && v !== null && v !== '')
+							{
 								var num = parseFloat(v);
 								input.value = isNaN(num) ? '' : num.toFixed(2);
-							} else {
+							} else
+							{
 								input.value = '';
 							}
 						});
@@ -857,7 +873,7 @@ if (!alertify.myAlert)
 							className: alertify.defaults.theme.ok,
 
 							/* custom button attributes  */
-							attrs: {attribute: 'value'},
+							attrs: { attribute: 'value' },
 
 							/* Defines the button scope, either primary (default) or auxiliary */
 							scope: 'primary',
@@ -867,15 +883,15 @@ if (!alertify.myAlert)
 						}
 
 					],
-					focus: {element: 0},
+					focus: { element: 0 },
 					options: {
 						title: 'Endre mva eller pris', // Set your custom title here
 						message: 'Endre mva eller pris',
 						onclose: function ()
 						{
-//							console.log($('#tax_code_select'));
+							//							console.log($('#tax_code_select'));
 
-//							custom_tax_code = $('#tax_code_select').val();
+							//							custom_tax_code = $('#tax_code_select').val();
 						}
 					}
 				};
@@ -892,7 +908,7 @@ if (!alertify.myAlert)
 				// triggered when the dialog is closed, this is seperate from user defined onclose
 				onclose: function ()
 				{
-//console.log($(this).find('select'));
+					//console.log($(this).find('select'));
 				},
 				// triggered when a dialog option gets updated.
 				// IMPORTANT: This will not be triggered for dialog custom settings updates ( use settingUpdated instead).

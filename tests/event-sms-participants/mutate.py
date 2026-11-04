@@ -47,6 +47,8 @@ G = "src/modules/booking/inc/class.uicommon.inc.php"
 
 # The one call the button makes; the author mutations below rewrite it.
 CALL = "$this->bo->add_single_comment($id, \"SMS: $message\", 'comment', $this->current_account_fullname());"
+# The line that lets only a positive int id reach the shared helper (task 36861); the id mutations rewrite it.
+GUARDED = "$final_recipients = (is_int($id) && $id > 0) ? $this->get_event_sms_recipients($id) : array();"
 E = "src/modules/booking/js/base/event.js"
 X = "src/modules/booking/templates/base/event_edit.xsl"
 LANG = "src/modules/booking/setup/phpgw_{}.lang"
@@ -168,7 +170,7 @@ MUTATIONS = [
      "$p = createObject('booking.soparticipant')->read(array('results' => -1, 'filters' => array('reservation_id' => $event_id, 'reservation_type' => 'booking'))); "
      "$n = 0; foreach ($p['results'] as $x) { if (trim((string)$x['phone']) !== '') { $n++; } } return $n === 0;"),
     ("Mu8", "php", U, "A SECOND COPY that AGREES today: send_sms_participants gets its own inline rule again (only the source scan can see this)",
-     "$final_recipients = $this->get_event_sms_recipients($id);",
+     GUARDED,
      "$p = createObject('booking.soparticipant')->read(array('results' => -1, 'filters' => array('reservation_id' => $id, 'reservation_type' => 'event'))); "
      "$final_recipients = array(); foreach ($p['results'] as $x) { $ph = trim((string)$x['phone']); if ($ph !== '') { $final_recipients[] = $ph; } } "
      "$final_recipients = array_unique($final_recipients);"),
@@ -188,6 +190,28 @@ MUTATIONS = [
      "'reservation_id' => $event_id,", "'reservation_id' => 0,"),
     ("Mu15", "php", U, "send_sms_participants lost its own guard (the UI disable would be the only one)",
      "\t\t\tif (!$final_recipients)\n", "\t\t\tif (false)\n"),
+    # --- the wiring of edit(): direction and id (opus final 36851, Q1: P1 and P2 survived) ---------------------------
+    ("Mw1", "php", U, "edit() hands the template the answer the wrong way round: `? 0 : 1` (opus P1)",
+     "'sms_no_recipients' => $sms_no_recipients ? 1 : 0,", "'sms_no_recipients' => $sms_no_recipients ? 0 : 1,"),
+    ("Mw2", "php", U, "edit() asks the page method about another id: (int)$event['application_id'] (opus P2)",
+     "$sms_no_recipients = $this->sms_has_no_recipients_for_page((int)$id);",
+     "$sms_no_recipients = $this->sms_has_no_recipients_for_page((int)$event['application_id']);"),
+    # --- the event id of the button: only a positive int reaches the helper (task 36861, opus Q2) ----------------------
+    ("Mi1", "php", U, "the guard is gone: the id goes straight to the int-typed helper (a missing or array id is a TypeError again)",
+     GUARDED, "$final_recipients = $this->get_event_sms_recipients($id);"),
+    ("Mi2", "php", U, "a bare (int) cast instead of the guard: id[]=5&id[]=6 becomes event 1 and its participants are texted",
+     GUARDED, "$final_recipients = $this->get_event_sms_recipients((int)$id);"),
+    ("Mi3", "php", U, "zero is let through (>= 0): id=0, abc and an empty id read event 0",
+     GUARDED, "$final_recipients = (is_int($id) && $id >= 0) ? $this->get_event_sms_recipients($id) : array();"),
+    ("Mi4", "php", U, "a negative id is let through (is_int only)",
+     GUARDED, "$final_recipients = is_int($id) ? $this->get_event_sms_recipients($id) : array();"),
+    ("Mi5", "php", U, "no is_int: an array is compared with 0 (and is greater) and reaches the helper",
+     GUARDED, "$final_recipients = $id > 0 ? $this->get_event_sms_recipients($id) : array();"),
+    ("Mi6", "php", U, "a truthiness test instead of the positive-int test: an array and a negative id pass",
+     GUARDED, "$final_recipients = $id ? $this->get_event_sms_recipients($id) : array();"),
+    ("Mi7", "php", U, "an invalid id answers with the generic text instead of the «no participants» message",
+     GUARDED, "if (!is_int($id) || $id < 1) { return array('status' => 'error', 'message' => 'Nothing...'); } "
+              "$final_recipients = $this->get_event_sms_recipients($id);"),
     ("Mu20", "php", X, "the textarea is no longer disabled up front",
      "class=\"pure-input-1\" >\n\t\t\t\t\t\t\t\t\t<xsl:if test=\"sms_no_recipients = 1\">\n\t\t\t\t\t\t\t\t\t\t<xsl:attribute name=\"disabled\">disabled</xsl:attribute>\n\t\t\t\t\t\t\t\t\t</xsl:if>\n",
      "class=\"pure-input-1\" >\n"),

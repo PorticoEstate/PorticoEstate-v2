@@ -1040,7 +1040,10 @@ class booking_uievent extends booking_uicommon
 		$message = 'Nothing...';
 		if ($send_sms && $sms_content)
 		{
-			$final_recipients = $this->get_event_sms_recipients($id);
+			// Only a positive int names an event. Sanitizer gives null for a missing id, 0 for text, and an array for
+			// id[]=...: none of these may reach the helper (its int type would throw, and a (int) cast would turn a
+			// non-empty array into event 1 and text that event's participants). They have nobody to text.
+			$final_recipients = (is_int($id) && $id > 0) ? $this->get_event_sms_recipients($id) : array();
 
 			// Nobody to send to: say so before anything else is touched. This is checked before the gateway, so an
 			// event without participants gets this message even where no gateway is configured.

@@ -44,9 +44,15 @@
  *       is even created; a read that throws = false (the page still renders, enabled), logged.
  *   G   the page and the button AGREE on every participant set (the drift the shared helper exists to prevent).
  *   S   the source: the rule and the participant read exist ONCE in class.uievent.inc.php, both callers go through
- *       the helper, and edit() hands the flag to the template. Only this catches a second copy that agrees today.
+ *       the helper, and edit() hands the flag to the template, asking for the event id it loaded and passing the
+ *       answer on the right way round (`? 1 : 0`). Only this catches a second copy that agrees today.
  *   X   the REAL SMS block, cut verbatim from event_edit.xsl and run by XSLTProcessor on the real toXML output:
  *       flag 1 = textarea and button disabled and the message in #sms_receipt; flag 0 / absent = as before.
+ *   I   the event id the button gets (task 36861): what the REAL Sanitizer hands the method for a missing, text,
+ *       empty, fractional, zero, negative, array and nested-array id (I1); every id that is not a positive int
+ *       gets the «no participants» message with NO read, NO object created and nothing sent, while participants
+ *       exist that a read of event 0 or 1 would find (I2); a valid id is read as that int and sent as before, and
+ *       the zero reads of I2 are shown to be countable (I3). An (int) cast would fail I2: (int)array = 1.
  *
  * Input goes through $_REQUEST: Sanitizer::get_var reads it (a POST-only fixture gives a clean wrong
  * «Nothing...» on every arm).
@@ -311,6 +317,15 @@ namespace {
     class booking_bocommon_authorized
     {
         public $so;
+    }
+
+    /** What the id arms of the button carry when the request has no id at all (a value no request can send). */
+    const NO_ID = "\0no id in the request";
+
+    /** The button's request for an event id as the request carries it ($carried = NO_ID: no id key at all). */
+    function hd_id_request($carried): array
+    {
+        return ($carried === NO_ID ? [] : ['id' => $carried]) + ['send_sms' => '1', 'sms_content' => 'Hei'];
     }
 
     /** The number of top-level arguments of the call whose "(" ends just before $from (quotes and nesting respected). */
@@ -811,6 +826,77 @@ namespace {
         $check('P send: a throwing read still propagates out of send_sms_participants (unchanged: the fallback is the page\'s)', $t instanceof \RuntimeException, 'got ' . ($t ? get_class($t) : 'a normal return'));
     });
 
+    // ===== I: the event id that reaches send_sms_participants (task 36861, Opus Q2 on 5b025b196) ============
+    // The helper is typed `int $event_id`. Sanitizer::get_var('id', 'int') is null for a missing id, 0 for text and
+    // an ARRAY for id[]=...; null and an array both throw a TypeError at the helper. A bare (int) cast is no cure:
+    // (int)array('5','6') is 1, so id[]=a&id[]=b would read EVENT 1's participants and text them. Only a positive
+    // int may reach the helper; anything else has nobody to text, and nothing is read at all.
+    // Each row is [what the request carries, what the REAL Sanitizer hands the method]: asserted in I1, not assumed.
+    $BAD_IDS = [
+        'no id at all'                => [NO_ID, null],
+        'id=abc'                      => ['abc', 0],
+        'id= (empty)'                 => ['', 0],
+        'id=%20 (blank)'              => ['  ', 0],
+        'id=1.5'                      => ['1.5', 0],
+        'id=5abc'                     => ['5abc', 0],
+        'id=0'                        => ['0', 0],
+        'id=-3'                       => ['-3', -3],
+        'id[]=5&id[]=6'               => [['5', '6'], [5, 6]],
+        'id[]=a&id[]=b'               => [['a', 'b'], [0, 0]],
+        'id[]=1 (an array holding 1)' => [['1'], [1]],
+        'id[a][b]=1 (nested)'         => [['a' => ['b' => '1']], ['a' => ['b' => 1]]],
+    ];
+    $GOOD_IDS = [
+        'id=5'            => ['5', 5],
+        'id=84227'        => [(string)EVENT_ID, EVENT_ID],
+        'id=%207%20'      => [' 7 ', 7],
+    ];
+
+    $arm('I1', function () use ($BAD_IDS, $GOOD_IDS, $same) {
+        foreach ($BAD_IDS + $GOOD_IDS as $name => [$carried, $sanitized]) {
+            HdState::reset();
+            $_GET = $_POST = [];
+            $_REQUEST = $carried === NO_ID ? [] : ['id' => $carried];
+            $same("I1 [{$name}] Sanitizer::get_var('id', 'int') hands the method", Sanitizer::get_var('id', 'int'), $sanitized);
+        }
+    });
+
+    $arm('I2', function () use ($run, $same, $err, $BAD_IDS, $didNotThrow) {
+        foreach ($BAD_IDS as $name => [$carried]) {
+            // participants ARE registered, on purpose: a read of ANY event (0, 1, ...) would find and text them
+            [$r, $t] = $run(['participants' => [P1, P2], 'request' => hd_id_request($carried)]);
+            $didNotThrow("I2 [{$name}]", $t);
+            $same("I2 [{$name}] answers the «no participants» message", $r, $err('sms_event_no_participants'));
+            $same("I2 [{$name}] the participants of NO event are read (not event 0, not event 1)", HdState::$readParams, []);
+            $same("I2 [{$name}] nothing is created at all (no participant object, no gateway config, no sms service)", HdState::$constructed, []);
+            $same("I2 [{$name}] nothing is sent", HdState::$attempts, []);
+            $same("I2 [{$name}] no comment, no read_single, no update", HdState::$boCalls, []);
+        }
+    });
+
+    $arm('I3', function () use ($run, $same, $err, $GOOD_IDS, $didNotThrow) {
+        foreach ($GOOD_IDS as $name => [$carried, $int]) {
+            [$r, $t] = $run(['participants' => [P1], 'request' => hd_id_request($carried)]);
+            $didNotThrow("I3 [{$name}]", $t);
+            $same("I3 [{$name}] control: a valid id is sent as before", $r, ['status' => 'ok', 'message' => 'SMS sendt til: ' . P1]);
+            $same("I3 [{$name}] ... the participants of exactly that event are read, with that int", HdState::$readParams, [[
+                'results' => -1,
+                'filters' => ['reservation_id' => $int, 'reservation_type' => 'event'],
+            ]]);
+            $same("I3 [{$name}] ... and the comment goes on that event", HdState::$boCalls, [['add_single_comment', $int, 'SMS: SMS sendt til: ' . P1, 'comment', OFFICER]]);
+        }
+        // the guard sits inside the send_sms branch: without send_sms a missing id still gets «Nothing...», untouched
+        [$r, $t] = $run(['participants' => [P1], 'request' => ['sms_content' => 'Hei']]);
+        $didNotThrow('I3 no id, no send_sms', $t);
+        $same('I3 no id and no send_sms: «Nothing...», as before', $r, ['status' => 'error', 'message' => 'Nothing...']);
+        $same('I3 ... and nothing is created', HdState::$constructed, []);
+        // positive control for the zero reads in I2: a valid id with nobody registered gives the same message, but its read IS recorded
+        [$r, $t] = $run(['participants' => [], 'request' => hd_id_request((string)EVENT_ID)]);
+        $didNotThrow('I3 control', $t);
+        $same('I3 control: a valid id with nobody registered answers the same message, and the read IS seen (so a zero in I2 is a zero)',
+            [$r, count(HdState::$readParams)], [$err('sms_event_no_participants'), 1]);
+    });
+
     $arm('G', function () use ($run, $invoke, $same, $check, $oracle, $err, $PHONE_SETS, $didNotThrow) {
         foreach ($PHONE_SETS as $name => $phones) {
             [$flag] = $invoke(['sms' => true], 'sms_has_no_recipients_for_page', ['participants' => $phones]);
@@ -844,7 +930,10 @@ namespace {
         $same('S the trim of a participant phone exists exactly once in the whole class', substr_count($src, "trim((string)\$participant['phone'])"), 1);
         $same('S ... and that one is in the helper', substr_count($helper, "trim((string)\$participant['phone'])"), 1);
         // both callers go through it and carry no rule of their own
-        $same('S send_sms_participants gets its numbers from the helper, once', substr_count($send, '$this->get_event_sms_recipients($id)'), 1);
+        $same('S send_sms_participants asks the helper exactly once', substr_count($send, '$this->get_event_sms_recipients('), 1);
+        $same('S ... and only for a positive int: the whole guarded line, text for text (the behaviour is I2)',
+            substr_count($send, '$final_recipients = (is_int($id) && $id > 0) ? $this->get_event_sms_recipients($id) : array();'), 1);
+        $check('S ... and the id is never cast (an (int) cast turns an array into event 1)', !str_contains($send, '(int)$id') && !str_contains($send, '(int) $id'));
         $same('S the page method asks the helper, once', substr_count($page, '$this->get_event_sms_recipients('), 1);
         // (edit() has unrelated trim()/array_unique()/['phone'] in its mail code: only the participant read and a
         // participant's phone are looked for there)
@@ -856,9 +945,13 @@ namespace {
             }
         }
         // edit() hands the answer to the template, under the name the template tests
-        $same('S edit() asks the page method, once', substr_count($edit, '$sms_no_recipients = $this->sms_has_no_recipients_for_page('), 1);
-        $check('S edit() passes it to the event_edit template as «sms_no_recipients»',
-            (bool)preg_match("/render_template_xsl\\('event_edit',\\s*array\\((?:(?!\\n\\t\\t\\)\\);).)*'sms_no_recipients'\\s*=>\\s*\\\$sms_no_recipients\\b/s", $edit));
+        // The id and the direction are pinned whole (Opus Q1 on 5b025b196: `? 0 : 1` and `(int)$event['application_id']`
+        // both survived a scan that stopped at the variable name and at the opening parenthesis).
+        $same('S edit() asks the page method, once', substr_count($edit, '$this->sms_has_no_recipients_for_page('), 1);
+        $same('S ... for the id edit() loaded the event with, as an int, and keeps the answer as it is (not negated)',
+            substr_count($edit, '$sms_no_recipients = $this->sms_has_no_recipients_for_page((int)$id);'), 1);
+        $check('S edit() passes it to the event_edit template as «sms_no_recipients» => $sms_no_recipients ? 1 : 0 (1 = nobody to text)',
+            (bool)preg_match("/render_template_xsl\\('event_edit',\\s*array\\((?:(?!\\n\\t\\t\\)\\);).)*'sms_no_recipients'\\s*=>\\s*\\\$sms_no_recipients\\s*\\?\\s*1\\s*:\\s*0\\b/s", $edit));
         // control: the pieces searched for ARE found where they must be, so a zero above is a zero
         $check('S control: the helper holds the read filter and the trim (the cuts are the right ones)',
             str_contains($helper, "'reservation_type' => 'event'") && str_contains($helper, 'trim('));

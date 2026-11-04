@@ -20,6 +20,12 @@ import {useBuildingSeasons, useServerSettings} from '@/service/hooks/api-hooks';
 import {isWithinBusinessHours} from '@/service/utils/business-hours';
 import {formatCurrency} from '@/utils/cost-utils';
 import {
+    formatOreOrDash,
+    hospitalityMenuLineTotalOre,
+    hospitalityUnitPriceIncl,
+    sumOreOrNull,
+} from '@/utils/article-pricing';
+import {
     computeHospitalityDeadline,
     hospitalityActionWindow,
     isWorkingDaysMode,
@@ -503,12 +509,13 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
         return articles;
     }, [menu]);
 
-    const orderTotal = useMemo(() => {
-        return allArticles.reduce((sum, a) => {
-            const qty = quantities[a.id] || 0;
-            return sum + qty * parseFloat(a.effective_price);
-        }, 0);
-    }, [allArticles, quantities]);
+    // Incl. VAT in øre, each ordered line rounded once as it is billed; null (shown «-») as soon as an
+    // ordered article has no known VAT %, never an ex-VAT sum in its place
+    const orderTotalOre = useMemo(() => sumOreOrNull(
+        allArticles
+            .filter(a => (quantities[a.id] || 0) > 0)
+            .map(a => hospitalityMenuLineTotalOre(a, quantities[a.id]))
+    ), [allArticles, quantities]);
 
     const hasItems = Object.values(quantities).some(q => q > 0);
     const dateSelected = !!selectedDateKey;
@@ -601,8 +608,9 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
 
     const renderArticle = (article: IHospitalityArticle) => {
         const qty = quantities[article.id] || 0;
-        const price = parseFloat(article.effective_price);
-        const amount = qty * price;
+        // Both incl. VAT; null (shown «-») when the article's VAT % is unknown
+        const price = hospitalityUnitPriceIncl(article);
+        const amountOre = qty > 0 ? hospitalityMenuLineTotalOre(article, qty) : null;
         const commentText = comments[article.id] || '';
         const commentVisible = visibleComments.has(article.id);
         const description = localizeField(article.description, i18n.language)
@@ -619,7 +627,7 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
                         )}
                     </span>
                     <span className={styles.menuUnit}>{article.unit}</span>
-                    <span className={styles.menuPrice}>{formatCurrency(price)}</span>
+                    <span className={styles.menuPrice}>{price === null ? '-' : formatCurrency(price)}</span>
                     <span className={styles.menuQty}>
                         {editingQty === article.id ? (
                             <input
@@ -664,7 +672,7 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
                             </>
                         )}
                     </span>
-                    <span className={styles.menuAmount}>{qty > 0 ? formatCurrency(amount) : ''}</span>
+                    <span className={styles.menuAmount}>{qty > 0 ? formatOreOrDash(amountOre) : ''}</span>
                     <button
                         type="button"
                         className={`${styles.commentToggle} ${commentText ? styles.commentToggleActive : ''}`}
@@ -874,20 +882,25 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
                         />
                     </Field>
 
+                    {/* The menu has no column header, so say once that every price here includes VAT */}
+                    <Paragraph data-size="sm">{t('bookingfrontend.prices_incl_vat')}</Paragraph>
+
                     {/* Article menu */}
                     <div className={styles.menuList}>
                         {menu?.groups.map(group => {
-                            const groupTotal = group.articles.reduce((sum, a) => {
-                                const qty = quantities[a.id] || 0;
-                                return sum + qty * parseFloat(a.effective_price);
-                            }, 0);
+                            // Incl. VAT in øre, like the order total; shown when something in the group is
+                            // ordered, and «-» when an ordered article's VAT % is unknown
+                            const orderedInGroup = group.articles.filter(a => (quantities[a.id] || 0) > 0);
+                            const groupTotalOre = sumOreOrNull(
+                                orderedInGroup.map(a => hospitalityMenuLineTotalOre(a, quantities[a.id]))
+                            );
                             return (
                                 <Details key={group.id} defaultOpen data-color="neutral">
                                     <Details.Summary>
                                         <div className={styles.groupSummary}>
                                             <span>{group.name}</span>
-                                            {groupTotal > 0 && (
-                                                <span className={styles.groupTotal}>{formatCurrency(groupTotal)}</span>
+                                            {(groupTotalOre === null || groupTotalOre > 0) && (
+                                                <span className={styles.groupTotal}>{formatOreOrDash(groupTotalOre)}</span>
                                             )}
                                         </div>
                                     </Details.Summary>
@@ -906,8 +919,8 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
 
                         {/* Total row */}
                         <div className={styles.totalRow}>
-                            <span className={styles.totalLabel}>{t('bookingfrontend.order_total')}</span>
-                            <span className={styles.totalAmount}>{formatCurrency(orderTotal)}</span>
+                            <span className={styles.totalLabel}>{t('bookingfrontend.total_incl_vat')}</span>
+                            <span className={styles.totalAmount}>{formatOreOrDash(orderTotalOre)}</span>
                         </div>
                     </div>
                 </div>

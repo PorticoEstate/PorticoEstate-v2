@@ -1196,3 +1196,4 @@ catering_application_closed	bookingfrontend	no	Søknaden er avsluttet, så bever
 kr_per_hour	bookingfrontend	no	kr/time
 minutes_short	bookingfrontend	no	min
 catering_no_serving_time	bookingfrontend	no	Uten serveringstid
+prices_incl_vat	bookingfrontend	no	Alle priser er oppgitt inkl. mva

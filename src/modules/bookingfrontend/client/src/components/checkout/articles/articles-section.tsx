@@ -12,8 +12,8 @@ import {
     formatMinutes,
     formatTotalWithHourlyRate,
     hourlyRateOfOrderLine,
-    isAmountOnlyLabel,
-    isMinuteUnit
+    isMinuteUnit,
+    priceLabelForDisplay
 } from '@/utils/article-pricing';
 import styles from './articles-section.module.scss';
 
@@ -106,8 +106,9 @@ const getArticleLines = (application: IApplication, articles: IArticle[]): Artic
                 isAddOn: Number(line.article_cat_id) === 2,
                 isMinuteUnit: isMinuteUnit(line.unit),
                 hourlyRate: isMinuteUnit(line.unit) ? hourlyRateOfOrderLine(line) : null,
-                // A bare amount as label is the per-minute price on a minute line: never shown
-                priceLabel: isMinuteUnit(line.unit) && isAmountOnlyLabel(line.price_label) ? null : line.price_label ?? null,
+                // A bare amount as label is the option's EX-VAT price: shown incl. VAT, and on a minute line
+                // (the per-minute price) never shown (priceLabelForDisplay)
+                priceLabel: priceLabelForDisplay(line),
                 priceChoice: choosable && article ? article : null,
                 pricePending,
                 index,

@@ -43,6 +43,7 @@ final class CitizenHospitalityOrder
         'quantity',
         'unit_price',
         'tax_code',
+        'tax_percent',
         'amount',
         'comment',
         'article_name',

@@ -395,7 +395,7 @@ $newRepo = static function () use ($servingUtc): CitizenStubRepo {
         ];
         $repo->lines[$id] = [[
             'id' => 400 + $id, 'order_id' => $id, 'hospitality_article_id' => 11, 'quantity' => '3.00',
-            'unit_price' => '45.00', 'tax_code' => 1, 'amount' => '135.00', 'comment' => null,
+            'unit_price' => '45.00', 'tax_code' => 1, 'tax_percent' => 25, 'amount' => '135.00', 'comment' => null,
             'article_name' => 'Kaffe', 'unit' => 'stk',
         ]];
     }
@@ -506,7 +506,7 @@ $serialized = [
     'created' => 'x', 'modified' => 'x', 'created_by' => 1, 'modified_by' => 2, 'changelog' => [['case_officer_name' => OFFICER_LID]],
     'billed' => 1, 'a_field_added_next_year' => 'x',
     'lines' => [['id' => 1, 'order_id' => 7, 'hospitality_article_id' => 11, 'quantity' => '3.00', 'unit_price' => '45.00',
-        'tax_code' => 1, 'amount' => '135.00', 'comment' => null, 'article_name' => 'Kaffe', 'unit' => 'stk',
+        'tax_code' => 1, 'tax_percent' => 25, 'amount' => '135.00', 'comment' => null, 'article_name' => 'Kaffe', 'unit' => 'stk',
         'internal_cost' => '12.00', 'supplier' => 'x']],
 ];
 $presented = CitizenHospitalityOrder::present($serialized, ['actions' => ['change' => []], 'contact' => ['info' => 'x'], 'last_applicant_change_at' => 'x', 'case_officer_id' => 5]);

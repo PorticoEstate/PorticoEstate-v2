@@ -1,6 +1,7 @@
 import {DateTime} from 'luxon';
 import {IArticle} from '@/service/types/api/order-articles.types';
 import {IOrderLine} from '@/service/types/api/application.types';
+import {IHospitalityArticle, IHospitalityOrder, IHospitalityOrderLine} from '@/service/types/api/hospitality.types';
 import {formatAmount, formatCurrency} from '@/utils/cost-utils';
 
 /**
@@ -32,6 +33,18 @@ export const bookedMinutes = (start?: Date, end?: Date): number => {
 const toOre = (kroner: string | number): number => Math.round(Number(kroner) * 100);
 
 /**
+ * A line's ex-VAT amount in whole øre plus its VAT at `percent`, the tax rounded ONCE to the øre. The ONE
+ * place the rounding rule lives: every line total incl. VAT in the client goes through it, and it is the
+ * rule the server writes a line with (tax = amount x VAT% to the øre).
+ */
+export const inclOre = (exOre: number, percent: number): number =>
+    exOre + Math.round(exOre * percent / 100);
+
+/** A unit price incl. VAT in kroner, rounded to the øre for showing. Never multiply it: use inclOre per line. */
+const unitPriceIncl = (exPrice: string | number, percent: number): number =>
+    Math.round(toOre(exPrice) * (100 + percent) / 100) / 100;
+
+/**
  * What a line of `quantity` units costs incl. VAT, in whole øre, for ANY unit. Mirrors how the server
  * stores the line (ArticleRepository::savePurchaseOrderLine): amount = ex-VAT price x quantity and
  * tax = amount x VAT%, each to the øre. The ex-VAT price has two decimals and the quantity is whole,
@@ -41,11 +54,8 @@ const toOre = (kroner: string | number): number => Math.round(Number(kroner) * 1
  *
  * Sum lines in øre and divide ONCE at the end; never round a line before adding it to a total.
  */
-export const lineTotalOre = (article: Pick<IArticle, 'ex_tax_price' | 'tax_percent'>, quantity: number): number => {
-    const amountOre = toOre(article.ex_tax_price) * quantity;
-    const taxOre = Math.round(amountOre * Number(article.tax_percent) / 100);
-    return amountOre + taxOre;
-};
+export const lineTotalOre = (article: Pick<IArticle, 'ex_tax_price' | 'tax_percent'>, quantity: number): number =>
+    inclOre(toOre(article.ex_tax_price) * quantity, Number(article.tax_percent));
 
 /** Total incl. VAT, in kroner, for `minutes` of a minute article. */
 export const minuteArticleTotal = (article: Pick<IArticle, 'ex_tax_price' | 'tax_percent'>, minutes: number): number =>
@@ -94,7 +104,65 @@ export const unitPriceInclOfOrderLine = (line: Pick<IOrderLine, 'unit_price' | '
     if (Number(line.unit_price) === 0) return 0;
     const taxPercent = taxPercentOfOrderLine(line);
     if (taxPercent === null) return null;
-    return Math.round(toOre(line.unit_price) * (100 + taxPercent) / 100) / 100;
+    return unitPriceIncl(line.unit_price, taxPercent);
+};
+
+/*
+ * Catering (hospitality). A catering order line is stored EX VAT (amount = quantity x unit_price, no tax
+ * column) and billed by turning it into a purchase-order line with tax = amount x fm_ecomva.percent_ / 100
+ * (async_task_update_reservation_state, create_purchase_orders_from_hospitality). The API sends that VAT %
+ * beside every line (tax_percent) and every menu article (effective_tax_percent). NULL means «that tax code
+ * has no fm_ecomva row» and is NOT 0 %: the helpers return null for it, and the caller shows «-» rather than
+ * an ex-VAT amount in its place. Same rule as unitPriceInclOfOrderLine.
+ */
+
+const knownPercent = (percent: number | string | null | undefined): number | null => {
+    if (percent === null || percent === undefined || percent === '') return null;
+    const n = Number(percent);
+    return Number.isFinite(n) ? n : null;
+};
+
+const exOreOrNull = (kroner: string | number | null | undefined): number | null => {
+    if (kroner === null || kroner === undefined || kroner === '') return null;
+    const n = Number(kroner);
+    return Number.isFinite(n) ? toOre(n) : null;
+};
+
+/** The sum of øre amounts, or null as soon as one of them is unknown (a total must not hide a gap). */
+export const sumOreOrNull = (values: Array<number | null>): number | null =>
+    values.reduce<number | null>((sum, value) => (sum === null || value === null ? null : sum + value), 0);
+
+/** An øre amount as kroner («1 500 kr»), or «-» when it is unknown (null): never an ex-VAT amount in its place. */
+export const formatOreOrDash = (ore: number | null): string => (ore === null ? '-' : formatCurrency(ore / 100));
+
+/** A stored catering line's total incl. VAT in øre: its stored ex-VAT amount plus its VAT, as billed. */
+export const hospitalityLineTotalOre = (line: Pick<IHospitalityOrderLine, 'amount' | 'tax_percent'>): number | null => {
+    const exOre = exOreOrNull(line.amount);
+    const percent = knownPercent(line.tax_percent);
+    return exOre === null || percent === null ? null : inclOre(exOre, percent);
+};
+
+/** A catering order's total incl. VAT in øre: the sum of its lines, each rounded once. Null if any line is unknown. */
+export const hospitalityOrderTotalOre = (order: Pick<IHospitalityOrder, 'lines'>): number | null =>
+    sumOreOrNull(order.lines.map(hospitalityLineTotalOre));
+
+/** What `quantity` of a menu article costs incl. VAT in øre (ex price x quantity, then the VAT once, as billed). */
+export const hospitalityMenuLineTotalOre = (
+    article: Pick<IHospitalityArticle, 'effective_price' | 'effective_tax_percent'>,
+    quantity: number
+): number | null => {
+    const exOre = exOreOrNull(article.effective_price);
+    const percent = knownPercent(article.effective_tax_percent);
+    return exOre === null || percent === null ? null : inclOre(exOre * quantity, percent);
+};
+
+/** A menu article's price per unit incl. VAT in kroner, to the øre, for showing. Null if its VAT % is unknown. */
+export const hospitalityUnitPriceIncl = (
+    article: Pick<IHospitalityArticle, 'effective_price' | 'effective_tax_percent'>
+): number | null => {
+    const exOre = exOreOrNull(article.effective_price);
+    const percent = knownPercent(article.effective_tax_percent);
+    return exOre === null || percent === null ? null : unitPriceIncl(exOre / 100, percent);
 };
 
 // A non-breaking space keeps a number and its unit on one line, as Intl does for «705 kr».
@@ -122,6 +190,24 @@ export const formatTotalWithHourlyRate = (
  */
 export const isAmountOnlyLabel = (label?: string | null): boolean =>
     label != null && /^\d+([.,]\d+)?$/.test(label.trim());
+
+/**
+ * The label to show with a chosen price. A bare amount is the option's EX-VAT price, so it is shown incl.
+ * VAT, worked out from the line's own stored tax like its unit price (unitPriceInclOfOrderLine); on a minute
+ * line it is the per-minute price and is not shown at all, and it is not shown when the VAT % cannot be read
+ * back. A purely numeric label that is NOT the line's unit price is a typed remark and stays as typed.
+ * BOUND: a typed remark that is a number equal to the line's ex-VAT unit price reads as the bare amount.
+ */
+export const priceLabelForDisplay = (
+    line: Pick<IOrderLine, 'price_label' | 'unit' | 'unit_price' | 'amount' | 'tax' | 'currency'>
+): string | null => {
+    const label = line.price_label ?? null;
+    if (label === null || !isAmountOnlyLabel(label)) return label;
+    if (isMinuteUnit(line.unit)) return null;
+    if (Number(label.trim().replace(',', '.')) !== Number(line.unit_price)) return label;
+    const incl = unitPriceInclOfOrderLine(line);
+    return incl === null ? null : formatCurrency(incl, line.currency);
+};
 
 /** «150 min» */
 export const formatMinutes = (minutes: number, t: Translate): string =>

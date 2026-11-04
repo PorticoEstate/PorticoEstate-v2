@@ -63,6 +63,18 @@ class HospitalityOrderController
 	}
 
 	/**
+	 * The VAT % of a tax code from the map getTaxPercentByCode() returns. NULL when the code is NULL or
+	 * has no fm_ecomva row: an unknown rate is not 0 %, and the client shows no incl. VAT price for it.
+	 *
+	 * @param array<int,int> $taxPercents
+	 * @param mixed          $taxCode
+	 */
+	private function taxPercentFor(array $taxPercents, $taxCode): ?int
+	{
+		return $taxCode === null ? null : ($taxPercents[(int)$taxCode] ?? null);
+	}
+
+	/**
 	 * Reject orders whose serving day falls on a weekday the catering is closed (#373).
 	 *
 	 * open_days is the single source of truth for both this restriction and the order-deadline
@@ -476,6 +488,9 @@ class HospitalityOrderController
 				return ResponseHelper::sendErrorResponse(['error' => 'Hospitality not found'], 404, $response);
 			}
 
+			// The VAT % of each tax code, so the client can show the prices incl. VAT. Read-only.
+			$taxPercents = $this->articleRepo->getTaxPercentByCode();
+
 			// Get article groups with nested articles (active only)
 			$groupRows = $this->articleRepo->getGroupsByHospitality($hospitalityId);
 			$groups = [];
@@ -499,6 +514,7 @@ class HospitalityOrderController
 					if ($pricing) {
 						$article['effective_price'] = $pricing['effective_price'];
 						$article['effective_tax_code'] = $pricing['effective_tax_code'];
+						$article['effective_tax_percent'] = $this->taxPercentFor($taxPercents, $pricing['effective_tax_code']);
 					}
 					$group['articles'][] = $article;
 				}
@@ -519,6 +535,7 @@ class HospitalityOrderController
 					if ($pricing) {
 						$article['effective_price'] = $pricing['effective_price'];
 						$article['effective_tax_code'] = $pricing['effective_tax_code'];
+						$article['effective_tax_percent'] = $this->taxPercentFor($taxPercents, $pricing['effective_tax_code']);
 					}
 					$ungroupedArticles[] = $article;
 				}

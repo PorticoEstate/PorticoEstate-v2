@@ -18,7 +18,12 @@ import {
 } from '@/components/checkout/hooks/hospitality-hooks';
 import HospitalityOrderModal from '@/components/checkout/hospitality/hospitality-order-modal';
 import {useServerSettings} from '@/service/hooks/api-hooks';
-import {formatCurrency} from '@/utils/cost-utils';
+import {
+    formatOreOrDash,
+    hospitalityLineTotalOre,
+    hospitalityOrderTotalOre,
+    sumOreOrNull,
+} from '@/utils/article-pricing';
 import {isCateringClosed, showsCateringSection} from '@/utils/catering-status';
 import {formatVenueDeadline, groupByServingDay} from '@/utils/catering-venue-time';
 import {unescapeHTML} from '@/components/building-page/util/building-text-util';
@@ -139,7 +144,9 @@ const CateringOverview: FC<CateringOverviewProps> = ({application}) => {
     const canAdd = handleable
         && hospitalities.length > 0
         && application.dates.some(d => new Date(d.from_).getTime() > now);
-    const total = orders.reduce((sum, order) => sum + (order.total_amount || 0), 0);
+    // Everything below is shown incl. VAT: the stored lines are ex VAT, so the total is worked out from
+    // them (each line's VAT rounded once, as billed), never taken from the order's ex-VAT total_amount
+    const totalOre = sumOreOrNull(orders.map(order => hospitalityOrderTotalOre(order)));
 
     // Day by day, each day by serving time, in venue time (see catering-venue-time.ts); the orders
     // without a serving time come last. Flattened so that every order keeps its own block below.
@@ -299,15 +306,15 @@ const CateringOverview: FC<CateringOverviewProps> = ({application}) => {
                                                     {line.comment && <><br/><small>{line.comment}</small></>}
                                                 </Table.Cell>
                                                 <Table.Cell>{formatQuantity(line.quantity)} {line.unit}</Table.Cell>
-                                                <Table.Cell>{formatCurrency(parseFloat(line.amount))}</Table.Cell>
+                                                <Table.Cell>{formatOreOrDash(hospitalityLineTotalOre(line))}</Table.Cell>
                                             </Table.Row>
                                         ))}
                                     </Table.Body>
                                 </Table>
                             )}
                             <Paragraph data-size="sm" style={{display: 'flex', justifyContent: 'space-between', gap: 12, marginTop: 8}}>
-                                <strong>{t('bookingfrontend.order_total')}</strong>
-                                <strong data-testid="catering-order-total">{formatCurrency(order.total_amount)}</strong>
+                                <strong>{t('bookingfrontend.total_incl_vat')}</strong>
+                                <strong data-testid="catering-order-total">{formatOreOrDash(hospitalityOrderTotalOre(order))}</strong>
                             </Paragraph>
 
                             {/* Which deadline governs each action that is still open, and until when. */}
@@ -349,10 +356,10 @@ const CateringOverview: FC<CateringOverviewProps> = ({application}) => {
                 );
             })}
 
-            {orders.length > 1 && total > 0 && (
+            {orders.length > 1 && (totalOre === null || totalOre > 0) && (
                 <Paragraph data-size="sm" style={{display: 'flex', justifyContent: 'space-between', gap: 12, marginTop: 16}}>
-                    <strong>{t('bookingfrontend.hospitality')} {t('bookingfrontend.total').toLowerCase()}</strong>
-                    <strong>{formatCurrency(total)}</strong>
+                    <strong>{t('bookingfrontend.hospitality')}: {t('bookingfrontend.total_incl_vat')}</strong>
+                    <strong>{formatOreOrDash(totalOre)}</strong>
                 </Paragraph>
             )}
 

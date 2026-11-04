@@ -9,6 +9,7 @@
  *   - CateringText: decode-first, escape-once, plain-text subject (rulings 34081 R1 / 34082)
  *   - HospitalityOrderDiff: what the case entry and the FROM -> TO table are made of
  *   - CateringMailRenderer: the real Twig template, the real .lang files, the language swap
+ *   - special_requirements (the applicant's note to the kitchen): inert in the mail, with an autoescape-off failing arm
  *   - CateringChangeNotifier: recipient rules and that NOTHING in it can throw
  *
  * Translations are read from the real phpgw_{no,nn,en}.lang files by a stand-in for the global
@@ -274,6 +275,73 @@ $contains('...it is shown as text', $hostile['body'], '&lt;script&gt;alert(1)&lt
 $lacks('an <a href> in a comment is not live', $hostile['body'], '<a href="http://evil">');
 $lacks('an <img> in the actor name is not live', $hostile['body'], '<img src=x');
 $lacks('a hostile value cannot add a header line to the subject', $renderer->render($payload('changed', ['application' => ['name' => "x\r\nBcc: a@b.c"]]), 'no')['subject'], "\n");
+
+// special_requirements: the applicant's note to the kitchen, written by the applicant and so as hostile as a comment.
+// Driven through the REAL diff, summary and template, in every language, for an addition, a change and a clearing.
+$srHostile = '<img src=x onerror=alert(1)> <a href="http://evil">x</a> <script>alert(2)</script>';
+$srLine    = $line('Kaffe', '3', '45');
+$srBefore  = $order([$srLine]);                                                       // special_requirements NULL
+$srAfter   = $order([$srLine], ['special_requirements' => $srHostile]);
+$srDiff    = HospitalityOrderDiff::between($srBefore, $srAfter);
+$srSummary = HospitalityOrderDiff::summary($srAfter);
+
+$same('special_requirements diff: only that key changed', array_keys($srDiff['new']), ['special_requirements']);
+$same('special_requirements diff: kept as decoded PLAIN text (escaping is the template\'s job)', $srDiff['new']['special_requirements'] ?? null, $srHostile);
+$same('special_requirements diff: nothing before', $srDiff['old']['special_requirements'] ?? 'absent', 'absent');
+$check('special_requirements summary carries the field', in_array('special_requirements', array_column($srSummary, 'key'), true));
+
+// The client sends null for an empty note and an officer may have left '': that is not a change.
+$check('special_requirements: NULL vs "" is no change (no row, no mail)', HospitalityOrderDiff::isEmpty(HospitalityOrderDiff::between($srBefore, $order([$srLine], ['special_requirements' => '']))));
+// Clearing a stored note: it is in OLD and absent from NEW.
+$srClear = HospitalityOrderDiff::between($srAfter, $srBefore);
+$same('special_requirements clear: old holds the text, new has no key', [$srClear['old']['special_requirements'] ?? null, $srClear['new']['special_requirements'] ?? 'absent'], [$srHostile, 'absent']);
+
+$srInertAsserts = static function (string $tag, string $body, string $l) use ($contains, $lacks): void {
+    $lacks("special_requirements {$tag} {$l}: <img> is not live", $body, '<img src=x');
+    $lacks("special_requirements {$tag} {$l}: <a href> is not live (HTML injection without JS)", $body, '<a href="http://evil"');
+    $lacks("special_requirements {$tag} {$l}: <script> is not live", $body, '<script>');
+    $contains("special_requirements {$tag} {$l}: shown as text (img)", $body, '&lt;img src=x onerror=alert(1)&gt;');
+    $contains("special_requirements {$tag} {$l}: shown as text (a)", $body, '&lt;a href=&quot;http://evil&quot;&gt;x&lt;/a&gt;');
+    $lacks("special_requirements {$tag} {$l}: escaped exactly once", $body, '&amp;lt;');
+    $label = $GLOBALS['__lang_table'][$l]['booking']['catering_field_special_requirements'] ?? '(missing)';
+    $contains("special_requirements {$tag} {$l}: the row carries its translated label «{$label}»", $body, '<td valign="top">' . $label . '</td>');
+};
+
+foreach (['no', 'nn', 'en'] as $l) {
+    $GLOBALS['__lang_missing'] = [];
+    $m = $renderer->render(array_merge($payload('changed'), ['diff' => $srDiff]), $l);
+    $srInertAsserts('changed', $m['body'], $l);
+    $same("special_requirements changed {$l}: no translation key missing", $GLOBALS['__lang_missing'], []);
+    $check("special_requirements changed {$l}: no '!key' leaked", !preg_match('/![a-z_]+/', $m['subject'] . strip_tags($m['body'])));
+
+    $GLOBALS['__lang_missing'] = [];
+    $m = $renderer->render(array_merge($payload('added'), ['summary' => $srSummary]), $l);
+    $srInertAsserts('added', $m['body'], $l);
+    $same("special_requirements added {$l}: no translation key missing", $GLOBALS['__lang_missing'], []);
+
+    // The clearing: FROM holds the (escaped) text, TO reads as the "nothing" dash.
+    $m = $renderer->render(array_merge($payload('changed'), ['diff' => $srClear]), $l);
+    $contains("special_requirements clear {$l}: FROM is the escaped text", $m['body'], '&lt;img src=x onerror=alert(1)&gt;');
+    $contains("special_requirements clear {$l}: TO reads as nothing", $m['body'], '<td valign="top">' . $GLOBALS['__lang_table'][$l]['booking']['catering_mail_nothing'] . '</td>');
+}
+
+// The failing arm: the SAME template and payload with autoescape OFF must put the hostile tags live, otherwise the
+// lacks() checks above could not have failed. The template source goes through an ArrayLoader on purpose: Twig
+// compiles the escaping INTO the template class, and with cache=false two environments that resolve the same
+// template (here: a FilesystemLoader path) share ONE compiled class, so a second environment would silently reuse
+// the escaped one and this mutant would stay escaped, passing nothing and proving nothing.
+$srTplName    = '@views/emails/catering_changed_by_applicant.twig';
+$srLoader     = new \Twig\Loader\ArrayLoader([$srTplName => file_get_contents($root . '/src/modules/booking/html/base/emails/catering_changed_by_applicant.twig')]);
+$srUnsafeTwig = new \Twig\Environment($srLoader, ['autoescape' => false, 'strict_variables' => false]);
+$srUnsafe = new class($srUnsafeTwig) {
+    public function __construct(private \Twig\Environment $twig) {}
+    public function render(string $template, array $vars): string { return $this->twig->render($template, $vars); }
+};
+$srMutant = (new CateringMailRenderer(new FakeLangSwitch('en'), $srUnsafe))->render(array_merge($payload('changed'), ['diff' => $srDiff]), 'no');
+$check('special_requirements failing arm (autoescape OFF): the <img> IS live, so the lacks() checks can fail', str_contains($srMutant['body'], '<img src=x onerror=alert(1)>'));
+$check('special_requirements failing arm (autoescape OFF): the <a href> IS live', str_contains($srMutant['body'], '<a href="http://evil">'));
+$check('special_requirements failing arm (autoescape OFF): the escaped form is ABSENT', !str_contains($srMutant['body'], '&lt;img src=x'));
+$GLOBALS['__lang_now'] = 'en'; // FakeLangSwitch's constructor set the acting language; put it back
 
 // the date falls back to the application's own when the order has no serving time
 $fb = $renderer->render($payload('changed', ['order' => ['serving_time_iso' => null]]), 'no');

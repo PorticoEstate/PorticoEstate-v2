@@ -952,6 +952,78 @@ class booking_uievent extends booking_uicommon
 		}
 	}
 
+	/**
+	 * The phone numbers the participant SMS of an event goes to: the participants registered on the event
+	 * (reservation_type 'event'), their numbers trimmed, blanks dropped, each number once.
+	 *
+	 * This is THE rule. send_sms_participants() sends to exactly this list, and edit() asks it whether the
+	 * SMS box on the event page is usable at all (see sms_has_no_recipients_for_page), so the page can never
+	 * disable the box for an event the button would send for, or the other way round. Do not copy it.
+	 *
+	 * @param int $event_id
+	 * @return array the distinct, trimmed, non-blank phone numbers (empty when nobody can be texted)
+	 */
+	protected function get_event_sms_recipients( int $event_id )
+	{
+		$soparticipant = createObject('booking.soparticipant');
+		$params = array(
+			'results' => -1,
+			'filters' => array(
+				'reservation_id' => $event_id,
+				'reservation_type' => 'event'
+			)
+		);
+
+		$participants = $soparticipant->read($params);
+		$sms_recipients = array();
+		foreach ($participants['results'] as $participant)
+		{
+			$phone = trim((string)$participant['phone']);
+			if ($phone !== '')
+			{
+				$sms_recipients[] = $phone;
+			}
+		}
+
+		return array_unique($sms_recipients);
+	}
+
+	/**
+	 * Whether the event page must show the participant SMS as unusable from the start: the SMS is on and
+	 * the event has nobody to text (get_event_sms_recipients). This is a convenience for the officer, not
+	 * the guard: send_sms_participants() still answers sms_event_no_participants on its own.
+	 *
+	 * With the SMS off nothing is read and nothing changes on the page (the box is shown as it always was).
+	 * If the read fails the page must still render, so the answer is "not unusable": the box stays enabled
+	 * and the guard in send_sms_participants() decides when the officer presses send.
+	 *
+	 * @param int $event_id
+	 * @return bool
+	 */
+	protected function sms_has_no_recipients_for_page( int $event_id )
+	{
+		if (empty($this->apps['sms']))
+		{
+			return false;
+		}
+
+		try
+		{
+			return !$this->get_event_sms_recipients($event_id);
+		}
+		catch (\Throwable $e)
+		{
+			(new Log())->error(array(
+				'text'	 => "Could not tell whether event %1 has participants to text: %2",
+				'p1'	 => $event_id,
+				'p2'	 => $e->getMessage(),
+				'line'	 => __LINE__,
+				'file'	 => __FILE__
+			));
+			return false;
+		}
+	}
+
 	public function send_sms_participants()
 	{
 		if (empty($this->apps['sms']))
@@ -960,7 +1032,6 @@ class booking_uievent extends booking_uicommon
 			return false;
 		}
 
-		$type = 'event';;
 		$id = Sanitizer::get_var('id', 'int');
 		$send_sms = Sanitizer::get_var('send_sms', 'bool');
 		$sms_content = Sanitizer::get_var('sms_content', 'string');
@@ -969,26 +1040,7 @@ class booking_uievent extends booking_uicommon
 		$message = 'Nothing...';
 		if ($send_sms && $sms_content)
 		{
-			$soparticipant = createObject('booking.soparticipant');
-			$params = array(
-				'results' => -1,
-				'filters' => array(
-					'reservation_id' => $id,
-					'reservation_type' => $type
-				)
-			);
-
-			$participants = $soparticipant->read($params);
-			$sms_recipients = array();
-			foreach ($participants['results'] as $participant)
-			{
-				$phone = trim((string)$participant['phone']);
-				if ($phone !== '')
-				{
-					$sms_recipients[] = $phone;
-				}
-			}
-			$final_recipients = array_unique($sms_recipients);
+			$final_recipients = $this->get_event_sms_recipients($id);
 
 			// Nobody to send to: say so before anything else is touched. This is checked before the gateway, so an
 			// event without participants gets this message even where no gateway is configured.
@@ -1758,7 +1810,11 @@ class booking_uievent extends booking_uicommon
 
 		$event['tabs'] = phpgwapi_jquery::tabview_generate($tabs, $active_tab);
 		//              echo '<pre>'; print_r($event);echo '</pre>';
+		// The participant SMS box starts disabled, with the message the button would answer, for an event that
+		// has nobody to text. A participant who registers after this page was rendered is not seen until a reload.
+		$sms_no_recipients = $this->sms_has_no_recipients_for_page((int)$id);
 		self::render_template_xsl('event_edit', array(
+			'sms_no_recipients' => $sms_no_recipients ? 1 : 0,
 			'event'			 => $event,
 			'activities'	 => $activities,
 			'agegroups'		 => $agegroups,

@@ -36,6 +36,18 @@
  *   C   every call of ->add_single_comment( in src/ and its argument count: the async access-request
  *       reminders (4 calls, 2 arguments, so the default path), the bo forward and this button.
  *
+ * Up front (GH #1327 follow-up, task 36828): the event page itself says «no participants» and disables the box,
+ * with the SAME rule the button uses.
+ *   H   get_event_sms_recipients(): the one rule (trim, drop blanks, each number once) and the exact read filter,
+ *       against an oracle written here, not taken from the code under test.
+ *   P   sms_has_no_recipients_for_page(): true for nobody to text, false otherwise; SMS off = false and nothing
+ *       is even created; a read that throws = false (the page still renders, enabled), logged.
+ *   G   the page and the button AGREE on every participant set (the drift the shared helper exists to prevent).
+ *   S   the source: the rule and the participant read exist ONCE in class.uievent.inc.php, both callers go through
+ *       the helper, and edit() hands the flag to the template. Only this catches a second copy that agrees today.
+ *   X   the REAL SMS block, cut verbatim from event_edit.xsl and run by XSLTProcessor on the real toXML output:
+ *       flag 1 = textarea and button disabled and the message in #sms_receipt; flag 0 / absent = as before.
+ *
  * Input goes through $_REQUEST: Sanitizer::get_var reads it (a POST-only fixture gives a clean wrong
  * «Nothing...» on every arm).
  *
@@ -148,13 +160,17 @@ namespace {
         public static ?\Closure $smsCreateThrows = null;
         public static ?\Closure $commentThrows = null;
         public static bool $eventLoads = true;
+        public static ?\Closure $readThrows = null;
+        /** @var array<string,string> key => text lang() answers instead of [lang:key] (the escape arm of X) */
+        public static array $lang = [];
 
         public static function reset(): void
         {
             self::$constructed = self::$log = self::$cacheMessages = self::$locationLookups = [];
             self::$boCalls = self::$attempts = self::$committed = self::$readParams = [];
             self::$participants = self::$gateway = self::$behaviour = [];
-            self::$smsCreateThrows = self::$commentThrows = null;
+            self::$smsCreateThrows = self::$commentThrows = self::$readThrows = null;
+            self::$lang = [];
             self::$eventLoads = true;
             self::$officer = OFFICER;
             Db::forget();
@@ -171,7 +187,7 @@ namespace {
 
     function lang($key, ...$args)
     {
-        return "[lang:{$key}]";
+        return HdState::$lang[$key] ?? "[lang:{$key}]";
     }
 
     function CreateObject($name, ...$args)
@@ -196,6 +212,9 @@ namespace {
         public function read($params)
         {
             HdState::$readParams[] = $params;
+            if (HdState::$readThrows) {
+                throw (HdState::$readThrows)();
+            }
             return ['results' => array_map(static fn($phone) => ['phone' => $phone], HdState::$participants)];
         }
     }
@@ -391,7 +410,7 @@ namespace {
     /**
      * One request through the REAL method. Options: participants (phones), gateway (config 'common'),
      * behaviour (phone => ok|empty|throw-runtime|throw-type), smsCreateThrows, commentThrows (closures
-     * giving a fresh Throwable), eventLoads, apps, request (replaces the default send-sms request).
+     * giving a fresh Throwable), readThrows (same), eventLoads, apps, request (replaces the default send-sms request).
      *
      * @return array{0:mixed,1:?\Throwable}
      */
@@ -403,6 +422,7 @@ namespace {
         HdState::$smsCreateThrows = $o['smsCreateThrows'] ?? null;
         HdState::$commentThrows = $o['commentThrows'] ?? null;
         HdState::$eventLoads = $o['eventLoads'] ?? true;
+        HdState::$readThrows = $o['readThrows'] ?? null;
         HdState::$officer = $o['officer'] ?? OFFICER;
 
         $_GET = $_POST = [];
@@ -714,6 +734,220 @@ namespace {
             'src/modules/booking/inc/class.boevent.inc.php' => [4],
             'src/modules/booking/inc/class.uievent.inc.php' => [4],
         ]);
+    });
+
+    // ===== H / P / G / S / X: the box is judged UP FRONT with the button's own rule (task 36828) ==========
+    // The oracle is written here, from the rule in the brief, and shares no code with the tree under test.
+    $oracle = static fn(array $phones): array => array_values(array_unique(array_filter(
+        array_map(static fn($p) => trim((string)$p), $phones),
+        static fn($p) => $p !== ''
+    )));
+    $PHONE_SETS = [
+        'no participants' => [],
+        'only blank, whitespace and null phones' => ['', '   ', "\t", null],
+        'one number' => [P1],
+        'one padded number' => ['  ' . P1 . '  '],
+        'a number, its twin and its padded twin' => [P1, P1, ' ' . P1 . ' '],
+        'a blank and a number' => ['', P1],
+        'the strings of the manual test (non-dialable)' => ['T36828-FAKE-1', '  T36828-FAKE-2  '],
+        'two numbers' => [P1, P2],
+    ];
+    $invoke = static function (array $apps, string $method, array $o = []) {
+        HdState::reset();
+        HdState::$participants = $o['participants'] ?? [];
+        HdState::$readThrows = $o['readThrows'] ?? null;
+        $ui = (new \ReflectionClass('booking_uievent'))->newInstanceWithoutConstructor();
+        $ui->bo = new HdBo();
+        $ui->apps = $apps;
+        try {
+            return [(new \ReflectionMethod('booking_uievent', $method))->invoke($ui, EVENT_ID), null];
+        } catch (\Throwable $e) {
+            return [null, $e];
+        }
+    };
+    $readOnce = [['results' => -1, 'filters' => ['reservation_id' => EVENT_ID, 'reservation_type' => 'event']]];
+
+    $arm('H', function () use ($invoke, $same, $check, $oracle, $PHONE_SETS, $readOnce, $didNotThrow) {
+        foreach ($PHONE_SETS as $name => $phones) {
+            [$got, $t] = $invoke(['sms' => true], 'get_event_sms_recipients', ['participants' => $phones]);
+            $didNotThrow("H [{$name}]", $t);
+            $same("H [{$name}] the recipients are the distinct, trimmed, non-blank numbers", is_array($got) ? array_values($got) : $got, $oracle($phones));
+            $same("H [{$name}] the participants are read for this event, as an event, all of them", HdState::$readParams, $readOnce);
+        }
+    });
+
+    $arm('P', function () use ($invoke, $same, $check, $oracle, $PHONE_SETS, $readOnce, $didNotThrow) {
+        $seen = [];
+        foreach ($PHONE_SETS as $name => $phones) {
+            [$flag, $t] = $invoke(['sms' => true], 'sms_has_no_recipients_for_page', ['participants' => $phones]);
+            $didNotThrow("P [{$name}]", $t);
+            $same("P [{$name}] disabled up front exactly when nobody can be texted", $flag, $oracle($phones) === []);
+            $same("P [{$name}] it reads the same participants the button reads", HdState::$readParams, $readOnce);
+            $seen[] = $flag;
+        }
+        $check('P control: the matrix has both answers (a flag that is always the same would pass every row above)', in_array(true, $seen, true) && in_array(false, $seen, true));
+
+        // SMS off: the page is as it always was. Nothing is read, nothing is even created.
+        foreach ([[], ['sms' => false], ['sms' => '']] as $i => $apps) {
+            [$flag, $t] = $invoke($apps, 'sms_has_no_recipients_for_page', ['participants' => []]);
+            $didNotThrow("P sms off #{$i}", $t);
+            $same("P sms off #{$i}: not disabled, although the event has nobody", $flag, false);
+            $same("P sms off #{$i}: no participant object is created", HdState::$constructed, []);
+            $same("P sms off #{$i}: no participant read", HdState::$readParams, []);
+        }
+
+        // The read throws: the page must still render, with the box ENABLED, and the failure is logged.
+        foreach (['Exception' => fn() => new \RuntimeException('db gone'), 'TypeError' => fn() => new \TypeError('wrong type')] as $what => $make) {
+            [$flag, $t] = $invoke(['sms' => true], 'sms_has_no_recipients_for_page', ['participants' => [], 'readThrows' => $make]);
+            $didNotThrow("P read throws [{$what}]", $t);
+            $same("P read throws [{$what}]: enabled (the guard in the button still decides)", $flag, false);
+            $same("P read throws [{$what}]: logged once", count(HdState::$log), 1);
+        }
+    });
+
+    // The button keeps its own behaviour on a throwing read: no new catch there (the page's fallback is the page's only).
+    $arm('P send', function () use ($run, $check) {
+        [$r, $t] = $run(['participants' => [P1], 'readThrows' => fn() => new \RuntimeException('db gone')]);
+        $check('P send: a throwing read still propagates out of send_sms_participants (unchanged: the fallback is the page\'s)', $t instanceof \RuntimeException, 'got ' . ($t ? get_class($t) : 'a normal return'));
+    });
+
+    $arm('G', function () use ($run, $invoke, $same, $check, $oracle, $err, $PHONE_SETS, $didNotThrow) {
+        foreach ($PHONE_SETS as $name => $phones) {
+            [$flag] = $invoke(['sms' => true], 'sms_has_no_recipients_for_page', ['participants' => $phones]);
+            [$r, $t] = $run(['participants' => $phones]);
+            $didNotThrow("G [{$name}]", $t);
+            $answeredNobody = $r === $err('sms_event_no_participants');
+            $same("G [{$name}] the page disables the box exactly when the button answers «no participants»", $flag, $answeredNobody);
+            if (!$answeredNobody) {
+                $same("G [{$name}] ... and otherwise the button sends to exactly the numbers the rule gives", array_column(HdState::$attempts, 0), $oracle($phones));
+            }
+        }
+    });
+
+    $arm('S', function () use ($root, $same, $check) {
+        $src = (string)file_get_contents($root . '/src/modules/booking/inc/class.uievent.inc.php');
+        $between = static function (string $from, string $to) use ($src): string {
+            $a = strpos($src, $from);
+            $b = $a === false ? false : strpos($src, $to, $a + strlen($from));
+            return ($a === false || $b === false) ? '' : substr($src, $a, $b - $a);
+        };
+        $helper = $between('function get_event_sms_recipients(', 'function sms_has_no_recipients_for_page(');
+        $page = $between('function sms_has_no_recipients_for_page(', 'public function send_sms_participants()');
+        $send = $between('public function send_sms_participants()', 'public function edit()');
+        $edit = $between('public function edit()', 'public function delete()');
+        foreach (['helper' => $helper, 'page method' => $page, 'send_sms_participants' => $send, 'edit' => $edit] as $what => $body) {
+            $check("S the {$what} was found in class.uievent.inc.php (the cuts below are not empty)", strlen($body) > 100, 'length ' . strlen($body));
+        }
+        // the rule and the participant read live in ONE place
+        $same('S the participant object is created exactly once in the whole class (in the helper)', substr_count(strtolower($src), "createobject('booking.soparticipant')"), 1);
+        $check('S ... and that one is in the helper', substr_count(strtolower($helper), "createobject('booking.soparticipant')") === 1);
+        $same('S the trim of a participant phone exists exactly once in the whole class', substr_count($src, "trim((string)\$participant['phone'])"), 1);
+        $same('S ... and that one is in the helper', substr_count($helper, "trim((string)\$participant['phone'])"), 1);
+        // both callers go through it and carry no rule of their own
+        $same('S send_sms_participants gets its numbers from the helper, once', substr_count($send, '$this->get_event_sms_recipients($id)'), 1);
+        $same('S the page method asks the helper, once', substr_count($page, '$this->get_event_sms_recipients('), 1);
+        // (edit() has unrelated trim()/array_unique()/['phone'] in its mail code: only the participant read and a
+        // participant's phone are looked for there)
+        foreach (['send_sms_participants' => [$send, ['soparticipant', 'trim(', 'array_unique(', "['phone']"]],
+                  'page method' => [$page, ['soparticipant', 'trim(', 'array_unique(', "['phone']"]],
+                  'edit' => [$edit, ['soparticipant', '$participant']]] as $what => [$body, $pieces]) {
+            foreach ($pieces as $piece) {
+                $check("S the {$what} holds no copy of the rule («{$piece}»)", !str_contains($body, $piece));
+            }
+        }
+        // edit() hands the answer to the template, under the name the template tests
+        $same('S edit() asks the page method, once', substr_count($edit, '$sms_no_recipients = $this->sms_has_no_recipients_for_page('), 1);
+        $check('S edit() passes it to the event_edit template as «sms_no_recipients»',
+            (bool)preg_match("/render_template_xsl\\('event_edit',\\s*array\\((?:(?!\\n\\t\\t\\)\\);).)*'sms_no_recipients'\\s*=>\\s*\\\$sms_no_recipients\\b/s", $edit));
+        // control: the pieces searched for ARE found where they must be, so a zero above is a zero
+        $check('S control: the helper holds the read filter and the trim (the cuts are the right ones)',
+            str_contains($helper, "'reservation_type' => 'event'") && str_contains($helper, 'trim('));
+        $check('S control: send_sms_participants still holds its own guard (the server check is kept)', str_contains($send, 'if (!$final_recipients)') && str_contains($send, "lang('sms_event_no_participants')"));
+    });
+
+    $arm('X', function () use ($root, $same, $check) {
+        $need = $root . '/src/modules/phpgwapi/inc/class.xmlhelper.inc.php';
+        if (!is_file($need)) {
+            throw new \RuntimeException('the real toXML is not readable: ' . $need);
+        }
+        require_once $need;
+        $xslSource = (string)file_get_contents($root . '/src/modules/booking/templates/base/event_edit.xsl');
+        foreach (['<label for="field_sms_content">', 'onClick="SendSms();"'] as $anchor) {
+            $check("X the template holds «{$anchor}» exactly once", substr_count($xslSource, $anchor) === 1);
+        }
+        $labelAt = (int)strpos($xslSource, '<label for="field_sms_content">');
+        $from = strrpos(substr($xslSource, 0, $labelAt), '<div class="pure-control-group">');
+        $btnAt = (int)strpos($xslSource, 'onClick="SendSms();"');
+        $btnEnd = (int)strpos($xslSource, '</button>', $btnAt) + strlen('</button>');
+        $to = strpos($xslSource, '</div>', $btnEnd);
+        if ($from === false || $to === false) {
+            throw new \RuntimeException('the SMS block could not be cut out of event_edit.xsl');
+        }
+        $fragment = substr($xslSource, $from, $to + strlen('</div>') - $from);
+        foreach (['id="field_sms_content"', 'id="sms_receipt"', 'SendSms();'] as $mustHave) {
+            $check("X the cut block holds «{$mustHave}» (it is the SMS block)", str_contains($fragment, $mustHave));
+        }
+        $check('X the cut block holds only the SMS box (no other form field came along)', substr_count($fragment, '<textarea') === 1 && substr_count($fragment, '<input') === 0 && substr_count($fragment, '<button') === 1);
+
+        $doc = new \DOMDocument();
+        $sheet = '<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:php="http://php.net/xsl">'
+            . '<xsl:output method="html" encoding="UTF-8" indent="yes"/>'
+            . '<xsl:template match="/"><xsl:apply-templates select="PHPGW/data"/></xsl:template>'
+            . '<xsl:template match="data">' . $fragment . '</xsl:template></xsl:stylesheet>';
+        if (!@$doc->loadXML($sheet)) {
+            throw new \RuntimeException('the stylesheet around the cut SMS block is not well-formed XML');
+        }
+        $proc = new \XSLTProcessor();
+        $proc->registerPHPFunctions(['lang']);
+        $proc->importStylesheet($doc);
+
+        /** The block the template gives for this data: [html, textarea, button, receipt]. */
+        $render = static function (?int $flag) use ($proc): array {
+            $data = ['event' => ['id' => EVENT_ID]];
+            if ($flag !== null) {
+                $data['sms_no_recipients'] = $flag;
+            }
+            $in = new \DOMDocument();
+            $in->loadXML(\phpgwapi_xmlhelper::toXML(['data' => $data], 'PHPGW'));
+            $html = (string)$proc->transformToXml($in);
+            $out = new \DOMDocument();
+            $prev = libxml_use_internal_errors(true);
+            $out->loadHTML('<?xml encoding="UTF-8"><body>' . $html . '</body>', LIBXML_NONET);
+            libxml_clear_errors();
+            libxml_use_internal_errors($prev);
+            $xp = new \DOMXPath($out);
+            return [$html, $xp->query('//textarea[@id="field_sms_content"]')->item(0), $xp->query('//button')->item(0), $xp->query('//*[@id="sms_receipt"]')->item(0), $xp];
+        };
+        $message = '[lang:sms_event_no_participants]';
+
+        [$html, $ta, $btn, $rcpt, $xp] = $render(1);
+        $check('X flag 1: the textarea exists and is disabled', $ta !== null && $ta->hasAttribute('disabled'));
+        $check('X flag 1: the send button exists and is disabled', $btn !== null && $btn->hasAttribute('disabled'));
+        $check('X flag 1: the button still runs SendSms() (only disabled, nothing else changed)', $btn !== null && $btn->getAttribute('onclick') === 'SendSms();');
+        $check('X flag 1: #sms_receipt holds the existing message, in the error class event.js uses',
+            $rcpt !== null && $xp->query('./div[@class="error"]', $rcpt)->length === 1 && trim($rcpt->textContent) === $message, $rcpt ? trim($rcpt->textContent) : 'no receipt');
+        $same('X flag 1: the message is shown once on the whole block', substr_count($html, $message), 1);
+        $check('X flag 1: the box keeps its name (a disabled field is simply not posted)', $ta !== null && $ta->getAttribute('name') === 'sms_content');
+
+        foreach (['0' => 0, 'absent' => null] as $name => $flag) {
+            [$html0, $ta0, $btn0, $rcpt0, $xp0] = $render($flag);
+            $check("X flag {$name}: the textarea is enabled", $ta0 !== null && !$ta0->hasAttribute('disabled'));
+            $check("X flag {$name}: the send button is enabled", $btn0 !== null && !$btn0->hasAttribute('disabled'));
+            $check("X flag {$name}: #sms_receipt is empty", $rcpt0 !== null && $xp0->query('.//*', $rcpt0)->length === 0 && trim($rcpt0->textContent) === '');
+            $check("X flag {$name}: the message is nowhere", !str_contains($html0, $message));
+            $check("X flag {$name}: the button still runs SendSms()", $btn0 !== null && $btn0->getAttribute('onclick') === 'SendSms();');
+        }
+        // The message is printed escaped, as a lang text always was (the lang text itself is not trusted to be plain).
+        HdState::$lang['sms_event_no_participants'] = '<b onmouseover="x()">no</b> & "quoted"';
+        [$htmlE, $taE, $btnE, $rcptE, $xpE] = $render(1);
+        HdState::$lang = [];
+        $check('X escape: a lang text with markup is shown as text, not as elements',
+            $rcptE !== null && $xpE->query('.//b', $rcptE)->length === 0 && trim($rcptE->textContent) === '<b onmouseover="x()">no</b> & "quoted"',
+            $rcptE ? trim($rcptE->textContent) : 'no receipt');
+        $check('X control: ... the same text IS seen as markup when printed raw (the check can fail)',
+            (new \DOMXPath((function () { $d = new \DOMDocument(); @$d->loadHTML('<body><div><b onmouseover="x()">no</b></div></body>'); return $d; })()))->query('//b')->length === 1);
+        $check('X control: flag 1 and flag 0 give different blocks (the instrument can tell them apart)', $render(1)[0] !== $render(0)[0]);
+        $check('X control: flag 0 and an absent flag give the same block (a page that passes nothing is as before)', $render(0)[0] === $render(null)[0]);
     });
 
     // ===== controls: the instrument can fail ============================================================

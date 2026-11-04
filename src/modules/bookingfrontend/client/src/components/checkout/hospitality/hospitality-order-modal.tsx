@@ -1,5 +1,5 @@
 'use client';
-import {FC, useEffect, useMemo, useState} from 'react';
+import {FC, useEffect, useMemo, useRef, useState} from 'react';
 import {Alert, Button, Details, Field, Label, Paragraph, Select, Textarea} from '@digdir/designsystemet-react';
 import {MinusCircleIcon, PlusCircleIcon, ChatElipsisIcon} from '@navikt/aksel-icons';
 import {useClientTranslation} from '@/app/i18n/ClientTranslationProvider';
@@ -132,6 +132,9 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
     const [visibleComments, setVisibleComments] = useState<Set<number>>(new Set());
     // The order-level note to the kitchen (bb_hospitality_order.special_requirements), not a line comment.
     const [specialRequirements, setSpecialRequirements] = useState('');
+    // What the note was prefilled with when the dialog was initialised. Save compares against this, not
+    // against the stored order at save time, to tell an untouched note from an edited one.
+    const prefilledSpecialRequirements = useRef('');
     const [editingQty, setEditingQty] = useState<number | null>(null);
     // The server's refusal of a save (e.g. a deadline that passed while the dialog was open).
     const [saveError, setSaveError] = useState<string | null>(null);
@@ -456,7 +459,9 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
             });
             setComments(commentMap);
             setVisibleComments(visSet);
-            setSpecialRequirements(existingOrder.special_requirements ?? '');
+            // REST leaves the key out when the column is NULL, so a missing note is prefilled as ''.
+            prefilledSpecialRequirements.current = existingOrder.special_requirements ?? '';
+            setSpecialRequirements(prefilledSpecialRequirements.current);
             // Try to match existing serving time to a date option
             if (existingOrder.serving_time_iso) {
                 const existingDate = new Date(existingOrder.serving_time_iso);
@@ -483,6 +488,7 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
             setQuantities({});
             setComments({});
             setVisibleComments(new Set());
+            prefilledSpecialRequirements.current = '';
             setSpecialRequirements('');
             setSelectedDateKey('');
             setSelectedTime('');
@@ -532,9 +538,13 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
                 ...(comments[parseInt(articleId)] ? {comment: comments[parseInt(articleId)]} : {}),
             }));
 
-        // An empty note is sent as null: the server stores NULL, and on an update null CLEARS a stored
-        // text, whereas an absent key would leave it as it was.
-        const specialRequirementsToSend = specialRequirements.trim() || null;
+        // The order-level note is sent verbatim, never trimmed: whitespace the officer typed is theirs.
+        // An update carries the key ONLY when the note differs from what the dialog was prefilled with,
+        // character for character; an absent key leaves the stored text alone, so pressing Lagre on an
+        // untouched note writes nothing and mails nobody. A changed note that is blank is sent as null,
+        // which clears it (stored as NULL, not ''). A new order carries the key only when there is a
+        // note to store; without it the server stores NULL.
+        const noteIsBlank = specialRequirements.trim() === '';
 
         setSaveError(null);
         try {
@@ -544,7 +554,9 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
                     data: {
                         location_resource_id: locationId,
                         serving_time_iso: servingTimeIso,
-                        special_requirements: specialRequirementsToSend,
+                        ...(specialRequirements !== prefilledSpecialRequirements.current
+                            ? {special_requirements: noteIsBlank ? null : specialRequirements}
+                            : {}),
                         lines,
                     },
                 });
@@ -553,7 +565,7 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
                     hospitality_id: hospitality.id,
                     location_resource_id: locationId,
                     serving_time_iso: servingTimeIso,
-                    special_requirements: specialRequirementsToSend,
+                    ...(noteIsBlank ? {} : {special_requirements: specialRequirements}),
                     lines,
                 });
             }

@@ -1194,3 +1194,4 @@ catering_serving_time_passed	bookingfrontend	nn	Serveringstidspunktet er passert
 catering_application_closed	bookingfrontend	nn	Søknaden er avslutta, så bevertninga kan ikkje endrast.
 kr_per_hour	bookingfrontend	nn	kr/time
 minutes_short	bookingfrontend	nn	min
+catering_no_serving_time	bookingfrontend	nn	Utan serveringstid

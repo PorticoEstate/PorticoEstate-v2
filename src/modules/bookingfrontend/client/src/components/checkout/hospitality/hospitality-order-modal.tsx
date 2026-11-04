@@ -1,6 +1,6 @@
 'use client';
 import {FC, useEffect, useMemo, useState} from 'react';
-import {Alert, Button, Details, Field, Label, Paragraph, Select} from '@digdir/designsystemet-react';
+import {Alert, Button, Details, Field, Label, Paragraph, Select, Textarea} from '@digdir/designsystemet-react';
 import {MinusCircleIcon, PlusCircleIcon, ChatElipsisIcon} from '@navikt/aksel-icons';
 import {useClientTranslation} from '@/app/i18n/ClientTranslationProvider';
 import {fallbackLng} from '@/app/i18n/settings';
@@ -130,6 +130,8 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
     const [quantities, setQuantities] = useState<Record<number, number>>({});
     const [comments, setComments] = useState<Record<number, string>>({});
     const [visibleComments, setVisibleComments] = useState<Set<number>>(new Set());
+    // The order-level note to the kitchen (bb_hospitality_order.special_requirements), not a line comment.
+    const [specialRequirements, setSpecialRequirements] = useState('');
     const [editingQty, setEditingQty] = useState<number | null>(null);
     // The server's refusal of a save (e.g. a deadline that passed while the dialog was open).
     const [saveError, setSaveError] = useState<string | null>(null);
@@ -454,6 +456,7 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
             });
             setComments(commentMap);
             setVisibleComments(visSet);
+            setSpecialRequirements(existingOrder.special_requirements ?? '');
             // Try to match existing serving time to a date option
             if (existingOrder.serving_time_iso) {
                 const existingDate = new Date(existingOrder.serving_time_iso);
@@ -480,6 +483,7 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
             setQuantities({});
             setComments({});
             setVisibleComments(new Set());
+            setSpecialRequirements('');
             setSelectedDateKey('');
             setSelectedTime('');
         }
@@ -528,6 +532,10 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
                 ...(comments[parseInt(articleId)] ? {comment: comments[parseInt(articleId)]} : {}),
             }));
 
+        // An empty note is sent as null: the server stores NULL, and on an update null CLEARS a stored
+        // text, whereas an absent key would leave it as it was.
+        const specialRequirementsToSend = specialRequirements.trim() || null;
+
         setSaveError(null);
         try {
             if (existingOrder) {
@@ -536,6 +544,7 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
                     data: {
                         location_resource_id: locationId,
                         serving_time_iso: servingTimeIso,
+                        special_requirements: specialRequirementsToSend,
                         lines,
                     },
                 });
@@ -544,6 +553,7 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
                     hospitality_id: hospitality.id,
                     location_resource_id: locationId,
                     serving_time_iso: servingTimeIso,
+                    special_requirements: specialRequirementsToSend,
                     lines,
                 });
             }
@@ -839,6 +849,18 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
                             {menu.hospitality_description}
                         </Alert>
                     )}
+
+                    {/* Order-level note to the kitchen: below the date/place/time row, above the menu.
+                        Locked like the rest of the order content (+/-, line comments). */}
+                    <Field>
+                        <Label>{t('bookingfrontend.special_requirements')}</Label>
+                        <Textarea
+                            rows={3}
+                            value={specialRequirements}
+                            onChange={(e) => setSpecialRequirements(e.target.value)}
+                            disabled={!menuEnabled}
+                        />
+                    </Field>
 
                     {/* Article menu */}
                     <div className={styles.menuList}>

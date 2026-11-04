@@ -133,13 +133,14 @@ export interface CreateHospitalityOrderRequest {
     location_resource_id: number;
     serving_time_iso?: string;
     comment?: string;
-    special_requirements?: string;
+    special_requirements?: string | null;
     lines: { hospitality_article_id: number; quantity: number; comment?: string }[];
 }
 
 export interface UpdateHospitalityOrderRequest {
     comment?: string;
-    special_requirements?: string;
+    /** null clears the stored text; an absent key leaves it unchanged. */
+    special_requirements?: string | null;
     serving_time_iso?: string;
     location_resource_id?: number;
     lines?: { hospitality_article_id: number; quantity: number; comment?: string }[];

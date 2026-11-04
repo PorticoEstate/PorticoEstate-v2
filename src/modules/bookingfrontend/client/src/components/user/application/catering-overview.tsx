@@ -273,6 +273,13 @@ const CateringOverview: FC<CateringOverviewProps> = ({application}) => {
                                 </div>
                             </div>
 
+                            {/* The order-level note to the kitchen, as plain text (React escapes it; line breaks kept). */}
+                            {order.special_requirements?.trim() && (
+                                <Paragraph data-size="sm" data-testid="catering-special-requirements" style={{marginTop: 8, whiteSpace: 'pre-line'}}>
+                                    <strong>{t('bookingfrontend.special_requirements')}:</strong> {order.special_requirements}
+                                </Paragraph>
+                            )}
+
                             {order.lines.length === 0 ? (
                                 <Paragraph data-size="sm">{t('bookingfrontend.catering_order_no_lines')}</Paragraph>
                             ) : (

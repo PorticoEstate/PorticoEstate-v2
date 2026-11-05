@@ -29,12 +29,14 @@ use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\Routing\RouteCollectorProxy;
 use App\modules\bookingfrontend\helpers\UserHelper;
+use App\modules\bookingfrontend\viewcontrollers\InformationScreenViewController;
 
 
 
 $app->group('/bookingfrontend', function (RouteCollectorProxy $group)
 {
 
+	$group->get('/view/information-screen-picker', InformationScreenViewController::class . ':picker');
 	$group->get('/userhelper/callback[/{params:.*}]', UserHelper::class . ':process_callback');
 	$group->get('/searchdataall[/{params:.*}]', DataStore::class . ':SearchDataAll');
 	$group->get('/searchdataalloptimised[/{params:.*}]', DataStore::class . ':SearchDataAllOptimised');
@@ -43,6 +45,7 @@ $app->group('/bookingfrontend', function (RouteCollectorProxy $group)
 	$group->group('/buildings', function (RouteCollectorProxy $group)
 	{
 		$group->get('', BuildingController::class . ':index');
+		$group->get('/search', BuildingController::class . ':search');
 		$group->get('/{id}', BuildingController::class . ':show');
 		$group->get('/{id}/resources', ResourceController::class . ':getResourcesByBuilding');
 		$group->get('/{id}/documents', BuildingController::class . ':getDocuments');

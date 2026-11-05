@@ -1,4 +1,29 @@
 %1 bookings were updated.	bookingfrontend	en	%1 bookings were updated.
+Info skjerm - ressursvelger	bookingfrontend	en	Information screen - resource selector
+You can add resources from several buildings. Previous selections are kept when you search for another building.	bookingfrontend	en	You can add resources from several buildings. Previous selections are kept when you search for another building.
+Selected resources	bookingfrontend	en	Selected resources
+Remove selected resource	bookingfrontend	en	Remove selected resource
+Searching for buildings	bookingfrontend	en	Searching for buildings
+No buildings found	bookingfrontend	en	No buildings found
+Select a building to see its resources	bookingfrontend	en	Select a building to see its resources
+Loading resources	bookingfrontend	en	Loading resources
+No active resources found for this building	bookingfrontend	en	No active resources found for this building
+Could not load data. Please try again	bookingfrontend	en	Could not load data. Please try again
+Link copied	bookingfrontend	en	Link copied
+Could not copy the link	bookingfrontend	en	Could not copy the link
+Choose a building and the resources to show on your information screen. Copy the generated link to save it as a shortcut.	bookingfrontend	en	Choose a building and the resources to show on your information screen. Copy the generated link to save it as a shortcut.
+Search for a building	bookingfrontend	en	Search for a building
+Type at least two characters	bookingfrontend	en	Type at least two characters
+Filter resources	bookingfrontend	en	Filter resources
+Search resources	bookingfrontend	en	Search resources
+Link to the information screen	bookingfrontend	en	Link to the information screen
+Open information screen	bookingfrontend	en	Open information screen
+Copy link	bookingfrontend	en	Copy link
+Days to display	bookingfrontend	en	Days to display
+Whole week	bookingfrontend	en	Whole week
+Weekdays	bookingfrontend	en	Weekdays
+Weekend	bookingfrontend	en	Weekend
+JavaScript is required to configure the information screen	bookingfrontend	en	JavaScript is required to configure the information screen
 %1 bookings will be updated.	bookingfrontend	en	%1 bookings will be updated.
 -- select an activity --	bookingfrontend	en	-- select an activity --
 1 week	bookingfrontend	en	1 week

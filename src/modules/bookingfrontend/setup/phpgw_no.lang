@@ -1,4 +1,29 @@
 %1 bookings were updated.	bookingfrontend	no	%1 interntildelinger ble oppdatert.
+Info skjerm - ressursvelger	bookingfrontend	no	Info skjerm - ressursvelger
+You can add resources from several buildings. Previous selections are kept when you search for another building.	bookingfrontend	no	Du kan legge til ressurser fra flere bygg. Tidligere valg beholdes når du søker opp et annet bygg.
+Selected resources	bookingfrontend	no	Valgte ressurser
+Remove selected resource	bookingfrontend	no	Fjern valgt ressurs
+Searching for buildings	bookingfrontend	no	Søker etter bygg
+No buildings found	bookingfrontend	no	Ingen bygg funnet
+Select a building to see its resources	bookingfrontend	no	Velg et bygg for å se ressursene
+Loading resources	bookingfrontend	no	Laster ressurser
+No active resources found for this building	bookingfrontend	no	Ingen aktive ressurser funnet for dette bygget
+Could not load data. Please try again	bookingfrontend	no	Klarte ikke å laste inn data. Prøv igjen
+Link copied	bookingfrontend	no	Lenken er kopiert
+Could not copy the link	bookingfrontend	no	Klarte ikke å kopiere lenken
+Choose a building and the resources to show on your information screen. Copy the generated link to save it as a shortcut.	bookingfrontend	no	Velg et bygg og ressursene som skal vises på infoskjermen. Kopier lenken for å lagre den som en snarvei.
+Search for a building	bookingfrontend	no	Søk etter bygg
+Type at least two characters	bookingfrontend	no	Skriv minst to tegn
+Filter resources	bookingfrontend	no	Filtrer ressurser
+Search resources	bookingfrontend	no	Søk i ressurser
+Link to the information screen	bookingfrontend	no	Lenke til infoskjermen
+Open information screen	bookingfrontend	no	Åpne infoskjermen
+Copy link	bookingfrontend	no	Kopier lenke
+Days to display	bookingfrontend	no	Dager som skal vises
+Whole week	bookingfrontend	no	Hele uken
+Weekdays	bookingfrontend	no	Ukedager
+Weekend	bookingfrontend	no	Helg
+JavaScript is required to configure the information screen	bookingfrontend	no	JavaScript må være aktivert for å konfigurere infoskjermen
 %1 bookings will be updated.	bookingfrontend	no	%1 interntildelinger vil bli oppdatert.
 -- select an activity --	bookingfrontend	no	Velg en aktivitet
 1 week	bookingfrontend	no	1 uke

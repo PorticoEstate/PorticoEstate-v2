@@ -11,6 +11,7 @@ class bookingfrontend_uibuilding extends booking_uibuilding
 		'index' => true,
 		'schedule' => true,
 		'information_screen' => true,
+		'information_screen_picker' => true,
 		'extraschedule' => true,
 		'show' => true,
 		'toggle_show_inactive' => true,
@@ -327,6 +328,11 @@ class bookingfrontend_uibuilding extends booking_uibuilding
 		header('Content-type: text/html');
 		echo $html;
 		$this->phpgwapi_common->phpgw_exit();
+	}
+
+	public function information_screen_picker()
+	{
+		phpgw::redirect_link('/bookingfrontend/view/information-screen-picker', array(), true);
 	}
 
 	public function schedule()

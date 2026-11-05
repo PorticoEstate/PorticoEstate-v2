@@ -17,6 +17,27 @@ Du som frontend utvikler, vil motta oppgaver/ønske om endringer via Teamworks. 
 Systemet er basert på et modulbasert web-grensesnitt som heter Portico Estate. Dette er utviklet av Bergen Kommune, og Sigurd Ness er den som har stål-kontroll på systemet. Som Frontend utvikler, vil du hovedsakelig jobbe på XSL filer (dette er template filer med HTML kode), CSS og JavaScript (blanding av vanilla JS og jQuery, som på sikt fases ut)
 
 
+== Infoskjerm - ressursvelger
+
+Den offentlige konfigurasjonssiden finnes på `/bookingfrontend/view/information-screen-picker`.
+Den bruker `TwigHelper('bookingfrontend')` og samler Twig, CSS og JavaScript i
+`html/base/information_screen/`. Menuaction-adressen
+`bookingfrontend.uibuilding.information_screen_picker` videresender til den nye siden.
+
+Bygg søkes opp via `GET /bookingfrontend/buildings/search?query=...` (minst to tegn,
+inntil 20 aktive bygg). Ressurslisten bruker det eksisterende API-et
+`GET /bookingfrontend/buildings/{id}/resources?results=-1&sort=name&short=1`,
+som bare returnerer aktive ressurser som er synlige i frontend.
+
+Brukeren krysser av ressurser og velger hele uken, ukedager, helg eller dagens visning.
+Lenken peker til den eksisterende `bookingfrontend.uibuilding.information_screen`
+med byggets `id`, `weekend` og ett `resource_id[]` per valgt ressurs.
+Lenken inneholder ingen fast dato eller sesjons-ID, og kan lagres som bokmerke
+eller snarvei uten innlogging. Eksisterende infoskjerm-URL-er er uendret.
+
+Ved utrulling må nye språkstrenger importeres med standard språkoppdatering
+for `bookingfrontend` (bokmål, nynorsk og engelsk).
+
 == Utvikling:
 
 Utvikling skjer hovedsakelig på lokale miljøer, der du har en egen dev-branch i GitHub som du jobber mot. Anbefalingen er å lage egne brancher basert på dev-branchen, og merge inn endringene før desse merges inn i Master for testing før release mot produksjon.

@@ -30,13 +30,27 @@ inntil 20 aktive bygg). Ressurslisten bruker det eksisterende API-et
 som bare returnerer aktive ressurser som er synlige i frontend.
 
 Brukeren krysser av ressurser og velger hele uken, ukedager, helg eller dagens visning.
+Valgene beholdes når et nytt bygg søkes opp. Listen «Valgte ressurser» viser alle
+valgene med byggnavn og lar brukeren fjerne enkeltressurser. Samme ressurs velges bare én gang,
+selv om den er knyttet til flere bygg.
 Lenken peker til den eksisterende `bookingfrontend.uibuilding.information_screen`
 med byggets `id`, `weekend` og ett `resource_id[]` per valgt ressurs.
+Ved valg fra flere bygg brukes ett `id[]` per bygg, for eksempel
+`?menuaction=bookingfrontend.uibuilding.information_screen&id[]=10&id[]=11&weekend=2&resource_id[]=125&resource_id[]=50`.
+Infoskjermen viser da byggnavn og bygg-ID foran ressursnavnet, slik at like navn
+på tvers av bygg ikke blandes. Delte ressurser vises under det første bygget i lenken.
 Lenken inneholder ingen fast dato eller sesjons-ID, og kan lagres som bokmerke
 eller snarvei uten innlogging. Eksisterende infoskjerm-URL-er er uendret.
 
 Ved utrulling må nye språkstrenger importeres med standard språkoppdatering
 for `bookingfrontend` (bokmål, nynorsk og engelsk).
+
+Regresjonstester for ressursvelger og samlet kalender:
+
+----
+node --test tests/helpers/information-screen-picker.test.cjs
+php tests/information-screen/run.php
+----
 
 == Utvikling:
 

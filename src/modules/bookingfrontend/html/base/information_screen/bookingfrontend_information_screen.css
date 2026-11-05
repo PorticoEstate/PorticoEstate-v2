@@ -119,6 +119,26 @@ body {
 	margin-top: 0.2rem;
 }
 
+#information-screen-picker .information-screen-picker__selection ul {
+	padding: 0;
+	list-style: none;
+}
+
+#information-screen-picker .information-screen-picker__selection li {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+	padding: 0.75rem 0;
+	border-bottom: 1px solid #d5dbe0;
+}
+
+#information-screen-picker .information-screen-picker__selection button {
+	max-width: 100%;
+	overflow-wrap: anywhere;
+}
+
 #information-screen-picker .information-screen-picker__status {
 	min-height: 1.5rem;
 	color: #4a5963;

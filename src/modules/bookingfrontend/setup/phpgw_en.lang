@@ -1,5 +1,8 @@
 %1 bookings were updated.	bookingfrontend	en	%1 bookings were updated.
 Info skjerm - ressursvelger	bookingfrontend	en	Information screen - resource selector
+You can add resources from several buildings. Previous selections are kept when you search for another building.	bookingfrontend	en	You can add resources from several buildings. Previous selections are kept when you search for another building.
+Selected resources	bookingfrontend	en	Selected resources
+Remove selected resource	bookingfrontend	en	Remove selected resource
 Searching for buildings	bookingfrontend	en	Searching for buildings
 No buildings found	bookingfrontend	en	No buildings found
 Select a building to see its resources	bookingfrontend	en	Select a building to see its resources

@@ -18,6 +18,9 @@
 	const openLink = document.getElementById('information-screen-open-link');
 	const copyLink = document.getElementById('information-screen-copy-link');
 	const days = document.getElementById('information-screen-days');
+	const selectionPanel = document.getElementById('information-screen-selection-panel');
+	const selectionList = document.getElementById('information-screen-selection-list');
+	const selectedResources = new Map();
 
 	let selectedBuilding = null;
 	let searchTimeout = null;
@@ -40,9 +43,7 @@
 
 	function updateGeneratedLink()
 	{
-		const selectedResources = Array.from(resourceList.querySelectorAll('input[type="checkbox"]:checked'))
-			.map((checkbox) => checkbox.value);
-		if (!selectedBuilding || selectedResources.length === 0)
+		if (selectedResources.size === 0)
 		{
 			clearGeneratedLink();
 			return;
@@ -56,9 +57,17 @@
 			url.searchParams.set('domain', domain);
 		}
 		url.searchParams.set('menuaction', 'bookingfrontend.uibuilding.information_screen');
-		url.searchParams.set('id', selectedBuilding.id);
+		const buildingIds = [...new Set([...selectedResources.values()].map((resource) => resource.building.id))];
+		if (buildingIds.length === 1)
+		{
+			url.searchParams.set('id', buildingIds[0]);
+		}
+		else
+		{
+			buildingIds.forEach((id) => url.searchParams.append('id[]', id));
+		}
 		url.searchParams.set('weekend', days.value);
-		selectedResources.forEach((id) => url.searchParams.append('resource_id[]', id));
+		selectedResources.forEach((resource, id) => url.searchParams.append('resource_id[]', id));
 
 		linkInput.value = url.toString();
 		openLink.href = url.toString();
@@ -67,12 +76,53 @@
 		copyLink.disabled = false;
 	}
 
+	function updateSelection()
+	{
+		selectionList.replaceChildren();
+		selectedResources.forEach((resource, id) =>
+		{
+			const item = document.createElement('li');
+			const name = document.createElement('span');
+			name.textContent = resource.building.name + ' / ' + resource.name;
+			const remove = document.createElement('button');
+			remove.type = 'button';
+			remove.className = 'information-screen-picker__button information-screen-picker__button--secondary';
+			remove.textContent = picker.dataset.removeResource;
+			remove.setAttribute('aria-label', picker.dataset.removeResource + ': ' + name.textContent);
+			remove.addEventListener('click', () =>
+			{
+				const index = [...selectedResources.keys()].indexOf(id);
+				selectedResources.delete(id);
+				resourceList.querySelectorAll('input[type="checkbox"]').forEach((checkbox) =>
+				{
+					if (checkbox.value === id)
+					{
+						checkbox.checked = false;
+					}
+				});
+				updateSelection();
+				const buttons = selectionList.querySelectorAll('button');
+				if (buttons.length)
+				{
+					buttons[Math.min(index, buttons.length - 1)].focus();
+				}
+				else
+				{
+					buildingSearch.focus();
+				}
+			});
+			item.append(name, remove);
+			selectionList.appendChild(item);
+		});
+		selectionPanel.hidden = selectedResources.size === 0;
+		updateGeneratedLink();
+	}
+
 	function clearResources()
 	{
 		resourceList.replaceChildren();
 		resourcePanel.hidden = true;
 		resourceSearch.value = '';
-		clearGeneratedLink();
 	}
 
 	function renderBuildingResults(buildings)
@@ -143,8 +193,22 @@
 			label.className = 'information-screen-picker__resource';
 			const checkbox = document.createElement('input');
 			checkbox.type = 'checkbox';
-			checkbox.value = resource.id;
-			checkbox.addEventListener('change', updateGeneratedLink);
+			const id = String(resource.id);
+			checkbox.value = id;
+			checkbox.checked = selectedResources.has(id);
+			const building = selectedBuilding;
+			checkbox.addEventListener('change', () =>
+			{
+				if (checkbox.checked)
+				{
+					selectedResources.set(id, {name: resource.name, building});
+				}
+				else
+				{
+					selectedResources.delete(id);
+				}
+				updateSelection();
+			});
 			const name = document.createElement('span');
 			name.textContent = resource.name;
 			label.append(checkbox, name);
@@ -161,7 +225,6 @@
 		resourcePanel.hidden = false;
 		buildingName.textContent = building.name;
 		resourceList.replaceChildren();
-		clearGeneratedLink();
 		const sequence = ++resourceLoadSequence;
 		setStatus(picker.dataset.loadingResources);
 
@@ -190,7 +253,6 @@
 			{
 				setStatus(picker.dataset.loadError);
 				resourceList.replaceChildren();
-				clearGeneratedLink();
 			}
 		}
 	}

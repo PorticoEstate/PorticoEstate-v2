@@ -18,10 +18,12 @@
 		data-no-resources="{{ lang('No active resources found for this building') }}"
 		data-load-error="{{ lang('Could not load data. Please try again') }}"
 		data-link-copied="{{ lang('Link copied') }}"
-		data-copy-error="{{ lang('Could not copy the link') }}">
+		data-copy-error="{{ lang('Could not copy the link') }}"
+		data-remove-resource="{{ lang('Remove selected resource') }}">
 		<header class="information-screen-picker__header">
 			<h1>{{ lang('Info skjerm - ressursvelger') }}</h1>
 			<p>{{ lang('Choose a building and the resources to show on your information screen. Copy the generated link to save it as a shortcut.') }}</p>
+			<p>{{ lang('You can add resources from several buildings. Previous selections are kept when you search for another building.') }}</p>
 		</header>
 
 		<div class="information-screen-picker__field">
@@ -39,6 +41,11 @@
 				<input id="information-screen-resource-search" type="search" autocomplete="off" placeholder="{{ lang('Search resources') }}">
 			</div>
 			<div id="information-screen-resource-list" class="information-screen-picker__resource-list"></div>
+		</section>
+
+		<section id="information-screen-selection-panel" class="information-screen-picker__selection" aria-labelledby="information-screen-selection-heading" hidden>
+			<h2 id="information-screen-selection-heading">{{ lang('Selected resources') }}</h2>
+			<ul id="information-screen-selection-list"></ul>
 		</section>
 
 		<div class="information-screen-picker__field">

@@ -36,7 +36,6 @@ class bookingfrontend_uibuilding extends booking_uibuilding
 		$currentday = $today; //Sigurd: Needed?
 
 		$building_id = Sanitizer::get_var('id', 'int', 'GET');
-		$building = $this->bo->read_single($building_id);
 		$start = Sanitizer::get_var('start', 'int', 'GET');
 		$end = Sanitizer::get_var('end', 'int', 'GET');
 		$res = Sanitizer::get_var('res', 'int', 'GET');
@@ -75,7 +74,9 @@ class bookingfrontend_uibuilding extends booking_uibuilding
 			"Sun" => "Søndag"
 		);
 
-		$bookings = $this->booking_bo->building_infoscreen_schedule($building_id, $date, $res, $resource_id);
+		$screen = $this->get_information_screen_schedule($building_id, $date, $res, $resource_id);
+		$building = array('name' => $screen['name']);
+		$bookings = $screen['schedule'];
 
 		if (Sanitizer::get_var('phpgw_return_as') == 'json')
 		{
@@ -143,7 +144,7 @@ class bookingfrontend_uibuilding extends booking_uibuilding
 
 		foreach ($list as $key => &$item)
 		{
-			$item = $bookings['results'][$key];
+			$item = $bookings['results'][$key] ?? array();
 		}
 
 		foreach ($list as $_day => $_resources)
@@ -164,7 +165,7 @@ class bookingfrontend_uibuilding extends booking_uibuilding
 		$cellwidth = 88 / ($timediff * 2);
 
 		$time = $timestart;
-		$html = '<html><head><title>Kalender for ' . $building['name'] . '</title>';
+		$html = '<html><head><title>Kalender for ' . htmlspecialchars($building['name'], ENT_QUOTES, 'UTF-8') . '</title>';
 		$html .= '<meta http-equiv="Content-Type" content="text/html; charset=utf-8">';
 		$html .= '<meta name="author" content="Aktiv Kommune">';
 		$html .= '<style>';
@@ -235,7 +236,7 @@ class bookingfrontend_uibuilding extends booking_uibuilding
 			{
 				$html .= '<tr>';
 				$html .= '<td colspan="2">';
-				$html .= $res;
+				$html .= htmlspecialchars($res, ENT_QUOTES, 'UTF-8');
 				$html .= '</td>';
 
 				// Initialize the current time position
@@ -328,6 +329,59 @@ class bookingfrontend_uibuilding extends booking_uibuilding
 		header('Content-type: text/html');
 		echo $html;
 		$this->phpgwapi_common->phpgw_exit();
+	}
+
+	protected function get_information_screen_schedule($building_ids, $date, $res, $resource_id)
+	{
+		$building_ids = is_array($building_ids) ? $building_ids : array($building_ids);
+		if (!$building_ids)
+		{
+			throw new InvalidArgumentException('At least one building ID is required');
+		}
+		foreach ($building_ids as $id)
+		{
+			if (!is_int($id) || $id <= 0)
+			{
+				throw new InvalidArgumentException('Invalid building ID');
+			}
+		}
+		$building_ids = array_values(array_unique($building_ids));
+		$names = array();
+		$results = array();
+		$seen_resources = array();
+		foreach ($building_ids as $id)
+		{
+			$building = $this->bo->read_single($id);
+			$names[] = $building['name'];
+			$schedule = $this->booking_bo->building_infoscreen_schedule($id, $date, $res, $resource_id);
+			if (count($building_ids) === 1)
+			{
+				return array('name' => $building['name'], 'schedule' => $schedule);
+			}
+			foreach ($schedule['results'] as $day => $resources)
+			{
+				foreach ($resources as $name => $bookings)
+				{
+					foreach ($bookings as $time => $booking)
+					{
+						// A resource may belong to several buildings; show it under the first one.
+						$resource_key = $booking['resource_id'];
+						if (isset($seen_resources[$day][$resource_key]) && $seen_resources[$day][$resource_key] !== $id)
+						{
+							continue;
+						}
+						$seen_resources[$day][$resource_key] = $id;
+						$label = $building['name'] . ' (#' . $id . ') / ' . $name;
+						$results[$day][$label][$time] = $booking;
+					}
+				}
+			}
+		}
+
+		return array(
+			'name' => implode(', ', $names),
+			'schedule' => array('total_records' => count($results), 'results' => $results)
+		);
 	}
 
 	public function information_screen_picker()

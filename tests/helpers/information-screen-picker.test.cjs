@@ -19,6 +19,7 @@ function setup()
 			appendChild(child) { this.children.push(child); },
 			replaceChildren() { this.children = []; },
 			removeAttribute(name) { delete this[name]; },
+			setAttribute(name, value) { this[name] = value; },
 			focus() { this.focused = true; },
 			select() { this.selected = true; },
 			querySelectorAll(selector)
@@ -26,7 +27,8 @@ function setup()
 				const children = this.children.flatMap(child => [child, ...child.querySelectorAll(selector)]);
 				return children.filter(child => selector === '.information-screen-picker__resource'
 					? child.className === 'information-screen-picker__resource'
-					: child.type === 'checkbox' && child.checked);
+					: selector === 'button' ? child.tag === 'button'
+						: child.type === 'checkbox' && (!selector.endsWith(':checked') || child.checked));
 			},
 		};
 	}
@@ -41,9 +43,11 @@ function setup()
 		resourceListUrl: '/portico/bookingfrontend/buildings/__BUILDING_ID__/resources?results=-1&sort=name&short=1',
 		informationScreenUrl: '/portico/bookingfrontend/?sessionid=temporary&kp3=temporary&click_history=temporary&domain=test',
 		selectBuilding: 'Select building', noBuildings: 'No buildings', noResources: 'No resources',
-		loadError: 'Load error', linkCopied: 'Copied', copyError: 'Copy error',
+		loadError: 'Load error', linkCopied: 'Copied', copyError: 'Copy error', removeResource: 'Remove resource',
 	};
 	get('days').value = '2';
+	get('link-panel').hidden = true;
+	get('selection-panel').hidden = true;
 	const navigator = { clipboard: { writeText: async () => {} } };
 	const context = {
 		URL, navigator,
@@ -87,6 +91,116 @@ async function loadBuilding(harness)
 	harness.get('building-results').children[0].children[0].handlers.click();
 	await harness.reply(1, { results: [{ id: 125, name: 'Kultursalen' }, { id: 106, name: 'Småsalen' }] });
 }
+
+async function switchBuilding(h, building, resources)
+{
+	h.input('building-search', building.name);
+	const index = h.requests.length;
+	const search = h.runSearch();
+	await h.reply(index, { results: [building] });
+	await search;
+	h.get('building-results').children[0].children[0].handlers.click();
+	await h.reply(index + 1, { results: resources });
+}
+
+function checkResource(h, index, checked = true)
+{
+	const checkbox = h.get('resource-list').children[index].children[0];
+	checkbox.checked = checked;
+	checkbox.handlers.change();
+}
+
+test('accumulates resources from several buildings and restores selections when revisiting', async () =>
+{
+	const h = setup();
+	await loadBuilding(h);
+	checkResource(h, 0);
+	const originalLink = h.get('link').value;
+	h.input('building-search', 'Another');
+	assert.equal(h.get('link').value, originalLink);
+	await switchBuilding(h, {id: 20, name: 'Another building'}, [{id: 200, name: 'Kultursalen'}]);
+	assert.equal(h.get('link').value, originalLink);
+	checkResource(h, 0);
+	let link = new URL(h.get('link').value);
+	assert.equal(link.searchParams.has('id'), false);
+	assert.deepEqual(link.searchParams.getAll('id[]'), ['10', '20']);
+	assert.deepEqual(link.searchParams.getAll('resource_id[]'), ['125', '200']);
+	assert.deepEqual(h.get('selection-list').children.map(item => item.children[0].textContent),
+		['Fana kulturhus / Kultursalen', 'Another building / Kultursalen']);
+	await switchBuilding(h, {id: 10, name: 'Fana kulturhus'},
+		[{id: 125, name: 'Kultursalen'}, {id: 106, name: 'Småsalen'}]);
+	assert.equal(h.get('resource-list').children[0].children[0].checked, true);
+	assert.equal(h.get('resource-list').children[1].children[0].checked, false);
+	checkResource(h, 1);
+	link = new URL(h.get('link').value);
+	assert.deepEqual(link.searchParams.getAll('resource_id[]'), ['125', '200', '106']);
+	h.get('days').value = '1';
+	h.get('days').handlers.change();
+	assert.deepEqual(new URL(h.get('link').value).searchParams.getAll('id[]'), ['10', '20']);
+	assert.equal(new URL(h.get('link').value).searchParams.get('weekend'), '1');
+});
+
+test('removes resources from any building and updates visible checkboxes and scalar URLs', async () =>
+{
+	const h = setup();
+	await loadBuilding(h);
+	checkResource(h, 0);
+	await switchBuilding(h, {id: 20, name: 'Another building'}, [{id: 200, name: 'Another resource'}]);
+	checkResource(h, 0);
+	h.get('selection-list').children[0].children[1].handlers.click();
+	const link = new URL(h.get('link').value);
+	assert.equal(link.searchParams.get('id'), '20');
+	assert.equal(link.searchParams.has('id[]'), false);
+	assert.deepEqual(link.searchParams.getAll('resource_id[]'), ['200']);
+	assert.equal(h.get('resource-list').children[0].children[0].checked, true);
+	assert.equal(h.get('selection-list').children[0].children[1].focused, true);
+	h.get('selection-list').children[0].children[1].handlers.click();
+	assert.equal(h.get('resource-list').children[0].children[0].checked, false);
+	assert.equal(h.get('selection-panel').hidden, true);
+	assert.equal(h.get('link-panel').hidden, true);
+	assert.equal(h.get('link').value, '');
+	assert.equal(h.get('copy-link').disabled, true);
+	assert.equal(h.get('building-search').focused, true);
+});
+
+test('deduplicates resources shared by buildings and allows unchecking from either building', async () =>
+{
+	const h = setup();
+	await loadBuilding(h);
+	checkResource(h, 0);
+	await switchBuilding(h, {id: 20, name: 'Another building'}, [{id: 125, name: 'Kultursalen'}]);
+	assert.equal(h.get('resource-list').children[0].children[0].checked, true);
+	assert.equal(h.get('selection-list').children.length, 1);
+	assert.deepEqual(new URL(h.get('link').value).searchParams.getAll('resource_id[]'), ['125']);
+	checkResource(h, 0, false);
+	assert.equal(h.get('link-panel').hidden, true);
+	checkResource(h, 0);
+	assert.equal(new URL(h.get('link').value).searchParams.get('id'), '20');
+});
+
+test('keeps earlier selections through search and resource loading failures', async () =>
+{
+	const h = setup();
+	await loadBuilding(h);
+	checkResource(h, 0);
+	const link = h.get('link').value;
+	h.input('building-search', 'Another');
+	const failedSearch = h.runSearch();
+	await h.reply(2, {}, false);
+	await failedSearch;
+	assert.equal(h.get('picker-status').textContent, 'Load error');
+	assert.equal(h.get('link').value, link);
+	h.input('building-search', 'Another');
+	const search = h.runSearch();
+	await h.reply(3, {results: [{id: 20, name: 'Another'}]});
+	await search;
+	h.get('building-results').children[0].children[0].handlers.click();
+	await h.reply(4, {}, false);
+	assert.equal(h.get('picker-status').textContent, 'Load error');
+	assert.equal(h.get('link').value, link);
+	assert.equal(h.get('selection-list').children.length, 1);
+	assert.equal(h.get('copy-link').disabled, false);
+});
 
 test('builds a bookmarkable URL using REST resources and documented resource_id arrays', async () =>
 {

@@ -220,7 +220,7 @@ class Twig
     private function registerGlobals()
     {
         $this->twig->addGlobal('is_designsystemet', $this->designSystem->isEnabled());
-        $this->twig->addGlobal('template_set', $this->serverSettings['template_set']);
+        $this->twig->addGlobal('template_set', $this->serverSettings['template_set'] ?? 'digdir');
     }
 
     /**

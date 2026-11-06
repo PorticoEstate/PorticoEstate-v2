@@ -29,7 +29,7 @@ class DesignSystem
         $this->userSettings = Settings::getInstance()->get('user');
         
         // Check if using digdir template
-        $this->useDesignsystemet = ($this->serverSettings['template_set'] === 'digdir');
+        $this->useDesignsystemet = isset($this->serverSettings['template_set']) && ($this->serverSettings['template_set'] === 'digdir');
     }
 
     /**

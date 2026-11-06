@@ -30,6 +30,28 @@ export const bookedMinutes = (start?: Date, end?: Date): number => {
     return Math.max(0, Math.round(minutes));
 };
 
+/**
+ * Articles priced per day (unit 'day', or its alias 'dag') and per piece (unit 'each').
+ *
+ * A day line bills the ELAPSED 24-hour periods of the booking, started ones counted, at least one:
+ * the rule of the legacy forms (purchase_order_add.js:248, purchase_order_edit.js:296,
+ * `Math.ceil((to - from) / one_day)` with one_day = 86 400 000 ms). It counts elapsed time, not calendar
+ * dates: 22:00-02:00 is 1 day, Mon 10:00 to Wed 10:00 is 2, and across the October clock change Sat 10:00
+ * to Sun 10:00 is 25 hours = 2 days (a consequence of the legacy rule, kept). An each line bills 1 per
+ * booked period. The server stores the quantity it is sent (ArticleRepository::savePurchaseOrderLine).
+ */
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+export const isDayUnit = (unit?: string | null): boolean => unit === 'day' || unit === 'dag';
+
+export const isEachUnit = (unit?: string | null): boolean => unit === 'each';
+
+/** Started 24-hour periods between start and end, at least 1. Without both times the default is one day, like the hourly path. */
+export const bookedDays = (start?: Date, end?: Date): number => {
+    if (!start || !end) return 1;
+    return Math.max(1, Math.ceil((end.getTime() - start.getTime()) / MS_PER_DAY));
+};
+
 const toOre = (kroner: string | number): number => Math.round(Number(kroner) * 100);
 
 /**
@@ -212,3 +234,18 @@ export const priceLabelForDisplay = (
 /** «150 min» */
 export const formatMinutes = (minutes: number, t: Translate): string =>
     `${minutes}${NBSP}${t('bookingfrontend.minutes_short')}`;
+
+/**
+ * A resource line's quantity with its unit: «1 dag» / «2 dager» for a day line, «1 stk» for an each line
+ * (the existing bookingfrontend.day, .days and .each labels, lowercased). Every other unit keeps the bare
+ * number, as hour lines always have.
+ */
+export const formatQuantityWithUnit = (quantity: number, unit: string | null | undefined, t: Translate): string => {
+    if (isDayUnit(unit)) {
+        return `${quantity}${NBSP}${t(quantity === 1 ? 'bookingfrontend.day' : 'bookingfrontend.days').toLowerCase()}`;
+    }
+    if (isEachUnit(unit)) {
+        return `${quantity}${NBSP}${t('bookingfrontend.each').toLowerCase()}`;
+    }
+    return String(quantity);
+};

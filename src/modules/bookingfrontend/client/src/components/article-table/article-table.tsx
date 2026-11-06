@@ -7,12 +7,16 @@ import {IOrder} from '@/service/types/api/application.types';
 import {useTrans} from '@/app/i18n/ClientTranslationProvider';
 import {DateTime} from 'luxon';
 import {
+	bookedDays,
 	bookedMinutes,
 	formatHourlyRate,
 	formatMinutes,
+	formatQuantityWithUnit,
 	formatTotalWithHourlyRate,
 	hourlyRateOfMinuteArticle,
 	hourlyRateOfOrderLine,
+	isDayUnit,
+	isEachUnit,
 	isMinuteUnit,
 	lineTotalOre,
 	minuteArticleTotal,
@@ -61,8 +65,12 @@ const ArticleTable: React.FC<ArticleTableProps> = ({
 	// Minute-priced articles bill the exact booked minutes, never the rounded-up hours above
 	const durationMinutes = useMemo(() => bookedMinutes(startTime, endTime), [startTime, endTime]);
 
+	// Day-priced articles bill the started 24-hour periods (the legacy forms' rule), at least one
+	const durationDays = useMemo(() => bookedDays(startTime, endTime), [startTime, endTime]);
+
 	// The quantity a mandatory resource article is billed at, or null when the quantity is the
-	// applicant's own choice. Hourly articles bill whole started hours, minute articles exact minutes.
+	// applicant's own choice. Hourly articles bill whole started hours, minute articles exact minutes,
+	// day articles started 24-hour periods and each articles 1 per booked period.
 	const mandatoryQuantity = (article: IArticle): number | null => {
 		const isMandatoryResource = article.resource_id &&
 			(article.mandatory === 1 || article.mandatory === '1');
@@ -76,9 +84,13 @@ const ArticleTable: React.FC<ArticleTableProps> = ({
 		if (isMinuteUnit(article.unit)) {
 			return durationMinutes;
 		}
-		// OPERATOR RULE PENDING (#1477): day/each and every other unit return null = today's behaviour
-		// (the line is not added and bills nothing). The quantity rule for them, and the billing change
-		// that follows, is the operator's to give; it goes here and nowhere else.
+		if (isDayUnit(article.unit)) {
+			return durationDays;
+		}
+		if (isEachUnit(article.unit)) {
+			return 1;
+		}
+		// Any other unit (kg, m, m2 ...) has no rule: null, the applicant's own choice
 		return null;
 	};
 
@@ -272,7 +284,7 @@ const ArticleTable: React.FC<ArticleTableProps> = ({
 				updateMandatoryDurationArticles();
 			}, 0);
 		}
-	}, [articles, durationHours, durationMinutes, selectedArticles.length]);
+	}, [articles, durationHours, durationMinutes, durationDays, selectedArticles.length]);
 
 	// Also run when selected articles map changes (for deeper dependency checking)
 	useEffect(() => {
@@ -332,7 +344,7 @@ const ArticleTable: React.FC<ArticleTableProps> = ({
 			return total;
 		}, 0);
 		return {totalOre: total, pricePending: pending};
-	}, [selectedArticles, articles, durationHours, durationMinutes, exTaxPriceOf]);
+	}, [selectedArticles, articles, durationHours, durationMinutes, durationDays, exTaxPriceOf]);
 
 	// Helper functions for incrementing and decrementing quantity
 	const incrementQuantity = (article: IArticle) => {
@@ -516,7 +528,7 @@ const ArticleTable: React.FC<ArticleTableProps> = ({
 																</Button>
 															</span>
 															<span className={styles.quantityValue}>
-																{isMinute ? formatMinutes(durationMinutes, t) : durationHours}
+																{isMinute ? formatMinutes(durationMinutes, t) : formatQuantityWithUnit(mandatoryDuration, article.unit, t)}
 															</span>
 															<span className={styles.hiddenButton}>
 																<Button

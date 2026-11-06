@@ -40,7 +40,7 @@ import {ApplicationFormData, createApplicationFormSchema} from './application-fo
 import {IBookingUser, IDelegate} from "@/service/types/api.types";
 import ArticleTable from "@/components/article-table/article-table";
 import PriceChoiceField from "@/components/price-choice/price-choice-field";
-import {bookedMinutes, isMinuteUnit} from "@/utils/article-pricing";
+import {bookedDays, bookedMinutes, isDayUnit, isEachUnit, isMinuteUnit} from "@/utils/article-pricing";
 import {ArticleOrder, IArticle} from "@/service/types/api/order-articles.types";
 import SharedPriceCategoryField from "@/components/price-choice/shared-price-category-field";
 import {categoryInForce, hasPriceChoice, optionInCategory, sharedCategories, withPriceChoice} from "@/utils/price-category";
@@ -804,13 +804,20 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 	}, [chosenCategoryId, resourceArticles, perResourcePrices, sharedPriceCategories, chosenResourceArticles, watchedArticles, applyCategory]);
 
 	// The quantity the room's price line is multiplied by: whole hours for an hourly room,
-	// the exact booked minutes for a minute-priced one
+	// the exact booked minutes for a minute-priced one, started 24-hour periods for a day-priced one
+	// and 1 for an each-priced one (the same helpers as the article table's mandatoryQuantity)
 	const priceQuantityOf = (article: IArticle): number => {
 		if (article.unit === 'hour' && startTime && endTime) {
 			return Math.max(1, Math.ceil(DateTime.fromJSDate(endTime).diff(DateTime.fromJSDate(startTime), 'hours').hours));
 		}
 		if (isMinuteUnit(article.unit) && startTime && endTime) {
 			return bookedMinutes(startTime, endTime);
+		}
+		if (isDayUnit(article.unit)) {
+			return bookedDays(startTime, endTime);
+		}
+		if (isEachUnit(article.unit)) {
+			return 1;
 		}
 		return watchedArticles?.find(a => a.id === article.id)?.quantity || 1;
 	};

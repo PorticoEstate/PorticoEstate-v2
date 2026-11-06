@@ -1198,3 +1198,4 @@ minutes_short	bookingfrontend	no	min
 catering_no_serving_time	bookingfrontend	no	Uten serveringstid
 prices_incl_vat	bookingfrontend	no	Alle priser er oppgitt inkl. mva
 price_category_shared_help	bookingfrontend	no	Valget gjelder alle ressursene du har valgt.
+price_per_resource	bookingfrontend	no	Velg pris per ressurs

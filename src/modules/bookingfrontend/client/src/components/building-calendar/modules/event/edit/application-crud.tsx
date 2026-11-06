@@ -40,10 +40,10 @@ import {ApplicationFormData, createApplicationFormSchema} from './application-fo
 import {IBookingUser, IDelegate} from "@/service/types/api.types";
 import ArticleTable from "@/components/article-table/article-table";
 import PriceChoiceField from "@/components/price-choice/price-choice-field";
-import SharedPriceCategoryField from "@/components/price-choice/shared-price-category-field";
 import {bookedMinutes, isMinuteUnit} from "@/utils/article-pricing";
-import {categoryInForce, hasPriceChoice, optionInCategory, sharedCategories, withPriceChoice} from "@/utils/price-category";
 import {ArticleOrder, IArticle} from "@/service/types/api/order-articles.types";
+import SharedPriceCategoryField from "@/components/price-choice/shared-price-category-field";
+import {categoryInForce, hasPriceChoice, optionInCategory, sharedCategories, withPriceChoice} from "@/utils/price-category";
 import {isDevMode, phpGWLink} from "@/service/util";
 import {IEvent} from "@/service/pecalendar.types";
 import {isApplicationDeactivated} from "@/service/utils/deactivation-utils";
@@ -735,8 +735,37 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 	const sharedPriceCategories = useMemo(() => sharedCategories(chosenResourceArticles), [chosenResourceArticles]);
 	const sharedPriceChoice = sharedPriceCategories.length > 0;
 	const sharedPriceChoiceRef = useRef<HTMLSelectElement>(null);
+	// The category every room is priced in right now; null while they differ or one has no price
+	const sharedCategoryInForce = categoryInForce(chosenResourceArticles, priceChoiceOf);
 	// The category the applicant chose, kept so that a room added afterwards follows it
 	const [chosenCategoryId, setChosenCategoryId] = useState<number | null>(null);
+
+	// The applicant may still choose each room's price on its own: the shared choice
+	// is then hidden and every room shows its own choice, with the price it has now
+	const [perResourcePrices, setPerResourcePrices] = useState(false);
+	const showSharedPriceChoice = sharedPriceChoice && !perResourcePrices;
+
+	// Neither way changes a price. Per room, the shared choice is forgotten, so a room
+	// added afterwards gets its own price. Back to the shared choice, it shows the
+	// category every room is in, kept as if chosen, or asks again when they differ
+	const choosePerResourcePrices = (perResource: boolean) => {
+		setPerResourcePrices(perResource);
+		setChosenCategoryId(perResource ? null : sharedCategoryInForce);
+	};
+
+	// An application opened again whose rooms each have a price, in different categories,
+	// opens priced per room as it was made, not on an empty shared choice. Decided once,
+	// when the rooms first share a category
+	const perResourcePricesDecided = useRef(false);
+	useEffect(() => {
+		if (perResourcePricesDecided.current || !sharedPriceChoice) {
+			return;
+		}
+		perResourcePricesDecided.current = true;
+		if (existingApplication && !missingPriceChoice && sharedCategoryInForce === null) {
+			setPerResourcePrices(true);
+		}
+	}, [sharedPriceChoice, existingApplication, missingPriceChoice, sharedCategoryInForce]);
 
 	// Each room with a choice gets its own price in the category
 	const applyCategory = useCallback((categoryId: number) => {
@@ -754,8 +783,9 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 
 	useEffect(() => {
 		// While the rooms just chosen are still loading, the query has no data and the
-		// rooms seem to share nothing; deciding then would drop the choice for good
-		if (chosenCategoryId === null || resourceArticles === undefined) {
+		// rooms seem to share nothing; deciding then would drop the choice for good.
+		// Priced per room, each room keeps the price chosen for it
+		if (chosenCategoryId === null || resourceArticles === undefined || perResourcePrices) {
 			return;
 		}
 		if (!sharedPriceCategories.some(category => category.id === chosenCategoryId)) {
@@ -771,7 +801,7 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 		if (behind) {
 			applyCategory(chosenCategoryId);
 		}
-	}, [chosenCategoryId, resourceArticles, sharedPriceCategories, chosenResourceArticles, watchedArticles, applyCategory]);
+	}, [chosenCategoryId, resourceArticles, perResourcePrices, sharedPriceCategories, chosenResourceArticles, watchedArticles, applyCategory]);
 
 	// The quantity the room's price line is multiplied by: whole hours for an hourly room,
 	// the exact booked minutes for a minute-priced one
@@ -791,7 +821,7 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 		setPriceChoiceSubmitted(true);
 		await handleSubmit(onSubmit)(event);
 		if (missingPriceChoice) {
-			(sharedPriceChoice ? sharedPriceChoiceRef.current : priceChoiceRefs.current.get(missingPriceChoice.id))?.focus();
+			(showSharedPriceChoice ? sharedPriceChoiceRef.current : priceChoiceRefs.current.get(missingPriceChoice.id))?.focus();
 		}
 	};
 
@@ -1724,12 +1754,12 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 						)}
 					</div>
 
-					{sharedPriceChoice && (
+					{showSharedPriceChoice && (
 						<div className={`${styles.formGroup} ${styles.wide}`}>
 							<SharedPriceCategoryField
 								ref={sharedPriceChoiceRef}
 								categories={sharedPriceCategories}
-								value={categoryInForce(chosenResourceArticles, priceChoiceOf)}
+								value={sharedCategoryInForce}
 								onChange={chooseCategory}
 								error={priceChoiceSubmitted && missingPriceChoice
 									? t('bookingfrontend.price_choice_required')
@@ -1738,7 +1768,7 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 						</div>
 					)}
 
-					{!sharedPriceChoice && priceChoiceArticles.map(article => (
+					{!showSharedPriceChoice && priceChoiceArticles.map(article => (
 						<div key={article.id} className={`${styles.formGroup} ${styles.wide}`}>
 							<PriceChoiceField
 								ref={(select) => {
@@ -1761,6 +1791,17 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 							/>
 						</div>
 					))}
+
+					{/* Below the choices and always in this place, so that it keeps focus when they swap */}
+					{sharedPriceChoice && (
+						<div className={`${styles.formGroup} ${styles.wide}`}>
+							<Switch
+								label={t('bookingfrontend.price_per_resource')}
+								checked={perResourcePrices}
+								onChange={(event) => choosePerResourcePrices(event.target.checked)}
+							/>
+						</div>
+					)}
 
 					{/* Articles section - only show if activated in server settings */}
 					{selectedResources.length > 0 && serverSettings?.booking_config?.activate_application_articles === true && (

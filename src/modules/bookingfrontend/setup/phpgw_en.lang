@@ -1197,3 +1197,4 @@ minutes_short	bookingfrontend	en	min
 catering_no_serving_time	bookingfrontend	en	No serving time set
 prices_incl_vat	bookingfrontend	en	All prices include VAT
 price_category_shared_help	bookingfrontend	en	The choice applies to all the resources you have chosen.
+price_per_resource	bookingfrontend	en	Choose the price per resource

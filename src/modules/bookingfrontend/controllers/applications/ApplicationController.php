@@ -546,6 +546,10 @@ class ApplicationController extends DocumentController
                 );
             }
 
+            // POST always creates a new partial; an existing one is changed through PATCH /partials/{id}.
+            // The order is built from `articles` alone.
+            unset($data['id'], $data['purchase_order']);
+
             // Add required application data
             $data['owner_id'] = $this->userSettings['account_id'];
             $data['session_id'] = $session_id;

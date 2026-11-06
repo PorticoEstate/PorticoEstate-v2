@@ -44,6 +44,7 @@ import {bookedDays, bookedMinutes, isDayUnit, isEachUnit, isMinuteUnit} from "@/
 import {ArticleOrder, IArticle} from "@/service/types/api/order-articles.types";
 import SharedPriceCategoryField from "@/components/price-choice/shared-price-category-field";
 import {categoryInForce, hasPriceChoice, optionInCategory, sharedCategories, withPriceChoice} from "@/utils/price-category";
+import {withoutRemovedResourceLines} from "@/utils/resource-articles";
 import {isDevMode, phpGWLink} from "@/service/util";
 import {IEvent} from "@/service/pecalendar.types";
 import {isApplicationDeactivated} from "@/service/utils/deactivation-utils";
@@ -1200,6 +1201,21 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 		props.onClose();
 	};
 
+	// Every change of the chosen resources goes through here. The order lines of a resource that is
+	// taken out go with it, in the same event, so that nothing sent, and nothing the total leaves out,
+	// still carries a resource the applicant removed (pe-backlog/36753). The lines come from the offer
+	// loaded for the resources chosen BEFORE this change; while that is still loading nothing is dropped
+	// here, and the server drops a line of a resource that is not on the application when it saves
+	const changeSelectedResources = (next: string[]) => {
+		setValue('resources', next, {shouldDirty: true});
+
+		const lines = getValues('articles') ?? [];
+		const left = withoutRemovedResourceLines(lines, resourceArticles, next.map(id => +id));
+		if (left !== lines) {
+			setValue('articles', left, {shouldDirty: true});
+		}
+	};
+
 	const toggleResource = (resourceId: string) => {
 		// Check if resource is deactivated or uses timeslots
 		const resource = buildingResources?.find(r => r.id === +resourceId);
@@ -1214,13 +1230,9 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 		const resourceIndex = currentResources.indexOf(resourceId);
 
 		if (resourceIndex === -1) {
-			setValue('resources', [...currentResources, resourceId], {shouldDirty: true});
+			changeSelectedResources([...currentResources, resourceId]);
 		} else {
-			setValue(
-				'resources',
-				currentResources.filter(id => id !== resourceId),
-				{shouldDirty: true}
-			);
+			changeSelectedResources(currentResources.filter(id => id !== resourceId));
 		}
 	};
 
@@ -1235,9 +1247,9 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 		const allActiveResourceIds = activeResources.map(r => String(r.id));
 
 		if (selectedResources.length === activeResources.length) {
-			setValue('resources', [], {shouldDirty: true});
+			changeSelectedResources([]);
 		} else {
-			setValue('resources', allActiveResourceIds, {shouldDirty: true});
+			changeSelectedResources(allActiveResourceIds);
 		}
 	};
 

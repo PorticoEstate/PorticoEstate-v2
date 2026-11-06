@@ -246,6 +246,11 @@ class ArticleRepository
     public function saveArticlesForApplication(int $applicationId, array $articles): void
     {
         try {
+            // The resources the application is booked on right now. Callers save an
+            // application's resources BEFORE its articles, in the same transaction
+            $resourceIds = $this->applicationResourceIds($applicationId);
+            $serviceIds = $this->servicesOfApplicationResources($applicationId);
+
             // Price every line before anything is deleted, so a refused price
             // choice leaves the existing order as it was
             $lines = [];
@@ -254,6 +259,14 @@ class ArticleRepository
                 $mapping = $this->getArticleMappingById($article['id']);
                 if (!$mapping) {
                     continue; // Skip if mapping not found
+                }
+
+                // A line of a resource the application is not booked on is one the
+                // applicant cannot see or pay for in the form: it is dropped, not stored
+                $parentId = isset($article['parent_id']) ? (int)$article['parent_id'] : null;
+                if (self::isForeignLine($mapping, $parentId, $resourceIds, $serviceIds)) {
+                    $this->logForeignLine($applicationId, $mapping, $parentId, null, 'dropped on save');
+                    continue;
                 }
 
                 $priceId = null;
@@ -308,6 +321,153 @@ class ArticleRepository
         } catch (\Exception $e) {
             throw new \Exception("Error saving application articles: " . $e->getMessage());
         }
+    }
+
+    /**
+     * The ids of the resources an application is booked on, as stored right now.
+     *
+     * @return int[]
+     */
+    private function applicationResourceIds(int $applicationId): array
+    {
+        $stmt = $this->db->prepare(
+            "SELECT resource_id FROM bb_application_resource WHERE application_id = :application_id"
+        );
+        $stmt->execute([':application_id' => $applicationId]);
+
+        return array_map('intval', $stmt->fetchAll(PDO::FETCH_COLUMN));
+    }
+
+    /**
+     * The services (bb_service ids) that at least one of the application's resources offers
+     * as an add-on, the same link getArticlesByResources() offers them by.
+     *
+     * @return int[]
+     */
+    private function servicesOfApplicationResources(int $applicationId): array
+    {
+        $stmt = $this->db->prepare(
+            "SELECT DISTINCT rs.service_id
+             FROM bb_resource_service rs
+             JOIN bb_application_resource ar ON ar.resource_id = rs.resource_id
+             WHERE ar.application_id = :application_id"
+        );
+        $stmt->execute([':application_id' => $applicationId]);
+
+        return array_map('intval', $stmt->fetchAll(PDO::FETCH_COLUMN));
+    }
+
+    /**
+     * Whether an order line belongs to a resource the application is not booked on.
+     *
+     * - A resource article (category 1) is foreign when its resource is not one of the
+     *   application's resources.
+     * - A service (category 2) is foreign only when it claims a parent (it is presented
+     *   as an add-on of a resource) and none of the application's resources offers it.
+     *   A service without a parent is not tied to a resource and is left as it is.
+     * - Any other category is never foreign here.
+     *
+     * @param array $mapping The line's bb_article_mapping row (article_cat_id, article_id)
+     * @param int|null $parentId The parent mapping id the line claims
+     * @param int[] $resourceIds The application's resources
+     * @param int[] $serviceIds The services the application's resources offer
+     */
+    public static function isForeignLine(array $mapping, ?int $parentId, array $resourceIds, array $serviceIds): bool
+    {
+        $category = (int)($mapping['article_cat_id'] ?? 0);
+        $articleId = (int)($mapping['article_id'] ?? 0);
+
+        if ($category === 1) {
+            return !in_array($articleId, $resourceIds, true);
+        }
+        if ($category === 2) {
+            return ($parentId ?? 0) > 0 && !in_array($articleId, $serviceIds, true);
+        }
+
+        return false;
+    }
+
+    /**
+     * Log a line that was dropped or pruned for belonging to a resource the application
+     * is not booked on: the application, the mapping and the resource. error_log() reaches
+     * the PHP/Apache log whatever log_errors is set to.
+     *
+     * @param array $mapping The line's bb_article_mapping row
+     * @param int|null $parentId The parent mapping id the line claims
+     * @param int|null $lineId The stored line, when it was stored
+     */
+    private function logForeignLine(int $applicationId, array $mapping, ?int $parentId, ?int $lineId, string $action): void
+    {
+        $resourceId = null;
+        if ((int)$mapping['article_cat_id'] === 1) {
+            $resourceId = (int)$mapping['article_id'];
+        } elseif ($parentId) {
+            // An add-on: the resource is the one its parent mapping stands for
+            $parent = $this->getArticleMappingById($parentId);
+            if ($parent && (int)$parent['article_cat_id'] === 1) {
+                $resourceId = (int)$parent['article_id'];
+            }
+        }
+
+        error_log(sprintf(
+            '[order-line-guard] %s: application=%d mapping=%d resource=%s category=%d parent_mapping=%s line=%s',
+            $action,
+            $applicationId,
+            (int)$mapping['id'],
+            $resourceId ?? 'unknown',
+            (int)$mapping['article_cat_id'],
+            $parentId ?? 'none',
+            $lineId ?? 'not stored'
+        ));
+    }
+
+    /**
+     * Remove the stored order lines of an application that belong to resources it is no
+     * longer booked on. For a request that changes an application's resources without
+     * sending its articles: the lines of the removed resources, and the add-ons only they
+     * offered, would otherwise stay in the order and be billed.
+     *
+     * Only this application's own order (not a reservation's, not a cancelled one), and
+     * only in the caller's transaction, after the resources were saved.
+     *
+     * @return int The number of lines removed
+     */
+    public function pruneLinesOfRemovedResources(int $applicationId): int
+    {
+        $stmt = $this->db->prepare(
+            "SELECT l.id AS line_id, l.parent_mapping_id, m.*
+             FROM bb_purchase_order po
+             JOIN bb_purchase_order_line l ON l.order_id = po.id
+             JOIN bb_article_mapping m ON m.id = l.article_mapping_id
+             WHERE po.application_id = :application_id
+             AND po.reservation_type IS NULL
+             AND po.cancelled IS NULL
+             ORDER BY l.id"
+        );
+        $stmt->execute([':application_id' => $applicationId]);
+        $stored = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $resourceIds = $this->applicationResourceIds($applicationId);
+        $serviceIds = $this->servicesOfApplicationResources($applicationId);
+
+        $foreignLineIds = [];
+        foreach ($stored as $row) {
+            $parentId = !empty($row['parent_mapping_id']) ? (int)$row['parent_mapping_id'] : null;
+            if (self::isForeignLine($row, $parentId, $resourceIds, $serviceIds)) {
+                $foreignLineIds[] = (int)$row['line_id'];
+                $this->logForeignLine($applicationId, $row, $parentId, (int)$row['line_id'], 'pruned, its resource left the application');
+            }
+        }
+
+        if (empty($foreignLineIds)) {
+            return 0;
+        }
+
+        $placeholders = implode(',', array_fill(0, count($foreignLineIds), '?'));
+        $delete = $this->db->prepare("DELETE FROM bb_purchase_order_line WHERE id IN ({$placeholders})");
+        $delete->execute($foreignLineIds);
+
+        return count($foreignLineIds);
     }
 
     /**

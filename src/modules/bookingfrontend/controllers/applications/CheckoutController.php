@@ -3,6 +3,7 @@
 namespace App\modules\bookingfrontend\controllers\applications;
 
 use App\helpers\ResponseHelper;
+use App\modules\bookingfrontend\helpers\ParentApplicationChoiceException;
 use App\modules\bookingfrontend\helpers\PriceChoiceException;
 use App\modules\bookingfrontend\helpers\UserHelper;
 use App\modules\bookingfrontend\helpers\WebSocketHelper;
@@ -60,12 +61,17 @@ class CheckoutController
      *             @OA\Property(property="street", type="string"),
      *             @OA\Property(property="zipCode", type="string"),
      *             @OA\Property(property="city", type="string"),
-     *             @OA\Property(property="organizerName", type="string")
+     *             @OA\Property(property="organizerName", type="string"),
+     *             @OA\Property(property="building_parent_ids", type="object", description="Per building id, the id of the application in this checkout that the building's applications are combined under")
      *         )
      *     ),
      *     @OA\Response(
      *         response=200,
      *         description="Applications updated successfully"
+     *     ),
+     *     @OA\Response(
+     *         response=400,
+     *         description="Invalid data, or a parent application that is not one of the applications in this checkout or is in another building; nothing is changed"
      *     )
      * )
      */
@@ -166,6 +172,9 @@ class CheckoutController
             } catch (PriceChoiceException $e) {
                 // A resource still waits for the citizen's price choice
                 return ResponseHelper::sendErrorResponse($e->toResponseBody(), 422);
+            } catch (ParentApplicationChoiceException $e) {
+                // The choice of parent application is refused; nothing was changed
+                return ResponseHelper::sendErrorResponse(['error' => $e->getMessage()], 400);
             } catch (Exception $e) {
                 // Check if the error message contains validation errors
                 if (str_contains($e->getMessage(), ',')) {

@@ -56,6 +56,8 @@ export class DeliveredApplicationService {
    * 3. Secret-based: single application accessed by secret token
    *
    * Mirrors PHP: ApplicationRepository::getApplicationsBySsnAndOrganizations
+   *
+   * Rejects when the applications cannot be read: an empty page would tell the user they have none.
    */
   async getDeliveredApplications(opts: {
     ssn?: string;
@@ -64,11 +66,6 @@ export class DeliveredApplicationService {
     offset?: number;
     limit?: number;
   }): Promise<DeliveredApplicationsPage> {
-    if (!this.db.isConnected()) {
-      this.logger.error('Cannot get delivered applications — DB not connected');
-      return { applications: [], totalCount: 0, offset: 0, limit: 0, hasMore: false };
-    }
-
     const { ssn, includeOrganizations = true, secret, offset = 0, limit = 50 } = opts;
 
     try {
@@ -140,7 +137,7 @@ export class DeliveredApplicationService {
       };
     } catch (err: any) {
       this.logger.error(`Error fetching delivered applications: ${err.message}`);
-      return { applications: [], totalCount: 0, offset, limit, hasMore: false };
+      throw err;
     }
   }
 
@@ -179,10 +176,6 @@ export class DeliveredApplicationService {
     ssn?: string;
     secret?: string;
   }): Promise<{ application: any | null; error?: string }> {
-    if (!this.db.isConnected()) {
-      return { application: null, error: 'Database not connected' };
-    }
-
     const { id, ssn, secret } = opts;
 
     try {
@@ -206,8 +199,9 @@ export class DeliveredApplicationService {
       const applications = await this.hydrateApplications([app], ssn);
       return { application: applications[0] || null };
     } catch (err: any) {
+      // The database's own message stays in the log: it can name hosts and addresses.
       this.logger.error(`Error fetching application ${id}: ${err.message}`);
-      return { application: null, error: err.message };
+      return { application: null, error: 'Could not read the application' };
     }
   }
 
@@ -294,8 +288,10 @@ export class DeliveredApplicationService {
 
       return { orgIds, orgNumbers };
     } catch (err: any) {
+      // No organizations would quietly leave the user's organization applications out of the
+      // list and refuse access to them, so the caller fails instead.
       this.logger.error(`Error fetching organizations for SSN: ${err.message}`);
-      return { orgIds: [], orgNumbers: [] };
+      throw err;
     }
   }
 

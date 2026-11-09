@@ -2976,12 +2976,12 @@ class property_soworkorder
 	 * */
 	public function update_order_budget($order_id)
 	{
-		$this->db->query("SELECT fm_workorder_budget.year, periodization_id,"
+		$this->db->query("SELECT fm_workorder_budget.year, periodization_id, fm_workorder.start_date,"
 			. " sum(fm_workorder_budget.budget) AS budget, sum(fm_workorder_budget.combined_cost) AS combined_cost,"
 			. " sum(fm_workorder_budget.contract_sum) AS contract_sum"
 			. " FROM fm_workorder {$this->join} fm_project ON fm_workorder.project_id = fm_project.id"
 			. " {$this->join} fm_workorder_budget ON fm_workorder.id = fm_workorder_budget.order_id"
-			. " WHERE fm_workorder.id = '{$order_id}' GROUP BY year, periodization_id", __LINE__, __FILE__);
+			. " WHERE fm_workorder.id = '{$order_id}' GROUP BY year, periodization_id, fm_workorder.start_date", __LINE__, __FILE__);
 
 		while ($this->db->next_record())
 		{

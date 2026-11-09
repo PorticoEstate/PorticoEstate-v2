@@ -108,6 +108,16 @@ MUTATIONS = [
      "\t\t} catch (\\Exception $e) {\n\t\t\terror_log(\"Catering change diff failed"),
     ("Mm17", D, "a new order shows a 'status' row",
      "            if ($before === null && $key === 'status') {\n                continue;\n            }\n", ""),
+    # special_requirements: the applicant's note to the kitchen. None of these was caught before the harness
+    # drove that field through the diff, the summary and the template.
+    ("Mm29", TW, "an ADDED row's value is output raw (the applicant's note as live HTML in the officer's mail)",
+     "<td valign=\"top\">{{ row.value }}</td>", "<td valign=\"top\">{{ row.value|raw }}</td>"),
+    ("Mm30", TW, "a CHANGED row's FROM value is output raw",
+     "<td valign=\"top\">{{ row.from }}</td>", "<td valign=\"top\">{{ row.from|raw }}</td>"),
+    ("Mm31", D, "the diff drops special_requirements: the officer is never told about the note",
+     "        $out['special_requirements'] = ['value' => CateringText::decode($order['special_requirements'] ?? ''), 'label' => null];\n", ""),
+    ("Mm32", R, "special_requirements is not a fixed field: its row is labelled with the raw key",
+     "'comment', 'special_requirements', 'total'", "'comment', 'total'"),
 ]
 
 

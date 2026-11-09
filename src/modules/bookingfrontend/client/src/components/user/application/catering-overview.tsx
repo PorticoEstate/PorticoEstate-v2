@@ -3,7 +3,7 @@ import React, {FC, useMemo, useState} from 'react';
 import parse from 'html-react-parser';
 import {Alert, Button, Heading, Paragraph, Table, Tag} from '@digdir/designsystemet-react';
 import {PencilIcon, PlusIcon, TrashIcon} from '@navikt/aksel-icons';
-import {useTrans} from '@/app/i18n/ClientTranslationProvider';
+import {useClientTranslation, useTrans} from '@/app/i18n/ClientTranslationProvider';
 import {IApplication} from '@/service/types/api/application.types';
 import {
     HospitalityActionReason,
@@ -18,8 +18,14 @@ import {
 } from '@/components/checkout/hooks/hospitality-hooks';
 import HospitalityOrderModal from '@/components/checkout/hospitality/hospitality-order-modal';
 import {useServerSettings} from '@/service/hooks/api-hooks';
-import {formatCurrency} from '@/utils/cost-utils';
+import {
+    formatOreOrDash,
+    hospitalityLineTotalOre,
+    hospitalityOrderTotalOre,
+    sumOreOrNull,
+} from '@/utils/article-pricing';
 import {isCateringClosed, showsCateringSection} from '@/utils/catering-status';
+import {formatVenueDeadline, groupByServingDay} from '@/utils/catering-venue-time';
 import {unescapeHTML} from '@/components/building-page/util/building-text-util';
 import styles from './application-details.module.scss';
 
@@ -46,21 +52,6 @@ const STATUS_LABEL_KEY: Record<IHospitalityOrder['status'], string> = {
     delivered: 'booking.delivered',
     cancelled: 'booking.cancelled',
 };
-
-const formatServingTime = (iso: string | null): string =>
-    iso
-        ? new Date(iso).toLocaleString('nb-NO', {
-            weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
-        })
-        : '-';
-
-/** Same shape as the cart's "Kan avbestilles innen %1" text. */
-const formatDeadline = (iso: string | null): string =>
-    iso
-        ? new Date(iso).toLocaleDateString('nb-NO', {
-            day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
-        })
-        : '';
 
 /** "3.00" -> "3", "2.50" -> "2.5": a quantity reads the way it was typed. */
 const formatQuantity = (quantity: string): string => String(Number(quantity));
@@ -111,7 +102,7 @@ interface CateringOverviewProps {
  * the catering endpoints).
  */
 const CateringOverview: FC<CateringOverviewProps> = ({application}) => {
-    const t = useTrans();
+    const {t, i18n} = useClientTranslation();
     const {data: serverSettings} = useServerSettings();
     const enabled = !!serverSettings?.booking_config?.enable_hospitality;
     const readOnly = isCateringClosed(application.status);
@@ -153,7 +144,15 @@ const CateringOverview: FC<CateringOverviewProps> = ({application}) => {
     const canAdd = handleable
         && hospitalities.length > 0
         && application.dates.some(d => new Date(d.from_).getTime() > now);
-    const total = orders.reduce((sum, order) => sum + (order.total_amount || 0), 0);
+    // Everything below is shown incl. VAT: the stored lines are ex VAT, so the total is worked out from
+    // them (each line's VAT rounded once, as billed), never taken from the order's ex-VAT total_amount
+    const totalOre = sumOreOrNull(orders.map(order => hospitalityOrderTotalOre(order)));
+
+    // Day by day, each day by serving time, in venue time (see catering-venue-time.ts); the orders
+    // without a serving time come last. Flattened so that every order keeps its own block below.
+    const rows = groupByServingDay(orders, i18n.language, now).flatMap((group, groupIndex) =>
+        group.items.map(({order, time}, indexInGroup) => ({order, time, group, groupIndex, indexInGroup}))
+    );
 
     const openAdd = () => {
         setActiveHospitality(hospitalities[0]);
@@ -209,7 +208,7 @@ const CateringOverview: FC<CateringOverviewProps> = ({application}) => {
                 <Paragraph>{t('bookingfrontend.catering_overview_empty')}</Paragraph>
             )}
 
-            {orders.map((order, index) => {
+            {rows.map(({order, time, group, groupIndex, indexInGroup}) => {
                 const hospitality = hospitalities.find(h => h.id === order.hospitality_id);
                 const actions = order.actions;
                 // The dialog needs the (active) hospitality it belongs to; an order on a hospitality
@@ -234,13 +233,22 @@ const CateringOverview: FC<CateringOverviewProps> = ({application}) => {
 
                 return (
                     <React.Fragment key={order.id}>
-                        {index > 0 && <div className={styles.divider} style={{margin: '16px 0'}}/>}
+                        {indexInGroup === 0 ? (
+                            <>
+                                {groupIndex > 0 && <div className={styles.divider} style={{margin: '16px 0'}}/>}
+                                <Heading level={3} data-size="sm" data-testid="catering-day-heading" data-day={group.dayKey ?? 'none'}>
+                                    {group.heading ?? t('bookingfrontend.catering_no_serving_time')}
+                                </Heading>
+                            </>
+                        ) : (
+                            <div className={styles.divider} style={{margin: '16px 0'}}/>
+                        )}
                         <section data-testid="catering-order" data-order-id={order.id}>
                             <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap'}}>
                                 <div>
-                                    <Heading level={3} data-size="xs">{order.hospitality_name}</Heading>
+                                    <Heading level={4} data-size="xs">{order.hospitality_name}</Heading>
                                     <Paragraph data-size="sm">
-                                        {t('bookingfrontend.serving_time')}: {formatServingTime(order.serving_time_iso)}
+                                        {t('bookingfrontend.serving_time')}: {time ?? '-'}
                                         <br/>
                                         {t('bookingfrontend.delivery_location')}: {order.location_name}
                                     </Paragraph>
@@ -272,6 +280,13 @@ const CateringOverview: FC<CateringOverviewProps> = ({application}) => {
                                 </div>
                             </div>
 
+                            {/* The order-level note to the kitchen, as plain text (React escapes it; line breaks kept). */}
+                            {order.special_requirements?.trim() && (
+                                <Paragraph data-size="sm" data-testid="catering-special-requirements" style={{marginTop: 8, whiteSpace: 'pre-line'}}>
+                                    <strong>{t('bookingfrontend.special_requirements')}:</strong> {order.special_requirements}
+                                </Paragraph>
+                            )}
+
                             {order.lines.length === 0 ? (
                                 <Paragraph data-size="sm">{t('bookingfrontend.catering_order_no_lines')}</Paragraph>
                             ) : (
@@ -291,26 +306,26 @@ const CateringOverview: FC<CateringOverviewProps> = ({application}) => {
                                                     {line.comment && <><br/><small>{line.comment}</small></>}
                                                 </Table.Cell>
                                                 <Table.Cell>{formatQuantity(line.quantity)} {line.unit}</Table.Cell>
-                                                <Table.Cell>{formatCurrency(parseFloat(line.amount))}</Table.Cell>
+                                                <Table.Cell>{formatOreOrDash(hospitalityLineTotalOre(line))}</Table.Cell>
                                             </Table.Row>
                                         ))}
                                     </Table.Body>
                                 </Table>
                             )}
                             <Paragraph data-size="sm" style={{display: 'flex', justifyContent: 'space-between', gap: 12, marginTop: 8}}>
-                                <strong>{t('bookingfrontend.order_total')}</strong>
-                                <strong data-testid="catering-order-total">{formatCurrency(order.total_amount)}</strong>
+                                <strong>{t('bookingfrontend.total_incl_vat')}</strong>
+                                <strong data-testid="catering-order-total">{formatOreOrDash(hospitalityOrderTotalOre(order))}</strong>
                             </Paragraph>
 
                             {/* Which deadline governs each action that is still open, and until when. */}
                             {changeOpen && actions?.change.until && (
                                 <Paragraph data-size="sm" style={{marginTop: 4}}>
-                                    {t('bookingfrontend.catering_change_until').replace('%1', formatDeadline(actions.change.until))}
+                                    {t('bookingfrontend.catering_change_until').replace('%1', formatVenueDeadline(actions.change.until))}
                                 </Paragraph>
                             )}
                             {cancelOpen && actions?.cancel.until && (
                                 <Paragraph data-size="sm">
-                                    {t('bookingfrontend.cancellation_deadline_info').replace('%1', formatDeadline(actions.cancel.until))}
+                                    {t('bookingfrontend.cancellation_deadline_info').replace('%1', formatVenueDeadline(actions.cancel.until))}
                                 </Paragraph>
                             )}
 
@@ -341,10 +356,10 @@ const CateringOverview: FC<CateringOverviewProps> = ({application}) => {
                 );
             })}
 
-            {orders.length > 1 && total > 0 && (
+            {orders.length > 1 && (totalOre === null || totalOre > 0) && (
                 <Paragraph data-size="sm" style={{display: 'flex', justifyContent: 'space-between', gap: 12, marginTop: 16}}>
-                    <strong>{t('bookingfrontend.hospitality')} {t('bookingfrontend.total').toLowerCase()}</strong>
-                    <strong>{formatCurrency(total)}</strong>
+                    <strong>{t('bookingfrontend.hospitality')}: {t('bookingfrontend.total_incl_vat')}</strong>
+                    <strong>{formatOreOrDash(totalOre)}</strong>
                 </Paragraph>
             )}
 

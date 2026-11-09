@@ -33,6 +33,23 @@ class PriceOption
 	public $remark;
 
 	/**
+	 * The price category the row belongs to (bb_price_category); null when it has none.
+	 * Prices of different resources with the same category can be chosen together.
+	 * @OA\Property(type="integer", nullable=true)
+	 * @Expose
+	 */
+	public $category_id;
+
+	/**
+	 * The category's name. When set, it is what the price is called instead of the remark.
+	 * Read the same way as the order line's price_label, which snapshots it.
+	 * @OA\Property(type="string", nullable=true)
+	 * @Expose
+	 * @EscapeString(mode="default")
+	 */
+	public $category_name;
+
+	/**
 	 * @OA\Property(type="string", description="Price before tax")
 	 * @Expose
 	 */

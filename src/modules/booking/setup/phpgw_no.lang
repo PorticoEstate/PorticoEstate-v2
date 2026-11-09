@@ -1383,3 +1383,11 @@ catering_field_special_requirements	booking	no	Spesielle krav
 catering_field_total	booking	no	Sum
 sms_event_no_participants	booking	no	Ingen deltakere med telefonnummer er registrert på arrangementet. SMS sendes bare til registrerte deltakere.
 sms_send_failed	booking	no	Kunne ikke sende SMS. Prøv igjen, eller kontakt systemadministrator.
+price_category_none	booking	no	Ingen kategori
+price_category_new	booking	no	Ny kategori
+price_category_name	booking	no	Navn på kategorien
+price_category_add	booking	no	Legg til
+price_category_exists	booking	no	Kategorien fantes fra før og er valgt
+price_category_invalid	booking	no	Skriv et navn på inntil 100 tegn som ikke bare er et tall
+price_category_add_failed	booking	no	Kategorien ble ikke lagt til. Last siden på nytt og prøv igjen.
+price_category_unknown_not_saved	booking	no	Den nye prisen ble ikke lagret: kategorien finnes ikke

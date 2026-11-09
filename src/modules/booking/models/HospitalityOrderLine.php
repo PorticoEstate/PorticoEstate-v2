@@ -56,6 +56,14 @@ class HospitalityOrderLine
     public $tax_code;
 
     /**
+     * The VAT % of tax_code (fm_ecomva.percent_), for showing the line incl. VAT. Read-only: it is
+     * never stored, and NULL (a code with no fm_ecomva row) is not 0 %.
+     * @OA\Property(type="integer", nullable=true)
+     * @Expose
+     */
+    public $tax_percent;
+
+    /**
      * quantity * unit_price
      * @OA\Property(type="number", format="float")
      * @Expose

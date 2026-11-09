@@ -405,6 +405,14 @@ class ApplicationRepository
                 $this->saveApplicationTargetAudience($id, $data['audience']);
             }
 
+            // The resources go in BEFORE the order: the order's lines are checked against the
+            // application's resources (ArticleRepository::isForeignLine), and a new application
+            // has none until they are saved. Same transaction as everything below.
+            if (!empty($data['resources']))
+            {
+                $this->saveApplicationResources($id, $data['resources']);
+            }
+
             // Handle purchase order data
             if (!empty($data['purchase_order']['lines']))
             {
@@ -417,10 +425,11 @@ class ApplicationRepository
             {
                 $this->saveApplicationArticles($id, $data['articles']);
             }
-
-            if (!empty($data['resources']))
+            elseif (!empty($data['id']) && !empty($data['resources']))
             {
-                $this->saveApplicationResources($id, $data['resources']);
+                // An update that changes the resources but sends no articles: the lines of the
+                // resources that left the application must not stay in its order
+                $this->articleRepository->pruneLinesOfRemovedResources($id);
             }
 
             if (!empty($data['dates']))

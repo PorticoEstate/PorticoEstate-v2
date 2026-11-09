@@ -290,7 +290,7 @@ export function formatWeekdayName(isoWeekdayNumber: number, lang: string, style:
  * this Chromium has no 'nn' ICU data under any locale tag, so true Nynorsk weekday names
  * are unreachable via Intl here; see task #21563 for the ruling this implies.
  */
-function localeFor(lang: string): string {
+export function localeFor(lang: string): string {
     if (lang === 'nn') return 'no';
     if (lang === 'en') return 'en-GB';
     return 'nb-NO';

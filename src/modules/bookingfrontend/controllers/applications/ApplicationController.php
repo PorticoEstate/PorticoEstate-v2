@@ -644,6 +644,10 @@ class ApplicationController extends DocumentController
                 );
             }
 
+            // POST always creates a new partial; an existing one is changed through PATCH /partials/{id}.
+            // The order is built from `articles` alone.
+            unset($data['id'], $data['purchase_order']);
+
             // Add required application data
             $data['owner_id'] = $this->userSettings['account_id'];
             $data['session_id'] = $session_id;
@@ -806,6 +810,7 @@ class ApplicationController extends DocumentController
      *             @OA\Property(property="contact_name", type="string"),
      *             @OA\Property(property="contact_email", type="string"),
      *             @OA\Property(property="contact_phone", type="string"),
+     *             @OA\Property(property="parent_id", type="integer", nullable=true, description="The application this one is combined under, or null for none; only an application the caller may modify"),
      *             @OA\Property(
      *                 property="resources",
      *                 type="array",
@@ -859,6 +864,10 @@ class ApplicationController extends DocumentController
      *         description="Invalid input"
      *     ),
      *     @OA\Response(
+     *         response=403,
+     *         description="The caller may not modify this application, or parent_id is neither null nor an application the caller may modify; nothing is changed"
+     *     ),
+     *     @OA\Response(
      *         response=404,
      *         description="Application not found"
      *     ),
@@ -896,6 +905,25 @@ class ApplicationController extends DocumentController
                     ['error' => 'Invalid JSON data'],
                     400
                 );
+            }
+
+            // PATCH only links to an application the caller may modify, by the same check as above, or to none
+            // (null). Any other parent_id is refused before anything is changed, with one answer for every case.
+            if (is_array($data) && array_key_exists('parent_id', $data) && $data['parent_id'] !== null) {
+                $parentId = $data['parent_id'];
+                if (is_string($parentId) && preg_match('/^[1-9][0-9]{0,9}\z/', $parentId) === 1) {
+                    $parentId = (int)$parentId;
+                }
+                $parent = is_int($parentId) && $parentId >= 1 && $parentId <= 2147483647
+                    ? $this->applicationService->getApplicationById($parentId)
+                    : null;
+                if (!$parent || !$this->applicationHelper->canModifyApplication($parent, $request)) {
+                    return ResponseHelper::sendErrorResponse(
+                        ['error' => 'Link to parent application refused'],
+                        403
+                    );
+                }
+                $data['parent_id'] = $parentId;
             }
 
             // Handle recurring_info - convert object to JSON string for database storage

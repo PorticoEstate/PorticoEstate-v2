@@ -64,8 +64,11 @@ export interface IHospitalityArticle {
     unit: string;
     base_price: string;
     base_tax_code: number;
+    /** The price per unit EX VAT (override_price ?? base_price). Show it incl. VAT via utils/article-pricing. */
     effective_price: string;
     effective_tax_code: number;
+    /** VAT % of effective_tax_code (fm_ecomva.percent_). Null = the code has no such row: NOT 0 %. */
+    effective_tax_percent: number | null;
 }
 
 /** Why an action on an order is refused (HospitalityOrderGuard::REASON_*). */
@@ -107,6 +110,7 @@ export interface IHospitalityOrder {
     serving_time_iso: string | null;
     hospitality_name: string;
     location_name: string;
+    /** Σ line amounts EX VAT. Never show it: use hospitalityOrderTotalOre (utils/article-pricing). */
     total_amount: number;
     /** Always present from GET (an order without lines comes back as []). */
     lines: IHospitalityOrderLine[];
@@ -120,8 +124,12 @@ export interface IHospitalityOrderLine {
     order_id: number;
     hospitality_article_id: number;
     quantity: string;
+    /** EX VAT. */
     unit_price: string;
     tax_code: number;
+    /** VAT % of tax_code (fm_ecomva.percent_). Null = the code has no such row: NOT 0 %. */
+    tax_percent: number | null;
+    /** quantity x unit_price, EX VAT. */
     amount: string;
     comment: string | null;
     article_name: string;
@@ -133,13 +141,14 @@ export interface CreateHospitalityOrderRequest {
     location_resource_id: number;
     serving_time_iso?: string;
     comment?: string;
-    special_requirements?: string;
+    special_requirements?: string | null;
     lines: { hospitality_article_id: number; quantity: number; comment?: string }[];
 }
 
 export interface UpdateHospitalityOrderRequest {
     comment?: string;
-    special_requirements?: string;
+    /** null clears the stored text; an absent key leaves it unchanged. */
+    special_requirements?: string | null;
     serving_time_iso?: string;
     location_resource_id?: number;
     lines?: { hospitality_article_id: number; quantity: number; comment?: string }[];

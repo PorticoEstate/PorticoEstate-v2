@@ -6,7 +6,7 @@ import {useTrans} from '@/app/i18n/ClientTranslationProvider';
 import {IApplication} from '@/service/types/api/application.types';
 import {IHospitality, IHospitalityOrder} from '@/service/types/api/hospitality.types';
 import {useApplicationGroupHospitalities, useDeleteHospitalityOrder} from '../hooks/hospitality-hooks';
-import {formatCurrency} from '@/utils/cost-utils';
+import {formatOreOrDash, hospitalityOrderTotalOre, sumOreOrNull} from '@/utils/article-pricing';
 import {computeHospitalityDeadline} from '@/utils/hospitality-deadline';
 import HospitalityOrderModal from './hospitality-order-modal';
 import styles from './hospitality.module.scss';
@@ -39,7 +39,7 @@ const HospitalityOrderRow: FC<HospitalityOrderRowProps> = ({order, onEdit, forma
             </Table.Cell>
             <Table.Cell>{order.location_name}</Table.Cell>
             <Table.Cell>{order.hospitality_name}</Table.Cell>
-            <Table.Cell>{formatCurrency(order.total_amount)}</Table.Cell>
+            <Table.Cell>{formatOreOrDash(hospitalityOrderTotalOre(order))}</Table.Cell>
             <Table.Cell>
                 <div style={{display: 'flex', gap: '0.5rem'}}>
                     <Button
@@ -75,8 +75,10 @@ const HospitalitySection: FC<HospitalitySectionProps> = ({applicationIds, applic
     const [modalOpen, setModalOpen] = useState(false);
     const [editingOrder, setEditingOrder] = useState<IHospitalityOrder | undefined>(undefined);
 
-    const hospitalityTotal = useMemo(() => {
-        return orders.reduce((sum, order) => sum + (order.total_amount || 0), 0);
+    // Incl. VAT in øre, from the lines (each line's VAT rounded once, as billed), never from the order's
+    // ex-VAT total_amount; null when a line's VAT % is unknown
+    const hospitalityTotalOre = useMemo(() => {
+        return sumOreOrNull(orders.map(order => hospitalityOrderTotalOre(order)));
     }, [orders]);
 
     // Calculate cancellation deadline info only for ordered hospitalities
@@ -204,10 +206,10 @@ const HospitalitySection: FC<HospitalitySectionProps> = ({applicationIds, applic
                 </Table>
             )}
 
-            {hospitalityTotal > 0 && orders.length > 1 && (
+            {(hospitalityTotalOre === null || hospitalityTotalOre > 0) && orders.length > 1 && (
                 <div className={styles.hospitalityTotal}>
-                    <span>{t('bookingfrontend.hospitality')} {t('bookingfrontend.total').toLowerCase()}:</span>
-                    <span>{formatCurrency(hospitalityTotal)}</span>
+                    <span>{t('bookingfrontend.hospitality')}: {t('bookingfrontend.total_incl_vat')}</span>
+                    <span>{formatOreOrDash(hospitalityTotalOre)}</span>
                 </div>
             )}
 

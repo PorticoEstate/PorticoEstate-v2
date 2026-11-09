@@ -28,6 +28,7 @@
 	 */
 
 	use App\modules\booking\helpers\ArticlePriceInput;
+	use App\modules\booking\repositories\PriceCategoryRepository;
 	use App\modules\phpgwapi\services\Cache;
 
 	phpgw::import_class('phpgwapi.socommon');
@@ -148,10 +149,34 @@
 		}
 
 		/**
-		 * Change the price, date and remark of prices already stored. The page
-		 * names a field only once it is edited, so only edited fields are
-		 * posted, and a field posted as it already reads is left alone. A row
-		 * with an invalid price or date is not changed at all.
+		 * A posted price category (ref #1477): null for none, the id of an
+		 * existing category, or false when it is neither
+		 *
+		 * @return int|null|false
+		 */
+		private function posted_category_id( $posted )
+		{
+			if (!is_string($posted))
+			{
+				return false;
+			}
+			if ($posted === '')
+			{
+				return null;
+			}
+			if (!ctype_digit($posted) || !(new PriceCategoryRepository())->exists((int)$posted))
+			{
+				return false;
+			}
+			return (int)$posted;
+		}
+
+		/**
+		 * Change the price, date, remark and category of prices already
+		 * stored. The page names a field only once it is edited, so only
+		 * edited fields are posted, and a field posted as it already reads is
+		 * left alone. A row with an invalid price, date or category is not
+		 * changed at all.
 		 *
 		 * Runs after set_prizing_defaults(), so a row ticked for deletion is
 		 * gone and its edits are dropped.
@@ -165,6 +190,9 @@
 				return;
 			}
 
+			// The page only offers a category once the migration that adds them has run
+			$with_categories = PriceCategoryRepository::isInstalled();
+
 			$refused = array();
 			foreach ($article_prices as $price_id => $posted)
 			{
@@ -174,7 +202,7 @@
 					continue;
 				}
 
-				$this->db->query('SELECT price, from_, remark FROM bb_article_price'
+				$this->db->query('SELECT price, from_, remark' . ($with_categories ? ', category_id' : '') . ' FROM bb_article_price'
 					. " WHERE id = {$price_id} AND article_mapping_id = " . (int)$article_mapping_id, __LINE__, __FILE__);
 
 				if (!$this->db->next_record())
@@ -185,6 +213,7 @@
 				$stored_cents	 = ArticlePriceInput::parseCents((string)$this->db->f('price'));
 				$stored_date	 = substr((string)$this->db->f('from_'), 0, 10);
 				$stored_remark	 = $this->db->f('remark', true);
+				$stored_category = $with_categories && $this->db->f('category_id') !== '' ? (int)$this->db->f('category_id') : null;
 
 				// A field posted as anything but text is no price, date or remark
 				$value_set	 = array();
@@ -235,6 +264,19 @@
 					}
 				}
 
+				if ($with_categories && array_key_exists('category_id', $posted))
+				{
+					$category_id = $this->posted_category_id($posted['category_id']);
+					if ($category_id === false)
+					{
+						$valid = false;
+					}
+					else if ($category_id !== $stored_category)
+					{
+						$value_set['category_id'] = $category_id;
+					}
+				}
+
 				if (!$valid)
 				{
 					$refused[] = $price_id;
@@ -281,6 +323,18 @@
 				return;
 			}
 
+			// The page only offers a category once the migration that adds them has run
+			$category_id = null;
+			if (array_key_exists('category_id', $article_prizing) && PriceCategoryRepository::isInstalled())
+			{
+				$category_id = $this->posted_category_id($article_prizing['category_id']);
+				if ($category_id === false)
+				{
+					Cache::message_set(lang('price_category_unknown_not_saved'), 'error');
+					return;
+				}
+			}
+
 			if ($date_from)
 			{
 				$value_set = array
@@ -290,6 +344,10 @@
 					'from_'				 => date('Y-m-d', $date_from),
 					'remark'			 => $article_prizing['remark'],
 				);
+				if ($category_id !== null)
+				{
+					$value_set['category_id'] = $category_id;
+				}
 
 				$this->db->query('INSERT INTO bb_article_price (' . implode(',', array_keys($value_set)) . ') VALUES ('
 					. $this->db->validate_insert(array_values($value_set)) . ')', __LINE__, __FILE__);
@@ -318,6 +376,8 @@
 					'remark'			 => $this->db->f('remark', true),
 					'active'			 => $this->db->f('active'),
 					'default_'			 => $this->db->f('default_'),
+					// Empty both without a category and before the migration that adds them
+					'category_id'		 => $this->db->f('category_id') !== '' ? (int)$this->db->f('category_id') : null,
 				);
 			}
 			return $pricing;

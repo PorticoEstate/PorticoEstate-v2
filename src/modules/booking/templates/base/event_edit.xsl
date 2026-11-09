@@ -658,11 +658,23 @@
 									<xsl:value-of select="php:function('lang', 'SMS')" />
 								</label>
 								<textarea rows="5" id="field_sms_content" name="sms_content" class="pure-input-1" >
+									<xsl:if test="sms_no_recipients = 1">
+										<xsl:attribute name="disabled">disabled</xsl:attribute>
+									</xsl:if>
 								</textarea>
 							</div>
-							<div id="sms_receipt"></div>
+							<div id="sms_receipt">
+								<xsl:if test="sms_no_recipients = 1">
+									<div class="error">
+										<xsl:value-of select="php:function('lang', 'sms_event_no_participants')" />
+									</div>
+								</xsl:if>
+							</div>
 							<div class="pure-controls">
 								<button type="button" class="pure-button pure-button-primary" onClick="SendSms();">
+									<xsl:if test="sms_no_recipients = 1">
+										<xsl:attribute name="disabled">disabled</xsl:attribute>
+									</xsl:if>
 									<xsl:value-of select="php:function('lang', 'send SMS')" />
 								</button>
 							</div>

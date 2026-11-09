@@ -224,15 +224,23 @@ class HospitalityOrderRepository
 
     // -- Order Lines --
 
+    /**
+     * The order's lines. `tax_percent` is the VAT % of the line's stored tax_code (fm_ecomva.percent_),
+     * the table the billing job reads when it turns the order into purchase-order lines. It is NULL
+     * when the code has no fm_ecomva row: a reader must not take that for 0 %. The join is on the
+     * table's primary key, so it never changes the number of lines.
+     */
     public function getOrderLines(int $orderId): array
     {
         $sql = "SELECT ol.*,
                        av.name AS article_name,
-                       am.unit
+                       am.unit,
+                       ev.percent_ AS tax_percent
                 FROM bb_hospitality_order_line ol
                 JOIN bb_hospitality_article ha ON ol.hospitality_article_id = ha.id
                 JOIN bb_article_mapping am ON ha.article_mapping_id = am.id
                 LEFT JOIN bb_article_view av ON am.article_id = av.id AND am.article_cat_id = av.article_cat_id
+                LEFT JOIN fm_ecomva ev ON ev.id = ol.tax_code
                 WHERE ol.order_id = :order_id
                 ORDER BY ol.id";
         $stmt = $this->db->prepare($sql);

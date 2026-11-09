@@ -67,9 +67,29 @@ $(document).ready(function ()
 
 	// The prices already stored, in the history table: a field gets the name
 	// it is posted under once it is edited, and not before
-	$('#prizing').on('input change', '.price-row-ex, .price-row-from, .price-row-remark', function ()
+	$('#prizing').on('input change', '.price-row-ex, .price-row-from, .price-row-remark, .price-row-category', function ()
 	{
 		name_price_field($(this));
+	});
+
+	// A price category that is missing from the list is added right here,
+	// beside the select it is wanted in (ref #1477)
+	$('#prizing').on('click', '.price-category-new', function ()
+	{
+		toggle_price_category_form($(this));
+	});
+	$('#prizing').on('click', '.price-category-form button', function ()
+	{
+		add_price_category($(this).closest('.price-category-form'));
+	});
+	$('#prizing').on('keydown', '.price-category-form input', function (event)
+	{
+		// Enter adds the category; it must not submit the article form
+		if (event.key === 'Enter')
+		{
+			event.preventDefault();
+			add_price_category($(this).closest('.price-category-form'));
+		}
 	});
 	$('#prizing').on('input', '.price-row-ex', function ()
 	{
@@ -271,6 +291,90 @@ function show_prizing_tax(recalculate)
 function name_price_field(field)
 {
 	field.attr('name', field.attr('data-name'));
+}
+
+/**
+ * Show or hide the small form for a new price category after the button.
+ * It is built with DOM calls and text only: nothing typed is read as HTML.
+ */
+function toggle_price_category_form(button)
+{
+	var form = button.next('.price-category-form');
+	if (form.length)
+	{
+		form.remove();
+		return;
+	}
+
+	var input = $('<input type="text" class="ds-input" data-size="sm" maxlength="100" autocomplete="off">')
+		.attr('aria-label', lang['price_category_name'])
+		.attr('placeholder', lang['price_category_name']);
+	var add = $('<button type="button" class="ds-button" data-variant="secondary" data-color="accent" data-size="sm"></button>')
+		.text(lang['price_category_add']);
+	var message = $('<span class="price-category-message" role="status"></span>');
+
+	form = $('<span class="price-category-form"></span>').append(input, ' ', add, ' ', message);
+	button.after(form);
+	input.trigger('focus');
+}
+
+/**
+ * Add the typed category, or find the one already named so, and choose it
+ * in the select the form belongs to. The category is stored at once, so it
+ * stays when the price form is not saved; only the choice waits for the save.
+ */
+function add_price_category(form)
+{
+	var config = $('#price-category-config');
+	var input = form.find('input');
+	var message = form.find('.price-category-message');
+	var select = form.prevAll('select').first();
+
+	message.text('');
+	form.find('button').prop('disabled', true);
+
+	$.ajax({
+		type: 'POST',
+		url: config.attr('data-url'),
+		contentType: 'application/json',
+		dataType: 'json',
+		headers: {
+			'X-CSRF-NAME': config.attr('data-csrf-name'),
+			'X-CSRF-VALUE': config.attr('data-csrf-value')
+		},
+		data: JSON.stringify({name: input.val()})
+	}).done(function (data)
+	{
+		choose_price_category(select, data.category);
+		form.remove();
+	}).fail(function (xhr)
+	{
+		var data = xhr.responseJSON || {};
+		if (xhr.status === 409 && data.category)
+		{
+			choose_price_category(select, data.category);
+			message.text(lang['price_category_exists']);
+			return;
+		}
+		message.text(data.error === 'invalid_name' ? lang['price_category_invalid'] : lang['price_category_add_failed']);
+	}).always(function ()
+	{
+		form.find('button').prop('disabled', false);
+	});
+}
+
+/** Make the category an option of every category select, and choose it in this one */
+function choose_price_category(select, category)
+{
+	var id = String(category.id);
+	$('#prizing select.price-row-category, #prizing select.price-category-select').each(function ()
+	{
+		if (!$(this).find('option').filter(function () { return this.value === id; }).length)
+		{
+			this.add(new Option(category.name, id));
+		}
+	});
+	select.val(id).trigger('change');
 }
 
 /** Rewrite a price as it is read, so the admin sees what will be stored */

@@ -1219,3 +1219,7 @@ catering_serving_time_passed	bookingfrontend	en	The serving time has passed.
 catering_application_closed	bookingfrontend	en	The application is closed, so the catering can no longer be changed.
 kr_per_hour	bookingfrontend	en	kr/hour
 minutes_short	bookingfrontend	en	min
+catering_no_serving_time	bookingfrontend	en	No serving time set
+prices_incl_vat	bookingfrontend	en	All prices include VAT
+price_category_shared_help	bookingfrontend	en	The choice applies to all the resources you have chosen.
+price_per_resource	bookingfrontend	en	Choose the price per resource

@@ -91,6 +91,8 @@ export class BookingService implements OnModuleInit {
   private readonly logger = new Logger(BookingService.name);
   private installId: string | null = null;
   private guestAccountId: number | null = null;
+  private bootValuesLoaded = false;
+  private bootValuesLoading: Promise<void> | null = null;
   private readonly workers = new Map<number, ResourceWorker>();
   private workerCleanupInterval: ReturnType<typeof setInterval> | null = null;
 
@@ -101,34 +103,47 @@ export class BookingService implements OnModuleInit {
   ) {}
 
   async onModuleInit() {
-    try {
-      const { rows } = await this.db.query(
-        "SELECT config_value FROM phpgw_config WHERE config_name = 'install_id' LIMIT 1",
-      );
-      this.installId = rows[0]?.config_value || null;
-      if (this.installId) {
-        this.logger.log('Loaded install_id for Redis lock compatibility');
-      }
-    } catch (err: any) {
-      this.logger.error(`Failed to load install_id: ${err.message}`);
-    }
-
-    try {
-      const { rows } = await this.db.query(
-        "SELECT account_id FROM phpgw_accounts WHERE account_lid = 'bookingguest' LIMIT 1",
-      );
-      this.guestAccountId = rows[0]?.account_id ?? null;
-      if (this.guestAccountId) {
-        this.logger.log(`Loaded guest account ID: ${this.guestAccountId}`);
-      } else {
-        this.logger.warn('No bookingguest account found — anonymous bookings will fail');
-      }
-    } catch (err: any) {
-      this.logger.error(`Failed to load guest account: ${err.message}`);
-    }
+    await this.ensureBootValues().catch((err) =>
+      this.logger.error(`Failed to load install_id and guest account, will retry on use: ${err.message}`),
+    );
 
     // Clean up idle worker DB connections every 30s
     this.workerCleanupInterval = setInterval(() => this.cleanupIdleWorkers(), 30_000);
+  }
+
+  /**
+   * Reads install_id (PHP puts it in front of every Redis key) and the guest account that
+   * anonymous bookings are made for. When the database cannot be read at start-up, the first
+   * booking or deletion that needs them reads them; they are never taken to be absent.
+   */
+  private ensureBootValues(): Promise<void> {
+    if (this.bootValuesLoaded) return Promise.resolve();
+    this.bootValuesLoading ??= this.loadBootValues().finally(() => {
+      this.bootValuesLoading = null;
+    });
+    return this.bootValuesLoading;
+  }
+
+  private async loadBootValues(): Promise<void> {
+    const { rows: installRows } = await this.db.query(
+      "SELECT config_value FROM phpgw_config WHERE config_name = 'install_id' LIMIT 1",
+    );
+    const { rows: guestRows } = await this.db.query(
+      "SELECT account_id FROM phpgw_accounts WHERE account_lid = 'bookingguest' LIMIT 1",
+    );
+
+    this.installId = installRows[0]?.config_value || null;
+    this.guestAccountId = guestRows[0]?.account_id ?? null;
+    this.bootValuesLoaded = true;
+
+    if (this.installId) {
+      this.logger.log('Loaded install_id for Redis lock compatibility');
+    }
+    if (this.guestAccountId) {
+      this.logger.log(`Loaded guest account ID: ${this.guestAccountId}`);
+    } else {
+      this.logger.warn('No bookingguest account found — anonymous bookings will fail');
+    }
   }
 
   private cleanupIdleWorkers() {
@@ -155,7 +170,7 @@ export class BookingService implements OnModuleInit {
    * so bookings for different resources run in parallel while bookings
    * for the same resource are serialized (no deadlocks, no row locks needed).
    */
-  enqueueBooking(
+  async enqueueBooking(
     resourceId: number,
     buildingId: number,
     from: string,
@@ -165,13 +180,14 @@ export class BookingService implements OnModuleInit {
     ssn: string | null,
   ): Promise<BookingResult> {
     // Resolve owner early so callers get a fast rejection
-    if (!ownerId && this.guestAccountId) {
-      ownerId = this.guestAccountId;
+    if (!ownerId) {
+      await this.ensureBootValues();
+      if (this.guestAccountId) {
+        ownerId = this.guestAccountId;
+      }
     }
     if (!ownerId) {
-      return Promise.reject(
-        new TranslatableError('No valid owner account available', 'no_valid_owner'),
-      );
+      throw new TranslatableError('No valid owner account available', 'no_valid_owner');
     }
 
     return new Promise<BookingResult>((resolve, reject) => {
@@ -816,6 +832,9 @@ export class BookingService implements OnModuleInit {
     resourceIds: number[];
     dates: Array<{ from_: string; to_: string }>;
   }> {
+    // The timeslot locks cleared below are keyed with install_id
+    await this.ensureBootValues();
+
     let client: any = null;
     try {
       client = await this.db.getClient();
@@ -1632,6 +1651,11 @@ export class BookingService implements OnModuleInit {
   // --- Redis lock helpers (matching PHP Cache::_gen_key + RedisCache) ---
 
   private genRedisKey(module: string, id: string): string {
+    if (!this.bootValuesLoaded) {
+      // A key without install_id is not the key PHP uses, so a lock taken or cleared with it
+      // would miss PHP's lock.
+      throw new Error('install_id has not been read yet; no Redis key can be made');
+    }
     const raw = `${this.installId || ''}::${module}::${id}`;
     return createHash('sha1').update(raw).digest('hex');
   }

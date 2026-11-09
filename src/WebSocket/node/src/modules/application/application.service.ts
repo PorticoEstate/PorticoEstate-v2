@@ -44,12 +44,11 @@ export class ApplicationService {
 
   constructor(private readonly db: DatabaseService) {}
 
+  /**
+   * Rejects when the applications cannot be read. An empty list means the session has none, and
+   * a client replaces its cart with it, so a failure must never be reported as one.
+   */
   async getPartialApplications(sessionId: string): Promise<any[]> {
-    if (!this.db.isConnected()) {
-      this.logger.error('Cannot get partial applications — DB not connected');
-      return [];
-    }
-
     try {
       const { rows: applications } = await this.db.query(
         `SELECT * FROM bb_application
@@ -113,7 +112,7 @@ export class ApplicationService {
       this.logger.error(
         `Error fetching partial applications: ${err.message}`,
       );
-      return [];
+      throw err;
     }
   }
 

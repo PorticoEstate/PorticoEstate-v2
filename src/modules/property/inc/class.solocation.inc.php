@@ -1398,6 +1398,11 @@ class property_solocation
 					$joinmethod .= ")";
 				}
 			}
+
+			if($j == 1)
+			{
+				$joinmethod .= " $this->join fm_part_of_town ON (fm_location1.part_of_town_id = fm_part_of_town.id)";
+			}
 		}
 
 		$config = $this->soadmin_location->read_config('');

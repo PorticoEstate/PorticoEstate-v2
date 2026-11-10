@@ -13,6 +13,7 @@ import {
     Radio,
     Select,
     Textarea,
+    Tooltip,
 } from '@digdir/designsystemet-react';
 import {MinusCircleIcon, PlusCircleIcon, ChatElipsisIcon} from '@navikt/aksel-icons';
 import {useClientTranslation} from '@/app/i18n/ClientTranslationProvider';
@@ -759,19 +760,22 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
                         )}
                     </span>
                     <span className={styles.menuAmount}>{qty > 0 ? formatOreOrDash(amountOre) : ''}</span>
-                    {/* Accent while the line has a comment, as the ± beside it; neutral otherwise */}
-                    <Button
-                        variant="tertiary"
-                        data-size="sm"
-                        data-color={commentText ? 'accent' : 'neutral'}
-                        icon={true}
-                        className={styles.commentToggle}
-                        onClick={() => toggleComment(article.id)}
-                        disabled={qty <= 0 || !menuEnabled}
-                        aria-label={commentLabel}
-                    >
-                        <ChatElipsisIcon aria-hidden="true"/>
-                    </Button>
+                    {/* Accent while the line has a comment, as the ± beside it; neutral otherwise.
+                        The tooltip is the button's name (aria-labelledby), so it has no aria-label:
+                        aria-labelledby would override it. */}
+                    <Tooltip content={commentLabel} type="labelledby">
+                        <Button
+                            variant="tertiary"
+                            data-size="sm"
+                            data-color={commentText ? 'accent' : 'neutral'}
+                            icon={true}
+                            className={styles.commentToggle}
+                            onClick={() => toggleComment(article.id)}
+                            disabled={qty <= 0 || !menuEnabled}
+                        >
+                            <ChatElipsisIcon aria-hidden="true"/>
+                        </Button>
+                    </Tooltip>
                 </div>
                 {commentVisible && qty > 0 && (
                     <div className={styles.lineComment}>

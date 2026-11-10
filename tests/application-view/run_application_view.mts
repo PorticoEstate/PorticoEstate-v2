@@ -18,6 +18,12 @@
  *      against the new pure functions over every guard reason, an absent `actions`, every pair of orders, every state
  *      of the catering read and several stored lines. The three components are read as text to prove they use them
  *      (the mutants edit those copies too).
+ *   D. design A (task 40576): the VAT is broken down ONCE on the page. cateringEnding decides how the catering section
+ *      ends (nothing / one «Bevertning total» row / its own sum ex VAT + VAT + total) from whether the price summary
+ *      is drawn; over every stored set x catering state x catering list (billed, unbilled, absent actions, 0 kr, an
+ *      unknown VAT, mixed rates) the page shows at most ONE breakdown, exactly one when catering is priced or the
+ *      summary is drawn, and the old page's count wherever it was not two. uniqueKitchenContacts says the kitchen's
+ *      contact once per kitchen. application-details.tsx is read as text for the order of the price surface.
  *
  *   node tests/application-view/run_application_view.mts
  *
@@ -306,6 +312,84 @@ eq(`read: the price summary and the row are never both there or both missing, ov
 eq(`unreadable: a room and add-ons always have the row, over ${nonEmptyLists.length + 1} order lists`,
     [[], ...nonEmptyLists].filter(list => T(mixedOrders, list, 'unreadable').closing === null).length, 0);
 
+// ---- D. design A (task 40576): one VAT breakdown on the page; the kitchen's contact once per kitchen
+copy('kitchen-contacts.mts', readFileSync(join(utils, 'kitchen-contacts.ts'), 'utf8'));
+const K: any = await import(pathToFileURL(join(dir, 'kitchen-contacts.mts')).href);
+
+eq('ending: no order = nothing', [S.cateringEnding(0, 5000, false), S.cateringEnding(0, null, true)], ['none', 'none']);
+eq('ending: a catering of 0 kr = nothing, whether or not the summary is drawn', [S.cateringEnding(1, 0, true), S.cateringEnding(2, 0, false)], ['none', 'none']);
+eq('ending: the summary drawn = ONE row', [S.cateringEnding(1, 5000, true), S.cateringEnding(3, null, true)], ['total', 'total']);
+eq('ending: the summary not drawn = the catering\'s own breakdown', [S.cateringEnding(1, 5000, false), S.cateringEnding(2, null, false)], ['breakdown', 'breakdown']);
+eq('ending: an UNKNOWN catering total (null, «-») is not 0 kr', S.cateringEnding(1, null, false), 'breakdown');
+
+// catering orders WITH lines (stored ex VAT + the line's VAT %, as the API sends them)
+const pricedOrder = (actions: any, lines: Array<[string, number | null]>) => ({actions, lines: lines.map(([amount, tax_percent]) => ({amount, tax_percent}))});
+const UNBILLED = unbilled.actions;
+const BILLED = billed.actions;
+const cateringLists: Record<string, any[]> = {
+    none: [],
+    unbilled: [pricedOrder(UNBILLED, [['50.00', 25]])],
+    billed: [pricedOrder(BILLED, [['25.00', 25]])],
+    absentActions: [pricedOrder(undefined, [['25.00', 25]])],
+    emptyOrder: [pricedOrder(UNBILLED, [])],
+    zeroLine: [pricedOrder(UNBILLED, [['0.00', 25]])],
+    unknownVat: [pricedOrder(UNBILLED, [['40.00', null]])],
+    unbilledAndBilled: [pricedOrder(UNBILLED, [['50.00', 25]]), pricedOrder(BILLED, [['25.00', 25]])],
+    mixedRates: [pricedOrder(UNBILLED, [['50.00', 25], ['20.00', 0]]), pricedOrder(UNBILLED, [['10.00', 15]])],
+};
+// What the page breaks the VAT down in: the price summary (drawn by catering-overview when showsPriceSummary) and the
+// catering section's own ending. Both exist only when the catering was READ (catering-overview renders nothing while
+// its orders are pending or when they cannot be read).
+const breakdowns = (storedOrders: any[], orders: any[], state: string, ending: (n: number, ore: number | null, drawn: boolean) => string) => {
+    if (state !== 'read' || orders.length === 0) return 0;
+    const prices = P.applicationPriceSummary(storedOrders, orders);
+    const drawn = S.showsPriceSummary(orders, prices.total.inclOre);
+    return (drawn ? 1 : 0) + (ending(orders.length, prices.catering.inclOre, drawn) === 'breakdown' ? 1 : 0);
+};
+// the page before task 40576: the catering's breakdown whenever it was priced, AND the summary after it
+const oldEnding = (n: number, ore: number | null) => (n > 0 && (ore === null || ore > 0) ? 'breakdown' : 'none');
+let vatCases = 0, moreThanOne = 0, wrongCount = 0, notOldOrOne = 0, oldTwo = 0, oneSeen = 0, zeroSeen = 0;
+for (const [storedName, storedOrders] of Object.entries(storedSets)) {
+    for (const state of ['pending', 'read', 'unreadable']) {
+        for (const [listName, orders] of Object.entries(cateringLists)) {
+            vatCases++;
+            const now = breakdowns(storedOrders, orders, state, S.cateringEnding);
+            const old = breakdowns(storedOrders, orders, state, oldEnding);
+            const prices = P.applicationPriceSummary(storedOrders, orders);
+            const drawn = S.showsPriceSummary(orders, prices.total.inclOre);
+            const expected = state === 'read' && orders.length > 0 && (drawn || prices.catering.inclOre !== 0) ? 1 : 0;
+            if (now > 1) { moreThanOne++; console.log(`   two breakdowns: ${storedName} / ${state} / ${listName}`); }
+            if (now !== expected) { wrongCount++; console.log(`   ${now} breakdown(s), expected ${expected}: ${storedName} / ${state} / ${listName}`); }
+            if (now !== Math.min(old, 1)) notOldOrOne++;
+            if (old === 2) oldTwo++;
+            if (now === 1) oneSeen++; else zeroSeen++;
+        }
+    }
+}
+eq(`VAT: never two breakdowns on the page, over ${vatCases} cases (stored sets x catering states x catering lists)`, moreThanOne, 0);
+eq('VAT: exactly one when the catering was read and is priced (or the summary is drawn), none otherwise', wrongCount, 0);
+eq('VAT: the old page\'s count wherever it was not two, one where it was two', notOldOrOne, 0);
+eq('control: the old page DID show two breakdowns in some cases, and both counts occur now', [oldTwo > 0, oneSeen > 0, zeroSeen > 0], [true, true, true]);
+// the named states of the GO (40632)
+const named = (storedOrders: any[], list: string, state: string) => breakdowns(storedOrders, cateringLists[list], state, S.cateringEnding);
+eq('VAT, named: the summary drawn (84024-like) / billed F1 (83833) / query error / no catering / rental only, unbilled catering',
+    [named(servicesOnly, 'unbilled', 'read'), named(app83833, 'billed', 'read'), named(mixedOrders, 'unbilled', 'unreadable'), named(mixedOrders, 'none', 'read'), named(rentalOnly, 'unbilled', 'read')],
+    [1, 1, 0, 0, 1]);
+eq('VAT, named: where it is — the summary (no section breakdown) when drawn, the section when billed',
+    [S.cateringEnding(1, P.applicationPriceSummary(servicesOnly, cateringLists.unbilled).catering.inclOre, true), S.cateringEnding(1, P.applicationPriceSummary(app83833, cateringLists.billed).catering.inclOre, false)],
+    ['total', 'breakdown']);
+
+const contact = (info: string | null, building_email: string | null = 'kjokken@example.invalid', building_name: string | null = 'Fana kulturhus', building_phone: string | null = '55 00 00 00') =>
+    ({info, building_name, building_email, building_phone});
+eq('contacts: three servings of one kitchen = ONE contact', K.uniqueKitchenContacts([contact('<p>Ring oss</p>'), contact('<p>Ring oss</p>'), contact('<p>Ring oss</p>')]).length, 1);
+eq('contacts: the same text but another email = two kitchens', K.uniqueKitchenContacts([contact('<p>Ring oss</p>'), contact('<p>Ring oss</p>', 'annet@example.invalid')]).length, 2);
+eq('contacts: no text, another building = two', K.uniqueKitchenContacts([contact(null), contact(null, 'kjokken@example.invalid', 'Kulturhuset')]).length, 2);
+eq('contacts: another phone = two', K.uniqueKitchenContacts([contact(null), contact(null, 'kjokken@example.invalid', 'Fana kulturhus', '55 11 11 11')]).length, 2);
+eq('contacts: whitespace at the ends is the same contact', K.uniqueKitchenContacts([contact('<p>Ring oss</p>'), contact('  <p>Ring oss</p>\n')]).length, 1);
+eq('contacts: a missing contact is skipped', K.uniqueKitchenContacts([undefined, null, contact('x'), undefined]).map((c: any) => (c ? c.info : 'MISSING')), ['x']);
+eq('contacts: in the order they first appear', K.uniqueKitchenContacts([contact('b'), contact('a'), contact('b')]).map((c: any) => c.info), ['b', 'a']);
+eq('contacts: none = none', K.uniqueKitchenContacts([]), []);
+
 // the components use the shared functions and draw what they return (read as text: the mutants edit these copies)
 const componentDir = join(root, 'src/modules/bookingfrontend/client/src/components/user/application');
 const overview = readFileSync(join(componentDir, 'catering-overview.tsx'), 'utf8');
@@ -323,6 +407,22 @@ eq('price lines: the row is drawn under the label of its kind, with the services
     && priceLines.includes("closing.kind === 'combined' ? 'bookingfrontend.total_incl_vat' : 'bookingfrontend.application_registered_total'")
     && priceLines.includes('application-price-lines-${closing.kind}')
     && priceLines.includes('totalOre={showServicesTotal ? servicesOre : undefined}'), true);
+const details = readFileSync(join(componentDir, 'application-details.tsx'), 'utf8');
+eq('catering-overview: the section ends as cateringEnding says, from the summary\'s own rule',
+    overview.includes('const ending = cateringEnding(orders.length, prices.catering.inclOre, showApplicationSummary);')
+    && overview.includes("{ending === 'total' && (") && overview.includes("{ending === 'breakdown' && (")
+    && (overview.match(/summary=\{prices\.catering\}/g) ?? []).length === 1 && !overview.includes('cateringPaid'), true);
+eq('catering-overview: the kitchen\'s contact is drawn in ONE place, from uniqueKitchenContacts over the locked or closed servings',
+    overview.includes('const contacts = uniqueKitchenContacts(rows.filter(row => readOnly || servingState(row.order).locked).map(row => row.order.contact));')
+    && (overview.match(/<KitchenContact /g) ?? []).length === 1 && overview.includes('{contacts.map((contact, index) => <KitchenContact key={index} contact={contact}/>)}'), true);
+eq('catering-overview: an order without lines has no «Ordretotal»', overview.includes('{order.lines.length > 0 && (\n                                    <Paragraph data-size="sm" className={cateringStyles.orderTotal}>'), true);
+const surfaceAt = (text: string) => details.indexOf(text);
+eq('application-details: ONE price surface, in the order Romleie/Utstyr → Bevertning → the total, before «Tider og lokale»',
+    surfaceAt('<div className={`${styles.card} ${styles.priceSurface}`} data-testid="application-prices">') > 0
+    && surfaceAt('<div className={`${styles.card} ${styles.priceSurface}`} data-testid="application-prices">') < surfaceAt('<ApplicationPriceLines application={application}/>')
+    && surfaceAt('<ApplicationPriceLines application={application}/>') < surfaceAt('<CateringOverview application={application}/>')
+    && surfaceAt('<CateringOverview application={application}/>') < surfaceAt('<ApplicationPriceLinesTotal application={application}/>')
+    && surfaceAt('<ApplicationPriceLinesTotal application={application}/>') < surfaceAt('{/* Tider og lokale */}'), true);
 eq('header: «+N datoer» renders applicationWhen().moreDates, not a count of its own',
     header.includes('{when && when.moreDates > 0 &&') && header.includes('+{when.moreDates} {dateWord(when.moreDates)}') && !header.includes('dates.length - 1'), true);
 

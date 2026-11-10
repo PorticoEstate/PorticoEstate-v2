@@ -55,7 +55,7 @@ const PriceLineRow: FC<{line: IOrderLine; t: Translate}> = ({line, t}) => {
     );
 };
 
-interface PriceLinesCardProps {
+interface PriceLinesSectionProps {
     heading: string;
     /** The first column's head: «Rom» / «Tillegg». */
     itemLabel: string;
@@ -66,15 +66,13 @@ interface PriceLinesCardProps {
     totalOre: number | null | undefined;
     t: Translate;
     testId: string;
-    children?: React.ReactNode;
 }
 
-const PriceLinesCard: FC<PriceLinesCardProps> = ({heading, itemLabel, lines, totalLabel, totalOre, t, testId, children}) => (
-    <div className={styles.card} data-testid={testId}>
-        <div className={styles.cardHeader}>
-            <Heading level={2} data-size="sm">{heading}</Heading>
-        </div>
-        <Table data-size="sm" className={linesStyles.lines}>
+/** One section of the application's price surface (design A): the heading, the lines and the section's total. */
+const PriceLinesSection: FC<PriceLinesSectionProps> = ({heading, itemLabel, lines, totalLabel, totalOre, t, testId}) => (
+    <section className={styles.priceSection} data-testid={testId}>
+        <Heading level={2} data-size="sm" className={styles.sectionHeading}>{heading}</Heading>
+        <Table data-size="sm" data-color="neutral" className={linesStyles.lines}>
             <Table.Head>
                 <Table.Row>
                     <Table.HeaderCell>{itemLabel}</Table.HeaderCell>
@@ -94,13 +92,12 @@ const PriceLinesCard: FC<PriceLinesCardProps> = ({heading, itemLabel, lines, tot
                 <span data-testid={`${testId}-total`}>{formatOreOrDash(totalOre)}</span>
             </Paragraph>
         )}
-        {children}
-    </div>
+    </section>
 );
 
-/** The row that closes the price cards: the application's one total, set off by a rule. */
+/** The row that closes the price surface when the price summary does not: the application's one total, under a rule. */
 const ClosingTotalRow: FC<{label: string; ore: number | null; testId: string}> = ({label, ore, testId}) => (
-    <Paragraph data-size="sm" className={`${linesStyles.total} ${linesStyles.combined}`}>
+    <Paragraph className={linesStyles.closing}>
         <span>{label}</span>
         <span data-testid={testId}>{formatOreOrDash(ore)}</span>
     </Paragraph>
@@ -111,27 +108,11 @@ interface ApplicationPriceLinesProps {
 }
 
 /**
- * What the application costs in stored lines, in the Min side design's two cards (GH #1423): «Romleie» (the
- * resource lines) above «Utstyr og tjenester» (every other line), each line with its own VAT and each card with its
- * total incl. VAT. The split is the price summary's own (splitStoredLines).
- *
- *  - «Romleie» is left out when every rental line is known to cost nothing, as the summary leaves out a 0 kr part.
- *  - A BILLED catering order is also a stored line (the billing job turns it into a purchase order) and nothing the
- *    client holds tells it from an add-on, so the lines are listed but the «Utstyr og tjenester» total is only shown
- *    once the catering orders are known not to include a billed one, and not before they are read. When they cannot
- *    be read at all (a visitor with only the application's secret link) nothing is known about billing, and the
- *    total is shown as it always has been.
- *  - The row that closes the cards is the application's total, there when nothing else gives it (the price summary,
- *    the Romleie total or the add-ons' own total): the one the old «Pris og betaling» block ended on. With no
- *    catering it is «Total inkl. mva»; with catering whose billing cannot be ruled out, or one that could not be
- *    read, it is the REGISTERED total, every stored line added up. Which of them, and whether at all, is decided in
- *    ONE place, applicationTotals, which uses the price summary's own test: this component only draws.
- *  - The note under the lines (invoice after the event / price confirmed on approval) is kept, under the last card.
- *
- * Renders nothing when the application has no stored lines.
+ * What the price cards of an application show and total (GH #1423), read once for both components below: the stored
+ * lines split as the price summary splits them, and the totals decided by applicationTotals from what is known of
+ * the catering. The catering orders are the catering section's own query (react-query shares it).
  */
-const ApplicationPriceLines: FC<ApplicationPriceLinesProps> = ({application}) => {
-    const t = useTrans();
+const useApplicationPriceLines = (application: IApplication) => {
     const {data: serverSettings} = useServerSettings();
     const hospitalityOn = serverSettings === undefined ? undefined : !!serverSettings.booking_config?.enable_hospitality;
     const ordersQuery = useHospitalityOrders(hospitalityOn ? application.id : undefined);
@@ -139,31 +120,41 @@ const ApplicationPriceLines: FC<ApplicationPriceLinesProps> = ({application}) =>
     const {rental, services} = splitStoredLines(application.orders ?? []);
     const showRental = rental.length > 0 && !storedLinesAreFree(rental);
     const showServices = services.length > 0;
-    if (!showRental && !showServices) return null;
 
     const cateringOrders = (ordersQuery.data ?? []).filter(order => order.status !== 'cancelled');
     // What is known of the catering: off (so none was billed) or read, unreadable, or still being read.
     const catering: CateringState = hospitalityOn === false || ordersQuery.isSuccess ? 'read' : ordersQuery.isError ? 'unreadable' : 'pending';
     const {showServicesTotal, closing} = applicationTotals(application.orders ?? [], cateringOrders, catering);
+    return {rental, services, showRental, showServices, showServicesTotal, closing};
+};
+
+/**
+ * What the application costs in stored lines, as the first sections of the page's price surface (Min side design A,
+ * GH #1423): «Romleie» (the resource lines) above «Utstyr og tjenester» (every other line), each line with its own VAT
+ * and each section with its total incl. VAT. The split is the price summary's own (splitStoredLines).
+ *
+ *  - «Romleie» is left out when every rental line is known to cost nothing, as the summary leaves out a 0 kr part.
+ *  - A BILLED catering order is also a stored line (the billing job turns it into a purchase order) and nothing the
+ *    client holds tells it from an add-on, so the lines are listed but the «Utstyr og tjenester» total is only shown
+ *    once the catering orders are known not to include a billed one, and not before they are read. When they cannot
+ *    be read at all (a visitor with only the application's secret link) nothing is known about billing, and the
+ *    total is shown as it always has been.
+ *
+ * The row that closes the surface, and the note under it, are ApplicationPriceLinesTotal, drawn after the catering.
+ * Renders nothing when the application has no stored lines.
+ */
+const ApplicationPriceLines: FC<ApplicationPriceLinesProps> = ({application}) => {
+    const t = useTrans();
+    const {rental, services, showRental, showServices, showServicesTotal} = useApplicationPriceLines(application);
+    if (!showRental && !showServices) return null;
 
     const rentalOre = storedLinesInclOre(rental);
     const servicesOre = storedLinesInclOre(services);
 
-    const note = (
-        <div className={styles.infoNote}>
-            <InformationSquareIcon fontSize="0.9rem"/>
-            <span>
-                {application.status === 'ACCEPTED'
-                    ? t('bookingfrontend.invoice_after_event')
-                    : t('bookingfrontend.price_confirmed_on_approval')}
-            </span>
-        </div>
-    );
-
     return (
         <>
             {showRental && (
-                <PriceLinesCard
+                <PriceLinesSection
                     heading={t('bookingfrontend.catering_overview_total_rental')}
                     itemLabel={t('bookingfrontend.resource_title')}
                     lines={rental}
@@ -171,12 +162,10 @@ const ApplicationPriceLines: FC<ApplicationPriceLinesProps> = ({application}) =>
                     totalOre={rentalOre}
                     t={t}
                     testId="application-rental"
-                >
-                    {!showServices && note}
-                </PriceLinesCard>
+                />
             )}
             {showServices && (
-                <PriceLinesCard
+                <PriceLinesSection
                     heading={t('bookingfrontend.catering_overview_total_services')}
                     itemLabel={t('bookingfrontend.application_col_addon')}
                     lines={services}
@@ -184,17 +173,46 @@ const ApplicationPriceLines: FC<ApplicationPriceLinesProps> = ({application}) =>
                     totalOre={showServicesTotal ? servicesOre : undefined}
                     t={t}
                     testId="application-services"
-                >
-                    {closing && (
-                        <ClosingTotalRow
-                            label={t(closing.kind === 'combined' ? 'bookingfrontend.total_incl_vat' : 'bookingfrontend.application_registered_total')}
-                            ore={closing.ore}
-                            testId={`application-price-lines-${closing.kind}`}
-                        />
-                    )}
-                    {note}
-                </PriceLinesCard>
+                />
             )}
+        </>
+    );
+};
+
+/**
+ * The end of the application's price surface, after the catering section and its price summary (design A puts the
+ * application's total last):
+ *  - the row that closes the prices is the application's total, there when nothing else gives it (the price summary,
+ *    the Romleie total or the add-ons' own total). With no catering it is «Total inkl. mva»; with catering whose
+ *    billing cannot be ruled out, or one that could not be read, it is the REGISTERED total, every stored line added
+ *    up. Which of them, and whether at all, is decided in ONE place, applicationTotals, which uses the price summary's
+ *    own test: this component only draws;
+ *  - the note (invoice after the event / price confirmed on approval) is kept, last.
+ *
+ * Renders nothing when the application has no stored lines, as ApplicationPriceLines.
+ */
+export const ApplicationPriceLinesTotal: FC<ApplicationPriceLinesProps> = ({application}) => {
+    const t = useTrans();
+    const {showRental, showServices, closing} = useApplicationPriceLines(application);
+    if (!showRental && !showServices) return null;
+
+    return (
+        <>
+            {closing && (
+                <ClosingTotalRow
+                    label={t(closing.kind === 'combined' ? 'bookingfrontend.total_incl_vat' : 'bookingfrontend.application_registered_total')}
+                    ore={closing.ore}
+                    testId={`application-price-lines-${closing.kind}`}
+                />
+            )}
+            <div className={styles.infoNote}>
+                <InformationSquareIcon fontSize="0.9rem"/>
+                <span>
+                    {application.status === 'ACCEPTED'
+                        ? t('bookingfrontend.invoice_after_event')
+                        : t('bookingfrontend.price_confirmed_on_approval')}
+                </span>
+            </div>
         </>
     );
 };

@@ -18,15 +18,18 @@
     color: var(--ds-color-neutral-text-subtle);
 }
 
-// Two-column grid
+// Two-column grid: the main column and the sidebar in the proportions of the Min side design A (820 | 32 | 380, GH
+// #1423). Below 960 px one column, the main content first and the sidebar after it (design B: the prices come right
+// under the header).
 .detailGrid {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 340px;
-    gap: 24px;
+    grid-template-columns: minmax(0, 1fr) 380px;
+    gap: var(--ds-size-8);
     align-items: start;
 
     @media (max-width: 959px) {
         grid-template-columns: 1fr;
+        gap: var(--ds-size-6);
     }
 }
 
@@ -37,17 +40,11 @@
     min-width: 0;
 }
 
+// The sidebar stays where it is: it is taller than a laptop window, so sticking it to the top hid its end.
 .detailSide {
     display: flex;
     flex-direction: column;
     gap: 16px;
-    position: sticky;
-    top: 84px;
-
-    @media (max-width: 959px) {
-        position: static;
-        order: -1;
-    }
 }
 
 // Card styling
@@ -56,6 +53,41 @@
     border-radius: 12px;
     padding: 24px;
     background: var(--ds-color-neutral-surface-default);
+}
+
+// The application's prices on ONE surface (design A, GH #1423): «Romleie», «Utstyr og tjenester», «Bevertning» and
+// the total, 32 px apart, with no card or border of their own. Each part renders nothing when it has nothing to show,
+// so a surface with no part at all is empty and not drawn.
+.priceSurface {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ds-size-8);
+
+    &:empty {
+        display: none;
+    }
+
+    @media (max-width: 640px) {
+        padding: var(--ds-size-4);
+        gap: var(--ds-size-7);
+    }
+}
+
+// One part of the price surface: its heading, its content and its own total, 16 px apart.
+.priceSection {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ds-size-4);
+    min-width: 0;
+}
+
+// The headings of the price surface are semibold, as in the design (the design system's own heading weight is medium).
+.sectionHeading {
+    font-weight: var(--ds-font-weight-semibold);
+
+    @media (max-width: 640px) {
+        font-size: var(--ds-font-size-5);
+    }
 }
 
 .cardHeader {
@@ -567,13 +599,15 @@
     margin: 8px 0;
 }
 
+// The note at the end of the price surface (invoice after the event / price confirmed on approval): 16 px under the
+// total before it, not the surface's 32.
 .infoNote {
     display: flex;
     align-items: flex-start;
     gap: 10px;
     font-size: 13px;
     color: var(--ds-color-neutral-text-subtle);
-    margin-top: 16px;
+    margin-top: calc(var(--ds-size-4) - var(--ds-size-8));
 }
 
 .accentLink {

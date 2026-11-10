@@ -269,8 +269,11 @@ check('the groups are built from the non-cancelled orders, in the UI language, a
 check('the orders are rendered from the groups, not from the API order', /rows\.map\(\(\{order, time, group\}\)/.test(overview) && !/\borders\.map\(/.test(overview));
 check('control: the API order would be recognised', /\borders\.map\(/.test('orders.map(order => x)'));
 check('each serving carries its day for the tests that read it (data-day)', /data-day=\{group\.dayKey \?\? 'none'\}/.test(overview));
-check('outline: h2 for the catering card, h2 for the price summary card, one h3 per serving, no day heading (h3 in the group) and no h4',
-    count(/<Heading level=\{2\}/g, overview) === 2 && count(/<Heading level=\{3\}/g, overview) === 1 && count(/<Heading level=\{4\}/g, overview) === 0 && !/catering-day-heading/.test(overview),
+// Task 40576 (design A): the price summary closes the price surface without a heading of its own; it is a section named by
+// aria-label «Prissammendrag».
+check('outline: h2 for the catering section, the price summary a labelled section, one h3 per serving, no day heading (h3 in the group) and no h4',
+    count(/<Heading level=\{2\}/g, overview) === 1 && /aria-label=\{t\('bookingfrontend\.catering_overview_summary_heading'\)\}/.test(overview)
+    && count(/<Heading level=\{3\}/g, overview) === 1 && count(/<Heading level=\{4\}/g, overview) === 0 && !/catering-day-heading/.test(overview),
     `${count(/<Heading level=\{2\}/g, overview)}/${count(/<Heading level=\{3\}/g, overview)}/${count(/<Heading level=\{4\}/g, overview)}`);
 check('a serving without a time is headed by the lang key, then its place', /dayHeading === null \|\| time === null\s*\? t\('bookingfrontend\.catering_no_serving_time'\)/.test(overview)
     && /\[when, order\.location_name\]\.filter\(Boolean\)\.join\(' · '\)/.test(overview));

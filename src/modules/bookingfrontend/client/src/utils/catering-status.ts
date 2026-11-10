@@ -77,3 +77,19 @@ export const showsPriceSummary = (
     cateringOrders.length > 0
     && !cateringBillingNotRuledOut(cateringOrders)
     && (totalInclOre === null || totalInclOre > 0);
+
+/**
+ * How the catering section ends (GH #1423, the Min side design A): the VAT breakdown is shown ONCE on the page.
+ *   - `none`: no order, or the catering costs nothing (a 0 kr catering has nothing to sum; an unknown total, null, is
+ *     not 0 and is shown);
+ *   - `total`: the price summary is drawn after the section (`summaryDrawn` = showsPriceSummary), and it carries the sum
+ *     ex VAT and the VAT, so the section ends with the one row «Bevertning total inkl. mva.»;
+ *   - `breakdown`: the summary is not drawn (billing cannot be ruled out, or the application's total is 0 kr), so the
+ *     section keeps its own sum ex VAT, VAT and total, the only place on the page that shows the catering's VAT.
+ */
+export type CateringEnding = 'none' | 'total' | 'breakdown';
+
+export const cateringEnding = (orderCount: number, cateringInclOre: number | null, summaryDrawn: boolean): CateringEnding =>
+    orderCount === 0 || (cateringInclOre !== null && cateringInclOre <= 0)
+        ? 'none'
+        : summaryDrawn ? 'total' : 'breakdown';

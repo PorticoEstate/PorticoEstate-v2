@@ -62,7 +62,7 @@ MUTANTS = [
      "const locale = localeFor(lang);", "const locale = lang === 'en' ? 'en-GB' : lang === 'nn' ? 'nn' : 'nb-NO';"),
     ("C1", OVERVIEW, "cancelled orders are grouped too", "groupByServingDay(orders, i18n.language, now)", "groupByServingDay(ordersQuery.data ?? [], i18n.language, now)"),
     ("C2", OVERVIEW, "the serving heading drops to h4 (the outline loses its h3)",
-     "<Heading level={3} data-size=\"xs\" data-testid=\"catering-order-heading\">", "<Heading level={4} data-size=\"xs\" data-testid=\"catering-order-heading\">"),
+     "<Heading level={3} data-size=\"xs\" className={cateringStyles.orderHeading} data-testid=\"catering-order-heading\">", "<Heading level={4} data-size=\"xs\" className={cateringStyles.orderHeading} data-testid=\"catering-order-heading\">"),
     ("C3", OVERVIEW, "the heading formats the time itself",
      ".replace('%2', () => time);", ".replace('%2', () => new Date().toLocaleTimeString());"),
     ("C4", OVERVIEW, "the order without a time has no heading",

@@ -6,24 +6,46 @@
 
 $stack-breakpoint: price.$stack-breakpoint;
 
-.rule {
-    margin-bottom: var(--ds-size-4);
+// «Bevertning» and «Legg til bevertning» on one row (stacked at 375 px, below).
+.sectionHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--ds-size-4);
+}
+
+// The kitchen's contact, once per kitchen, under the rule.
+.contacts {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ds-size-3);
 }
 
 .orders {
     display: flex;
     flex-direction: column;
-    gap: var(--ds-size-3);
+    gap: var(--ds-size-6);
 }
 
-// One serving. Space between the servings, never a divider line.
+// One serving: on grey, 8 px corners, space between the servings and never a divider line (design A).
 .order {
     display: flex;
     flex-direction: column;
     gap: var(--ds-size-3);
-    padding: var(--ds-size-5);
+    padding: var(--ds-size-5) var(--ds-size-5) var(--ds-size-4);
     background: var(--ds-color-neutral-background-tinted);
-    border-radius: var(--ds-border-radius-md);
+    border-radius: var(--ds-border-radius-lg);
+}
+
+// «Onsdag 23. desember kl. 10:00 · Konferanserom 225»: 18 px semibold, as in the design.
+.orderHeading {
+    font-size: var(--ds-font-size-4);
+    font-weight: var(--ds-font-weight-semibold);
+}
+
+// «Ingen artikler i denne bestillingen.»
+.noLines {
+    color: var(--ds-color-neutral-text-subtle);
 }
 
 .orderHeader {
@@ -45,24 +67,40 @@ $stack-breakpoint: price.$stack-breakpoint;
     align-items: center;
     flex-wrap: wrap;
     gap: var(--ds-size-2);
+
+    // A locked serving has nothing here: no empty row under its heading at 375 px.
+    &:empty {
+        display: none;
+    }
 }
 
 .note {
     white-space: pre-line;
 }
 
-// «Vare | Antall (N × pris) | Beløp» (price-lines.scss): the table's own head kept transparent on the grey.
+// «Vare | Antall (N × pris) | Beløp» (price-lines.scss): the head left clear on the grey of the serving.
 .lines {
     @include price.lines;
-
-    th {
-        background: transparent;
-    }
+    --dsc-table-header-background: transparent;
 }
 
 // «Ordretotal inkl. mva» under the lines.
 .orderTotal {
     @include price.total;
+}
+
+// «Bevertning total inkl. mva.» after the servings: one row under a rule (design A).
+.sectionTotal {
+    @include price.total;
+    padding-top: var(--ds-size-4);
+    border-top: 1px solid var(--ds-color-neutral-border-subtle);
+    font-size: var(--ds-font-size-3);
+}
+
+// The block that closes the price surface (design A): a strong rule, the parts, then the total.
+.totals {
+    padding-top: var(--ds-size-4);
+    border-top: 2px solid var(--ds-color-neutral-text-default);
 }
 
 // The price summary: label left, amount right. A row that starts a new part has a rule above it.
@@ -98,13 +136,38 @@ $stack-breakpoint: price.$stack-breakpoint;
     font-size: var(--ds-font-size-lg);
 }
 
-.summaryCaption {
-    margin-bottom: var(--ds-size-3);
+// The application's total (design A): the sum ex VAT and the VAT quieter than the parts, «Totalt» in large type with
+// «Beløp inkl. mva.» under it.
+.summaryGrand .summaryRow:not(.grandTotal) {
+    font-size: var(--ds-font-size-3);
+}
+
+.summaryGrand .summaryDetail {
     color: var(--ds-color-neutral-text-subtle);
 }
 
+.grandTotal {
+    align-items: baseline;
+    margin-top: var(--ds-size-1);
+    font-size: var(--ds-font-size-6);
+    font-weight: var(--ds-font-weight-semibold);
+
+    @media (max-width: $stack-breakpoint) {
+        font-size: var(--ds-font-size-5);
+    }
+}
+
+.grandCaption {
+    display: block;
+    font-size: var(--ds-font-size-2);
+    font-weight: var(--ds-font-weight-regular);
+    color: var(--ds-color-neutral-text-subtle);
+}
+
+// The catering's own sum ex VAT, VAT and total, when the application's total is not drawn after it.
 .cateringSummary {
-    margin-top: var(--ds-size-5);
+    padding-top: var(--ds-size-4);
+    border-top: 1px solid var(--ds-color-neutral-border-subtle);
 }
 
 // The confirm dialog for a cancellation.
@@ -140,9 +203,8 @@ $stack-breakpoint: price.$stack-breakpoint;
         padding: var(--ds-size-4);
     }
 
-    // «Legg til bevertning» under the heading, full width, as in the design. The card's shared header class
-    // centres its items, so every child stretches itself instead of relying on `align-items` winning.
-    .cardHeader {
+    // «Legg til bevertning» under the heading, full width, as in the design. Every child stretches itself.
+    .sectionHeader {
         flex-direction: column;
         align-items: stretch;
 

@@ -38,7 +38,7 @@ import {getDocumentLink} from "@/service/api/building";
 import ApplicationCrud from "@/components/building-calendar/modules/event/edit/application-crud";
 import {FCallTempEvent, HighlightEntity} from "@/components/building-calendar/building-calendar.types";
 import ApplicationHeader from "./application-header";
-import ApplicationPriceLines from "./application-price-lines";
+import ApplicationPriceLines, {ApplicationPriceLinesTotal} from "./application-price-lines";
 import CateringOverview from "./catering-overview";
 import {ENABLE_COMBINED_APPLICATIONS} from '@/service/feature-flags';
 import {getStatusColor, StatusColor} from './status-utils';
@@ -1135,53 +1135,48 @@ const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
                 onCopy={isAccepted || isRejected || isCancelled ? () => setShowCopyDialog(true) : undefined}
             />
 
-            {/* Status banner */}
-            {isPending && (
-                <Alert data-color="warning" style={{marginBottom: 20}}>
-                    <Heading level={3} data-size="xs">
-                        {t('bookingfrontend.application_pending_title')}
-                    </Heading>
-                    <Paragraph>
-                        {t('bookingfrontend.application_pending_description')}
-                    </Paragraph>
-                </Alert>
-            )}
-            {isAccepted && (
-                <Alert data-color="success" style={{marginBottom: 20}}>
-                    <Heading level={3} data-size="xs">
-                        {t('bookingfrontend.application_accepted_title')}
-                    </Heading>
-                    <Paragraph>
-                        {t('bookingfrontend.application_accepted_description')}
-                    </Paragraph>
-                </Alert>
-            )}
-            {isRejected && (
-                <Alert data-color="info" style={{marginBottom: 20}}>
-                    <Heading level={3} data-size="xs">
-                        {t('bookingfrontend.application_rejected_title')}
-                    </Heading>
-                    <Paragraph>
-                        {t('bookingfrontend.application_rejected_description')}
-                    </Paragraph>
-                </Alert>
-            )}
-
             {/* Main grid */}
             <div className={styles.detailGrid}>
                 <div className={styles.detailMain}>
-
-                    {/* Saksgang (status timeline) */}
-                    <div className={styles.card}>
-                        <div className={styles.cardHeader}>
-                            <Heading level={2} data-size="sm">
-                                {t('bookingfrontend.case_history')}
+                    {/* Status banner, at the top of the main column so that the sidebar starts beside it */}
+                    {isPending && (
+                        <Alert data-color="warning">
+                            <Heading level={3} data-size="xs">
+                                {t('bookingfrontend.application_pending_title')}
                             </Heading>
-                            <span style={{fontSize: 13, color: 'var(--ds-color-neutral-text-subtle)'}}>
-                                {t('bookingfrontend.updated')} {fmtSqlDateTime(application.modified)}
-                            </span>
-                        </div>
-                        <StatusTimeline application={application} t={t}/>
+                            <Paragraph>
+                                {t('bookingfrontend.application_pending_description')}
+                            </Paragraph>
+                        </Alert>
+                    )}
+                    {isAccepted && (
+                        <Alert data-color="success">
+                            <Heading level={3} data-size="xs">
+                                {t('bookingfrontend.application_accepted_title')}
+                            </Heading>
+                            <Paragraph>
+                                {t('bookingfrontend.application_accepted_description')}
+                            </Paragraph>
+                        </Alert>
+                    )}
+                    {isRejected && (
+                        <Alert data-color="info">
+                            <Heading level={3} data-size="xs">
+                                {t('bookingfrontend.application_rejected_title')}
+                            </Heading>
+                            <Paragraph>
+                                {t('bookingfrontend.application_rejected_description')}
+                            </Paragraph>
+                        </Alert>
+                    )}
+
+                    {/* The application's prices on ONE surface, first under the header (Min side design A, GH #1423):
+                        Romleie / Utstyr og tjenester (the stored order lines, each with its own VAT), Bevertning (what was
+                        ordered, change / cancel while the deadlines allow it) and the application's total last. */}
+                    <div className={`${styles.card} ${styles.priceSurface}`} data-testid="application-prices">
+                        <ApplicationPriceLines application={application}/>
+                        <CateringOverview application={application}/>
+                        <ApplicationPriceLinesTotal application={application}/>
                     </div>
 
                     {/* Tider og lokale */}
@@ -1230,6 +1225,19 @@ const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
                         ) : (
                             <DatesList dates={application.dates}/>
                         )}
+                    </div>
+
+                    {/* Saksgang (status timeline) */}
+                    <div className={styles.card}>
+                        <div className={styles.cardHeader}>
+                            <Heading level={2} data-size="sm">
+                                {t('bookingfrontend.case_history')}
+                            </Heading>
+                            <span style={{fontSize: 13, color: 'var(--ds-color-neutral-text-subtle)'}}>
+                                {t('bookingfrontend.updated')} {fmtSqlDateTime(application.modified)}
+                            </span>
+                        </div>
+                        <StatusTimeline application={application} t={t}/>
                     </div>
 
                     {/* Om arrangementet */}
@@ -1289,12 +1297,6 @@ const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
                             t={t}
                         />
                     </div>
-
-                    {/* Romleie, utstyr og tjenester: the stored order lines, each with its own VAT */}
-                    <ApplicationPriceLines application={application}/>
-
-                    {/* Bevertning: what was ordered, change / cancel while the deadlines allow it */}
-                    <CateringOverview application={application}/>
 
                     {/* Dokumenter */}
                     <Details>

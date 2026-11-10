@@ -17,6 +17,10 @@ interface CateringPriceSummaryProps {
     totalLabel: string;
     /** Rows above the ex-VAT part, each already incl. VAT (the room rental, the equipment, the catering); a 0 kr row is left out. */
     parts?: PriceSummaryPart[];
+    /** The application's total that closes the page's prices (design A): the total row in large type, the sum ex VAT and VAT quieter. */
+    grand?: boolean;
+    /** A line under the total's label, «Beløp inkl. mva.». */
+    caption?: string;
     'data-testid'?: string;
 }
 
@@ -25,7 +29,7 @@ interface CateringPriceSummaryProps {
  * rate) and the total incl. VAT. ex + VAT = incl to the øre, because all three come from the same whole-øre
  * lines (summarisePricedLines). An unknown VAT is «-»: never 0.
  */
-const CateringPriceSummary: FC<CateringPriceSummaryProps> = ({summary, totalLabel, parts, 'data-testid': testId}) => {
+const CateringPriceSummary: FC<CateringPriceSummaryProps> = ({summary, totalLabel, parts, grand, caption, 'data-testid': testId}) => {
     const {t} = useClientTranslation();
     const shownParts = withoutZeroParts(parts ?? []);
 
@@ -43,25 +47,28 @@ const CateringPriceSummary: FC<CateringPriceSummaryProps> = ({summary, totalLabe
                 }));
 
     return (
-        <dl className={styles.summary} data-testid={testId}>
+        <dl className={`${styles.summary} ${grand ? styles.summaryGrand : ''}`} data-testid={testId}>
             {shownParts.map(part => (
                 <div key={part.key} className={styles.summaryRow} data-testid={`${testId}-${part.key}`}>
                     <dt>{part.label}</dt>
                     <dd>{formatOreOrDash(part.ore)}</dd>
                 </div>
             ))}
-            <div className={`${styles.summaryRow} ${shownParts.length ? styles.summaryPart : ''}`} data-testid={`${testId}-ex`}>
+            <div className={`${styles.summaryRow} ${styles.summaryDetail} ${shownParts.length ? styles.summaryPart : ''}`} data-testid={`${testId}-ex`}>
                 <dt>{t('bookingfrontend.catering_overview_sum_ex_vat')}</dt>
                 <dd>{formatOreOrDash(summary.exOre)}</dd>
             </div>
             {vatRows.map(row => (
-                <div key={row.key} className={styles.summaryRow} data-testid={`${testId}-vat`}>
+                <div key={row.key} className={`${styles.summaryRow} ${styles.summaryDetail}`} data-testid={`${testId}-vat`}>
                     <dt>{row.label}</dt>
                     <dd>{formatOreOrDash(row.ore)}</dd>
                 </div>
             ))}
-            <div className={`${styles.summaryRow} ${styles.summaryPart} ${styles.summaryTotal}`} data-testid={`${testId}-incl`}>
-                <dt>{totalLabel}</dt>
+            <div className={`${styles.summaryRow} ${styles.summaryPart} ${grand ? styles.grandTotal : styles.summaryTotal}`} data-testid={`${testId}-incl`}>
+                <dt>
+                    {totalLabel}
+                    {caption && <small className={styles.grandCaption}>{caption}</small>}
+                </dt>
                 <dd>{formatOreOrDash(summary.inclOre)}</dd>
             </div>
         </dl>

@@ -185,7 +185,7 @@ check('control: the rule pattern does NOT match a rule that is built for a read-
 check('the change / cancel rule is derived only for a `handleable` application (a closed one gets no rule)',
     /const rules = handleable \? ruleGroups\(orders, hospitalities\) : \[\];/.test(source));
 check('the Alert is mounted from those rule groups, and only when there is one',
-    /\{rules\.length > 0 && \(\s*<div[^>]*>\s*<CateringDeadlineAlert groups=\{rules\}\/>/.test(source) && count(/<CateringDeadlineAlert/g) === 1);
+    /\{rules\.length > 0 && \(?\s*(<div[^>]*>\s*)?<CateringDeadlineAlert groups=\{rules\}\/>/.test(source) && count(/<CateringDeadlineAlert/g) === 1);
 check('the buttons still follow the server: `changeOpen` / `cancelOpen` read `actions`, never the rule',
     /const changeOpen = handleable && !!actions\?\.change\.allowed && !!hospitality;/.test(source)
     && /const cancelOpen = handleable && !!actions\?\.cancel\.allowed;/.test(source) && !/rules\b[^;]*(changeOpen|cancelOpen)|(changeOpen|cancelOpen)[^;]*\brules\b/.test(source));
@@ -201,8 +201,11 @@ check('control: the note pattern does NOT match a note shown on an open applicat
     !/\{readOnly && \(\s*<Paragraph[^>]*data-testid="catering-read-only"/.test('{!readOnly && (<Paragraph data-testid="catering-read-only">'));
 check('the read-only note is shown for a read-only application, with the existing lang key',
     /\{readOnly && \(\s*<Paragraph[^>]*data-testid="catering-read-only"[^>]*>\s*\{t\('bookingfrontend\.catering_application_closed'\)\}\s*<\/Paragraph>\s*\)\}/.test(source));
-check('the kitchen contact stays visible on a read-only order (information, not an action)',
-    /\{readOnly && order\.contact && \(\s*<div[^>]*>\s*<KitchenContact contact=\{order\.contact\}\/>\s*<\/div>\s*\)\}/.test(source));
+// Task 40576 (design A): the contact is said once per kitchen at the top of the section, from every serving of a read-only
+// application (and every locked one), instead of under each card.
+check('the kitchen contact stays visible on a read-only application (information, not an action), once per kitchen',
+    /const contacts = uniqueKitchenContacts\(rows\.filter\(row => readOnly \|\| servingState\(row\.order\)\.locked\)\.map\(row => row\.order\.contact\)\);/.test(source)
+    && /\{contacts\.map\(\(contact, index\) => <KitchenContact key=\{index\} contact=\{contact\}\/>\)\}/.test(source));
 check('the order dialog is not mounted for a read-only application',
     /\{!readOnly && \(\s*<HospitalityOrderModal/.test(source) && count(/<HospitalityOrderModal/g) === 1,
     `${count(/<HospitalityOrderModal/g)} mount(s)`);
@@ -234,8 +237,12 @@ for (const [name, actions, want] of provenTable) {
     const got = mod.isProvablyNotBilled?.(actions);
     check(`isProvablyNotBilled: ${name} → ${want}`, got === want, `got ${got}`);
 }
-check('the application price summary needs EVERY shown order proven not billed',
-    /orders\.length > 0\s*&& orders\.every\(order => isProvablyNotBilled\(order\.actions\)\)/.test(source) && count(/\{showApplicationSummary && \(/g) === 1);
+// Since 326199b38 (task 40439, F1) the rule lives in ONE place, showsPriceSummary (utils/catering-status.ts), whose
+// `every` / `some` shape is checked by tests/application-view/run_application_view.mts (F1a and its mutants); the old
+// inline expression this row looked for is gone, so the row was red from 326199b38 on (found by task 40576).
+check('the application price summary needs EVERY shown order proven not billed (through showsPriceSummary)',
+    /const showApplicationSummary = showsPriceSummary\(orders, prices\.total\.inclOre\);/.test(source) && count(/\{showApplicationSummary && \(/g) === 1
+    && !/isProvablyNotBilled|cateringBillingNotRuledOut/.test(source));
 check('control: `some` instead of `every` is not the recognised shape', !/orders\.every\(order => isProvablyNotBilled/.test('orders.some(order => isProvablyNotBilled(order.actions))'));
 
 // 4. The note's lang key exists where the client reads it from.

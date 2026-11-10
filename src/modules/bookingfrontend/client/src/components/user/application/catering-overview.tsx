@@ -25,8 +25,9 @@ import {
 } from '@/utils/article-pricing';
 import {formatCurrency} from '@/utils/cost-utils';
 import {ruleGroups} from '@/utils/catering-deadline-rule';
-import {isCateringClosed, showsCateringSection, showsPriceSummary} from '@/utils/catering-status';
+import {cateringEnding, isCateringClosed, showsCateringSection, showsPriceSummary} from '@/utils/catering-status';
 import {groupByServingDay} from '@/utils/catering-venue-time';
+import {uniqueKitchenContacts} from '@/utils/kitchen-contacts';
 import CateringCancelDialog from './catering-cancel-dialog';
 import CateringDeadlineAlert from './catering-deadline-alert';
 import KitchenContact from './kitchen-contact';
@@ -67,15 +68,16 @@ interface CateringOverviewProps {
 
 /**
  * What was ordered in the way of catering for this application, with change / cancel while the
- * deadlines allow it (GH #1423), laid out after the Min side design: each serving on a grey surface under a
- * «<day> kl. <time> · <place>» heading with the offer's name below, the lines as «N × price», the change /
- * cancel rule stated ONCE in an Alert at the top, and the price summary (ex VAT, VAT, incl. VAT).
+ * deadlines allow it (GH #1423), laid out after the Min side design A: a section of the application's price
+ * surface, each serving on a grey surface under a «<day> kl. <time> · <place>» heading with the offer's name
+ * below, the lines as «N × price», the change / cancel rule stated ONCE in an Alert at the top, the kitchen's
+ * contact ONCE per kitchen under it, and the section's own total at the end (cateringEnding).
  *
  * The server decides what is allowed (`order.actions`, computed by HospitalityOrderGuard) and
  * enforces it again on every write; this component only offers what the server says is open. The Alert
  * explains the rule from the offers' configuration; it never decides a button. A closed action is gone, and a
- * lock that is not about a deadline (billed, paid, ...) still says so and who to contact. It reuses the cart's
- * order dialog for adding and changing.
+ * lock that is not about a deadline (billed, paid, ...) still says so; who to contact is the kitchen's contact
+ * at the top of the section. It reuses the cart's order dialog for adding and changing.
  *
  * On a rejected or cancelled application (`readOnly`) the orders already placed stay on view, with
  * a note and the kitchen's contact, but nothing is offered: no add, change or cancel, no deadline
@@ -86,8 +88,10 @@ interface CateringOverviewProps {
  * the orders cannot be read (a visitor who holds only the application's secret link is not let into
  * the catering endpoints).
  *
- * The whole application's price summary (room rental, equipment and services, catering) is a second card
- * after this one, and only where the stored order lines are known not to hold a billed catering order too.
+ * The whole application's price summary (room rental, equipment and services, catering, then the sum ex VAT, the
+ * VAT and the total) is the block that closes the price surface after this section, and only where the stored
+ * order lines are known not to hold a billed catering order too. It is the one place the VAT is broken down; where
+ * it is not drawn, this section keeps the catering's own breakdown.
  */
 const CateringOverview: FC<CateringOverviewProps> = ({application}) => {
     const {t, i18n} = useClientTranslation();
@@ -138,8 +142,8 @@ const CateringOverview: FC<CateringOverviewProps> = ({application}) => {
     // are ex VAT, so each line is worked out to the øre as billed and the totals are sums of those (see
     // applicationPriceSummary), never the order's ex-VAT total_amount.
     const prices = applicationPriceSummary(application.orders ?? [], orders);
-    const cateringPaid = prices.catering.inclOre === null || prices.catering.inclOre > 0;
     const showApplicationSummary = showsPriceSummary(orders, prices.total.inclOre);
+    const ending = cateringEnding(orders.length, prices.catering.inclOre, showApplicationSummary);
 
     // The change / cancel rule of the offers these orders are on, derived from the same fields the guard reads.
     // Nothing derivable (an offer that has been switched off sends no configuration) = no Alert, never a guess.
@@ -150,6 +154,29 @@ const CateringOverview: FC<CateringOverviewProps> = ({application}) => {
     const rows = groupByServingDay(orders, i18n.language, now).flatMap(group =>
         group.items.map(({order, time}) => ({order, time, group}))
     );
+
+    // What may be done with a serving here, and whether it is locked (an action the server closed).
+    const servingState = (order: IHospitalityOrder) => {
+        const hospitality = hospitalities.find(h => h.id === order.hospitality_id);
+        const actions = order.actions;
+        // The dialog needs the (active) hospitality it belongs to; an order on a hospitality
+        // that has since been switched off can be cancelled but not edited here.
+        const changeOpen = handleable && !!actions?.change.allowed && !!hospitality;
+        const cancelOpen = handleable && !!actions?.cancel.allowed;
+
+        const lockedReasons: Array<HospitalityActionReason | null> = [];
+        if (handleable && actions) {
+            if (!changeOpen) lockedReasons.push(actions.change.allowed ? null : actions.change.reason);
+            if (!cancelOpen) lockedReasons.push(actions.cancel.reason);
+        }
+        const locked = lockedReasons.length > 0;
+        const lockedByDeadlineOnly = lockedReasons.every(r => r !== null && DEADLINE_REASONS.has(r));
+        return {hospitality, changeOpen, cancelOpen, locked, lockedByDeadlineOnly};
+    };
+
+    // Who to ask about a serving that can no longer be changed here (a locked one, or any on a closed application)
+    // is the kitchen's contact: said once per kitchen at the top of the section, not on every card.
+    const contacts = uniqueKitchenContacts(rows.filter(row => readOnly || servingState(row.order).locked).map(row => row.order.contact));
 
     // «Torsdag 12. november kl. 11:00 · Kjøkkenet»; an order without a serving time says so instead.
     const servingHeading = (order: IHospitalityOrder, dayHeading: string | null, time: string | null): string => {
@@ -205,9 +232,9 @@ const CateringOverview: FC<CateringOverviewProps> = ({application}) => {
 
     return (
         <>
-            <div className={styles.card} data-testid="catering-overview">
-                <div className={`${styles.cardHeader} ${cateringStyles.cardHeader}`}>
-                    <Heading level={2} data-size="sm">{t('bookingfrontend.hospitality')}</Heading>
+            <section className={styles.priceSection} data-testid="catering-overview">
+                <div className={cateringStyles.sectionHeader}>
+                    <Heading level={2} data-size="sm" className={styles.sectionHeading}>{t('bookingfrontend.hospitality')}</Heading>
                     {canAdd && (
                         <Button variant="secondary" data-size="sm" onClick={openAdd}>
                             <PlusIcon aria-hidden="true"/>
@@ -226,29 +253,18 @@ const CateringOverview: FC<CateringOverviewProps> = ({application}) => {
                     <Paragraph>{t('bookingfrontend.catering_overview_empty')}</Paragraph>
                 )}
 
-                {rules.length > 0 && (
-                    <div className={cateringStyles.rule}>
-                        <CateringDeadlineAlert groups={rules}/>
+                {rules.length > 0 && <CateringDeadlineAlert groups={rules}/>}
+
+                {contacts.length > 0 && (
+                    <div className={cateringStyles.contacts} data-testid="catering-contacts">
+                        {contacts.map((contact, index) => <KitchenContact key={index} contact={contact}/>)}
                     </div>
                 )}
 
                 <div className={cateringStyles.orders}>
                     {rows.map(({order, time, group}) => {
-                        const hospitality = hospitalities.find(h => h.id === order.hospitality_id);
-                        const actions = order.actions;
-                        // The dialog needs the (active) hospitality it belongs to; an order on a hospitality
-                        // that has since been switched off can be cancelled but not edited here.
-                        const changeOpen = handleable && !!actions?.change.allowed && !!hospitality;
-                        const cancelOpen = handleable && !!actions?.cancel.allowed;
-
-                        const lockedReasons: Array<HospitalityActionReason | null> = [];
-                        if (handleable && actions) {
-                            if (!changeOpen) lockedReasons.push(actions.change.allowed ? null : actions.change.reason);
-                            if (!cancelOpen) lockedReasons.push(actions.cancel.reason);
-                        }
-                        const locked = lockedReasons.length > 0;
-                        const lockedByDeadlineOnly = lockedReasons.every(r => r !== null && DEADLINE_REASONS.has(r));
                         const heading = servingHeading(order, group.heading, time);
+                        const {hospitality, changeOpen, cancelOpen, locked, lockedByDeadlineOnly} = servingState(order);
 
                         return (
                             <section
@@ -260,7 +276,7 @@ const CateringOverview: FC<CateringOverviewProps> = ({application}) => {
                             >
                                 <div className={cateringStyles.orderHeader}>
                                     <div>
-                                        <Heading level={3} data-size="xs" data-testid="catering-order-heading">{heading}</Heading>
+                                        <Heading level={3} data-size="xs" className={cateringStyles.orderHeading} data-testid="catering-order-heading">{heading}</Heading>
                                         <Paragraph data-size="sm" className={cateringStyles.offerName}>{order.hospitality_name}</Paragraph>
                                     </div>
                                     <div className={cateringStyles.orderActions}>
@@ -302,10 +318,13 @@ const CateringOverview: FC<CateringOverviewProps> = ({application}) => {
                                     </Paragraph>
                                 )}
 
+                                {/* An order without lines says so, and nothing more: no «Ordretotal 0 kr» under it. */}
                                 {order.lines.length === 0 ? (
-                                    <Paragraph data-size="sm">{t('bookingfrontend.catering_order_no_lines')}</Paragraph>
+                                    <Paragraph data-size="sm" className={cateringStyles.noLines} data-testid="catering-order-no-lines">
+                                        {t('bookingfrontend.catering_order_no_lines')}
+                                    </Paragraph>
                                 ) : (
-                                    <Table data-size="sm" className={cateringStyles.lines}>
+                                    <Table data-size="sm" data-color="neutral" className={cateringStyles.lines}>
                                         <Table.Head>
                                             <Table.Row>
                                                 <Table.HeaderCell>{t('bookingfrontend.catering_overview_col_item')}</Table.HeaderCell>
@@ -338,16 +357,11 @@ const CateringOverview: FC<CateringOverviewProps> = ({application}) => {
                                         </Table.Body>
                                     </Table>
                                 )}
-                                <Paragraph data-size="sm" className={cateringStyles.orderTotal}>
-                                    <span>{t('bookingfrontend.catering_overview_order_total')}</span>
-                                    <span data-testid="catering-order-total">{formatOreOrDash(hospitalityOrderTotalOre(order))}</span>
-                                </Paragraph>
-
-                                {/* Read-only: no actions, but who to ask about the order is information, not an action. */}
-                                {readOnly && order.contact && (
-                                    <div>
-                                        <KitchenContact contact={order.contact}/>
-                                    </div>
+                                {order.lines.length > 0 && (
+                                    <Paragraph data-size="sm" className={cateringStyles.orderTotal}>
+                                        <span>{t('bookingfrontend.catering_overview_order_total')}</span>
+                                        <span data-testid="catering-order-total">{formatOreOrDash(hospitalityOrderTotalOre(order))}</span>
+                                    </Paragraph>
                                 )}
 
                                 {cancelErrors[order.id] && (
@@ -357,27 +371,28 @@ const CateringOverview: FC<CateringOverviewProps> = ({application}) => {
                                 )}
 
                                 {/* A closed action is gone. A deadline is explained once, by the Alert at the top; any other
-                                    lock (billed, paid, ...) says so here and who to talk to, and a deadline-locked order
-                                    keeps the kitchen's contact, which belongs to the order and not to the rule. */}
+                                    lock (billed, paid, ...) says so here. Who to talk to is the kitchen's contact at the top. */}
                                 {locked && !lockedByDeadlineOnly && (
                                     <Alert data-color="info" data-size="sm" data-testid="catering-locked">
                                         <Paragraph data-size="sm">
                                             {t('bookingfrontend.catering_order_locked')} {t('bookingfrontend.catering_contact_officer')}
                                         </Paragraph>
-                                        {order.contact && <KitchenContact contact={order.contact}/>}
                                     </Alert>
-                                )}
-                                {locked && lockedByDeadlineOnly && order.contact && (
-                                    <div data-testid="catering-locked-contact">
-                                        <KitchenContact contact={order.contact}/>
-                                    </div>
                                 )}
                             </section>
                         );
                     })}
                 </div>
 
-                {orders.length > 0 && cateringPaid && (
+                {/* The section's own total. With the price summary after it, ONE row; without it, the catering's sum ex
+                    VAT and VAT too, as nothing else on the page shows them. */}
+                {ending === 'total' && (
+                    <Paragraph data-size="sm" className={cateringStyles.sectionTotal} data-testid="catering-summary">
+                        <span>{t('bookingfrontend.catering_overview_catering_total')}</span>
+                        <span data-testid="catering-summary-incl">{formatOreOrDash(prices.catering.inclOre)}</span>
+                    </Paragraph>
+                )}
+                {ending === 'breakdown' && (
                     <div className={cateringStyles.cateringSummary}>
                         <CateringPriceSummary
                             summary={prices.catering}
@@ -419,17 +434,21 @@ const CateringOverview: FC<CateringOverviewProps> = ({application}) => {
                     onConfirm={confirmCancel}
                     onClose={() => setCancelTarget(null)}
                 />
-            </div>
+            </section>
 
+            {/* The block that closes the price surface (design A): no card and no heading of its own, a rule above,
+                the parts, the sum ex VAT and the VAT, and «Totalt» in large type with «Beløp inkl. mva.» under it. */}
             {showApplicationSummary && (
-                <div className={styles.card} data-testid="catering-application-summary">
-                    <Heading level={2} data-size="sm">{t('bookingfrontend.catering_overview_summary_heading')}</Heading>
-                    <Paragraph data-size="sm" className={cateringStyles.summaryCaption}>
-                        {t('bookingfrontend.catering_overview_summary_caption')}
-                    </Paragraph>
+                <section
+                    className={cateringStyles.totals}
+                    data-testid="catering-application-summary"
+                    aria-label={t('bookingfrontend.catering_overview_summary_heading')}
+                >
                     <CateringPriceSummary
                         summary={prices.total}
-                        totalLabel={t('bookingfrontend.total_incl_vat')}
+                        totalLabel={t('booking.total')}
+                        caption={t('bookingfrontend.catering_overview_summary_caption')}
+                        grand
                         parts={[
                             {key: 'rental', label: t('bookingfrontend.catering_overview_total_rental'), ore: prices.rental.inclOre},
                             {key: 'services', label: t('bookingfrontend.catering_overview_total_services'), ore: prices.services.inclOre},
@@ -443,7 +462,7 @@ const CateringOverview: FC<CateringOverviewProps> = ({application}) => {
                         ]}
                         data-testid="catering-application-total"
                     />
-                </div>
+                </section>
             )}
         </>
     );

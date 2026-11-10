@@ -5,10 +5,28 @@
 
 $stack-breakpoint: 640px;
 
-// A three-column table: the numbers right-aligned and not broken, the unit price in a quieter colour than the amount.
+// The two number columns are as wide in every table on the page (design A), so «Antall» and «Beløp» line up from one
+// serving to the next; a wider amount still widens its own column rather than break.
+$number-column: 140px;
+
+// A three-column table: the numbers right-aligned and not broken, the unit price in a quieter colour than the amount,
+// the head on the design system's tinted grey (the servings, already grey, clear it). The Table itself is
+// data-color="neutral": names, rules and head in the neutral scale, not the accent.
 // At 375 px the head is hidden and each line stacks (name on top, «N × pris» left and the amount right).
 @mixin lines {
     width: 100%;
+    --dsc-table-header-background: var(--ds-color-neutral-background-tinted);
+    --dsc-table-padding: var(--ds-size-3);
+    --dsc-table-divider-border-width: var(--ds-border-width-default);
+
+    // The head in smaller type than the lines, as in the design (the scale inside a small Table is one step down).
+    th {
+        font-size: var(--ds-font-size-3);
+    }
+
+    th:nth-child(n + 2) {
+        width: $number-column;
+    }
 
     th:nth-child(n + 2),
     td:nth-child(n + 2) {

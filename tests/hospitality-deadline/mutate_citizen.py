@@ -191,10 +191,14 @@ MUTATIONS = [
      "['order_billed', 'order_status', 'application_closed']", "['order_billed', 'order_status']"),
     ("Mk4", "mts", CS, "one proven action is enough (the two are no longer both held to it)",
      "[actions.change, actions.cancel].every(", "[actions.change, actions.cancel].some("),
-    ("Mk5", "mts", OV, "ONE proven order is enough to show the application summary",
-     "orders.every(order => isProvablyNotBilled(order.actions))", "orders.some(order => isProvablyNotBilled(order.actions))"),
-    ("Mk6", "mts", OV, "the application summary no longer asks about billed at all",
-     "        && orders.every(order => isProvablyNotBilled(order.actions))\n", ""),
+    # Since 326199b38 the summary's rule is ONE function, showsPriceSummary (its every/some shape is mutated in
+    # tests/application-view/mutate_application_view.py); these two mutate how the component asks it (task 40576:
+    # the old patterns matched nothing from 326199b38 on, which aborted this run before Mk6).
+    ("Mk5", "mts", OV, "the application summary no longer asks about billed at all",
+     "const showApplicationSummary = showsPriceSummary(orders, prices.total.inclOre);", "const showApplicationSummary = orders.length > 0;"),
+    ("Mk6", "mts", OV, "the billing rule copied back inline (two copies can drift)",
+     "const showApplicationSummary = showsPriceSummary(orders, prices.total.inclOre);",
+     "const showApplicationSummary = orders.length > 0 && orders.every(order => isProvablyNotBilled(order.actions));"),
     ("Mk7", "mts", OV, "the cancellation asks window.confirm again",
      "const askCancel = (order: IHospitalityOrder) => setCancelTarget(order);",
      "const askCancel = (order: IHospitalityOrder) => { if (!window.confirm('?')) return; setCancelTarget(order); };"),
@@ -203,8 +207,8 @@ MUTATIONS = [
      "{readOnly && (", "{!readOnly && ("),
     ("Mi2", "mts", OV, "the note says something else (a wrong key compiles)",
      "{t('bookingfrontend.catering_application_closed')}", "{t('bookingfrontend.catering_overview_empty')}"),
-    ("Mi3", "mts", OV, "the kitchen contact is hidden on a read-only order",
-     "{readOnly && order.contact && (", "{!readOnly && order.contact && ("),
+    ("Mi3", "mts", OV, "the kitchen contact is hidden on a read-only application (task 40576: once per kitchen)",
+     "rows.filter(row => readOnly || servingState(row.order).locked)", "rows.filter(row => servingState(row.order).locked)"),
     # the note's lang key must exist where the client reads it from
     ("Mj1", "mts", LANG.format("no"), "the note's key is gone from the Norwegian (bokmål) file",
      "catering_application_closed\tbookingfrontend\tno\t", "catering_application_closed_x\tbookingfrontend\tno\t"),

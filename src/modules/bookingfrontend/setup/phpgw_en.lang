@@ -1241,3 +1241,9 @@ catering_overview_total_services	bookingfrontend	en	Equipment and services
 catering_overview_total_catering	bookingfrontend	en	Hospitality (%1 servings)
 catering_overview_total_catering_one	bookingfrontend	en	Hospitality (1 serving)
 catering_overview_col_quantity	bookingfrontend	en	Quantity
+application_rooms	bookingfrontend	en	%1 rooms
+application_rooms_one	bookingfrontend	en	1 room
+application_col_addon	bookingfrontend	en	Add-on
+application_services_total	bookingfrontend	en	Equipment and services total incl. VAT
+application_rental_total	bookingfrontend	en	Room rental total incl. VAT
+application_registered_total	bookingfrontend	en	Registered total incl. VAT

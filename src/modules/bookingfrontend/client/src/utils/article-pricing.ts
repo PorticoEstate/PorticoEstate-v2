@@ -3,6 +3,7 @@ import {IArticle} from '@/service/types/api/order-articles.types';
 import {IOrder, IOrderLine} from '@/service/types/api/application.types';
 import {IHospitalityArticle, IHospitalityOrder, IHospitalityOrderLine} from '@/service/types/api/hospitality.types';
 import {formatAmount, formatCurrency} from '@/utils/cost-utils';
+import {cateringBillingNotRuledOut, showsPriceSummary} from '@/utils/catering-status';
 
 /**
  * Articles priced per minute (article mapping unit 'minute').
@@ -356,6 +357,32 @@ export const withoutZeroParts = <T extends {ore: number | null}>(parts: readonly
 const ROOM_RENTAL_CATEGORY = 1;
 
 /**
+ * The stored order lines of an application split the way the price summary splits them: the room rental
+ * (resource lines) and the equipment and services (every other line). The page lists them under those two
+ * headings, so the lists and the summary can never disagree about which line is which.
+ */
+export const splitStoredLines = (
+    orders: ReadonlyArray<Pick<IOrder, 'lines'>>
+): {rental: IOrderLine[]; services: IOrderLine[]} => {
+    const lines = orders.flatMap(order => order.lines);
+    return {
+        rental: lines.filter(line => line.article_cat_id === ROOM_RENTAL_CATEGORY),
+        services: lines.filter(line => line.article_cat_id !== ROOM_RENTAL_CATEGORY),
+    };
+};
+
+/** True when every line is known to cost nothing (ex 0 and VAT 0); a list with no line is not «free», it is empty. */
+export const storedLinesAreFree = (lines: ReadonlyArray<Pick<IOrderLine, 'amount' | 'tax' | 'tax_percent'>>): boolean =>
+    lines.length > 0 && lines.every(line => {
+        const priced = pricedOrderLine(line);
+        return priced.exOre === 0 && priced.vatOre === 0;
+    });
+
+/** The total incl. VAT of stored lines in whole øre, as the price summary sums it (VAT per line, as billed). */
+export const storedLinesInclOre = (lines: ReadonlyArray<Pick<IOrderLine, 'amount' | 'tax' | 'tax_percent'>>): number | null =>
+    summarisePricedLines(lines.map(pricedOrderLine)).inclOre;
+
+/**
  * The application's price in its parts: the room rental (resource lines) and the equipment and services
  * (every other stored line) from `orders`, the catering from the catering orders, and the whole.
  */
@@ -363,14 +390,69 @@ export const applicationPriceSummary = (
     orders: ReadonlyArray<Pick<IOrder, 'lines'>>,
     cateringOrders: ReadonlyArray<Pick<IHospitalityOrder, 'lines'>>
 ): {rental: PriceSummary; services: PriceSummary; catering: PriceSummary; total: PriceSummary} => {
-    const storedLines = orders.flatMap(order => order.lines);
-    const rental = storedLines.filter(line => line.article_cat_id === ROOM_RENTAL_CATEGORY).map(pricedOrderLine);
-    const services = storedLines.filter(line => line.article_cat_id !== ROOM_RENTAL_CATEGORY).map(pricedOrderLine);
+    const stored = splitStoredLines(orders);
+    const rental = stored.rental.map(pricedOrderLine);
+    const services = stored.services.map(pricedOrderLine);
     const catering = cateringOrders.flatMap(order => order.lines.map(pricedHospitalityLine));
     return {
         rental: summarisePricedLines(rental),
         services: summarisePricedLines(services),
         catering: summarisePricedLines(catering),
         total: summarisePricedLines([...rental, ...services, ...catering]),
+    };
+};
+
+/** What is known of the application's catering: `pending` (its orders are being read), `read` (the orders, possibly none, or catering is off) or `unreadable` (the read failed). */
+export type CateringState = 'pending' | 'read' | 'unreadable';
+
+export interface ClosingTotal {
+    /** `combined`: the application's total, there being no catering. `registered`: every stored line added up, what the application has registered. */
+    kind: 'combined' | 'registered';
+    /** Whole øre incl. VAT; null = unknown («-»). */
+    ore: number | null;
+}
+
+export interface ApplicationTotals {
+    /** The «Utstyr og tjenester» card's own total. */
+    showServicesTotal: boolean;
+    /** The row that closes the price cards, or null. */
+    closing: ClosingTotal | null;
+}
+
+/**
+ * What the application page's price cards (Romleie / Utstyr og tjenester) total, in one place (GH #1423).
+ *
+ *  - The «Utstyr og tjenester» total is shown once billing is settled (the catering is read, or cannot be) and no
+ *    catering order can be a billed one: a billed order is also a stored line (cateringBillingNotRuledOut).
+ *  - The row that closes the cards is the application's total, and it is there exactly when nothing else gives it:
+ *    not the price summary (showsPriceSummary, drawn only for a catering that was read), not the Romleie total (there
+ *    is no add-on line, so that IS the sum) and not the add-ons' own total (when there is no Romleie card). So it
+ *    closes two cards, or one card whose total is withheld because billing cannot be ruled out. It is
+ *      `combined` («Total inkl. mva») when the catering was read and there is none, and
+ *      `registered` («Registrert total inkl. mva.») otherwise, i.e. with catering whose billing cannot be ruled out
+ *      or with a catering that could not be read: every stored line added up, per line in øre, which is what the
+ *      server's `order.sum` adds up and what the old «Pris og betaling» block ended on. It is not called the total
+ *      price: a catering order that is not billed yet is not among the stored lines.
+ *  - While the catering is being read nothing is decided: no total of either kind.
+ */
+export const applicationTotals = (
+    orders: ReadonlyArray<Pick<IOrder, 'lines'>>,
+    cateringOrders: ReadonlyArray<Pick<IHospitalityOrder, 'actions' | 'lines'>>,
+    catering: CateringState
+): ApplicationTotals => {
+    if (catering === 'pending') return {showServicesTotal: false, closing: null};
+    const showServicesTotal = !cateringBillingNotRuledOut(cateringOrders);
+
+    const {rental, services} = splitStoredLines(orders);
+    const showRental = rental.length > 0 && !storedLinesAreFree(rental);
+    // A catering that could not be read is not drawn, whatever an earlier read left in the query's data.
+    const summaryDrawn = catering === 'read' && showsPriceSummary(cateringOrders, applicationPriceSummary(orders, cateringOrders).total.inclOre);
+    const totalIsGiven = summaryDrawn || services.length === 0 || (!showRental && showServicesTotal);
+    if (totalIsGiven) return {showServicesTotal, closing: null};
+
+    const noCatering = catering === 'read' && cateringOrders.length === 0;
+    return {
+        showServicesTotal,
+        closing: {kind: noCatering ? 'combined' : 'registered', ore: storedLinesInclOre(orders.flatMap(order => order.lines))},
     };
 };

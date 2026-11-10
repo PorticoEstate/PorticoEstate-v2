@@ -383,10 +383,12 @@ export class DeliveredApplicationService {
   }
 
   // `tax_percent`: the VAT % of the line's stored tax_code (fm_ecomva.percent_), read-only and null for a code with
-  // no fm_ecomva row; the join is on the primary key, so the lines are the same ones.
+  // no fm_ecomva row; the join is on the primary key, so the lines are the same ones. `article_cat_id` (1 = the room,
+  // 2 = an add-on) is what Min side splits the room rental from the equipment and services on, as application.service.ts
+  // already sends it.
   private async fetchOrders(applicationId: number): Promise<any[]> {
     const { rows } = await this.db.query(
-      `SELECT po.*, pol.*, am.unit, ev.percent_ AS tax_percent,
+      `SELECT po.*, pol.*, am.unit, am.article_cat_id, ev.percent_ AS tax_percent,
               CASE WHEN r.name IS NULL THEN s.name ELSE r.name END AS name
        FROM bb_purchase_order po
        JOIN bb_purchase_order_line pol ON po.id = pol.order_id

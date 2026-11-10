@@ -1,15 +1,13 @@
 'use client';
 import React, {FC, useMemo, useState} from 'react';
-import parse from 'html-react-parser';
 import {Alert, Button, Heading, Paragraph, Table, Tag} from '@digdir/designsystemet-react';
 import {PencilIcon, PlusIcon, TrashIcon} from '@navikt/aksel-icons';
-import {useClientTranslation, useTrans} from '@/app/i18n/ClientTranslationProvider';
+import {useClientTranslation} from '@/app/i18n/ClientTranslationProvider';
 import {IApplication} from '@/service/types/api/application.types';
 import {
     HospitalityActionReason,
     IHospitality,
     IHospitalityOrder,
-    IHospitalityOrderContact,
 } from '@/service/types/api/hospitality.types';
 import {
     useAvailableHospitalities,
@@ -27,11 +25,11 @@ import {
 } from '@/utils/article-pricing';
 import {formatCurrency} from '@/utils/cost-utils';
 import {ruleGroups} from '@/utils/catering-deadline-rule';
-import {isCateringClosed, isProvablyNotBilled, showsCateringSection} from '@/utils/catering-status';
+import {isCateringClosed, showsCateringSection, showsPriceSummary} from '@/utils/catering-status';
 import {groupByServingDay} from '@/utils/catering-venue-time';
-import {unescapeHTML} from '@/components/building-page/util/building-text-util';
 import CateringCancelDialog from './catering-cancel-dialog';
 import CateringDeadlineAlert from './catering-deadline-alert';
+import KitchenContact from './kitchen-contact';
 import CateringPriceSummary from './catering-price-summary';
 import styles from './application-details.module.scss';
 import cateringStyles from './catering-overview.module.scss';
@@ -62,29 +60,6 @@ const STATUS_LABEL_KEY: Record<IHospitalityOrder['status'], string> = {
 
 /** "3.00" -> "3", "2.50" -> "2.5": a quantity reads the way it was typed. */
 const formatQuantity = (quantity: string): string => String(Number(quantity));
-
-const KitchenContact: FC<{ contact: IHospitalityOrderContact }> = ({contact}) => {
-    const t = useTrans();
-    const hasBuildingContact = !!(contact.building_email || contact.building_phone);
-    if (!contact.info && !hasBuildingContact) return null;
-
-    return (
-        <div data-testid="catering-contact">
-            <Paragraph data-size="sm"><strong>{t('bookingfrontend.catering_kitchen_contact')}</strong></Paragraph>
-            {contact.info ? (
-                // The kitchen's contact_info is admin-authored rich text, rendered the way the
-                // resource page renders it.
-                <div>{parse(unescapeHTML(contact.info))}</div>
-            ) : (
-                <Paragraph data-size="sm">
-                    {contact.building_name && <>{contact.building_name}<br/></>}
-                    {contact.building_email && <>{t('common.email')}: {contact.building_email}<br/></>}
-                    {contact.building_phone && <>{t('booking.phone')}: {contact.building_phone}</>}
-                </Paragraph>
-            )}
-        </div>
-    );
-};
 
 interface CateringOverviewProps {
     application: IApplication;
@@ -164,9 +139,7 @@ const CateringOverview: FC<CateringOverviewProps> = ({application}) => {
     // applicationPriceSummary), never the order's ex-VAT total_amount.
     const prices = applicationPriceSummary(application.orders ?? [], orders);
     const cateringPaid = prices.catering.inclOre === null || prices.catering.inclOre > 0;
-    const showApplicationSummary = orders.length > 0
-        && orders.every(order => isProvablyNotBilled(order.actions))
-        && (prices.total.inclOre === null || prices.total.inclOre > 0);
+    const showApplicationSummary = showsPriceSummary(orders, prices.total.inclOre);
 
     // The change / cancel rule of the offers these orders are on, derived from the same fields the guard reads.
     // Nothing derivable (an offer that has been switched off sends no configuration) = no Alert, never a guess.

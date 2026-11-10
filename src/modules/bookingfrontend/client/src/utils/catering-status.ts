@@ -52,3 +52,28 @@ export const isProvablyNotBilled = (
         action => action.allowed || (action.reason !== null && !BILLED_NOT_VISIBLE_REASONS.includes(action.reason)),
     );
 
+/**
+ * Can billing NOT be ruled out for these catering orders (the «D1» rule)? True as soon as ONE order is not proven
+ * not billed (isProvablyNotBilled). No orders at all = nothing that could be billed = false.
+ */
+export const cateringBillingNotRuledOut = (
+    orders: ReadonlyArray<{actions?: Parameters<typeof isProvablyNotBilled>[0]}>,
+): boolean => orders.some(order => !isProvablyNotBilled(order.actions));
+
+/**
+ * Is the price summary (Prissammendrag) shown? THE one statement, used by the catering overview, which draws the
+ * summary, and by the application's price lines (applicationTotals), which close with a total of their own exactly
+ * when it is not drawn, so the two cannot drift apart. It is shown when
+ *   - there is at least one (not cancelled) catering order: the summary is the catering's;
+ *   - billing is ruled out for ALL of them (D1): a billed order is also a stored line, so the summary, which adds the
+ *     stored lines and the catering orders, would count it twice;
+ *   - and the application's total is not 0 kr (an unknown total, null, shown «-», is not 0).
+ * `totalInclOre` is the summary's own total: applicationPriceSummary(stored orders, these orders).total.inclOre.
+ */
+export const showsPriceSummary = (
+    cateringOrders: ReadonlyArray<{actions?: Parameters<typeof isProvablyNotBilled>[0]}>,
+    totalInclOre: number | null,
+): boolean =>
+    cateringOrders.length > 0
+    && !cateringBillingNotRuledOut(cateringOrders)
+    && (totalInclOre === null || totalInclOre > 0);

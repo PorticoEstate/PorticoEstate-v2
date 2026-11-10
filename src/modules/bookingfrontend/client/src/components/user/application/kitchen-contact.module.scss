@@ -1,0 +1,32 @@
+// The kitchen's contact in a serving (GH #1423): the label and the contact text close together, with no space of
+// its own above or below. The text is admin-authored rich text, which safe-html.ts reduces to p, br, b, i, lists and
+// links; the editor gives its paragraphs and lists their own margins, so they are set tight here.
+
+.contact {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ds-size-1);
+}
+
+.info {
+    font-size: var(--ds-font-size-2);
+    overflow-wrap: anywhere;
+
+    p,
+    ul,
+    ol {
+        margin: 0;
+    }
+
+    // Paragraphs and lists one after the other keep a small gap, never a blank paragraph's worth.
+    * + p,
+    * + ul,
+    * + ol {
+        margin-top: var(--ds-size-2);
+    }
+
+    ul,
+    ol {
+        padding-inline-start: var(--ds-size-5);
+    }
+}

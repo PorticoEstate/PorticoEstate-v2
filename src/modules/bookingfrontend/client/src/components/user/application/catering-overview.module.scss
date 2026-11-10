@@ -2,7 +2,9 @@
 // 375 px stack. Text, buttons, the Alert, the Dialog and the Table are the design system's own; only the
 // layout and the one surface colour live here, and only from its tokens.
 
-$stack-breakpoint: 640px;
+@use './price-lines' as price;
+
+$stack-breakpoint: price.$stack-breakpoint;
 
 .rule {
     margin-bottom: var(--ds-size-4);
@@ -49,38 +51,18 @@ $stack-breakpoint: 640px;
     white-space: pre-line;
 }
 
-// «Vare | Antall (N × pris) | Beløp»: the numbers on the right, the table's own head kept transparent on the grey.
+// «Vare | Antall (N × pris) | Beløp» (price-lines.scss): the table's own head kept transparent on the grey.
 .lines {
-    width: 100%;
+    @include price.lines;
 
     th {
         background: transparent;
-    }
-
-    th:nth-child(n + 2),
-    td:nth-child(n + 2) {
-        text-align: right;
-        white-space: nowrap;
-    }
-
-    // The unit price stays in a quieter colour than the amount.
-    td:nth-child(2) {
-        color: var(--ds-color-neutral-text-subtle);
-    }
-
-    td small {
-        display: block;
-        color: var(--ds-color-neutral-text-subtle);
     }
 }
 
 // «Ordretotal inkl. mva» under the lines.
 .orderTotal {
-    display: flex;
-    justify-content: space-between;
-    gap: var(--ds-size-4);
-    padding: 0 var(--ds-size-3);
-    font-weight: var(--ds-font-weight-semibold);
+    @include price.total;
 }
 
 // The price summary: label left, amount right. A row that starts a new part has a rule above it.
@@ -152,8 +134,7 @@ $stack-breakpoint: 640px;
     gap: var(--ds-size-3);
 }
 
-// 375 px: the buttons side by side under the heading, the lines stacked (name on top, «N × pris» left and the
-// amount right) with the head hidden.
+// 375 px: the buttons side by side under the heading (the lines stack by price-lines.scss).
 @media (max-width: $stack-breakpoint) {
     .order {
         padding: var(--ds-size-4);
@@ -188,38 +169,6 @@ $stack-breakpoint: 640px;
             grid-column: 1 / -1;
             justify-self: start;
         }
-    }
-
-    .lines {
-        thead {
-            display: none;
-        }
-
-        tr {
-            display: grid;
-            grid-template-columns: 1fr auto;
-            gap: var(--ds-size-1) var(--ds-size-3);
-            padding: var(--ds-size-2) 0;
-            border-bottom: 1px solid var(--ds-color-neutral-border-subtle);
-        }
-
-        td {
-            padding: 0;
-            border: none;
-        }
-
-        td:first-child {
-            grid-column: 1 / -1;
-            font-weight: var(--ds-font-weight-medium);
-        }
-
-        td:nth-child(2) {
-            text-align: left;
-        }
-    }
-
-    .orderTotal {
-        padding: 0;
     }
 
     .dialogActions > button {

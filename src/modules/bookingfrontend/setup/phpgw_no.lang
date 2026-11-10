@@ -1242,3 +1242,9 @@ catering_overview_total_services	bookingfrontend	no	Utstyr og tjenester
 catering_overview_total_catering	bookingfrontend	no	Bevertning (%1 serveringer)
 catering_overview_total_catering_one	bookingfrontend	no	Bevertning (1 servering)
 catering_overview_col_quantity	bookingfrontend	no	Antall
+application_rooms	bookingfrontend	no	%1 rom
+application_rooms_one	bookingfrontend	no	1 rom
+application_col_addon	bookingfrontend	no	Tillegg
+application_services_total	bookingfrontend	no	Utstyr og tjenester total inkl. mva.
+application_rental_total	bookingfrontend	no	Romleie total inkl. mva.
+application_registered_total	bookingfrontend	no	Registrert total inkl. mva.

@@ -176,7 +176,20 @@ check('"Rediger" needs `handleable`', /const changeOpen = handleable && /.test(s
 check('"Avbestill" needs `handleable`', /const cancelOpen = handleable && /.test(source));
 check('the locked reasons (and so the locked-Alert) need `handleable`: the server\'s `application_closed` is never turned into text',
     /if \(handleable && actions\) \{/.test(source));
-check('the deadline hints need an open action', /\{changeOpen && actions\?\.change\.until && \(/.test(source) && /\{cancelOpen && actions\?\.cancel\.until && \(/.test(source));
+// GH #1423 design (task 39791): a deadline is no longer printed per order. The rule is stated ONCE by an Alert,
+// built from the offers' configuration and only for a handleable application; `actions` still decide the buttons.
+check('control: a per-order deadline hint is recognised', /actions\?\.(change|cancel)\.until/.test('{cancelOpen && actions?.cancel.until && ('));
+check('there is no per-order deadline hint any more (no `actions?.change.until` / `actions?.cancel.until`)', !/actions\?\.(change|cancel)\.until/.test(source));
+check('control: the rule pattern does NOT match a rule that is built for a read-only application',
+    !/const rules = handleable \? ruleGroups\(orders, hospitalities\) : \[\];/.test('const rules = ruleGroups(orders, hospitalities);'));
+check('the change / cancel rule is derived only for a `handleable` application (a closed one gets no rule)',
+    /const rules = handleable \? ruleGroups\(orders, hospitalities\) : \[\];/.test(source));
+check('the Alert is mounted from those rule groups, and only when there is one',
+    /\{rules\.length > 0 && \(\s*<div[^>]*>\s*<CateringDeadlineAlert groups=\{rules\}\/>/.test(source) && count(/<CateringDeadlineAlert/g) === 1);
+check('the buttons still follow the server: `changeOpen` / `cancelOpen` read `actions`, never the rule',
+    /const changeOpen = handleable && !!actions\?\.change\.allowed && !!hospitality;/.test(source)
+    && /const cancelOpen = handleable && !!actions\?\.cancel\.allowed;/.test(source) && !/rules\b[^;]*(changeOpen|cancelOpen)|(changeOpen|cancelOpen)[^;]*\brules\b/.test(source));
+check('cancelling asks a Digdir Dialog, not window.confirm', !/window\.confirm/.test(source) && count(/<CateringCancelDialog/g) === 1);
 check('...and HANDLEABLE_STATUSES is untouched (no other status changes)', /const HANDLEABLE_STATUSES = \['NEW', 'PENDING', 'ACCEPTED'\];/.test(source));
 const handleable = [...(/const HANDLEABLE_STATUSES = \[([^\]]*)\];/.exec(source)?.[1] ?? '').matchAll(/'([^']+)'/g)].map(m => m[1]);
 check('control: the HANDLEABLE_STATUSES list was parsed', handleable.length === 3, JSON.stringify(handleable));
@@ -193,6 +206,37 @@ check('the kitchen contact stays visible on a read-only order (information, not 
 check('the order dialog is not mounted for a read-only application',
     /\{!readOnly && \(\s*<HospitalityOrderModal/.test(source) && count(/<HospitalityOrderModal/g) === 1,
     `${count(/<HospitalityOrderModal/g)} mount(s)`);
+
+// 3b. The price summary of the whole application is shown only where a billed catering order cannot be in it
+// twice (task 39791, D1). A billed order is also a stored order line, and the server sends no `billed` flag,
+// only `actions`: isProvablyNotBilled says «proven» from an allowed action or a refusal decided AFTER the
+// guard's billed check, and «not proven» from billed itself, from the two refusals that come BEFORE it and
+// hide it (order_status = delivered, application_closed), and from no actions at all.
+const act = (allowed: boolean, reason: string | null) => ({allowed, reason});
+const both = (change: [boolean, string | null], cancel: [boolean, string | null]) => ({change: act(...change), cancel: act(...cancel)});
+const provenTable: Array<[string, any, boolean]> = [
+    ['both actions open', both([true, null], [true, null]), true],
+    ['change locked by the cutoff, cancel open', both([false, 'order_cutoff_passed'], [true, null]), true],
+    ['both locked by the cancellation deadline', both([false, 'cancellation_deadline_passed'], [false, 'cancellation_deadline_passed']), true],
+    ['both locked by the serving time', both([false, 'serving_time_passed'], [false, 'serving_time_passed']), true],
+    ['paid at checkout (checked after billed)', both([false, 'order_paid_at_checkout'], [false, 'order_paid_at_checkout']), true],
+    ['no deadline basis (checked after billed)', both([false, 'no_deadline_basis'], [false, 'no_deadline_basis']), true],
+    ['BILLED', both([false, 'order_billed'], [false, 'order_billed']), false],
+    ['delivered (order_status comes BEFORE billed, so billed is hidden)', both([false, 'order_status'], [false, 'order_status']), false],
+    ['application closed (comes before everything)', both([false, 'application_closed'], [false, 'application_closed']), false],
+    ['no actions sent', undefined, false],
+    ['actions null', null, false],
+    ['the two actions disagree, one only proven (fail closed)', both([true, null], [false, 'order_billed']), false],
+    ['a refusal without a reason is not proof', both([false, null], [false, null]), false],
+];
+check('control: isProvablyNotBilled exists on the module', typeof mod.isProvablyNotBilled === 'function');
+for (const [name, actions, want] of provenTable) {
+    const got = mod.isProvablyNotBilled?.(actions);
+    check(`isProvablyNotBilled: ${name} → ${want}`, got === want, `got ${got}`);
+}
+check('the application price summary needs EVERY shown order proven not billed',
+    /orders\.length > 0\s*&& orders\.every\(order => isProvablyNotBilled\(order\.actions\)\)/.test(source) && count(/\{showApplicationSummary && \(/g) === 1);
+check('control: `some` instead of `every` is not the recognised shape', !/orders\.every\(order => isProvablyNotBilled/.test('orders.some(order => isProvablyNotBilled(order.actions))'));
 
 // 4. The note's lang key exists where the client reads it from.
 const langRow = (lang: string, key: string): RegExp => new RegExp(`^${key}\\tbookingfrontend\\t${lang}\\t\\S.*$`, 'm');

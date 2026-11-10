@@ -106,6 +106,12 @@ export interface IOrderLine {
     unit: string;
     tax_code: number;
     tax: number;
+    /**
+     * The VAT % of tax_code (fm_ecomva.percent_), read-only and only there to LABEL `tax`; the VAT itself is
+     * `tax`, as billed. The server's serializer omits a null, so a code with no fm_ecomva row arrives as an
+     * ABSENT field (or null): either way it is «no percent», NOT 0 %.
+     */
+    tax_percent?: number | null;
     name: string;
     /** The price row a resource line was priced from; absent when no choice was recorded */
     article_price_id?: number | null;

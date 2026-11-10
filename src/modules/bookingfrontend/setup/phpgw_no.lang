@@ -1210,3 +1210,35 @@ hospitality_dialog_items	bookingfrontend	no	Varer
 hospitality_dialog_sum_ex_vat	bookingfrontend	no	Sum eks. mva.
 hospitality_dialog_vat_rate	bookingfrontend	no	Mva %1 %
 hospitality_dialog_vat	bookingfrontend	no	Mva
+catering_overview_col_item	bookingfrontend	no	Vare
+catering_overview_serving_heading	bookingfrontend	no	%1 kl. %2
+catering_overview_order_total	bookingfrontend	no	Ordretotal inkl. mva
+catering_overview_catering_total	bookingfrontend	no	Bevertning total inkl. mva.
+catering_overview_edit_aria	bookingfrontend	no	Rediger servering %1
+catering_overview_cancel_aria	bookingfrontend	no	Avbestill servering %1
+catering_overview_lead_hours	bookingfrontend	no	%1 timer
+catering_overview_lead_hour	bookingfrontend	no	%1 time
+catering_overview_lead_days	bookingfrontend	no	%1 dager
+catering_overview_lead_day	bookingfrontend	no	%1 dag
+catering_overview_lead_weeks	bookingfrontend	no	%1 uker
+catering_overview_lead_week	bookingfrontend	no	%1 uke
+catering_overview_deadline_both	bookingfrontend	no	Du kan endre eller avbestille en servering fram til %1 før den starter.
+catering_overview_deadline_split	bookingfrontend	no	Du kan endre en servering fram til %1 før den starter, og avbestille den fram til %2 før.
+catering_overview_deadline_split_open	bookingfrontend	no	Du kan endre en servering fram til %1 før den starter. Du kan avbestille den helt fram til den starter.
+catering_overview_deadline_none	bookingfrontend	no	Du kan endre eller avbestille en servering helt fram til den starter.
+catering_overview_deadline_working_days	bookingfrontend	no	Bare dager kjøkkenet har åpent telles med.
+catering_overview_cancel_title	bookingfrontend	no	Avbestille serveringen?
+catering_overview_cancel_body_amount	bookingfrontend	no	Serveringen fjernes fra bestillingen, og totalen går ned med %1.
+catering_overview_cancel_body	bookingfrontend	no	Serveringen fjernes fra bestillingen.
+catering_overview_cancel_others_kept	bookingfrontend	no	De andre serveringene beholdes.
+catering_overview_cancel_confirm	bookingfrontend	no	Avbestill servering
+catering_overview_summary_heading	bookingfrontend	no	Prissammendrag
+catering_overview_summary_caption	bookingfrontend	no	Beløp inkl. mva.
+catering_overview_sum_ex_vat	bookingfrontend	no	Sum eks. mva.
+catering_overview_vat	bookingfrontend	no	Mva
+catering_overview_vat_rate	bookingfrontend	no	Mva %1 %
+catering_overview_total_rental	bookingfrontend	no	Romleie
+catering_overview_total_services	bookingfrontend	no	Utstyr og tjenester
+catering_overview_total_catering	bookingfrontend	no	Bevertning (%1 serveringer)
+catering_overview_total_catering_one	bookingfrontend	no	Bevertning (1 servering)
+catering_overview_col_quantity	bookingfrontend	no	Antall

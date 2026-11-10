@@ -1209,3 +1209,35 @@ hospitality_dialog_items	bookingfrontend	en	Items
 hospitality_dialog_sum_ex_vat	bookingfrontend	en	Sum excl. VAT
 hospitality_dialog_vat_rate	bookingfrontend	en	VAT %1 %
 hospitality_dialog_vat	bookingfrontend	en	VAT
+catering_overview_col_item	bookingfrontend	en	Item
+catering_overview_serving_heading	bookingfrontend	en	%1 at %2
+catering_overview_order_total	bookingfrontend	en	Order total incl. VAT
+catering_overview_catering_total	bookingfrontend	en	Hospitality total incl. VAT
+catering_overview_edit_aria	bookingfrontend	en	Edit serving %1
+catering_overview_cancel_aria	bookingfrontend	en	Cancel serving %1
+catering_overview_lead_hours	bookingfrontend	en	%1 hours
+catering_overview_lead_hour	bookingfrontend	en	%1 hour
+catering_overview_lead_days	bookingfrontend	en	%1 days
+catering_overview_lead_day	bookingfrontend	en	%1 day
+catering_overview_lead_weeks	bookingfrontend	en	%1 weeks
+catering_overview_lead_week	bookingfrontend	en	%1 week
+catering_overview_deadline_both	bookingfrontend	en	You can change or cancel a serving up to %1 before it starts.
+catering_overview_deadline_split	bookingfrontend	en	You can change a serving up to %1 before it starts, and cancel it up to %2 before.
+catering_overview_deadline_split_open	bookingfrontend	en	You can change a serving up to %1 before it starts. You can cancel it right up until it starts.
+catering_overview_deadline_none	bookingfrontend	en	You can change or cancel a serving right up until it starts.
+catering_overview_deadline_working_days	bookingfrontend	en	Only the days the kitchen is open are counted.
+catering_overview_cancel_title	bookingfrontend	en	Cancel the serving?
+catering_overview_cancel_body_amount	bookingfrontend	en	The serving is removed from the order, and the total goes down by %1.
+catering_overview_cancel_body	bookingfrontend	en	The serving is removed from the order.
+catering_overview_cancel_others_kept	bookingfrontend	en	The other servings are kept.
+catering_overview_cancel_confirm	bookingfrontend	en	Cancel serving
+catering_overview_summary_heading	bookingfrontend	en	Price summary
+catering_overview_summary_caption	bookingfrontend	en	Amounts incl. VAT
+catering_overview_sum_ex_vat	bookingfrontend	en	Sum excl. VAT
+catering_overview_vat	bookingfrontend	en	VAT
+catering_overview_vat_rate	bookingfrontend	en	VAT %1 %
+catering_overview_total_rental	bookingfrontend	en	Room rental
+catering_overview_total_services	bookingfrontend	en	Equipment and services
+catering_overview_total_catering	bookingfrontend	en	Hospitality (%1 servings)
+catering_overview_total_catering_one	bookingfrontend	en	Hospitality (1 serving)
+catering_overview_col_quantity	bookingfrontend	en	Quantity

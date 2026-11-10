@@ -27,3 +27,28 @@ export const showsCateringSection = (
     orderCount: number,
     hospitalityCount: number,
 ): boolean => orderCount > 0 || (!isCateringClosed(status) && hospitalityCount > 0);
+
+/**
+ * Refusals that say nothing about whether an order has been BILLED. HospitalityOrderGuard checks, in this
+ * order: the application's status, the order's own status (delivered / cancelled), billed, paid, and only then
+ * the deadlines. So `order_billed` is billed, `application_closed` and `order_status` hide it, and every other
+ * refusal was decided after the billed check passed.
+ */
+const BILLED_NOT_VISIBLE_REASONS: readonly string[] = ['order_billed', 'order_status', 'application_closed'];
+
+/**
+ * Is this order PROVEN not to be billed, from what the server says may be done with it? A billed order is
+ * also a line of the application's stored order lines (the billing job turns it into a purchase order), so a
+ * price summary that adds the stored lines AND the catering orders would count it twice. The server sends no
+ * `billed` flag, only `actions`: an allowed action, or a refusal decided after the billed check, proves the
+ * order is not billed; billed, delivered, a closed application and a missing `actions` cannot rule it out.
+ * Both actions are held to it (they pass the same earlier checks, so they agree; if they ever do not, the
+ * answer is «not proven»).
+ */
+export const isProvablyNotBilled = (
+    actions: {change: {allowed: boolean; reason: string | null}; cancel: {allowed: boolean; reason: string | null}} | null | undefined,
+): boolean =>
+    !!actions && [actions.change, actions.cancel].every(
+        action => action.allowed || (action.reason !== null && !BILLED_NOT_VISIBLE_REASONS.includes(action.reason)),
+    );
+

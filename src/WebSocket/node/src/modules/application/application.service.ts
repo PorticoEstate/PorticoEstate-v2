@@ -146,16 +146,21 @@ export class ApplicationService {
    * so each line becomes its own "order". We replicate this behavior.
    *
    * PHP sum: $line->amount + $line->tax per line.
+   *
+   * `tax_percent` is the VAT % of the line's stored tax_code (fm_ecomva.percent_), for labelling the VAT. It is
+   * null when the code has no fm_ecomva row (a reader must not take that for 0 %), the join is on the table's
+   * primary key so it never changes the number of lines, and nothing here is written.
    */
   private async fetchOrders(applicationId: number): Promise<any[]> {
     const { rows } = await this.db.query(
-      `SELECT po.*, pol.*, am.unit, am.article_cat_id,
+      `SELECT po.*, pol.*, am.unit, am.article_cat_id, ev.percent_ AS tax_percent,
               CASE WHEN r.name IS NULL THEN s.name ELSE r.name END AS name
        FROM bb_purchase_order po
        JOIN bb_purchase_order_line pol ON po.id = pol.order_id
        JOIN bb_article_mapping am ON pol.article_mapping_id = am.id
        LEFT JOIN bb_service s ON (am.article_id = s.id AND am.article_cat_id = 2)
        LEFT JOIN bb_resource r ON (am.article_id = r.id AND am.article_cat_id = 1)
+       LEFT JOIN fm_ecomva ev ON ev.id = pol.tax_code
        WHERE po.cancelled IS NULL AND po.application_id = $1
        ORDER BY pol.id`,
       [applicationId],

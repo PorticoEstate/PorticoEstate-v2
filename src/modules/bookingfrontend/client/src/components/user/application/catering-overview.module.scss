@@ -1,0 +1,228 @@
+// The catering section on Min side (GH #1423): each serving on a grey surface, the price summary and the
+// 375 px stack. Text, buttons, the Alert, the Dialog and the Table are the design system's own; only the
+// layout and the one surface colour live here, and only from its tokens.
+
+$stack-breakpoint: 640px;
+
+.rule {
+    margin-bottom: var(--ds-size-4);
+}
+
+.orders {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ds-size-3);
+}
+
+// One serving. Space between the servings, never a divider line.
+.order {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ds-size-3);
+    padding: var(--ds-size-5);
+    background: var(--ds-color-neutral-background-tinted);
+    border-radius: var(--ds-border-radius-md);
+}
+
+.orderHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: var(--ds-size-4);
+    flex-wrap: wrap;
+}
+
+// The offer's name, under the heading.
+.offerName {
+    margin-top: var(--ds-size-1);
+    color: var(--ds-color-neutral-text-subtle);
+}
+
+.orderActions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--ds-size-2);
+}
+
+.note {
+    white-space: pre-line;
+}
+
+// «Vare | Antall (N × pris) | Beløp»: the numbers on the right, the table's own head kept transparent on the grey.
+.lines {
+    width: 100%;
+
+    th {
+        background: transparent;
+    }
+
+    th:nth-child(n + 2),
+    td:nth-child(n + 2) {
+        text-align: right;
+        white-space: nowrap;
+    }
+
+    // The unit price stays in a quieter colour than the amount.
+    td:nth-child(2) {
+        color: var(--ds-color-neutral-text-subtle);
+    }
+
+    td small {
+        display: block;
+        color: var(--ds-color-neutral-text-subtle);
+    }
+}
+
+// «Ordretotal inkl. mva» under the lines.
+.orderTotal {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--ds-size-4);
+    padding: 0 var(--ds-size-3);
+    font-weight: var(--ds-font-weight-semibold);
+}
+
+// The price summary: label left, amount right. A row that starts a new part has a rule above it.
+.summary {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ds-size-2);
+    margin: 0;
+}
+
+.summaryRow {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--ds-size-4);
+
+    dt {
+        margin: 0;
+    }
+
+    dd {
+        margin: 0;
+        white-space: nowrap;
+    }
+}
+
+.summaryPart {
+    padding-top: var(--ds-size-3);
+    border-top: 1px solid var(--ds-color-neutral-border-subtle);
+}
+
+.summaryTotal {
+    font-weight: var(--ds-font-weight-semibold);
+    font-size: var(--ds-font-size-lg);
+}
+
+.summaryCaption {
+    margin-bottom: var(--ds-size-3);
+    color: var(--ds-color-neutral-text-subtle);
+}
+
+.cateringSummary {
+    margin-top: var(--ds-size-5);
+}
+
+// The confirm dialog for a cancellation.
+.dialogTotal {
+    font-weight: var(--ds-font-weight-semibold);
+}
+
+.dialogLines {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ds-size-1);
+    margin: var(--ds-size-3) 0;
+    padding: 0;
+    list-style: none;
+}
+
+.dialogLine {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--ds-size-4);
+}
+
+.dialogActions {
+    display: flex;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: var(--ds-size-3);
+}
+
+// 375 px: the buttons side by side under the heading, the lines stacked (name on top, «N × pris» left and the
+// amount right) with the head hidden.
+@media (max-width: $stack-breakpoint) {
+    .order {
+        padding: var(--ds-size-4);
+    }
+
+    // «Legg til bevertning» under the heading, full width, as in the design. The card's shared header class
+    // centres its items, so every child stretches itself instead of relying on `align-items` winning.
+    .cardHeader {
+        flex-direction: column;
+        align-items: stretch;
+
+        > * {
+            align-self: stretch;
+        }
+
+        button {
+            justify-content: center;
+        }
+    }
+
+    .orderHeader {
+        flex-direction: column;
+    }
+
+    .orderActions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        width: 100%;
+
+        // The status tag is not a button: it gets its own row instead of taking a cell of the button grid.
+        > :not(button) {
+            grid-column: 1 / -1;
+            justify-self: start;
+        }
+    }
+
+    .lines {
+        thead {
+            display: none;
+        }
+
+        tr {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: var(--ds-size-1) var(--ds-size-3);
+            padding: var(--ds-size-2) 0;
+            border-bottom: 1px solid var(--ds-color-neutral-border-subtle);
+        }
+
+        td {
+            padding: 0;
+            border: none;
+        }
+
+        td:first-child {
+            grid-column: 1 / -1;
+            font-weight: var(--ds-font-weight-medium);
+        }
+
+        td:nth-child(2) {
+            text-align: left;
+        }
+    }
+
+    .orderTotal {
+        padding: 0;
+    }
+
+    .dialogActions > button {
+        flex: 1 1 100%;
+    }
+}

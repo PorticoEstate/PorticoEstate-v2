@@ -138,7 +138,7 @@ var project_attachment_link = function (key, oData)
 
 //this.local_DrawCallback_1 = function (container)
 //{
-//	var api = $("#" + container).dataTable().api();
+//	var api = new DataTable("#" + container);
 //	// Remove the formatting to get integer data for summation
 //	var intVal = function (i)
 //	{

@@ -21,7 +21,7 @@ getRequestData = function (dataSelected, parameters)
 
 function clean()
 {
-    var api = $('#datatable-container_0').dataTable().api();    
+    var api = new DataTable('#datatable-container_0');
     api.rows().deselect();
     api.buttons('.record').enable(false);
     
@@ -34,7 +34,7 @@ function updateDescr(oArgs, parameters)
 {
     var data = {};
     
-    var api = $('#datatable-container_0').dataTable().api();
+    var api = new DataTable('#datatable-container_0');
     var selected = api.rows({selected: true}).data();
     var nTable = 0;
 
@@ -55,7 +55,7 @@ function updateDescr(oArgs, parameters)
 
 function deleteDescr(oArgs, parameters)
 {
-    var api = $('#datatable-container_0').dataTable().api();
+    var api = new DataTable('#datatable-container_0');
     var selected = api.rows({selected: true}).data();
     var nTable = 0;
 

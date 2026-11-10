@@ -26,7 +26,7 @@ function newDataset(oArgs)
 
 function download(oArgs)
 {
-	var api = $('#datatable-container_0').dataTable().api();
+	var api = new DataTable('#datatable-container_0');
 	var selected = api.rows({selected: true}).data();
 
 	if (selected.length == 0)

@@ -83,7 +83,7 @@ onUpdateClickAlarm = function (type)
 	var oIndex = $('#new_index').val();
 	var id = $('#agreementid').val();
 
-	var api = $('#datatable-container_1').dataTable().api();
+	var api = new DataTable('#datatable-container_1');
 	var selected = api.rows({selected: true}).data();
 	var numSelected = selected.length;
 

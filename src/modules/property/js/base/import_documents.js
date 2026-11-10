@@ -678,7 +678,7 @@ this.step_3_clean_up = function ()
 
 this.local_DrawCallback0 = function (container)
 {
-	var api = $("#" + container).dataTable().api();
+	var api = new DataTable("#" + container);
 	if (api.rows().data().count() > 0)
 	{
 		$('#step_2_validate').show();

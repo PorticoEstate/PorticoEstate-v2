@@ -313,7 +313,7 @@ this.onActionsClick = function (action)
 		add_control();
 	}
 
-	var api = $('#datatable-container_4').dataTable().api();
+	var api = new DataTable('#datatable-container_4');
 	var selected = api.rows({selected: true}).data();
 
 	var numSelected = selected.length;

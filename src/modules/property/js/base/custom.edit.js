@@ -13,8 +13,10 @@ var intVal = function (i)
 
 this.local_DrawCallback1 = function (container)
 {
-	var oTable = $("#" + container).dataTable();
-//            var api = oTable.api(); 
-//            api.columns('.sorting').order('asc');
-	oTable.fnSort([[2, 'asc']]);
+	var api = new DataTable("#" + container);
+	var order = api.order();
+	if (order.length !== 1 || order[0][0] !== 2 || order[0][1] !== 'asc')
+	{
+		api.order([[2, 'asc']]).draw();
+	}
 };

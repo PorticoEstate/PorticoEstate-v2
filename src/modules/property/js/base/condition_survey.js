@@ -21,7 +21,7 @@ var setSuma = function (api, i)
 
 this.local_DrawCallback2 = function (container)
 {
-	var api = $("#" + container).dataTable().api();
+	var api = new DataTable("#" + container);
 
 	for (i = 0; i < columns2.length; i++)
 	{

@@ -508,7 +508,7 @@ getRequestData = function (dataSelected, parameters)
 addComposite = function (oArgs, parameters)
 {
 
-	var api = $('#datatable-container_2').dataTable().api();
+	var api = new DataTable('#datatable-container_2');
 	var selected = api.rows({selected: true}).data();
 	var nTable = 1;
 
@@ -535,7 +535,7 @@ addComposite = function (oArgs, parameters)
 removeComposite = function (oArgs, parameters)
 {
 
-	var api = $('#datatable-container_1').dataTable().api();
+	var api = new DataTable('#datatable-container_1');
 	var selected = api.rows({selected: true}).data();
 	var nTable = 1;
 
@@ -581,7 +581,7 @@ downloadComposite = function (oArgs)
 addParty = function (oArgs, parameters)
 {
 
-	var api = $('#datatable-container_4').dataTable().api();
+	var api = new DataTable('#datatable-container_4');
 	var selected = api.rows({selected: true}).data();
 
 	var nTable = 3;
@@ -609,7 +609,7 @@ addParty = function (oArgs, parameters)
 removeParty = function (oArgs, parameters)
 {
 
-	var api = $('#datatable-container_3').dataTable().api();
+	var api = new DataTable('#datatable-container_3');
 	var selected = api.rows({selected: true}).data();
 	var nTable = 3;
 
@@ -666,7 +666,7 @@ downloadParties = function (oArgs)
 addPrice = function (oArgs, parameters)
 {
 
-	var api = $('#datatable-container_6').dataTable().api();
+	var api = new DataTable('#datatable-container_6');
 	var selected = api.rows({selected: true}).data();
 	var nTable = 5;
 
@@ -694,7 +694,7 @@ addPrice = function (oArgs, parameters)
 removePrice = function (oArgs, parameters)
 {
 
-	var api = $('#datatable-container_5').dataTable().api();
+	var api = new DataTable('#datatable-container_5');
 	var selected = api.rows({selected: true}).data();
 	var nTable = 5;
 
@@ -735,7 +735,7 @@ downloadInvoice = function (oArgs)
 removeDocument = function (oArgs, parameters)
 {
 
-	var api = $('#datatable-container_8').dataTable().api();
+	var api = new DataTable('#datatable-container_8');
 	var selected = api.rows({selected: true}).data();
 	var nTable = 8;
 
@@ -760,7 +760,7 @@ removeDocument = function (oArgs, parameters)
 deleteNotification = function (oArgs, parameters)
 {
 
-	var api = $('#datatable-container_9').dataTable().api();
+	var api = new DataTable('#datatable-container_9');
 	var selected = api.rows({selected: true}).data();
 
 	if (selected.length == 0)

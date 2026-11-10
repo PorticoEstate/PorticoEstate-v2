@@ -1187,6 +1187,17 @@ HTML;
 		{
 			$js .= $flags['java_script_end'] . "\n";
 		}
+
+		$accountId = (int) ($this->userSettings['account_id'] ?? 0);
+		$requestPath = parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH) ?: '';
+		$isPasskeyPage = preg_match('#(?:^|/)passkey(?:/|$)#', $requestPath) === 1;
+		if ($accountId > 0 && !$isPasskeyPage && empty($flags['noframework']))
+		{
+			$scriptUrl = htmlspecialchars($this->webserver_url . '/phpgwapi/js/passkey/passkey-suggestion.js' . $cache_refresh_token, ENT_QUOTES, 'UTF-8');
+			$apiUrl = htmlspecialchars(\phpgw::link('/passkey/suggestion'), ENT_QUOTES, 'UTF-8');
+			$js .= '<script src="' . $scriptUrl . '" data-api-url="' . $apiUrl . '"></script>' . "\n";
+		}
+
 		return $js;
 	}
 

@@ -21,7 +21,7 @@ getRequestData = function (dataSelected, parameters)
 
 function clean()
 {
-    var api = $('#datatable-container_0').DataTable();
+    var api = new DataTable('#datatable-container_0');
     api.rows().deselect();
     api.buttons('.record').enable(false);
 
@@ -34,10 +34,10 @@ function updateNoteType(oArgs, parameters)
 {
     var data = {};
     var nTable = 0;
-
-    var api = $('#datatable-container_0').DataTable();
-    var selected = api.rows({ selected: true }).data();
-
+    
+    var api = new DataTable('#datatable-container_0');
+    var selected = api.rows({selected: true}).data();
+    
     $('#cancel_save').prop('disabled', false);
 
     var data = getRequestData(selected, parameters);
@@ -55,8 +55,8 @@ function updateNoteType(oArgs, parameters)
 function deleteNoteType(oArgs, parameters)
 {
     var nTable = 0;
-    var api = $('#datatable-container_0').DataTable();
-    var selected = api.rows({ selected: true }).data();
+    var api = new DataTable('#datatable-container_0');
+    var selected = api.rows({selected: true}).data();
 
     var r = confirm(confirm_msg);
     if (r != true)

@@ -149,8 +149,8 @@ getRequestData = function (dataSelected, parameters)
 addUnit = function (oArgs, parameters)
 {
 
-	var api = $('#datatable-container_1').DataTable();
-	var selected = api.rows({ selected: true }).data();
+	var api = new DataTable('#datatable-container_1');
+	var selected = api.rows({selected: true}).data();
 	var nTable = 0;
 
 	if (selected.length == 0)
@@ -177,8 +177,8 @@ addUnit = function (oArgs, parameters)
 removeUnit = function (oArgs, parameters)
 {
 
-	var api = $('#datatable-container_0').DataTable();
-	var selected = api.rows({ selected: true }).data();
+	var api = new DataTable('#datatable-container_0');
+	var selected = api.rows({selected: true}).data();
 	var nTable = 0;
 
 	if (selected.length == 0)

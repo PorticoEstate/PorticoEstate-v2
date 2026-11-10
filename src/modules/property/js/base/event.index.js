@@ -7,7 +7,7 @@ var sUrl_agreement = phpGWLink('index.php', {'menuaction': 'property.uievent.upd
 
 function onSave()
 {
-	var api = $('#datatable-container').dataTable().api();
+	var api = new DataTable('#datatable-container');
 	var selected = api.rows({selected: true}).data();
 	var numSelected = selected.length;
 

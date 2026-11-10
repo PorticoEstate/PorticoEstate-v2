@@ -40,7 +40,8 @@ getRequestData = function (dataSelected, parameters)
 addUser = function (oArgs, parameters)
 {
 
-	var selectedRows = oTable2.api().rows({ selected: true });
+	var api = new DataTable('#datatable-container_2');
+	var selected = api.rows({selected: true}).data();
 	var nTable = 1;
 
 	if (selectedRows.count() === 0)
@@ -67,7 +68,8 @@ addUser = function (oArgs, parameters)
 removeUser = function (oArgs, parameters)
 {
 
-	var selectedRows = oTable1.api().rows({ selected: true });
+	var api = new DataTable('#datatable-container_1');
+	var selected = api.rows({selected: true}).data();
 	var nTable = 1;
 
 	if (selectedRows.count() === 0)

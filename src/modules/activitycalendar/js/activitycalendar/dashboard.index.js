@@ -1,8 +1,8 @@
 
 function sendMail(oArgs, parameters)
 {
-	var api = $('#datatable-container_1').DataTable();
-	var selected = api.rows({ selected: true }).data();
+	var api = new DataTable('#datatable-container_1');
+	var selected = api.rows({selected: true}).data();
 	var nTable = 1;
 
 	if (selected.length == 0)

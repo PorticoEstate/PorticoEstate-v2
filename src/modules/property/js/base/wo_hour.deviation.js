@@ -9,7 +9,7 @@ var intVal = function (i)
 
 this.local_DrawCallback0 = function (container)
 {
-	var api = $("#" + container).dataTable().api();
+	var api = new DataTable("#" + container);
 
 	for (i = 0; i < columns0.length; i++)
 	{

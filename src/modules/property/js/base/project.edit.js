@@ -101,7 +101,7 @@ var project_file_link = function (key, oData)
 		return PorticoClientUtils.escapeHtml(fileName);
 	}
 
-	var url = phpGWLink('property/project/files/view', {file_id: fileId});
+	var url = phpGWLink('property/project/files/view', { file_id: fileId });
 	return PorticoClientUtils.buildAnchorHtml(fileName, url, {
 		target: '_blank',
 		rel: 'noopener',
@@ -138,7 +138,7 @@ var project_attachment_link = function (key, oData)
 
 //this.local_DrawCallback_1 = function (container)
 //{
-//	var api = $("#" + container).dataTable().api();
+//	var api = new DataTable("#" + container);
 //	// Remove the formatting to get integer data for summation
 //	var intVal = function (i)
 //	{
@@ -166,22 +166,22 @@ var project_attachment_link = function (key, oData)
 
 this.local_DrawCallback2 = function (container)
 {
-	var api = $("#" + container).dataTable().api();
+	var api = new DataTable("#" + container);
 	// Remove the formatting to get integer data for summation
 	var intVal = function (i)
 	{
 		return typeof i === 'string' ?
 			i.replace(/[\$,]/g, '') * 1 :
 			typeof i === 'number' ?
-			i : 0;
+				i : 0;
 	};
 
-	var columns = ["4", "5", "6"];
+	var columns = [4, 5, 6];
 
 	columns.forEach(function (col)
 	{
-		data = api.column(col, {page: 'current'}).data();
-		pageTotal = data.length ?
+		var data = api.column(col, { page: 'current' }).data();
+		var pageTotal = data.length ?
 			data.reduce(function (a, b)
 			{
 				return intVal(a) + intVal(b);
@@ -327,27 +327,27 @@ $(function ()
 		JqueryPortico.updateinlineTableHelper(oTable2, requestUrl2);
 	});
 
-//	if (typeof (oTable1) !== 'undefined')
-//	{
-//		var api1 = oTable1.api();
-//		api1.on('draw', sum_columns_table_orders);
-//	}
+	//	if (typeof (oTable1) !== 'undefined')
+	//	{
+	//		var api1 = oTable1.api();
+	//		api1.on('draw', sum_columns_table_orders);
+	//	}
 
-//	if (typeof (oTable2) !== 'undefined')
-//	{
-//		var api2 = oTable2.api();
-//		api2.on('draw', sum_columns_table_invoice);
-//	}
+	//	if (typeof (oTable2) !== 'undefined')
+	//	{
+	//		var api2 = oTable2.api();
+	//		api2.on('draw', sum_columns_table_invoice);
+	//	}
 
 
-// -- buttons--//
+	// -- buttons--//
 
 	$("#submitbox").css({
 		position: 'absolute',
 		right: '10px',
 		border: '1px solid #B5076D',
 		padding: '0 10px 10px 10px',
-//		width: $("#submitbox").width() + 'px',
+		//		width: $("#submitbox").width() + 'px',
 		"background - color": '#FFF',
 		display: "block"
 	});
@@ -436,7 +436,7 @@ $(function ()
 					}
 					else
 					{
-						if(data.mandatory_external_project == 1 && !external_project_id)
+						if (data.mandatory_external_project == 1 && !external_project_id)
 						{
 							$('#external_project_name').addClass('error');
 							$("#external_project_name").attr("data-validation", "required");
@@ -454,7 +454,7 @@ $(function ()
 					}
 				}
 			},
-			complete:function ()
+			complete: function ()
 			{
 
 			}
@@ -466,13 +466,13 @@ $(function ()
 	$("#global_category_id").on('change', function ()
 	{
 		var cat_id = $(this).val();
-		validate_order_category({id: cat_id});
+		validate_order_category({ id: cat_id });
 	});
 
-	validate_change_budget_account = function()
+	validate_change_budget_account = function ()
 	{
 		var cat_id = $("#global_category_id").val();
-		validate_order_category({id: cat_id});
+		validate_order_category({ id: cat_id });
 	}
 
 	strURL = phpGWLink('property/project/lookups/b-account', {}, true);
@@ -481,16 +481,16 @@ $(function ()
 	var strURL = phpGWLink('property/project/lookups/external-project', {
 	}, true);
 	JqueryPortico.autocompleteHelper(strURL, 'external_project_name', 'external_project_id', 'external_project_container', null, null, null, validate_dim_b);
-	
+
 	strURL = phpGWLink('property/project/lookups/ecodimb', {
 	}, true);
 	JqueryPortico.autocompleteHelper(strURL, 'ecodimb_name', 'ecodimb', 'ecodimb_container');
-	
+
 	strURL = phpGWLink('property/project/lookups/b-account', {
 		role: 'group',
 	}, true);
 	JqueryPortico.autocompleteHelper(strURL, 'b_account_group_name', 'b_account_group', 'b_account_group_container');
-		
+
 	$("#b_account_name").on("autocompleteselect", function (event, ui)
 	{
 		var b_account_id = ui.item.value;
@@ -502,10 +502,10 @@ $(function ()
 		var b_account_id = $("#b_account_id").val();
 		check_valid_dim_b(b_account_id);
 	}
-	
+
 	function check_valid_dim_b(b_account_id)
 	{
-		if(!b_account_id)
+		if (!b_account_id)
 		{
 			return;
 		}
@@ -520,18 +520,18 @@ $(function ()
 				var b_account = Result.ResultSet.Result[0];
 				var ecodimb_id = b_account.ecodimb
 
-				if(external_project_budget_account_category)
+				if (external_project_budget_account_category)
 				{
 					var valid_category = false;
 					var external_project_budget_account_category_arr = external_project_budget_account_category.split(',');
-					for (a in external_project_budget_account_category_arr )
+					for (a in external_project_budget_account_category_arr)
 					{
-						if(external_project_budget_account_category_arr[a] == b_account.category)
+						if (external_project_budget_account_category_arr[a] == b_account.category)
 						{
 							valid_category = true;
 						}
 					}
-					if(!valid_category)
+					if (!valid_category)
 					{
 						alert('Arten er ikke gyldig for dette eksterne prosjektet');
 						$('#b_account_name').val('');
@@ -561,7 +561,7 @@ $(function ()
 				}
 			}
 		});
-		
+
 	}
 
 });
@@ -1084,7 +1084,7 @@ function check_and_submit_valid_session()
 	}
 	else
 	{
-		requestOptions.headers = {'Content-Type': 'application/json'};
+		requestOptions.headers = { 'Content-Type': 'application/json' };
 		requestOptions.body = JSON.stringify(payload);
 	}
 
@@ -1122,7 +1122,7 @@ function check_and_submit_valid_session()
 			var id = (data && data.data && data.data.id) ? data.data.id : (data && data.id ? data.id : project_id);
 			if (data && data.receipt && data.receipt.error && data.receipt.error.length)
 			{
-				throw {responseData: data};
+				throw { responseData: data };
 			}
 			var successMsg = isCreate ? 'Prosjektet er opprettet' : 'Prosjektet er lagret';
 			renderProjectFormAlert([successMsg], 'success');
@@ -1176,9 +1176,9 @@ JqueryPortico.FormatterActive = function (key, oData)
 
 function set_tab(active_tab)
 {
-//	var test = $('#tab-content').responsiveTabs('activate');
-//	alert(test);
-//console.log(test);
+	//	var test = $('#tab-content').responsiveTabs('activate');
+	//	alert(test);
+	//console.log(test);
 	$("#active_tab").val(active_tab);
 	check_button_names();
 }
@@ -1270,7 +1270,7 @@ $(window).on('load', function ()
 		var strURL = phpGWLink('property/project/lookups/external-project', {
 			query: external_project_id,
 		}, true);
-		
+
 
 		$.getJSON(strURL, function (Result)
 		{
@@ -1281,7 +1281,7 @@ $(window).on('load', function ()
 
 			}
 		});
-		
+
 	}
 });
 
@@ -1301,7 +1301,7 @@ window.on_location_updated = function (location_code)
 		return;
 	}
 
-	var oArgs = {loc1: location_code};
+	var oArgs = { loc1: location_code };
 	var requestUrl = phpGWLink('property/location/delivery-address', oArgs);
 
 	$.ajax({
@@ -1321,10 +1321,10 @@ window.on_location_updated = function (location_code)
 
 window.get_location_exception = function (location_code)
 {
-    //delete div where role=alert, not the $("#message")
-    $("div[role=alert]").remove();
+	//delete div where role=alert, not the $("#message")
+	$("div[role=alert]").remove();
 
-	var oArgs = {location_code: location_code};
+	var oArgs = { location_code: location_code };
 	var requestUrl = phpGWLink('property/location/location-exception', oArgs);
 
 	$.ajax({
@@ -1366,7 +1366,8 @@ window.get_location_exception = function (location_code)
 this.fileuploader = function ()
 {
 	var sUrl = phpGWLink('property/project/' + encodeURIComponent(project_id) + '/multi-upload', {});
-	TINY.box.show({iframe: sUrl, boxid: 'frameless', width:Math.round($(window).width()*0.9), height:Math.round($(window).height()*0.9), fixed: false, maskid: 'darkmask', maskopacity: 40, mask: true, animate: true,
+	TINY.box.show({
+		iframe: sUrl, boxid: 'frameless', width: Math.round($(window).width() * 0.9), height: Math.round($(window).height() * 0.9), fixed: false, maskid: 'darkmask', maskopacity: 40, mask: true, animate: true,
 		close: true,
 		closejs: function ()
 		{
@@ -1388,7 +1389,7 @@ this.refresh_files = function ()
 
 this.get_other_projects = function (location_code)
 {
-	var oArgs = {location_code: location_code, id: project_id};
+	var oArgs = { location_code: location_code, id: project_id };
 	var strURL = phpGWLink('property/project/' + project_id + '/other-projects', oArgs);
 	JqueryPortico.updateinlineTableHelper('datatable-container_7', strURL);
 };

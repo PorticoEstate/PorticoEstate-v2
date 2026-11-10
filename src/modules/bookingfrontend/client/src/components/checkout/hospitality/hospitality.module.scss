@@ -1,3 +1,5 @@
+@import "../../../styles/util.module";
+
 .hospitalitySection {
     margin-top: 1.5rem;
     padding-top: 1.5rem;
@@ -96,6 +98,17 @@
     display: flex;
     flex-direction: column;
     gap: var(--ds-size-2);
+
+    /* Above the dialog's mobile breakpoint the offers sit side by side, at most three to a row (the track
+       minimum is a third of the width, less a pixel so rounding cannot turn three tracks into two), and the
+       boxes of a row are as tall as the tallest. Below it they stack, as the design's single column. */
+    @include tablet {
+        display: grid;
+        grid-template-columns: repeat(
+            auto-fit,
+            minmax(max(16rem, calc((100% - 2 * var(--ds-size-2)) / 3 - 1px)), 1fr)
+        );
+    }
 }
 
 .offerBox {
@@ -132,6 +145,64 @@
     display: block;
     white-space: pre-wrap;
     color: var(--ds-color-neutral-text-subtle);
+}
+
+/* Dag | Leveringssted | Klokkeslett. Above the dialog's mobile breakpoint (where it stops being full-screen) they
+   share one row of equal columns; below it they stack in the form's own 1.5rem rhythm, the design's single column.
+   Only Klokkeslett has a help line (and Dag a note when editing), so each field is a subgrid of four rows
+   (label | help | control | note): the three controls then sit on one line however many help lines there are.
+   An engine without subgrid keeps the one row and bottom-aligns the controls instead. */
+.topRow {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+
+    @include tablet {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        column-gap: 1rem;
+        row-gap: 0;
+        align-items: end;
+
+        @supports (grid-template-rows: subgrid) {
+            align-items: start;
+        }
+    }
+}
+
+.topRowField {
+    @include tablet {
+        /* The plain-text room is as tall as the selects beside it */
+        .fieldText {
+            box-sizing: border-box;
+            display: flex;
+            align-items: center;
+            min-height: var(--ds-size-12);
+            padding-block: 0;
+        }
+
+        @supports (grid-template-rows: subgrid) {
+            display: grid;
+            grid-template-rows: subgrid;
+            grid-row: span 4;
+
+            > label {
+                grid-row: 1;
+            }
+
+            > [data-field='description'] {
+                grid-row: 2;
+            }
+
+            > :not(label):not([data-field='description']):not(p) {
+                grid-row: 3;
+            }
+
+            > p:not([data-field='description']) {
+                grid-row: 4;
+            }
+        }
+    }
 }
 
 .menuLoading {
@@ -392,6 +463,14 @@
     dt,
     dd {
         margin: 0;
+    }
+
+    /* Above the mobile breakpoint a label and its amount are not a form-width apart: the block takes the width of
+       the amounts and sits right, under the items' amount column */
+    @include tablet {
+        width: 100%;
+        max-width: 26rem;
+        margin-left: auto;
     }
 }
 

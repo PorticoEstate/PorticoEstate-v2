@@ -878,90 +878,93 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
                         </Fieldset>
                     )}
 
-                    {/* Day */}
-                    <Field>
-                        <Label>{t('bookingfrontend.day')}</Label>
-                        <Select
-                            value={selectedDateKey}
-                            onChange={(e) => {
-                                setSelectedDateKey(e.target.value);
-                                setSelectedTime('');
-                            }}
-                        >
-                            <option value="">{t('bookingfrontend.select_serving_date')}</option>
-                            {visibleDateOptions.map(d => {
-                                // Closed days stay visible (a vanishing booking date is confusing)
-                                // but are not selectable. The existing order's own day is left
-                                // selectable — the backend only re-validates when the serving
-                                // instant moves, so that order stays editable.
-                                const closed = !isServingDayOpen(d.from, hospitality.open_days_list);
-                                // Dates owned by another application stay visible for the same
-                                // reason, but an order cannot be moved between applications.
-                                const otherApplication = !!existingOrder
-                                    && d.applicationId !== existingOrder.application_id;
-                                const note = otherApplication
-                                    ? ` — ${t('bookingfrontend.date_belongs_to_other_application')}`
-                                    : closed
-                                        ? ` — ${t('bookingfrontend.closed_on_weekday')
-                                            .replace('%1', formatWeekdayName(isoWeekdayInVenueTz(d.from), i18n.language))}`
-                                        : '';
-                                return (
-                                    <option
-                                        key={d.key}
-                                        value={d.key}
-                                        disabled={otherApplication || (closed && d.key !== grandfatheredDateKey)}
-                                    >
-                                        {dateOptionTexts.get(d.key)}{note}
-                                    </option>
-                                );
-                            })}
-                        </Select>
-                        {existingOrder && dateOptions.some(d => d.applicationId !== existingOrder.application_id) && (
-                            <Paragraph data-size="sm">
-                                {t('bookingfrontend.hospitality_cannot_change_application')}
-                            </Paragraph>
-                        )}
-                    </Field>
-
-                    {/* Place: a dropdown, or plain text when there is only one room to choose */}
-                    <Field>
-                        <Label>{t('bookingfrontend.delivery_location')}</Label>
-                        {singleLocation ? (
-                            <div className={styles.fieldText}>{locationLabel(singleLocation)}</div>
-                        ) : (
+                    {/* Day | Place | Time: one row above the dialog's mobile breakpoint, a single column below it */}
+                    <div className={styles.topRow}>
+                        {/* Day */}
+                        <Field className={styles.topRowField}>
+                            <Label>{t('bookingfrontend.day')}</Label>
                             <Select
-                                value={String(locationId)}
-                                onChange={(e) => setLocationId(parseInt(e.target.value))}
+                                value={selectedDateKey}
+                                onChange={(e) => {
+                                    setSelectedDateKey(e.target.value);
+                                    setSelectedTime('');
+                                }}
+                            >
+                                <option value="">{t('bookingfrontend.select_serving_date')}</option>
+                                {visibleDateOptions.map(d => {
+                                    // Closed days stay visible (a vanishing booking date is confusing)
+                                    // but are not selectable. The existing order's own day is left
+                                    // selectable — the backend only re-validates when the serving
+                                    // instant moves, so that order stays editable.
+                                    const closed = !isServingDayOpen(d.from, hospitality.open_days_list);
+                                    // Dates owned by another application stay visible for the same
+                                    // reason, but an order cannot be moved between applications.
+                                    const otherApplication = !!existingOrder
+                                        && d.applicationId !== existingOrder.application_id;
+                                    const note = otherApplication
+                                        ? ` — ${t('bookingfrontend.date_belongs_to_other_application')}`
+                                        : closed
+                                            ? ` — ${t('bookingfrontend.closed_on_weekday')
+                                                .replace('%1', formatWeekdayName(isoWeekdayInVenueTz(d.from), i18n.language))}`
+                                            : '';
+                                    return (
+                                        <option
+                                            key={d.key}
+                                            value={d.key}
+                                            disabled={otherApplication || (closed && d.key !== grandfatheredDateKey)}
+                                        >
+                                            {dateOptionTexts.get(d.key)}{note}
+                                        </option>
+                                    );
+                                })}
+                            </Select>
+                            {existingOrder && dateOptions.some(d => d.applicationId !== existingOrder.application_id) && (
+                                <Paragraph data-size="sm">
+                                    {t('bookingfrontend.hospitality_cannot_change_application')}
+                                </Paragraph>
+                            )}
+                        </Field>
+
+                        {/* Place: a dropdown, or plain text when there is only one room to choose */}
+                        <Field className={styles.topRowField}>
+                            <Label>{t('bookingfrontend.delivery_location')}</Label>
+                            {singleLocation ? (
+                                <div className={styles.fieldText}>{locationLabel(singleLocation)}</div>
+                            ) : (
+                                <Select
+                                    value={String(locationId)}
+                                    onChange={(e) => setLocationId(parseInt(e.target.value))}
+                                    disabled={!dateSelected}
+                                >
+                                    {availableLocations.map(loc => (
+                                        <option key={loc.id} value={String(loc.id)}>{locationLabel(loc)}</option>
+                                    ))}
+                                </Select>
+                            )}
+                        </Field>
+
+                        {/* Time: the booking's own times say what is possible. The grandfathered instant has no range. */}
+                        <Field className={styles.topRowField}>
+                            <Label>{t('bookingfrontend.hospitality_dialog_clock_time')}</Label>
+                            {selectedDateOption && selectedDateOption.key !== GRANDFATHERED_DATE_KEY && (
+                                <Field.Description>
+                                    {t('bookingfrontend.hospitality_dialog_time_within_application')
+                                        .replace('%1', formatHm(selectedDateOption.from))
+                                        .replace('%2', formatHm(selectedDateOption.to))}
+                                </Field.Description>
+                            )}
+                            <Select
+                                value={selectedTime}
+                                onChange={(e) => setSelectedTime(e.target.value)}
                                 disabled={!dateSelected}
                             >
-                                {availableLocations.map(loc => (
-                                    <option key={loc.id} value={String(loc.id)}>{locationLabel(loc)}</option>
+                                <option value="">{t('bookingfrontend.select_serving_time')}</option>
+                                {timeSlots.map(slot => (
+                                    <option key={slot} value={slot}>{slot}</option>
                                 ))}
                             </Select>
-                        )}
-                    </Field>
-
-                    {/* Time: the booking's own times say what is possible. The grandfathered instant has no range. */}
-                    <Field>
-                        <Label>{t('bookingfrontend.hospitality_dialog_clock_time')}</Label>
-                        {selectedDateOption && selectedDateOption.key !== GRANDFATHERED_DATE_KEY && (
-                            <Field.Description>
-                                {t('bookingfrontend.hospitality_dialog_time_within_application')
-                                    .replace('%1', formatHm(selectedDateOption.from))
-                                    .replace('%2', formatHm(selectedDateOption.to))}
-                            </Field.Description>
-                        )}
-                        <Select
-                            value={selectedTime}
-                            onChange={(e) => setSelectedTime(e.target.value)}
-                            disabled={!dateSelected}
-                        >
-                            <option value="">{t('bookingfrontend.select_serving_time')}</option>
-                            {timeSlots.map(slot => (
-                                <option key={slot} value={slot}>{slot}</option>
-                            ))}
-                        </Select>
-                    </Field>
+                        </Field>
+                    </div>
 
                     {/* Working-days info: which days the catering is open (deadlines counted in working days) */}
                     {isWorkingDaysMode(hospitality.open_days_list) && (

@@ -109,6 +109,11 @@
 			return booking_soarticle_mapping::get_instance()->get_pricing($id, $filter_active );
 		}
 
+		public function get_tax_percentages()
+		{
+			return booking_soarticle_mapping::get_instance()->get_tax_percentages();
+		}
+
 		public function get_reserved_resources( $building_id )
 		{
 			return booking_soarticle_mapping::get_instance()->get_reserved_resources($building_id);

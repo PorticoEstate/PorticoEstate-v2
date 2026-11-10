@@ -616,8 +616,12 @@ class bookingfrontend_uiallocation extends booking_uiallocation
 		// Check if the allocation's start date is in the future
 		$isFutureAllocation = $allocation['from_'] > date('Y-m-d H:i:s');
 
+		// edit() refuses every allocation that carries an application_id (GH #1393), so a link
+		// to it would end in "access denied". That allocation is managed from its application.
+		$isEditable = empty($allocation['application_id']);
+
 		// Combine conditions: user must have permission and the allocation must be in the future
-		if ($canEdit && $isFutureAllocation)
+		if ($canEdit && $isFutureAllocation && $isEditable)
 		{
 			$from_org = Sanitizer::get_var('from_org', 'boolean', "GET", false);
 
@@ -732,11 +736,16 @@ class bookingfrontend_uiallocation extends booking_uiallocation
 			));
 			if ($allocation['from_'] > Date('Y-m-d H:i:s'))
 			{
-				$allocation['edit_link'] = self::link(array(
-					'menuaction' => 'bookingfrontend.uiallocation.edit',
-					'allocation_id' => $allocation['id'],
-					'from_org' => $from_org
-				));
+				// Same rule as info_determine_edit_link(): edit() refuses an allocation with an
+				// application_id, so no link to it. Cancel accepts the organisation admin and stays.
+				if (empty($allocation['application_id']))
+				{
+					$allocation['edit_link'] = self::link(array(
+						'menuaction' => 'bookingfrontend.uiallocation.edit',
+						'allocation_id' => $allocation['id'],
+						'from_org' => $from_org
+					));
+				}
 
 				$allocation['cancel_link'] = self::link(array(
 					'menuaction' => 'bookingfrontend.uiallocation.cancel',

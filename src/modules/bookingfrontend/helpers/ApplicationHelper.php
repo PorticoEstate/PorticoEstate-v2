@@ -107,6 +107,20 @@ class ApplicationHelper
                     }
                 }
             }
+
+            // What the list shows the user, the user can open: the list also matches an
+            // application by customer_organization_id alone (ApplicationRepository::
+            // getApplicationsBySsnAndOrganizations), and an application can carry an
+            // organization id and no number. Like the list, not for a NEWPARTIAL1.
+            if ($application['status'] !== 'NEWPARTIAL1'
+                && !empty($application['customer_organization_id'])
+                && $this->userHelper->organizations) {
+                foreach ($this->userHelper->organizations as $org) {
+                    if ((int)$org['org_id'] === (int)$application['customer_organization_id']) {
+                        return true;
+                    }
+                }
+            }
         }
 
         return false;

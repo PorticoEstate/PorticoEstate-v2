@@ -228,13 +228,20 @@ export class DeliveredApplicationService {
       return true;
     }
 
-    // Organization match — check if user is a delegate for the app's org
-    if (app.customer_organization_number) {
+    // Organization match — what the list shows (getDeliveredApplications) the user can open.
+    // The list tests customer_organization_id IN orgIds and customer_organization_number IN
+    // orgNumbers independently, so this does too: an application can carry an organization id
+    // and no number. The id test also carries the list's status filter.
+    if (app.customer_organization_id != null || app.customer_organization_number) {
       const orgs = await this.getActiveOrganizations(ssn);
-      if (app.customer_organization_id && orgs.orgIds.includes(app.customer_organization_id)) {
+      if (
+        app.status !== 'NEWPARTIAL1'
+        && app.customer_organization_id != null
+        && orgs.orgIds.includes(app.customer_organization_id)
+      ) {
         return true;
       }
-      if (orgs.orgNumbers.includes(app.customer_organization_number)) {
+      if (app.customer_organization_number && orgs.orgNumbers.includes(app.customer_organization_number)) {
         return true;
       }
     }

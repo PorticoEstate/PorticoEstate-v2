@@ -1,0 +1,102 @@
+{% extends layout|default('@views/_bare.twig') %}
+
+{% block title %}{{ lang('Inbox') }}{% endblock %}
+
+{% block styles %}
+<style>{{ source('@views/inbox.css') }}</style>
+{% endblock %}
+
+{% block content %}
+<main class="email-inbox" id="email-inbox"
+	data-api-url="{{ api_url|e('html_attr') }}"
+	data-folders-api-url="{{ folders_api_url|e('html_attr') }}"
+	data-move-url="{{ move_url|e('html_attr') }}"
+	data-seen-url="{{ seen_url|e('html_attr') }}"
+	data-action-url="{{ action_url|e('html_attr') }}"
+	data-csrf-name="{{ csrf.name|e('html_attr') }}"
+	data-csrf-value="{{ csrf.value|e('html_attr') }}"
+	data-has-preferences="{{ has_preferences ? '1' : '0' }}">
+	<header class="email-inbox-header">
+		<div>
+			<p class="email-inbox-kicker">{{ lang('E-Mail') }}</p>
+			<h1 id="email-inbox-title">{{ lang('Inbox') }}</h1>
+		</div>
+		<nav aria-label="{{ lang('Email navigation') }}">
+			<a class="email-inbox-action email-inbox-action--primary" href="{{ compose_url|e }}">{{ lang('Compose') }}</a>
+			<a class="email-inbox-action" href="{{ folders_url|e }}">{{ lang('Folders') }}</a>
+			<a class="email-inbox-action" href="{{ search_url|e }}">{{ lang('Search') }}</a>
+			<a class="email-inbox-action" href="{{ filters_url|e }}">{{ lang('Filters') }}</a>
+			<a class="email-inbox-action" href="{{ preferences_url|e }}">{{ lang('Settings') }}</a>
+		</nav>
+	</header>
+
+	{% if not has_preferences %}
+		<section class="email-inbox-notice" role="status">
+			<p>{{ lang('Please set your preferences') }}</p>
+			<a href="{{ preferences_url|e }}">{{ lang('Email settings') }}</a>
+		</section>
+	{% else %}
+		<div class="email-inbox-workspace">
+			<aside class="email-inbox-sidebar">
+				<label class="email-inbox-account" for="email-inbox-account">
+					{{ lang('Account') }}
+					<select id="email-inbox-account">
+						{% for account in accounts %}
+							<option value="{{ account.id }}"{% if account.id == active_account %} selected{% endif %}>{{ account.name|e }}</option>
+						{% endfor %}
+					</select>
+				</label>
+				<h2>{{ lang('Folders') }}</h2>
+				<p class="email-inbox-folder-status" id="email-inbox-folder-status" role="status">{{ lang('Loading folders') }}</p>
+				<p class="email-inbox-error" id="email-inbox-folder-error" role="alert" hidden></p>
+				<nav aria-label="{{ lang('Email folders') }}">
+					<ul class="email-inbox-folder-list" id="email-inbox-folder-list"></ul>
+				</nav>
+			</aside>
+			<section class="email-inbox-messages" aria-label="{{ lang('Messages') }}">
+		<div class="email-inbox-status" id="email-inbox-status" role="status" aria-live="polite">{{ lang('Loading messages') }}</div>
+		<div class="email-inbox-error" id="email-inbox-error" role="alert" hidden></div>
+		<div class="email-inbox-move-status" id="email-inbox-move-status" role="status" aria-live="polite"></div>
+		<div class="email-inbox-bulk" id="email-inbox-bulk">
+			<span id="email-inbox-selected" role="status">0 {{ lang('selected') }}</span>
+			<label>{{ lang('Destination account') }}<select id="email-inbox-target-account"></select></label>
+			<label>{{ lang('Destination folder') }}<select id="email-inbox-target-folder"></select></label>
+			<button type="button" id="email-inbox-move-selected" disabled>{{ lang('Move selected') }}</button>
+			<button type="button" id="email-inbox-delete-selected" disabled>{{ lang('Delete selected') }}</button>
+			<button type="button" id="email-inbox-empty-trash" disabled>{{ lang('Empty Trash') }}</button>
+		</div>
+		<div class="email-inbox-table-wrap">
+			<table class="email-inbox-table">
+				<thead>
+					<tr>
+						<th scope="col"><input type="checkbox" id="email-inbox-select-all" aria-label="{{ lang('Select all messages on this page') }}"></th>
+						<th scope="col">{{ lang('Read') }}</th>
+						<th scope="col"><button type="button" data-email-sort="2">{{ lang('From') }}</button></th>
+						<th scope="col"><button type="button" data-email-sort="3">{{ lang('Subject') }}</button></th>
+						<th scope="col"><button type="button" data-email-sort="1">{{ lang('Date') }}</button></th>
+						<th scope="col"><button type="button" data-email-sort="6">{{ lang('Size') }}</button></th>
+					</tr>
+				</thead>
+				<tbody id="email-inbox-rows"></tbody>
+			</table>
+		</div>
+		<nav class="email-inbox-pagination" id="email-inbox-pagination" aria-label="{{ lang('Message pages') }}" hidden>
+			<button type="button" id="email-inbox-previous">{{ lang('Previous') }}</button>
+			<span id="email-inbox-range"></span>
+			<button type="button" id="email-inbox-next">{{ lang('Next') }}</button>
+		</nav>
+			</section>
+		</div>
+	{% endif %}
+</main>
+{% endblock %}
+
+{% block scripts %}
+<script>{{ source('@views/url.js') }}</script>
+{% if has_preferences %}
+<script>{{ source('@views/folder-hierarchy.js') }}</script>
+<script>{{ source('@views/message-seen.js') }}</script>
+<script>{{ source('@views/message-actions.js') }}</script>
+<script>{{ source('@views/inbox.js') }}</script>
+{% endif %}
+{% endblock %}

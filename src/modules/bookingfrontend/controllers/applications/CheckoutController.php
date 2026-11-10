@@ -3,6 +3,7 @@
 namespace App\modules\bookingfrontend\controllers\applications;
 
 use App\helpers\ResponseHelper;
+use App\modules\bookingfrontend\helpers\PriceChoiceException;
 use App\modules\bookingfrontend\helpers\UserHelper;
 use App\modules\bookingfrontend\helpers\WebSocketHelper;
 use App\modules\bookingfrontend\services\applications\ApplicationService;
@@ -162,6 +163,9 @@ class CheckoutController
                     ]
                 ]);
 
+            } catch (PriceChoiceException $e) {
+                // A resource still waits for the citizen's price choice
+                return ResponseHelper::sendErrorResponse($e->toResponseBody(), 422);
             } catch (Exception $e) {
                 // Check if the error message contains validation errors
                 if (str_contains($e->getMessage(), ',')) {
@@ -484,6 +488,9 @@ class CheckoutController
                     ]);
                 }
 
+            } catch (PriceChoiceException $e) {
+                // A resource still waits for the citizen's price choice
+                return ResponseHelper::sendErrorResponse($e->toResponseBody(), 422);
             } catch (Exception $e) {
                 // Check if the error message contains validation errors
                 if (str_contains($e->getMessage(), ',')) {

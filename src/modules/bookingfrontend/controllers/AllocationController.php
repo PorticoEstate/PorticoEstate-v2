@@ -6,6 +6,7 @@ use App\helpers\ResponseHelper;
 use App\modules\bookingfrontend\helpers\AllocationAccessHelper;
 use App\modules\bookingfrontend\helpers\ApplicationHelper;
 use App\modules\bookingfrontend\services\AllocationCancellationService;
+use App\modules\bookingfrontend\services\AllocationTimeChangeService;
 use App\modules\bookingfrontend\services\AllocationWithdrawalService;
 use App\modules\bookingfrontend\services\applications\ApplicationService;
 use App\modules\phpgwapi\models\ServerSettings;
@@ -29,6 +30,7 @@ class AllocationController
 	private AllocationCancellationService $cancellationService;
 	private AllocationAccessHelper $accessHelper;
 	private AllocationWithdrawalService $withdrawalService;
+	private AllocationTimeChangeService $timeChangeService;
 	private ApplicationService $applicationService;
 	private ApplicationHelper $applicationHelper;
 
@@ -37,6 +39,7 @@ class AllocationController
 		$this->cancellationService = new AllocationCancellationService();
 		$this->accessHelper = new AllocationAccessHelper();
 		$this->withdrawalService = new AllocationWithdrawalService();
+		$this->timeChangeService = new AllocationTimeChangeService();
 		$this->applicationService = new ApplicationService();
 		$this->applicationHelper = new ApplicationHelper();
 	}
@@ -253,6 +256,88 @@ class AllocationController
 		{
 			return ResponseHelper::sendErrorResponse(
 				['error' => 'Error withdrawing timeslot: ' . $e->getMessage()],
+				500
+			);
+		}
+	}
+
+	/**
+	 * @OA\Post(
+	 *     path="/bookingfrontend/allocations/{id}/change-time",
+	 *     summary="Change the time of a single allocation occurrence from Min side",
+	 *     tags={"Allocations"},
+	 *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+	 *     @OA\Parameter(name="secret", in="query", required=false, @OA\Schema(type="string"),
+	 *         description="The owning application's secret, for a caller authorised by the emailed link"),
+	 *     @OA\RequestBody(
+	 *         @OA\JsonContent(
+	 *             required={"from_","to_"},
+	 *             @OA\Property(property="from_", type="string", example="2026-12-10 18:00",
+	 *                 description="New start, naive local time, on the occurrence's own date"),
+	 *             @OA\Property(property="to_", type="string", example="2026-12-10 19:00",
+	 *                 description="New end, naive local time, on the occurrence's own date"),
+	 *             @OA\Property(property="comment", type="string",
+	 *                 description="Optional message to the case officer, travels into the staff mail")
+	 *         )
+	 *     ),
+	 *     @OA\Response(response=200, description="outcome=shortened: the shorter time and its price are stored; outcome=requested: the case officer decides on the new time"),
+	 *     @OA\Response(response=400, description="Unusable time, another date, unchanged, or comment too long"),
+	 *     @OA\Response(response=403, description="Caller may not manage this allocation"),
+	 *     @OA\Response(response=404, description="No such allocation"),
+	 *     @OA\Response(response=409, description="Withdrawn, already started, no owning application, changed meanwhile, or a booking lies in the removed time")
+	 * )
+	 *
+	 * GH #1392. One occurrence, never its series. A shorter time inside the approved one is
+	 * applied at once and the price follows the new hours; any other time becomes a request the
+	 * case officer accepts or rejects. Same guard as withdraw(); see AllocationTimeChangeService.
+	 */
+	public function changeTime(Request $request, Response $response, array $args): Response
+	{
+		try
+		{
+			$bodyParams = $this->readBody($request);
+
+			$allocation = $this->requireManageableAllocation($request, (int)$args['id'], $bodyParams, $error);
+			if ($allocation === null)
+			{
+				return $error;
+			}
+
+			$from = isset($bodyParams['from_']) && is_string($bodyParams['from_']) ? $bodyParams['from_'] : '';
+			$to = isset($bodyParams['to_']) && is_string($bodyParams['to_']) ? $bodyParams['to_'] : '';
+
+			$comment = isset($bodyParams['comment']) && is_string($bodyParams['comment']) ? trim($bodyParams['comment']) : '';
+			if (strlen($comment) > 10000)
+			{
+				return ResponseHelper::sendErrorResponse(['error' => 'Comment is too long (maximum 10000 characters)'], 400);
+			}
+
+			$applicationId = (int)($allocation['application_id'] ?? 0);
+			$application = $applicationId > 0 ? $this->applicationService->getApplicationById($applicationId) : null;
+			$author = $application ? $this->applicationHelper->resolveCommentAuthor($application, $request) : null;
+
+			return ResponseHelper::sendJSONResponse(
+				$this->timeChangeService->changeTime($allocation, $from, $to, $comment, $author)
+			);
+		}
+		catch (InvalidArgumentException $e)
+		{
+			return ResponseHelper::sendErrorResponse(['error' => $e->getMessage()], 400);
+		}
+		catch (RuntimeException $e)
+		{
+			// The service's refusals carry 409. Anything else extending RuntimeException -
+			// PDOException does, with an SQLSTATE for a code - is a server error.
+			if ($e->getCode() === 409)
+			{
+				return ResponseHelper::sendErrorResponse(['error' => $e->getMessage()], 409);
+			}
+			return ResponseHelper::sendErrorResponse(['error' => 'Error changing the time: ' . $e->getMessage()], 500);
+		}
+		catch (Exception $e)
+		{
+			return ResponseHelper::sendErrorResponse(
+				['error' => 'Error changing the time: ' . $e->getMessage()],
 				500
 			);
 		}

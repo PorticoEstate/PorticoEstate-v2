@@ -3,6 +3,7 @@ import { createHash, randomBytes } from 'crypto';
 import { DatabaseService } from '../../database/database.service';
 import { RedisService } from '../notification/redis.service';
 import { FreeTimeService } from '../freetime/freetime.service';
+import { getEligibleResourcePrices, preselectedPrice, priceCategoriesInstalled, priceLabel } from './resource-price';
 
 /**
  * A booking takes milliseconds. A statement in its transaction that runs longer than
@@ -1491,8 +1492,16 @@ export class BookingService implements OnModuleInit {
 
       const mapping = mappingRows[0];
 
+      // PHP: resolveResourcePrice($mappingId, null) — these are all the resource
+      // itself (article_cat 1), so the price is the citizen's, not the mapping's.
+      // Nobody can choose here: the preselected option is used, and where the
+      // citizen must choose the line stays unpriced (no price row, 0) until
+      // they do so in checkout, which refuses to submit it before.
+      const options = await getEligibleResourcePrices(client, article.id);
+      const chosen = preselectedPrice(options);
+
       // PHP: $line = [...] — line 103-110
-      const unitPrice = parseFloat(mapping.price || '0'); // ex_tax_price
+      const unitPrice = chosen ? parseFloat(chosen.price) : 0; // ex_tax_price
       const quantity = article.quantity;
       const taxPercent = parseFloat(mapping.tax_percent || '0');
 
@@ -1500,12 +1509,21 @@ export class BookingService implements OnModuleInit {
       const amount = unitPrice * quantity;
       const tax = amount * (taxPercent / 100);
 
+      // The category the line was priced in (ref #1477): the chosen row's, once the column exists
+      const withCategory = await priceCategoriesInstalled(client);
+
       await client.query(
         `INSERT INTO bb_purchase_order_line (
           order_id, article_mapping_id, quantity,
-          tax_code, unit_price, parent_mapping_id, amount, tax, currency
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'NOK')`,
-        [orderId, article.id, quantity, mapping.tax_code, unitPrice, article.parent_id, amount, tax],
+          tax_code, unit_price, parent_mapping_id, amount, tax, currency,
+          article_price_id, price_label${withCategory ? ', category_id' : ''}
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'NOK', $9, $10${withCategory ? ', $11' : ''})`,
+        [
+          orderId, article.id, quantity, mapping.tax_code, unitPrice, article.parent_id, amount, tax,
+          chosen ? chosen.id : null,
+          chosen ? priceLabel(chosen, options.length) : null,
+          ...(withCategory ? [chosen?.category_id ?? null] : []),
+        ],
       );
     }
   }

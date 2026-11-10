@@ -31,6 +31,8 @@ use App\modules\booking\controllers\HospitalityController;
 use App\modules\booking\controllers\HospitalityArticleController;
 use App\modules\booking\controllers\HospitalityOrderController;
 use App\modules\booking\controllers\ArticleMappingController;
+use App\modules\booking\controllers\PriceCategoryController;
+use Slim\Csrf\Guard;
 use App\modules\booking\viewcontrollers\HospitalityViewController;
 use App\modules\booking\viewcontrollers\HospitalityOrderViewController;
 
@@ -227,10 +229,15 @@ $app->group('/booking/applications', function (RouteCollectorProxy $group)
 	$group->get('/{id:[0-9]+}/comments', ApplicationController::class . ':showComments');
 	$group->get('/{id:[0-9]+}/internal-notes', ApplicationController::class . ':showInternalNotes');
 	$group->get('/{id:[0-9]+}/documents', ApplicationController::class . ':showDocuments');
+	$group->post('/{id:[0-9]+}/documents', ApplicationController::class . ':uploadDocument');
+	$group->delete('/{id:[0-9]+}/documents/{docId:[0-9]+}', ApplicationController::class . ':deleteDocument');
 	$group->get('/{id:[0-9]+}/orders', ApplicationController::class . ':showOrders');
 	$group->get('/{id:[0-9]+}/associations', ApplicationController::class . ':showAssociations');
 	$group->delete('/{id:[0-9]+}/associations/{assocId:[0-9]+}', ApplicationController::class . ':deleteAssociation');
 	$group->post('/{id:[0-9]+}/associations/{assocId:[0-9]+}/activate', ApplicationController::class . ':activateAssociation');
+	$group->get('/{id:[0-9]+}/change-requests', ApplicationController::class . ':showChangeRequests');
+	$group->post('/{id:[0-9]+}/change-requests/{requestId:[0-9]+}/accept', ApplicationController::class . ':acceptChangeRequest');
+	$group->post('/{id:[0-9]+}/change-requests/{requestId:[0-9]+}/reject', ApplicationController::class . ':rejectChangeRequest');
 	$group->get('/{id:[0-9]+}/related', ApplicationController::class . ':showRelated');
 	$group->get('/{id:[0-9]+}/user-list', ApplicationController::class . ':showUserList');
 	$group->post('/{id:[0-9]+}/comment', ApplicationController::class . ':addComment');
@@ -242,6 +249,11 @@ $app->group('/booking/applications', function (RouteCollectorProxy $group)
 	$group->get('/{id:[0-9]+}/recurring-preview', ApplicationController::class . ':recurringPreview');
 	$group->post('/{id:[0-9]+}/create-recurring-allocations', ApplicationController::class . ':createRecurringAllocations');
 	$group->get('/{id:[0-9]+}/hospitalities', ApplicationController::class . ':showHospitalities');
+	// Create modal for applicants without an organization
+	$group->get('/{id:[0-9]+}/organizations', ApplicationController::class . ':searchOrganizations');
+	$group->get('/{id:[0-9]+}/seasons', ApplicationController::class . ':showSeasons');
+	$group->post('/{id:[0-9]+}/allocations', ApplicationController::class . ':createAllocation');
+	$group->post('/{id:[0-9]+}/bookings', ApplicationController::class . ':createBooking');
 })
 	->addMiddleware(new AccessVerifier($container))
 	->addMiddleware(new SessionsMiddleware($container));
@@ -308,6 +320,42 @@ $app->group('/booking/hospitality-orders', function (RouteCollectorProxy $group)
 $app->group('/booking/article-mappings', function (RouteCollectorProxy $group) {
 	$group->post('', ArticleMappingController::class . ':store');
 	$group->put('/{id:[0-9]+}', ArticleMappingController::class . ':update');
+})
+	->addMiddleware(new AccessVerifier($container))
+	->addMiddleware(new SessionsMiddleware($container));
+
+// A write from a legacy page needs the CSRF token that page was given
+// (booking_uiarticle_mapping::edit mints it into the session's csrf store).
+// The token comes as X-CSRF-NAME / X-CSRF-VALUE, since nginx drops header
+// names with underscores, and goes to the guard as the csrf_name / csrf_value
+// headers it reads. Same guard and storage as the messenger module.
+$bookingCsrfMiddleware = function ($request, $handler) use ($app)
+{
+	$name = $request->getHeaderLine('X-CSRF-NAME');
+	$value = $request->getHeaderLine('X-CSRF-VALUE');
+	if ($name !== '')
+	{
+		$request = $request->withHeader('csrf_name', $name);
+	}
+	if ($value !== '')
+	{
+		$request = $request->withHeader('csrf_value', $value);
+	}
+
+	$failureHandler = function ($request, $handler) use ($app)
+	{
+		$response = $app->getResponseFactory()->createResponse(400);
+		$response->getBody()->write(json_encode(['error' => 'Failed CSRF check']));
+		return $response->withHeader('Content-Type', 'application/json');
+	};
+
+	$csrfStorage = null;
+	$guard = new Guard($app->getResponseFactory(), 'csrf', $csrfStorage, $failureHandler, 200, 16, true);
+	return $guard->process($request, $handler);
+};
+
+$app->group('/booking/price-categories', function (RouteCollectorProxy $group) use ($bookingCsrfMiddleware) {
+	$group->post('', PriceCategoryController::class . ':store')->add($bookingCsrfMiddleware);
 })
 	->addMiddleware(new AccessVerifier($container))
 	->addMiddleware(new SessionsMiddleware($container));

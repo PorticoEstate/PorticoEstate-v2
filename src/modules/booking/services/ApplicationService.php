@@ -3,6 +3,7 @@
 namespace App\modules\booking\services;
 
 use App\modules\booking\models\Allocation;
+use App\modules\booking\repositories\ApplicationCommentElementRepository;
 use App\modules\booking\repositories\ApplicationRepository;
 use App\modules\booking\services\EmailService;
 use RuntimeException;
@@ -41,7 +42,8 @@ class ApplicationService
 	public function assignCurrentUser(int $appId, int $accountId): void
 	{
 		$row = $this->repo->getById($appId);
-		if (!$row) {
+		if (!$row)
+		{
 			throw new RuntimeException('Application not found', 404);
 		}
 
@@ -50,15 +52,18 @@ class ApplicationService
 
 		// Assign + status transition on the primary application
 		$this->repo->assignCaseOfficer($appId, $accountId);
-		if (($row['status'] ?? '') === 'NEW') {
+		if (($row['status'] ?? '') === 'NEW')
+		{
 			$this->repo->updateStatus($appId, 'PENDING');
 		}
 		$this->repo->addComment($appId, $authorName, $commentText, 'ownership');
 
 		// Propagate to related applications when combining is enabled
-		if ($this->combineApplications) {
+		if ($this->combineApplications)
+		{
 			$relatedInfo = $this->repo->getRelatedApplications($appId);
-			if ($relatedInfo['total_count'] > 1) {
+			if ($relatedInfo['total_count'] > 1)
+			{
 				$relatedIds = array_filter(
 					$relatedInfo['application_ids'],
 					fn(int $id) => $id !== $appId
@@ -66,20 +71,24 @@ class ApplicationService
 
 				$relatedRows = $this->repo->getByIds($relatedIds);
 
-				foreach ($relatedIds as $relatedId) {
+				foreach ($relatedIds as $relatedId)
+				{
 					$relatedRow = $relatedRows[$relatedId] ?? null;
-					if (!$relatedRow) {
+					if (!$relatedRow)
+					{
 						continue;
 					}
 
 					// Only assign if not already assigned to this user
-					if (($relatedRow['case_officer_id'] ?? null) == $accountId) {
+					if (($relatedRow['case_officer_id'] ?? null) == $accountId)
+					{
 						continue;
 					}
 
 					$this->repo->assignCaseOfficer($relatedId, $accountId);
 
-					if (($relatedRow['status'] ?? '') === 'NEW') {
+					if (($relatedRow['status'] ?? '') === 'NEW')
+					{
 						$this->repo->updateStatus($relatedId, 'PENDING');
 					}
 
@@ -100,11 +109,13 @@ class ApplicationService
 	public function unassignCurrentUser(int $appId, int $accountId): void
 	{
 		$row = $this->repo->getById($appId);
-		if (!$row) {
+		if (!$row)
+		{
 			throw new RuntimeException('Application not found', 404);
 		}
 
-		if ((int) ($row['case_officer_id'] ?? 0) !== $accountId) {
+		if ((int) ($row['case_officer_id'] ?? 0) !== $accountId)
+		{
 			throw new RuntimeException('You are not the case officer', 403);
 		}
 
@@ -119,9 +130,11 @@ class ApplicationService
 		$this->repo->updateDisplayInDashboard($appId, 1);
 
 		// Propagate to related applications when combining is enabled
-		if ($this->combineApplications) {
+		if ($this->combineApplications)
+		{
 			$relatedInfo = $this->repo->getRelatedApplications($appId);
-			if ($relatedInfo['total_count'] > 1) {
+			if ($relatedInfo['total_count'] > 1)
+			{
 				$relatedIds = array_filter(
 					$relatedInfo['application_ids'],
 					fn(int $id) => $id !== $appId
@@ -129,14 +142,17 @@ class ApplicationService
 
 				$relatedRows = $this->repo->getByIds($relatedIds);
 
-				foreach ($relatedIds as $relatedId) {
+				foreach ($relatedIds as $relatedId)
+				{
 					$relatedRow = $relatedRows[$relatedId] ?? null;
-					if (!$relatedRow) {
+					if (!$relatedRow)
+					{
 						continue;
 					}
 
 					// Only unassign if this user IS the case officer on that related app
-					if ((int) ($relatedRow['case_officer_id'] ?? 0) !== $accountId) {
+					if ((int) ($relatedRow['case_officer_id'] ?? 0) !== $accountId)
+					{
 						continue;
 					}
 
@@ -159,11 +175,13 @@ class ApplicationService
 	public function toggleDashboard(int $appId, int $accountId): int
 	{
 		$row = $this->repo->getById($appId);
-		if (!$row) {
+		if (!$row)
+		{
 			throw new RuntimeException('Application not found', 404);
 		}
 
-		if ((int) ($row['case_officer_id'] ?? 0) !== $accountId) {
+		if ((int) ($row['case_officer_id'] ?? 0) !== $accountId)
+		{
 			throw new RuntimeException('You are not the case officer', 403);
 		}
 
@@ -178,12 +196,27 @@ class ApplicationService
 
 	/**
 	 * Add a comment to the application and send email notification.
+	 *
+	 * $elementType/$elementId make it a reply on one element (allocation, event or
+	 * booking) of THIS application; anything else is refused with a 400.
 	 */
-	public function addComment(int $appId, int $accountId, string $comment): void
+	public function addComment(int $appId, int $accountId, string $comment, ?string $elementType = null, ?int $elementId = null): void
 	{
 		$row = $this->repo->getById($appId);
-		if (!$row) {
+		if (!$row)
+		{
 			throw new RuntimeException('Application not found', 404);
+		}
+
+		if ($elementType !== null || $elementId !== null)
+		{
+			if (
+				$elementType === null || $elementId === null
+				|| !(new ApplicationCommentElementRepository())->belongsToApplication($appId, $elementType, $elementId)
+			)
+			{
+				throw new RuntimeException('The element does not belong to this application', 400);
+			}
 		}
 
 		// Sanitise the rich-editor HTML ONCE here, on write. The stored value is then
@@ -194,9 +227,9 @@ class ApplicationService
 		$comment = Sanitizer::clean_html($comment);
 
 		$authorName = $this->repo->fetchAccountName($accountId) ?? 'Unknown';
-		$commentId = $this->repo->addComment($appId, $authorName, $comment, 'comment');
+		$commentId = $this->repo->addComment($appId, $authorName, $comment, 'comment', $elementType, $elementId);
 
- 		// Send email notification (non-fatal on failure). Pass the officer's reply text
+		// Send email notification (non-fatal on failure). Pass the officer's reply text
 		// so the applicant email contains the actual message — without it the email is
 		// rebuilt from the DB row alone and the reply body is empty.
 		$this->sendNotificationSafe($appId, $comment);
@@ -204,13 +237,17 @@ class ApplicationService
 		// Broadcast the live thread-update event regardless of whether there is a
 		// resolvable applicant to notify, and create the in-app notification (bell)
 		// only when customer_ssn resolves to someone. Non-fatal on failure.
-		try {
+		try
+		{
 			$customerSsn = $row['customer_ssn'] ?? '';
 			$notificationService = new NotificationService();
 
-			if (empty($customerSsn)) {
+			if (empty($customerSsn))
+			{
 				$notificationService->broadcastCommentEvent($appId, $commentId, $authorName, $comment);
-			} else {
+			}
+			else
+			{
 				$notificationService->createCommentNotification(
 					$appId,
 					$commentId,
@@ -220,7 +257,9 @@ class ApplicationService
 					$customerSsn
 				);
 			}
-		} catch (\Throwable $e) {
+		}
+		catch (\Throwable $e)
+		{
 			error_log("Failed to create applicant notification for application {$appId}: " . $e->getMessage());
 		}
 	}
@@ -233,7 +272,8 @@ class ApplicationService
 	public function addInternalNote(int $appId, int $accountId, string $content): void
 	{
 		$row = $this->repo->getById($appId);
-		if (!$row) {
+		if (!$row)
+		{
 			throw new RuntimeException('Application not found', 404);
 		}
 
@@ -250,18 +290,21 @@ class ApplicationService
 	public function acceptApplication(int $appId, int $accountId, string $message, bool $sendEmail): array
 	{
 		$row = $this->repo->getById($appId);
-		if (!$row) {
+		if (!$row)
+		{
 			throw new RuntimeException('Application not found', 404);
 		}
 
 		$status = $row['status'] ?? '';
-		if (!in_array($status, ['PENDING', 'REJECTED', 'NEWPARTIAL1'])) {
+		if (!in_array($status, ['PENDING', 'REJECTED', 'NEWPARTIAL1']))
+		{
 			throw new RuntimeException('Application cannot be accepted in current status: ' . $status, 400);
 		}
 
 		$numAssoc = $this->repo->countAssociations($appId);
-		if ($numAssoc === 0) {
-			throw new RuntimeException('Cannot accept: no associations (allocations/bookings/events) exist', 400);
+		if ($numAssoc === 0)
+		{
+			throw new RuntimeException(lang('booking.One or more bookings, allocations or events needs to be created before an application can be Accepted'), 400);
 		}
 
 		// Second reason the same gate can refuse: every hospitality order must
@@ -273,12 +316,16 @@ class ApplicationService
 		// Gated on enable_hospitality for the same reason the toolbar is: with
 		// hospitality switched off there is no orders tab, so a leftover pending
 		// row would block Accept with no interface anywhere to clear it.
-		if ($this->enableHospitality) {
+		if ($this->enableHospitality)
+		{
 			$groupIds = $this->repo->getRelatedApplications($appId)['application_ids'];
 
-			try {
+			try
+			{
 				$numPending = $this->repo->countPendingHospitalityOrders($groupIds);
-			} catch (\Throwable $e) {
+			}
+			catch (\Throwable $e)
+			{
 				// The count could not be computed. A gate must not fail open on an
 				// error it cannot interpret: an unknown count blocks the accept
 				// rather than permitting it. The underlying message is deliberately
@@ -289,7 +336,8 @@ class ApplicationService
 				);
 			}
 
-			if ($numPending > 0) {
+			if ($numPending > 0)
+			{
 				throw new RuntimeException(
 					'Cannot accept: ' . $numPending . ' hospitality order(s) still awaiting a decision',
 					400
@@ -300,7 +348,8 @@ class ApplicationService
 		$authorName = $this->repo->fetchAccountName($accountId) ?? 'Unknown';
 
 		// Add optional message as comment
-		if (!empty($message)) {
+		if (!empty($message))
+		{
 			$this->repo->addComment($appId, $authorName, $message, 'comment');
 		}
 
@@ -310,24 +359,33 @@ class ApplicationService
 
 		$acceptedIds = [$appId];
 		$rejectedIds = [];
+		// Every application in the combined cart, set only when there is one
+		$cartIds = [];
 
 		// Handle combined applications
-		if ($this->combineApplications) {
+		if ($this->combineApplications)
+		{
 			$relatedInfo = $this->repo->getRelatedApplications($appId);
-			if ($relatedInfo['total_count'] > 1) {
+			if ($relatedInfo['total_count'] > 1)
+			{
+				$cartIds = $this->cartIdsParentFirst($relatedInfo);
 				$relatedIds = array_filter(
 					$relatedInfo['application_ids'],
 					fn(int $id) => $id !== $appId
 				);
 
-				foreach ($relatedIds as $relatedId) {
+				foreach ($relatedIds as $relatedId)
+				{
 					$relatedAssocCount = $this->repo->countAssociations($relatedId);
-					if ($relatedAssocCount > 0) {
+					if ($relatedAssocCount > 0)
+					{
 						// Accept related apps that have associations
 						$this->repo->updateStatus($relatedId, 'ACCEPTED');
 						$this->repo->activateAssociations($relatedId);
 						$acceptedIds[] = $relatedId;
-					} else {
+					}
+					else
+					{
 						// Auto-reject related apps without associations
 						$this->repo->updateStatus($relatedId, 'REJECTED');
 						$this->repo->addComment(
@@ -337,18 +395,16 @@ class ApplicationService
 							'comment'
 						);
 						$rejectedIds[] = $relatedId;
-
-						if ($sendEmail) {
-							$this->sendNotificationSafe($relatedId);
-						}
 					}
 				}
 			}
 		}
 
-		// Send email for the primary application
-		if ($sendEmail) {
-			$this->sendNotificationSafe($appId);
+		// One email to the applicant: for a combined cart it covers every part and its
+		// outcome (an auto-rejected part is listed there, not mailed separately).
+		if ($sendEmail)
+		{
+			$this->sendStatusNotification($appId, $cartIds, $message);
 		}
 
 		return [
@@ -372,14 +428,16 @@ class ApplicationService
 	public function rejectApplication(int $appId, int $accountId, string $reason, bool $sendEmail, bool $cascade = true): void
 	{
 		$row = $this->repo->getById($appId);
-		if (!$row) {
+		if (!$row)
+		{
 			throw new RuntimeException('Application not found', 404);
 		}
 
 		$authorName = $this->repo->fetchAccountName($accountId) ?? 'Unknown';
 
 		// Add rejection reason as comment
-		if (!empty($reason)) {
+		if (!empty($reason))
+		{
 			$this->repo->addComment($appId, $authorName, $reason, 'comment');
 		}
 
@@ -387,29 +445,34 @@ class ApplicationService
 		$this->repo->updateStatus($appId, 'REJECTED');
 		$this->repo->deactivateAssociations($appId);
 
+		// Every application in the combined cart, set only when the rejection cascades to one
+		$cartIds = [];
+
 		// Handle combined applications (skipped for a single-application rejection)
-		if ($cascade && $this->combineApplications) {
+		if ($cascade && $this->combineApplications)
+		{
 			$relatedInfo = $this->repo->getRelatedApplications($appId);
-			if ($relatedInfo['total_count'] > 1) {
+			if ($relatedInfo['total_count'] > 1)
+			{
+				$cartIds = $this->cartIdsParentFirst($relatedInfo);
 				$relatedIds = array_filter(
 					$relatedInfo['application_ids'],
 					fn(int $id) => $id !== $appId
 				);
 
-				foreach ($relatedIds as $relatedId) {
+				foreach ($relatedIds as $relatedId)
+				{
 					$this->repo->updateStatus($relatedId, 'REJECTED');
 					$this->repo->deactivateAssociations($relatedId);
 					$this->repo->addComment($relatedId, $authorName, $reason, 'comment');
-
-					if ($sendEmail) {
-						$this->sendNotificationSafe($relatedId);
-					}
 				}
 			}
 		}
 
-		if ($sendEmail) {
-			$this->sendNotificationSafe($appId);
+		// One email to the applicant, covering the whole cart when the rejection cascaded
+		if ($sendEmail)
+		{
+			$this->sendStatusNotification($appId, $cartIds, $reason);
 		}
 	}
 
@@ -422,7 +485,8 @@ class ApplicationService
 	public function reassignCaseOfficer(int $appId, int $accountId, int $newUserId): void
 	{
 		$row = $this->repo->getById($appId);
-		if (!$row) {
+		if (!$row)
+		{
 			throw new RuntimeException('Application not found', 404);
 		}
 
@@ -431,15 +495,18 @@ class ApplicationService
 
 		// Assign + status transition on the primary application
 		$this->repo->assignCaseOfficer($appId, $newUserId);
-		if (($row['status'] ?? '') === 'NEW') {
+		if (($row['status'] ?? '') === 'NEW')
+		{
 			$this->repo->updateStatus($appId, 'PENDING');
 		}
 		$this->repo->addComment($appId, $newUserName, $commentText, 'ownership');
 
 		// Propagate to related applications when combining is enabled
-		if ($this->combineApplications) {
+		if ($this->combineApplications)
+		{
 			$relatedInfo = $this->repo->getRelatedApplications($appId);
-			if ($relatedInfo['total_count'] > 1) {
+			if ($relatedInfo['total_count'] > 1)
+			{
 				$relatedIds = array_filter(
 					$relatedInfo['application_ids'],
 					fn(int $id) => $id !== $appId
@@ -447,14 +514,16 @@ class ApplicationService
 
 				$relatedRows = $this->repo->getByIds($relatedIds);
 
-				foreach ($relatedIds as $relatedId) {
+				foreach ($relatedIds as $relatedId)
+				{
 					$relatedRow = $relatedRows[$relatedId] ?? null;
 					if (!$relatedRow) continue;
 
 					if (($relatedRow['case_officer_id'] ?? null) == $newUserId) continue;
 
 					$this->repo->assignCaseOfficer($relatedId, $newUserId);
-					if (($relatedRow['status'] ?? '') === 'NEW') {
+					if (($relatedRow['status'] ?? '') === 'NEW')
+					{
 						$this->repo->updateStatus($relatedId, 'PENDING');
 					}
 					$this->repo->addComment($relatedId, $newUserName, $commentText, 'ownership');
@@ -471,15 +540,18 @@ class ApplicationService
 	public function sendMessage(int $appId, int $fromAccountId, string $subject, string $content): void
 	{
 		$app = $this->repo->getById($appId);
-		if (!$app) {
+		if (!$app)
+		{
 			throw new RuntimeException('Application not found', 404);
 		}
 
 		$caseOfficerId = (int) ($app['case_officer_id'] ?? 0);
-		if (!$caseOfficerId) {
+		if (!$caseOfficerId)
+		{
 			throw new RuntimeException('No case officer assigned', 400);
 		}
-		if ($caseOfficerId === $fromAccountId) {
+		if ($caseOfficerId === $fromAccountId)
+		{
 			throw new RuntimeException('Cannot send message to yourself', 400);
 		}
 
@@ -501,23 +573,123 @@ class ApplicationService
 		$emailApp = $row;
 		$emailApp['resources'] = $this->repo->fetchResourceIds($appId);
 		$dates = $this->repo->fetchDates($appId);
-		$emailApp['dates'] = array_map(function ($d) {
+		$emailApp['dates'] = array_map(function ($d)
+		{
 			return ['from_' => $d['from_'], 'to_' => $d['to_']];
 		}, $dates);
 		return $emailApp;
 	}
 
 	/**
+	 * Turn the case officer's accept/reject message into HTML for the status email.
+	 *
+	 * The message is plain text from a textarea and is stored as typed, while the email
+	 * templates output the comment unescaped. So escape it (markup the officer typed is
+	 * shown as text), keep its line breaks, and purify the result like the rich-editor
+	 * input from the legacy UI.
+	 */
+	private function statusMessageToMailHtml(string $message): string
+	{
+		if ($message === '')
+		{
+			return '';
+		}
+
+		return Sanitizer::clean_html(nl2br(htmlspecialchars($message, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'), false));
+	}
+
+	/**
+	 * The ids of a combined cart with the parent first, then the other parts by id. This is
+	 * the order the legacy group email gets them in (soapplication::get_related_applications):
+	 * the email takes its "Se søknad" number from the first one and, when the parent is
+	 * accepted, its link from the parent, so the two only agree when the parent comes first.
+	 *
+	 * @param array{application_ids: int[], parent_id: ?int} $relatedInfo
+	 * @return int[]
+	 */
+	private function cartIdsParentFirst(array $relatedInfo): array
+	{
+		$parentId = (int) ($relatedInfo['parent_id'] ?? 0);
+		$parentFirst = $parentId > 0 ? [$parentId] : [];
+
+		return array_values(array_unique(array_merge($parentFirst, $relatedInfo['application_ids'])));
+	}
+
+	/**
+	 * Send the accept/reject email to the applicant, carrying the case officer's message.
+	 *
+	 * @param int[]  $cartIds Every application in the combined cart, or empty for a single
+	 *                        application. A cart gets one email listing each part and its
+	 *                        outcome, as the legacy UI sends it.
+	 * @param string $message The case officer's message as typed ('' for none).
+	 */
+	private function sendStatusNotification(int $appId, array $cartIds, string $message): void
+	{
+		$messageHtml = $this->statusMessageToMailHtml($message);
+
+		if (!empty($cartIds))
+		{
+			$this->sendGroupNotificationSafe($cartIds, $messageHtml);
+		}
+		else
+		{
+			$this->sendNotificationSafe($appId, null, $messageHtml);
+		}
+	}
+
+	/**
+	 * Send one notification email covering every application in a combined cart,
+	 * suppressing exceptions (logs on failure).
+	 *
+	 * @param int[]  $appIds            The cart's applications, in the order the legacy
+	 *                                  group email gets them (parent first).
+	 * @param string $statusMessageHtml The case officer's message, already made safe by
+	 *                                  statusMessageToMailHtml() ('' for none).
+	 */
+	private function sendGroupNotificationSafe(array $appIds, string $statusMessageHtml): void
+	{
+		try
+		{
+			$applications = [];
+			foreach ($appIds as $id)
+			{
+				$row = $this->repo->getById($id);
+				if (!$row) continue;
+
+				$emailApp = $this->buildEmailApplicationData($id, $row);
+				if ($statusMessageHtml !== '')
+				{
+					$emailApp['comment'] = $statusMessageHtml;
+				}
+				$applications[] = $emailApp;
+			}
+
+			if (empty($applications)) return;
+
+			$emailService = new EmailService();
+			$emailService->sendApplicationGroupNotification($applications, false);
+		}
+		catch (\Throwable $e)
+		{
+			error_log('Failed to send group notification for applications ' . implode(',', $appIds) . ': ' . $e->getMessage());
+		}
+	}
+
+	/**
 	 * Send notification email, suppressing exceptions (logs on failure).
 	 *
-	 * @param string|null $commentText When set (case-officer reply path), the text is
-	 *                                 threaded into the email body so the applicant sees
-	 *                                 the actual message. Left null for status-change
-	 *                                 notifications (accept/reject), which are unchanged.
+	 * @param string|null $commentText       When set (case-officer reply path), the text is
+	 *                                       threaded into the email body so the applicant sees
+	 *                                       the actual message, and the comment email is sent
+	 *                                       regardless of status.
+	 * @param string      $statusMessageHtml The case officer's accept/reject message, already
+	 *                                       made safe by statusMessageToMailHtml(). Shown in
+	 *                                       the status email; '' leaves that section out.
 	 */
-	private function sendNotificationSafe(int $appId, ?string $commentText = null): void
+	private function sendNotificationSafe(int $appId, ?string $commentText = null, string $statusMessageHtml = ''): void
 	{
-		try {
+		try
+		{
 			$row = $this->repo->getById($appId);
 			if (!$row) return;
 
@@ -525,12 +697,19 @@ class ApplicationService
 			// A non-null comment text means this is an explicit case-officer reply: render
 			// the comment email (regardless of status) and carry the message text.
 			$isCommentReply = $commentText !== null;
-			if ($isCommentReply) {
+			if ($isCommentReply)
+			{
 				$emailApp['comment'] = $commentText;
+			}
+			elseif ($statusMessageHtml !== '')
+			{
+				$emailApp['comment'] = $statusMessageHtml;
 			}
 			$emailService = new EmailService();
 			$emailService->sendApplicationNotification($emailApp, false, false, $isCommentReply);
-		} catch (\Throwable $e) {
+		}
+		catch (\Throwable $e)
+		{
 			error_log("Failed to send notification for application {$appId}: " . $e->getMessage());
 		}
 	}
@@ -550,25 +729,31 @@ class ApplicationService
 	public function generateRecurringPreview(int $appId): array
 	{
 		$app = $this->repo->getById($appId);
-		if (!$app) {
+		if (!$app)
+		{
 			throw new RuntimeException('Application not found', 404);
 		}
 
 		$rawRecurring = $app['recurring_info'] ?? null;
 		$recurringData = null;
-		if (!empty($rawRecurring) && is_string($rawRecurring)) {
+		if (!empty($rawRecurring) && is_string($rawRecurring))
+		{
 			$recurringData = json_decode($rawRecurring, true);
-		} elseif (is_array($rawRecurring)) {
+		}
+		elseif (is_array($rawRecurring))
+		{
 			$recurringData = $rawRecurring;
 		}
 
-		if (!is_array($recurringData)) {
+		if (!is_array($recurringData))
+		{
 			throw new RuntimeException('Application has no recurring data', 400);
 		}
 
 		// Fetch first application date
 		$dates = $this->repo->fetchDates($appId);
-		if (empty($dates)) {
+		if (empty($dates))
+		{
 			throw new RuntimeException('Application has no dates', 400);
 		}
 
@@ -576,7 +761,8 @@ class ApplicationService
 		$fromTs = strtotime($firstDate['from_']);
 		$toTs = strtotime($firstDate['to_']);
 
-		if (!$fromTs || !$toTs) {
+		if (!$fromTs || !$toTs)
+		{
 			throw new RuntimeException('Invalid date format', 400);
 		}
 
@@ -593,9 +779,11 @@ class ApplicationService
 		$boundIsInclusive = false;
 		$buildingId = (int) ($app['building_id'] ?? 0);
 
-		if ($buildingId > 0) {
+		if ($buildingId > 0)
+		{
 			$season = $this->repo->fetchSeasonInfo($buildingId, $firstDate['from_']);
-			if ($season) {
+			if ($season)
+			{
 				$seasonInfo = [
 					'id'   => (int) $season['id'],
 					'name' => $season['name'],
@@ -603,7 +791,8 @@ class ApplicationService
 					'to_'   => $season['to_'],
 				];
 
-				if (!empty($recurringData['outseason'])) {
+				if (!empty($recurringData['outseason']))
+				{
 					// Use season end date - inclusive (legacy :789)
 					$repeatUntilTs = strtotime($season['to_']);
 					$boundIsInclusive = true;
@@ -611,19 +800,24 @@ class ApplicationService
 			}
 		}
 
-		if ($repeatUntilTs === null && !empty($recurringData['repeat_until'])) {
+		if ($repeatUntilTs === null && !empty($recurringData['repeat_until']))
+		{
 			// The date the citizen picked - inclusive (legacy :783)
 			$repeatUntilTs = strtotime($recurringData['repeat_until']);
 			$boundIsInclusive = true;
 		}
 
 		// Fallback: season end or +3 months from first date (matches legacy DateInterval P3M)
-		if (!$repeatUntilTs) {
-			if ($seasonInfo) {
+		if (!$repeatUntilTs)
+		{
+			if ($seasonInfo)
+			{
 				// Season end - inclusive (legacy :789), same as the outseason path
 				$repeatUntilTs = strtotime($seasonInfo['to_']);
 				$boundIsInclusive = true;
-			} else {
+			}
+			else
+			{
 				// NOT inclusive and NOT bumped - see the comment below
 				$repeatUntilTs = strtotime('+3 months', $fromTs);
 				$boundIsInclusive = false;
@@ -655,29 +849,54 @@ class ApplicationService
 		// Raw seconds rather than day-aware arithmetic on purpose: legacy expands
 		// the whole series in raw seconds ($interval = weeks * 60*60*24*7), so only
 		// raw seconds reproduces it across a DST transition too.
-		if ($boundIsInclusive) {
+		if ($boundIsInclusive)
+		{
 			$repeatUntilTs += 86400;
 		}
 
-		// Fetch resources and existing allocations
+		// Fetch resources
 		$resourceIds = $this->repo->fetchResourceIds($appId);
 		$resourceNames = $this->repo->getResourceNames($resourceIds);
-		$existingAllocations = $this->repo->fetchExistingAllocations($appId);
 		$resourceDisplay = implode(', ', $resourceNames);
 
-		// Generate items
-		$items = [];
+		// Generate the occurrences
+		$occurrences = [];
 		$maxIterations = 50;
-		$counts = ['total' => 0, 'existing' => 0, 'conflict' => 0, 'creatable' => 0];
 		$i = 0;
 
 		// Loop: from_ts + (interval * i) until repeat_until, matching legacy condition
-		while (($toTs + ($intervalSeconds * $i)) <= $repeatUntilTs && $i < $maxIterations) {
-			$itemFromTs = $fromTs + ($intervalSeconds * $i);
-			$itemToTs = $toTs + ($intervalSeconds * $i);
-			$itemFrom = date('Y-m-d H:i', $itemFromTs);
-			$itemTo = date('Y-m-d H:i', $itemToTs);
-			$lookupKey = $itemFrom . '_' . $itemTo;
+		while (($toTs + ($intervalSeconds * $i)) <= $repeatUntilTs && $i < $maxIterations)
+		{
+			$occurrences[] = [
+				'from_' => date('Y-m-d H:i', $fromTs + ($intervalSeconds * $i)),
+				'to_'   => date('Y-m-d H:i', $toTs + ($intervalSeconds * $i)),
+			];
+			$i++;
+		}
+
+		// Every element linked to this application, of any type and active or
+		// not, placed on the occurrence it belongs to - also after its time was
+		// changed (placeElements). An occurrence holding an active element of
+		// its own exists: createRecurringAllocations skips it, so a moved
+		// occurrence is never created a second time. Only the series' own
+		// allocations are placed by date alone - see placeElements.
+		$placement = $this->placeElements(
+			$occurrences,
+			$this->repo->fetchAssociations($appId),
+			$this->repo->fetchAllocationGroupMap($appId),
+			true
+		);
+
+		$items = [];
+		$counts = ['total' => 0, 'existing' => 0, 'conflict' => 0, 'inactive' => 0, 'creatable' => 0];
+
+		foreach ($occurrences as $index => $occurrence)
+		{
+			$itemFrom = $occurrence['from_'];
+			$itemTo = $occurrence['to_'];
+			$itemFromTs = strtotime($itemFrom);
+			$itemToTs = strtotime($itemTo);
+			$elements = $placement['placed'][$index] ?? [];
 
 			$item = [
 				'from_'            => $itemFrom,
@@ -687,38 +906,98 @@ class ApplicationService
 				'time_display'     => date('H:i', $itemFromTs) . ' - ' . date('H:i', $itemToTs),
 				'resource_display' => $resourceDisplay,
 				'exists'           => false,
+				'inactive_only'    => false,
 				'allocation_id'    => null,
 				'has_conflict'     => false,
 				'conflict_details' => [],
 				'schedule_link'    => '/?menuaction=bookingfrontend.uibuilding.schedule&id='
 					. $buildingId . '&backend=1&date=' . date('Y-m-d', $itemFromTs),
+				'associations'     => $elements,
 			];
 
-			// Check if allocation already exists
-			if (isset($existingAllocations[$lookupKey])) {
+			// Check if the occurrence already holds an active element of its own
+			foreach ($elements as $element)
+			{
+				if ((int) $element['active'] !== 1)
+				{
+					continue;
+				}
 				$item['exists'] = true;
-				$item['allocation_id'] = (int) $existingAllocations[$lookupKey]['id'];
+				if ($element['type'] === 'allocation' && $item['allocation_id'] === null)
+				{
+					$item['allocation_id'] = (int) $element['id'];
+				}
+			}
+
+			// Collisions with anything that is not the occurrence's own. For an
+			// open occurrence this is the same set as conflict_details below.
+			$item['collision_foreign_details'] = $this->slotForeignCollisions(
+				$resourceIds,
+				$itemFrom,
+				$itemTo,
+				$elements
+			);
+			$item['collision_foreign'] = !empty($item['collision_foreign_details']);
+
+			if ($item['exists'])
+			{
 				$counts['existing']++;
-			} else {
-				// Check collision
-				if ($this->repo->hasCollision($resourceIds, $itemFrom, $itemTo)) {
+			}
+			else
+			{
+				// Check collision. Own elements included on purpose: this is what
+				// stops createRecurringAllocations from booking over them.
+				if ($this->repo->hasCollision($resourceIds, $itemFrom, $itemTo))
+				{
 					$item['has_conflict'] = true;
 					$item['conflict_details'] = $this->repo->getCollisionDetails(
-						$resourceIds, $itemFrom, $itemTo
+						$resourceIds,
+						$itemFrom,
+						$itemTo
 					);
 					$counts['conflict']++;
-				} else {
+				}
+				elseif (!empty($elements))
+				{
+					// Elements of its own, and none active (an active one is `exists`).
+					// Not creatable: accept reactivates every element of the
+					// application, so a new allocation would sit active beside the old
+					// one on the same slot. `exists` stays active-only on purpose - the
+					// applicant's Min side reads it (bookingfrontend RecurringSeriesService).
+					$item['inactive_only'] = true;
+					$counts['inactive']++;
+				}
+				else
+				{
 					$counts['creatable']++;
 				}
 			}
 
 			$counts['total']++;
 			$items[] = $item;
-			$i++;
 		}
+
+		// Linked elements that belong to no occurrence - moved to another day, or
+		// created outside the series. Kept in their own key and never appended to
+		// `items`: createRecurringAllocations creates an allocation for every
+		// item that is neither existing nor conflicting.
+		$outsideSeries = [];
+		foreach ($placement['unplaced'] as $association)
+		{
+			$assocFromTs = strtotime((string) $association['from_']);
+			$assocToTs = strtotime((string) $association['to_']);
+			$outsideSeries[] = $association + [
+				'date_display' => $assocFromTs ? date('d.m.Y', $assocFromTs) : '',
+				'day_name'     => $assocFromTs ? $this->norwegianDayName($assocFromTs) : '',
+				'time_display' => $assocFromTs && $assocToTs
+					? date('H:i', $assocFromTs) . ' - ' . date('H:i', $assocToTs) : '',
+			];
+		}
+		usort($outsideSeries, fn($a, $b) => strcmp((string) $a['from_'], (string) $b['from_']));
 
 		return [
 			'items'          => $items,
+			'outside_series' => $outsideSeries,
 			'counts'         => $counts,
 			'can_create'     => $counts['creatable'] > 0,
 			'season_info'    => $seasonInfo,
@@ -727,17 +1006,254 @@ class ApplicationService
 		];
 	}
 
+	// ── Element placement ──────────────────────────────────────────────
+
+	/**
+	 * The application's date rows, keyed by date id: the elements placed on each
+	 * row (placeElements) and what the row collides with that is not its own
+	 * (slotForeignCollisions).
+	 *
+	 * @param array $dates bb_application_date rows of the application
+	 * @param int[] $resourceIds the application's resources
+	 * @return array<int, array{associations: array, collision_foreign_details: array}>
+	 */
+	public function placeDateElements(int $appId, array $dates, array $resourceIds): array
+	{
+		$slots = [];
+		foreach ($dates as $date)
+		{
+			$slots[(int) $date['id']] = $date;
+		}
+
+		$placement = $this->placeElements(
+			$slots,
+			$this->repo->fetchAssociations($appId),
+			$this->repo->fetchAllocationGroupMap($appId)
+		);
+
+		$rows = [];
+		foreach ($slots as $dateId => $date)
+		{
+			$elements = $placement['placed'][$dateId] ?? [];
+			$rows[$dateId] = [
+				'associations'              => $elements,
+				'collision_foreign_details' => $this->slotForeignCollisions(
+					$resourceIds,
+					$date['from_'],
+					$date['to_'],
+					$elements
+				),
+			];
+		}
+		return $rows;
+	}
+
+	/**
+	 * Place an application's linked elements on its slots - its date rows, or
+	 * the occurrences of a recurring application.
+	 *
+	 * Nothing stored links an element to the slot it was created from: elements
+	 * carry only application_id, and date rows are deleted and re-inserted when
+	 * an application is edited. So the link is recovered from the times:
+	 *  1. an element starting exactly when a slot starts belongs to it - any
+	 *     number of them;
+	 *  2. any other element goes to a slot on the same calendar date, or one it
+	 *     overlaps, that holds no element of its type yet: the largest overlap,
+	 *     then the nearest start, then the first slot. Allocations of the
+	 *     series' recurrence group are placed first, so a moved occurrence wins
+	 *     its date over an extra allocation made on the same day. The series is
+	 *     the oldest group, the one resolveAllocationGroupId reuses.
+	 *     With $dateMatchSeriesOnly - a recurring application's occurrences -
+	 *     only the series' allocations are matched by date alone; any other
+	 *     element has to overlap the occurrence. An occurrence holding an
+	 *     element exists, so an unrelated element made on its date would
+	 *     otherwise stop the series from ever being created on that day;
+	 *  3. what is left belongs to no slot. An element moved to another day ends
+	 *     up here: nothing is left to tell which slot it came from.
+	 *
+	 * @param array<int|string, array{from_:string, to_:string}> $slots
+	 * @param array $elements bb_application_association rows of ONE application
+	 * @param array<int, ?int> $allocationGroups allocation id => allocation_group_id
+	 * @return array{placed: array<int|string, array>, unplaced: array}
+	 */
+	private function placeElements(array $slots, array $elements, array $allocationGroups, bool $dateMatchSeriesOnly = false): array
+	{
+		$slotTimes = [];
+		foreach ($slots as $key => $slot)
+		{
+			$from = strtotime((string) $slot['from_']);
+			$to = strtotime((string) $slot['to_']);
+			if ($from && $to)
+			{
+				$slotTimes[$key] = ['from' => $from, 'to' => $to, 'date' => date('Y-m-d', $from)];
+			}
+		}
+
+		$placed = [];
+		$typesPlaced = [];
+		$place = function ($key, array $element) use (&$placed, &$typesPlaced)
+		{
+			$placed[$key][] = $element;
+			$typesPlaced[$key][$element['type']] = true;
+		};
+
+		// 1. Exact start
+		$rest = [];
+		foreach ($elements as $element)
+		{
+			$from = empty($element['from_']) ? false : strtotime((string) $element['from_']);
+			$match = null;
+			if ($from)
+			{
+				foreach ($slotTimes as $key => $slot)
+				{
+					if ($slot['from'] === $from)
+					{
+						$match = $key;
+						break;
+					}
+				}
+			}
+			if ($match !== null)
+			{
+				$place($match, $element);
+			}
+			else
+			{
+				$rest[] = $element;
+			}
+		}
+
+		// 2. Same date or overlap, one element of a type per slot
+		$groups = array_filter($allocationGroups, fn($group) => $group !== null);
+		$seriesGroup = $groups ? min($groups) : null;
+		$inSeries = fn(array $element) => $seriesGroup !== null
+			&& $element['type'] === 'allocation'
+			&& ($allocationGroups[(int) $element['id']] ?? null) === $seriesGroup;
+		usort($rest, fn($a, $b) => [!$inSeries($a), strtotime((string) $a['from_']), (int) $a['id']]
+			<=> [!$inSeries($b), strtotime((string) $b['from_']), (int) $b['id']]);
+
+		$unplaced = [];
+		foreach ($rest as $element)
+		{
+			$from = empty($element['from_']) ? false : strtotime((string) $element['from_']);
+			$to = empty($element['to_']) ? false : strtotime((string) $element['to_']);
+			$byDate = !$dateMatchSeriesOnly || $inSeries($element);
+			$best = null;
+			if ($from && $to)
+			{
+				foreach ($slotTimes as $key => $slot)
+				{
+					if (isset($typesPlaced[$key][$element['type']]))
+					{
+						continue;
+					}
+					$overlap = max(0, min($to, $slot['to']) - max($from, $slot['from']));
+					if ($overlap === 0 && (!$byDate || date('Y-m-d', $from) !== $slot['date']))
+					{
+						continue;
+					}
+					$distance = abs($slot['from'] - $from);
+					if (
+						$best === null || $overlap > $best['overlap']
+						|| ($overlap === $best['overlap'] && $distance < $best['distance'])
+					)
+					{
+						$best = ['key' => $key, 'overlap' => $overlap, 'distance' => $distance];
+					}
+				}
+			}
+			if ($best !== null)
+			{
+				$place($best['key'], $element);
+			}
+			else
+			{
+				$unplaced[] = $element;
+			}
+		}
+
+		return ['placed' => $placed, 'unplaced' => $unplaced];
+	}
+
+	/**
+	 * Active elements colliding with what a slot holds, other than the slot's
+	 * own elements: another application's, or this application's sitting on
+	 * another slot. A slot holds the times of its active elements - a moved
+	 * element holds its new time - or, with none, the time that was asked for.
+	 * Searched on the application's resources, like hasCollision.
+	 *
+	 * @param array $slotElements the elements placed on the slot
+	 * @return array<array{id:int, type:string, name:string, from_:string, to_:string, application_id:?int}>
+	 */
+	private function slotForeignCollisions(array $resourceIds, string $from, string $to, array $slotElements): array
+	{
+		$windows = [];
+		foreach ($slotElements as $element)
+		{
+			if ((int) $element['active'] === 1 && !empty($element['from_']) && !empty($element['to_']))
+			{
+				$windows[] = [(string) $element['from_'], (string) $element['to_']];
+			}
+		}
+		if (!$windows)
+		{
+			$windows[] = [$from, $to];
+		}
+
+		$foreign = [];
+		foreach ($windows as [$windowFrom, $windowTo])
+		{
+			foreach ($this->windowForeignCollisions($resourceIds, $windowFrom, $windowTo, $slotElements) as $collision)
+			{
+				$foreign[$collision['type'] . ':' . $collision['id']] = $collision;
+			}
+		}
+		return array_values($foreign);
+	}
+
+	/**
+	 * Active elements colliding with one time window on the resources, other
+	 * than the given own elements - the check slotForeignCollisions runs per
+	 * window. An applicant's requested new time is checked with it before the
+	 * case officer's "Godta endring" applies the time (ApplicationChangeRequestService).
+	 *
+	 * @param array $ownElements elements ({type, id}) that do not count as collisions
+	 * @return array<array{id:int, type:string, name:string, from_:string, to_:string, application_id:?int}>
+	 */
+	public function windowForeignCollisions(array $resourceIds, string $from, string $to, array $ownElements): array
+	{
+		$own = [];
+		foreach ($ownElements as $element)
+		{
+			$own[$element['type'] . ':' . $element['id']] = true;
+		}
+
+		$foreign = [];
+		foreach ($this->repo->getCollisionDetails($resourceIds, $from, $to) as $collision)
+		{
+			$ref = $collision['type'] . ':' . $collision['id'];
+			if (!isset($own[$ref]))
+			{
+				$foreign[$ref] = $collision;
+			}
+		}
+		return array_values($foreign);
+	}
+
 	// ── Create recurring allocations ───────────────────────────────────
 
 	/**
-	 * Create allocations for non-conflicting, non-existing recurring dates.
+	 * Create allocations for non-conflicting recurring dates that hold no element
+	 * of their own, active or inactive.
 	 *
 	 * @throws RuntimeException if the application is not found or not recurring.
 	 */
 	public function createRecurringAllocations(int $appId, int $accountId): array
 	{
 		$app = $this->repo->getById($appId);
-		if (!$app) {
+		if (!$app)
+		{
 			throw new RuntimeException('Application not found', 404);
 		}
 
@@ -746,9 +1262,11 @@ class ApplicationService
 
 		// Resolve organization ID: prefer stored ID, fall back to lookup by org number
 		$organizationId = (int) ($app['customer_organization_id'] ?? 0);
-		if ($organizationId === 0 && !empty($app['customer_organization_number'])) {
+		if ($organizationId === 0 && !empty($app['customer_organization_number']))
+		{
 			$org = $this->repo->fetchOrganizationByNumber($app['customer_organization_number']);
-			if ($org) {
+			if ($org)
+			{
 				$organizationId = (int) $org['id'];
 			}
 		}
@@ -759,13 +1277,16 @@ class ApplicationService
 			? $this->repo->fetchBuildingName($buildingId)
 			: '';
 
-		if ($organizationId === 0) {
+		if ($organizationId === 0)
+		{
 			throw new RuntimeException('Cannot create allocations: organization not found', 400);
 		}
-		if ($seasonId === 0) {
+		if ($seasonId === 0)
+		{
 			throw new RuntimeException('Cannot create allocations: no active season found', 400);
 		}
-		if (empty($resourceIds)) {
+		if (empty($resourceIds))
+		{
 			throw new RuntimeException('Cannot create allocations: no resources linked', 400);
 		}
 
@@ -775,11 +1296,14 @@ class ApplicationService
 		$failed = [];
 		$totalAttempted = 0;
 
-		foreach ($preview['items'] as $item) {
-			if ($item['exists']) {
+		foreach ($preview['items'] as $item)
+		{
+			if ($item['exists'])
+			{
 				continue;
 			}
-			if ($item['has_conflict']) {
+			if ($item['has_conflict'])
+			{
 				$failed[] = [
 					'date'   => $item['date_display'],
 					'time'   => $item['time_display'],
@@ -788,10 +1312,18 @@ class ApplicationService
 				$totalAttempted++;
 				continue;
 			}
+			// Same flag as the preview's counts, so the button and this loop agree:
+			// accept reactivates the occurrence's inactive elements, and another
+			// allocation here would double the slot.
+			if ($item['inactive_only'])
+			{
+				continue;
+			}
 
 			$totalAttempted++;
 
-			try {
+			try
+			{
 				$allocation = new Allocation([
 					'application_id' => $appId,
 					'organization_id' => $organizationId,
@@ -806,21 +1338,26 @@ class ApplicationService
 					'resources'      => $resourceIds,
 				]);
 
-				if ($allocation->save()) {
+				if ($allocation->save())
+				{
 					$created[] = [
 						'id'   => $allocation->id,
 						'date' => $item['date_display'],
 						'time' => $item['time_display'],
 					];
 					$this->attachPurchaseOrder((int) $allocation->id, $appId, $authorName);
-				} else {
+				}
+				else
+				{
 					$failed[] = [
 						'date'   => $item['date_display'],
 						'time'   => $item['time_display'],
 						'reason' => 'save_failed',
 					];
 				}
-			} catch (\Throwable $e) {
+			}
+			catch (\Throwable $e)
+			{
 				$failed[] = [
 					'date'   => $item['date_display'],
 					'time'   => $item['time_display'],
@@ -829,7 +1366,8 @@ class ApplicationService
 			}
 		}
 
-		if ($created) {
+		if ($created)
+		{
 			$groupId = $this->resolveAllocationGroupId($appId);
 			$this->repo->setAllocationGroupForIds(array_column($created, 'id'), $groupId);
 		}
@@ -839,6 +1377,344 @@ class ApplicationService
 			'failed'          => $failed,
 			'total_attempted' => $totalAttempted,
 		];
+	}
+
+	/**
+	 * Create one allocation for a date of the application, from the create
+	 * modal (POST /booking/applications/{id}/allocations).
+	 *
+	 * Validates, authorizes and inserts through the legacy boallocation, like the
+	 * legacy form (uiallocation::add): the same required fields, overlap checks
+	 * and season fit (soallocation::doValidate), the same role check, then
+	 * id_string and the application's purchase order.
+	 *
+	 * @param array $input whitelisted by ApplicationController::createAllocation
+	 * @return array {id, type, edit_url}, or {errors: {field: [message]}} when refused
+	 */
+	public function createAllocationForApplication(int $appId, int $accountId, array $input): array
+	{
+		$app = $this->requireApplication($appId);
+		$buildingId = (int) ($app['building_id'] ?? 0);
+
+		$allocation = [
+			'application_id'                 => $appId,
+			'organization_id'                => $input['organization_id'] ?: '',
+			'season_id'                      => $input['season_id'] ?: '',
+			'building_id'                    => $buildingId,
+			'building_name'                  => $this->repo->fetchBuildingName($buildingId),
+			'from_'                          => $this->legacyTime($input['from_'], 'Y-m-d H:i'),
+			'to_'                            => $this->legacyTime($input['to_'], 'Y-m-d H:i'),
+			'resources'                      => $input['resource_ids'],
+			'cost'                           => $input['cost'],
+			'skip_bas'                       => $input['skip_bas'],
+			'additional_invoice_information' => $input['additional_invoice_information'],
+			'active'                         => '1',
+			'completed'                      => '0',
+			// A new allocation is never price locked; uiallocation::add seeds it too.
+			'price_locked'                   => 0,
+		];
+		$this->addCostHistory($allocation, (float) $input['cost']);
+
+		$allocationBo = \CreateObject('booking.boallocation');
+		$errors = array_merge_recursive(
+			$this->checkResources($buildingId, $input['resource_ids']),
+			$this->legacyValidate($allocationBo, $allocation)
+		);
+		if ($errors)
+		{
+			return ['errors' => $errors];
+		}
+
+		if (!$allocationBo->allow_create($allocation))
+		{
+			throw new RuntimeException('Not allowed to create this allocation', 403);
+		}
+
+		$db = \App\Database\Db::getInstance();
+		if ($db->get_transaction())
+		{
+			throw new RuntimeException('Cannot create the booking inside an open transaction', 500);
+		}
+
+		$db->transaction_begin();
+		try
+		{
+
+			$receipt = $allocationBo->add($allocation);
+			$allocationId = (int) $receipt['id'];
+			$allocationBo->so->update_id_string($allocationId);
+			$this->attachPurchaseOrder($allocationId, $appId, $this->currentFullName());
+			$db->transaction_commit();
+		}
+		catch (\Throwable $e)
+		{
+			$db->transaction_abort();
+			error_log("Creating a allocation for application {$appId} failed: " . $e->getMessage());
+			throw new RuntimeException('The booking could not be saved', 500);
+		}
+
+		return [
+			'id'       => $allocationId,
+			'type'     => 'allocation',
+			'edit_url' => '/?menuaction=booking.uiallocation.show&id=' . $allocationId,
+		];
+	}
+
+	/**
+	 * Create one booking (interntildeling) for a date of the application, from
+	 * the create modal (POST /booking/applications/{id}/bookings).
+	 *
+	 * Like the legacy single-date path (uibooking::add): the booking is validated
+	 * through bobooking, and is made inside an allocation for the same
+	 * organization, slot and resources, created first. The two inserts share one
+	 * transaction, so a failed booking leaves no allocation behind.
+	 *
+	 * @param array $input whitelisted by ApplicationController::createBooking
+	 * @return array {id, type, allocation_id, edit_url}, or {errors: {field: [message]}} when refused
+	 */
+	public function createBookingForApplication(int $appId, int $accountId, array $input): array
+	{
+		$app = $this->requireApplication($appId);
+		$buildingId = (int) ($app['building_id'] ?? 0);
+		$buildingName = $this->repo->fetchBuildingName($buildingId);
+		$orgId = (int) $input['organization_id'];
+		$groupId = (int) $input['group_id'];
+
+		$errors = $this->checkResources($buildingId, $input['resource_ids']);
+
+		if (!$orgId)
+		{
+			// The booking itself has no organization field, so its validation would
+			// not catch this; the allocation it is made inside needs one.
+			$errors['organization_id'][] = lang('booking.Field %1 is required', lang('booking.organization_id'));
+		}
+		else
+		{
+			$groupIds = $this->repo->fetchActiveGroupIds($orgId);
+			// A single-group organization books as that group (uibooking::add).
+			if (!$groupId && count($groupIds) === 1)
+			{
+				$groupId = $groupIds[0];
+			}
+			if ($groupId && !in_array($groupId, $groupIds, true))
+			{
+				$errors['group_id'][] = lang('booking.group_not_in_organization');
+			}
+		}
+
+		$from = $this->legacyTime($input['from_'], 'Y-m-d H:i:s');
+		$to = $this->legacyTime($input['to_'], 'Y-m-d H:i:s');
+
+		// The agegroups are copied with both sexes: the legacy booking form only
+		// posts the male count, so it stores the female count as 0. With no
+		// participant at all the counts stay empty, as boagegroup::extract_form_data
+		// leaves them, so validation asks for the number of participants.
+		$rows = $this->repo->fetchAgegroups($appId);
+		$hasParticipants = false;
+		foreach ($rows as $row)
+		{
+			if ((int) $row['male'] > 0 || (int) $row['female'] > 0)
+			{
+				$hasParticipants = true;
+			}
+		}
+		$agegroups = array_map(static function (array $row) use ($hasParticipants): array
+		{
+			return [
+				'agegroup_id' => (int) $row['id'],
+				'male'        => $hasParticipants ? (int) $row['male'] : null,
+				'female'      => $hasParticipants ? (int) $row['female'] : null,
+			];
+		}, $rows);
+
+		$booking = [
+			'application_id' => $appId,
+			'activity_id'    => (int) ($app['activity_id'] ?? 0),
+			'group_id'       => $groupId ?: '',
+			'season_id'      => $input['season_id'] ?: '',
+			'building_id'    => $buildingId,
+			'building_name'  => $buildingName,
+			'from_'          => $from,
+			'to_'            => $to,
+			'resources'      => $input['resource_ids'],
+			'cost'           => $input['cost'],
+			'audience'       => $this->repo->fetchTargetAudienceIds($appId),
+			'agegroups'      => $agegroups,
+			'skip_bas'       => 0,
+			'active'         => '1',
+			'completed'      => '0',
+			// uibooking::add sets every new booking to remind, whatever is posted.
+			'reminder'       => '1',
+			'secret'         => bin2hex(random_bytes(16)),
+			// Who made it, for audit: the case officer. Only recorded; nothing is sent to them.
+			'created_by_account_id' => $accountId,
+		];
+
+		$this->addCostHistory($booking, (float) $input['cost']);
+
+		$bookingBo = \CreateObject('booking.bobooking');
+		$validation = $this->legacyValidate($bookingBo, $booking);
+		// uibooking::add lets a booking overlap an event: it drops that error.
+		unset($validation['event']);
+		$errors = array_merge_recursive($errors, $validation);
+		if ($errors)
+		{
+			return ['errors' => $errors];
+		}
+
+		$allocation = [
+			'application_id'  => $appId,
+			'organization_id' => $orgId,
+			'season_id'       => $booking['season_id'],
+			'building_id'     => $buildingId,
+			'building_name'   => $buildingName,
+			'from_'           => $from,
+			'to_'             => $to,
+			'resources'       => $booking['resources'],
+			'cost'            => $booking['cost'],
+			'active'          => '1',
+			'completed'       => '0',
+		];
+		$allocationBo = \CreateObject('booking.boallocation');
+
+		if (!$bookingBo->allow_create($booking) || !$allocationBo->allow_create($allocation))
+		{
+			throw new RuntimeException('Not allowed to create this booking', 403);
+		}
+
+		// The legacy add() joins a transaction that is already open instead of
+		// committing its own, so this one covers both inserts. It must be the only
+		// one: Db keeps a single flag, so an inner begin/commit would end it early.
+		$db = \App\Database\Db::getInstance();
+		if ($db->get_transaction())
+		{
+			throw new RuntimeException('Cannot create the booking inside an open transaction', 500);
+		}
+		$db->transaction_begin();
+		try
+		{
+			$allocationReceipt = $allocationBo->add($allocation);
+
+			$this->attachPurchaseOrder($allocationReceipt['id'], $appId, $this->currentFullName());
+
+			$booking['allocation_id'] = (int) $allocationReceipt['id'];
+			$bookingReceipt = $bookingBo->add($booking);
+			$db->transaction_commit();
+		}
+		catch (\Throwable $e)
+		{
+			$db->transaction_abort();
+			error_log("Creating a booking for application {$appId} failed: " . $e->getMessage());
+			throw new RuntimeException('The booking could not be saved', 500);
+		}
+
+		$bookingId = (int) $bookingReceipt['id'];
+		return [
+			'id'            => $bookingId,
+			'type'          => 'booking',
+			'allocation_id' => $booking['allocation_id'],
+			'edit_url'      => '/?menuaction=booking.uibooking.show&id=' . $bookingId,
+		];
+	}
+
+	private function requireApplication(int $appId): array
+	{
+		$app = $this->repo->getById($appId);
+		if (!$app)
+		{
+			throw new RuntimeException('Application not found', 404);
+		}
+		return $app;
+	}
+
+	/**
+	 * The legacy validation errors for an entity, as {field: [message]}.
+	 */
+	private function legacyValidate($bo, array $entity): array
+	{
+		// The validator reads every defined field; an absent one validates like
+		// null, so name them all and spare the error log the undefined keys.
+		foreach (array_keys($bo->so->get_field_defs()) as $field)
+		{
+			if (!array_key_exists($field, $entity))
+			{
+				$entity[$field] = null;
+			}
+		}
+
+		try
+		{
+			return $bo->validate($entity);
+		}
+		catch (\InvalidArgumentException $e)
+		{
+			// soseason::timespan_within_season throws for a season that does not exist.
+			return ['season_id' => [lang('booking.please select a season')]];
+		}
+	}
+
+	/**
+	 * A resource that does not belong to the application's building, as a
+	 * validation error. The legacy form only lists the building's resources but
+	 * its handler accepts any id.
+	 */
+	private function checkResources(int $buildingId, array $resourceIds): array
+	{
+		$allowed = $this->repo->fetchBuildingResourceIds($buildingId);
+		foreach ($resourceIds as $resourceId)
+		{
+			if (!in_array((int) $resourceId, $allowed, true))
+			{
+				return ['resources' => [lang('booking.resource_not_in_building')]];
+			}
+		}
+		return [];
+	}
+
+	/**
+	 * One cost history row when the officer set a price, like add_cost_history()
+	 * in the legacy allocation and booking forms.
+	 */
+	private function addCostHistory(array &$entity, float $cost): void
+	{
+		if ($cost == 0.0)
+		{
+			return;
+		}
+		$entity['costs'][] = [
+			'time'    => 'now',
+			'author'  => $this->currentFullName(),
+			'comment' => lang('booking.cost is set'),
+			'cost'    => $cost,
+		];
+	}
+
+	/**
+	 * The modal's naive local time ("Y-m-d\TH:i[:s]") in the format the legacy
+	 * store expects, or '' when it does not parse, so validation reports it as
+	 * missing.
+	 */
+	private function legacyTime(string $value, string $format): string
+	{
+		$value = str_replace('T', ' ', trim($value));
+		foreach (['Y-m-d H:i:s', 'Y-m-d H:i'] as $inputFormat)
+		{
+			$time = \DateTime::createFromFormat('!' . $inputFormat, $value);
+			if ($time && $time->format($inputFormat) === $value)
+			{
+				return $time->format($format);
+			}
+		}
+		return '';
+	}
+
+	/**
+	 * The current user's full name, as the legacy forms write it into cost history.
+	 */
+	private function currentFullName(): string
+	{
+		$user = \App\modules\phpgwapi\services\Settings::getInstance()->get('user');
+		return (string) ($user['fullname'] ?? '');
 	}
 
 	/**
@@ -870,11 +1746,13 @@ class ApplicationService
 	 */
 	private function attachPurchaseOrder(int $allocationId, int $appId, string $author): void
 	{
-		if ($allocationId <= 0 || $appId <= 0) {
+		if ($allocationId <= 0 || $appId <= 0)
+		{
 			return;
 		}
 
-		if ($this->repo->findPurchaseOrderIdForAllocation($allocationId) !== null) {
+		if ($this->repo->findPurchaseOrderIdForAllocation($allocationId) !== null)
+		{
 			return;
 		}
 
@@ -886,7 +1764,8 @@ class ApplicationService
 			'allocation'
 		);
 
-		if (!$orderId) {
+		if (!$orderId)
+		{
 			return;
 		}
 
@@ -896,7 +1775,8 @@ class ApplicationService
 		// all, so 'sum' is unset rather than zero and assigning it would write
 		// NULL to cost. An order that genuinely totals zero is a real price and
 		// must still be written.
-		if (empty($order['lines'])) {
+		if (empty($order['lines']))
+		{
 			return;
 		}
 
@@ -928,7 +1808,8 @@ class ApplicationService
 	{
 		$existing = $this->repo->findAllocationGroupIdsForApplication($appId);
 
-		if (count($existing) > 1) {
+		if (count($existing) > 1)
+		{
 			error_log(sprintf(
 				'booking: application %d carries more than one allocation_group_id (%s); reusing the oldest, %d',
 				$appId,

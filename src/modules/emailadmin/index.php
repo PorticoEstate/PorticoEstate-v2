@@ -1,4 +1,6 @@
 <?php
+	use App\modules\phpgwapi\services\Settings;
+
 	/**************************************************************************\
 	* EGroupWare - EMailAdmin                                                  *
 	* http://www.egroupware.org                                                *
@@ -11,15 +13,11 @@
 	\**************************************************************************/
 	/* $Id$ */
 
-	$_GET['menuaction']     = 'emailadmin.emailadmin_ui.listProfiles';
-
-	$GLOBALS['phpgw_info'] = array(
-		'flags' => array(
-			'currentapp' => 'emailadmin',
-			'noheader'   => True,
-			'nonavbar'   => True,
-		),
-	);
+	Settings::getInstance()->set('flags', array(
+		'currentapp' => 'emailadmin',
+		'noheader' => True,
+		'nonavbar' => True,
+	));
 	include('../header.inc.php');
 
-	execmethod('emailadmin.emailadmin_ui.listProfiles');
+	phpgw::redirect_link('/emailadmin/view/profiles');

@@ -121,7 +121,7 @@ Forventet:
 - HTTP 200
 - `Content-Type: application/scim+json`
 - `patch.supported` er `true`
-- `bulk.supported` er `false`
+- `bulk.supported` er `false` — Entra sender derfor alltid enkeltkall per ressurs, aldri kombinerte bulk-operasjoner (se seksjon 6.3)
 - `filter.maxResults` er `100`
 
 Negativ kontroll med feil token skal gi HTTP 401:
@@ -187,6 +187,162 @@ https://portico.example.no/api/scim/v2
 7. Ikke start full provisioning før attributtmapping og scope er kontrollert.
 
 Tenant URL er SCIM-base-URL-en, ikke `/Users` eller `/ServiceProviderConfig`.
+
+### 6.3 Slik ser SCIM-kallene fra Entra ut
+
+Alle kall bruker SCIM-base-URL-en fra **Tenant URL** og sender secret-tokenet som bearer-token. Entra sender ikke `SCIM_TENANT_ID`; PorticoEstate bruker tenant-ID-en som er konfigurert på serveren til å avgrense mappingene.
+
+Eksemplene under viser en bruker og en gruppe med `displayName` `PRG_Aktiv_kommune_Brukere`. ID-ene er fra en lokal test og skal ikke kopieres som produksjonsverdier. Bruk aldri det faktiske bearer-tokenet i logger, dokumentasjon eller supportsaker.
+
+#### Kallmønster og rekkefølge
+
+Entra sender **ett HTTP-kall per ressurs per endring**. Brukere, grupper og medlemskap kommer aldri i samme operasjon:
+
+1. **Brukere** provisioneres enkeltvis: eventuelt `GET /Users?filter=...`-oppslag, deretter `POST /Users` hvis brukeren ikke finnes. Kallet inneholder kun brukerattributter — ingen gruppeinformasjon.
+2. **Grupper** provisioneres enkeltvis og uavhengig av brukerne: eventuelt `GET /Groups?filter=...`-oppslag, deretter `POST /Groups`. Kallet inneholder normalt ikke `members`.
+3. **Medlemskap** synkroniseres til slutt med `PATCH /Groups/{id}`, etter at både gruppen og medlemsbrukerne er provisionert og Entra kjenner deres lokale SCIM-`id`.
+
+SCIM Bulk brukes ikke; serveren annonserer `bulk.supported: false` (se seksjon 5), og Entra kombinerer derfor aldri flere ressurser i én request. Medlemskap sendes alltid som Group PATCH, aldri via brukerens `groups`-attributt.
+
+Ordinær provisioning kjører som en inkrementell synkroniseringssyklus, typisk cirka hvert 40. minutt. Endringer i Entra er derfor ikke umiddelbart synlige lokalt. Bruk **Provision on demand** når en enkeltressurs skal provisioneres med en gang, for eksempel under testing.
+
+#### Brukeropprettelse
+
+Ved første provisioning av en bruker sender Entra typisk `POST /Users` med Entra-brukerens object ID som `externalId`:
+
+```http
+POST /api/scim/v2/Users
+Authorization: ******
+Content-Type: application/scim+json
+Accept: application/scim+json
+```
+
+```json
+{
+  "schemas": [
+    "urn:ietf:params:scim:schemas:core:2.0:User"
+  ],
+  "externalId": "0c3de38f-33d1-4a11-bdc8-66b55bbb0c13",
+  "userName": "kari.nordmann@example.no",
+  "active": true,
+  "name": {
+    "givenName": "Kari",
+    "familyName": "Nordmann"
+  },
+  "displayName": "Kari Nordmann",
+  "emails": [
+    { "type": "work", "value": "kari.nordmann@example.no", "primary": true }
+  ]
+}
+```
+
+PorticoEstate kobler brukeren til en eksisterende lokal bruker med samme `account_lid` hvis en finnes uten SCIM-mapping (uavhengig av store/små bokstaver), ellers opprettes en ny konto. Kontoen og svaret har HTTP 201. `id` i responsen er den lokale `account_id`-en, og det er denne verdien Entra senere bruker i `members[].value` ved gruppemedlemskap:
+
+```http
+HTTP/1.1 201 Created
+Content-Type: application/scim+json
+Location: https://portico.example.no/api/scim/v2/Users/1234
+```
+
+```json
+{
+  "schemas": [
+    "urn:ietf:params:scim:schemas:core:2.0:User"
+  ],
+  "id": "1234",
+  "externalId": "0c3de38f-33d1-4a11-bdc8-66b55bbb0c13",
+  "userName": "kari.nordmann@example.no",
+  "active": true,
+  "name": {
+    "givenName": "Kari",
+    "familyName": "Nordmann"
+  },
+  "displayName": "Kari Nordmann",
+  "emails": [
+    { "type": "work", "value": "kari.nordmann@example.no", "primary": true }
+  ]
+}
+```
+
+Se seksjon 10 for hva som skjer lokalt i databasen ved brukeropprettelse.
+
+#### Gruppeopprettelse
+
+Entra kan først gjøre et oppslag etter gruppen. Nøyaktig rekkefølge og hvilke oppslag som sendes, avhenger av Entra-oppsettet:
+
+```http
+GET /api/scim/v2/Groups?filter=displayName%20eq%20%22PRG_Aktiv_kommune_Brukere%22
+Authorization: Bearer <SCIM_BEARER_TOKEN>
+Accept: application/scim+json
+```
+
+Ved første provisioning sender Entra typisk `POST /Groups` med Entra-gruppens object ID som `externalId`:
+
+```http
+POST /api/scim/v2/Groups
+Authorization: Bearer <SCIM_BEARER_TOKEN>
+Content-Type: application/scim+json
+Accept: application/scim+json
+```
+
+```json
+{
+  "schemas": [
+    "urn:ietf:params:scim:schemas:core:2.0:Group"
+  ],
+  "externalId": "eaa502ad-608d-4ac7-9420-06a6eeff8582",
+  "displayName": "PRG_Aktiv_kommune_Brukere"
+}
+```
+
+PorticoEstate kobler gruppen til en eksisterende lokal gruppe med nøyaktig navn hvis en finnes, ellers oppretter den en gruppe. Den lokale `account_id` blir SCIM `id`. Et første opprettelseskall svarer normalt med HTTP 201; et gjentatt kall for en allerede koblet gruppe kan svare med HTTP 200.
+
+```http
+HTTP/1.1 201 Created
+Content-Type: application/scim+json
+Location: https://portico.example.no/api/scim/v2/Groups/4836
+```
+
+```json
+{
+  "schemas": [
+    "urn:ietf:params:scim:schemas:core:2.0:Group"
+  ],
+  "id": "4836",
+  "externalId": "eaa502ad-608d-4ac7-9420-06a6eeff8582",
+  "displayName": "PRG_Aktiv_kommune_Brukere"
+}
+```
+
+#### Gruppemedlemskap
+
+Når medlemskap endres, sender Entra typisk `PATCH /Groups/{id}`. `value` viser til brukerens SCIM `id` i PorticoEstate (for eksempel `1234` fra brukereksempelet over), ikke Entra object ID:
+
+```http
+PATCH /api/scim/v2/Groups/4836
+Authorization: Bearer <SCIM_BEARER_TOKEN>
+Content-Type: application/scim+json
+Accept: application/scim+json
+```
+
+```json
+{
+  "schemas": [
+    "urn:ietf:params:scim:api:messages:2.0:PatchOp"
+  ],
+  "Operations": [
+    {
+      "op": "Add",
+      "path": "members",
+      "value": [
+        { "value": "<SCIM-id-for-brukeren>" }
+      ]
+    }
+  ]
+}
+```
+
+Fjerning bruker `op: "Remove"` med en sti som identifiserer medlemmet, for eksempel `members[value eq "<SCIM-id-for-brukeren>"]`. Medlemsbrukeren må allerede være provisionert og SCIM-mappet i samme tenant. Ikke anta at alle Entra-jobber sender et separat `GET` før `POST` eller bruker identisk rekkefølge; bruk Entra provisioning logs for å se den faktiske sekvensen.
 
 ## 7. Attributtmapping
 
@@ -289,12 +445,14 @@ Kjør testen i testmiljø før Entra kobles til produksjon. I produksjon skal de
 Teknisk skjer opprettelsen slik:
 
 1. Entra sender `POST /Users` med `externalId`, `userName`, navn, status og eventuelt e-post.
-2. PorticoEstate oppretter en bruker i `phpgw_accounts`. Databasen tildeler lokal `account_id`, som blir SCIM `id`.
+2. PorticoEstate søker etter en lokal bruker med `account_type = 'u'` og `account_lid` lik innkommende `userName`. Matchen er uavhengig av store/små bokstaver, med eksakt treff foretrukket. Finnes brukeren uten SCIM-mapping, gjenbrukes den (adopsjon), og lokal `account_lid` oppdateres til Entras skrivemåte hvis casing avviker. Ellers opprettes en ny bruker i `phpgw_accounts`. Lokal `account_id` blir SCIM `id`.
 3. PorticoEstate oppretter en SCIM-rad i `phpgw_mapping` med `ext_user = externalId`, `account_id`, `auth_type = 'scim'` og `location = SCIM_TENANT_ID`.
 4. E-post lagres i `phpgw_accounts_data` som `scim_email`.
 5. Konto og mapping opprettes i samme transaksjon. Gjentatt provisioning med samme `externalId` finner eksisterende konto og skal ikke opprette en ny.
 
 Entra-objektets `objectId` bør mappes til `externalId`. Ikke bruk UPN eller e-post som `externalId`, siden disse kan endres.
+
+**Eksisterende lokale brukere:** `POST /Users` kobler automatisk en eksisterende lokal bruker dersom innkommende `userName` matcher brukerens `account_lid` (adopsjon, tilsvarende som for grupper). Matchen er uavhengig av store/små bokstaver; ved casing-avvik oppdateres lokal `account_lid` til Entras skrivemåte, slik at den eksakte OIDC-innloggingen fortsatt treffer kontoen. Finnes flere lokale brukere som kun skiller seg i store/små bokstaver, og ingen matcher eksakt, returneres HTTP 409. Brukerens eksisterende `account_id`, passord, status og øvrige attributter beholdes ved koblingen; kun SCIM-mappingen, eventuell casing-justering av `account_lid` og `scim_email` skrives. Hvis brukeren allerede har en SCIM-mapping til en annen Entra-identitet eller tenant, eller mappingen er sperret, returneres HTTP 409, og mappingen overskrives ikke. Verifiser derfor at `userName`-mappingen i Entra produserer samme verdi som eksisterende lokale `account_lid` før provisioning aktiveres mot en installasjon med eksisterende brukere.
 
 ### Endre påloggingsnavn
 
@@ -322,7 +480,7 @@ Første provisioning av en ny gruppe:
 
 1. Tildel Entra-gruppen til Enterprise Application.
 2. Entra sender `POST /Groups` med gruppens `objectId` som `externalId` og gruppenavnet som `displayName`.
-3. PorticoEstate oppretter en lokal gruppe i `phpgw_accounts` med `account_type = 'g'`. Lokal `account_id` blir SCIM `id`.
+3. PorticoEstate søker etter en lokal gruppe med `account_type = 'g'` og `account_lid` lik innkommende `displayName`, uavhengig av store/små bokstaver og med eksakt treff foretrukket. Finnes gruppen, gjenbrukes den, og lokal `account_lid` oppdateres til Entras skrivemåte ved casing-avvik. Ellers opprettes en ny gruppe. Lokal `account_id` blir SCIM `id`.
 4. PorticoEstate oppretter mapping i `phpgw_mapping` med `ext_user = externalId`, lokal `account_id`, `auth_type = 'scim'` og `location = SCIM_TENANT_ID`.
 
 Medlemskap synkroniseres separat etter at gruppen og brukerne finnes:
@@ -338,7 +496,13 @@ Gjenta add/remove-operasjoner er trygge: add er idempotent, og remove av en eksi
 
 Ved senere rename bruker Entra `PATCH /Groups/{id}` med `Replace displayName`. Lokal `account_lid` oppdateres; gruppens `account_id` og Entra `externalId` endres ikke.
 
-**Eksisterende lokale grupper:** De blir ikke automatisk overtatt eller synlige for Entra. Skal en eksisterende gruppe administreres av Entra, må den kobles kontrollert til Entra-gruppens `objectId` og få en SCIM-mapping før provisioning startes. Ikke opprett mapping ved å gjette på gruppenavn; gruppenavn kan endres og trenger ikke være unike.
+**Eksisterende lokale grupper:** `POST /Groups` kobler automatisk en eksisterende lokal gruppe dersom innkommende `displayName` matcher gruppens `account_lid`. Innledende og avsluttende mellomrom trimmes av controlleren; interne mellomrom beholdes. Matchen er uavhengig av store/små bokstaver, med eksakt treff foretrukket; ved casing-avvik oppdateres lokal `account_lid` til Entras skrivemåte. Finnes flere lokale grupper som kun skiller seg i store/små bokstaver, og ingen matcher eksakt, returneres HTTP 409. For eksempel vil `Aktiv kommune Brukere` kobles til en lokal gruppe med dette påloggingsnavnet, uten å opprette en ny konto.
+
+Gruppens eksisterende `account_id`, status, medlemmer og rettigheter beholdes ved koblingen. Entra-gruppens `externalId` lagres i `phpgw_mapping` sammen med lokal `account_id` og konfigurert tenant. Før koblingen er gruppen fortsatt ikke synlig via `GET /Groups`; etter koblingen er den SCIM-administrert.
+
+Hvis gruppen allerede har en SCIM-mapping til en annen Entra-identitet eller tenant, eller mappingen er sperret, returneres HTTP 409. Mappingen overskrives ikke. Gjentatte kall for samme aktive mapping gjenbruker koblingen.
+
+Kontroller navnene og gruppenes lokale rettigheter før provisioning aktiveres: automatisk kobling gir Entra administrasjon av eksisterende grupper, også grupper med sensitive tilganger. Senere medlemskapsendringer fra Entra kan endre hvem som får disse tilgangene. Samme navnebaserte adopsjon gjelder for brukere; se «Eksisterende lokale brukere» under «Opprette bruker».
 
 Ved `DELETE /Groups/{id}` settes den lokale gruppens `account_status` til `I`; gruppen slettes ikke fysisk, og mappingen beholdes for identitet og historikk. **Begrensning i dagens implementasjon:** `GET /Groups` filtrerer på `phpgw_mapping.status = 'A'`, men ikke på `phpgw_accounts.account_status`. En soft-deaktivert gruppe kan derfor fortsatt dukke opp i gruppelisten. Avklar dette i Entra-testen før produksjonsbruk av gruppesletting. Entra sender medlemskapsendringer via Group PATCH, ikke via brukerens `groups`-attributt.
 
@@ -390,6 +554,7 @@ Støttet:
 - `eq`-filter for `userName`, `externalId` og gruppe-`displayName`
 - pagination med maksimalt 100 ressurser per side
 - User CRUD med soft delete
+- adopsjon av eksisterende lokale brukere og grupper ved navnematch (`userName`/`displayName` = `account_lid`, uavhengig av store/små bokstaver; lokal casing oppdateres til Entras skrivemåte)
 - User PATCH `Replace`
 - path-less Entra Replace-objekt
 - Group create/read/PATCH/soft delete
@@ -473,6 +638,31 @@ Avvik i siste spørring bryter ikke SCIM-oppslaget, siden `account_id` er autori
 
 ## 15. Feilsøking
 
+Start med **Provisioning logs** i Entra og åpne den feilede operasjonen. Kontroller metode, URL, statuskode, request body og response body. Sammenlign med eksemplene i kapittel 6.3. Masker bearer-token, e-postadresser og andre personopplysninger før logger deles.
+
+| Symptom | Kontroller først | Typisk årsak / neste steg |
+| --- | --- | --- |
+| Ingen SCIM-operasjon vises i loggen | Entra scope, tildeling og provisioning-jobb | Bruk **Provision on demand** for testressursen og kontroller at ressursen er innenfor scope. |
+| HTTP 401 | `Authorization: Bearer ...`, token i Entra og `SCIM_BEARER_TOKEN`, proxy/FastCGI | Ulikt token, whitespace eller Authorization-headeren blir ikke videresendt. Se 401-avsnittet under. |
+| HTTP 503 | Runtime-miljøet i `slim` | `SCIM_BEARER_TOKEN` mangler eller er tom. Se 503-avsnittet under. |
+| HTTP 400 / `invalidFilter` | Filterfelt og operator i request-URL-en | Kun `eq` på støttede felt er implementert. Se filteravsnittet under. |
+| HTTP 409 | `externalId`, tenant-mapping og lokal bruker/gruppe med samme navn | Identiteten er allerede koblet på en konfliktfylt måte, eller den lokale brukeren/gruppen er koblet til en annen identitet/tenant. Ikke overskriv mappingen manuelt før konflikten er undersøkt. |
+| Gruppen finnes, men medlemskap feiler | PATCH-URL, gruppe-ID og `members[].value` | `members[].value` må være en eksisterende SCIM-bruker-ID i samme tenant, ikke Entra object ID. |
+| Kallet når ikke SCIM eller gir proxyfeil | DNS, TLS-sertifikat, reverse proxy/WAF og metode/body | Kontroller at `/api/scim/v2` nås offentlig, og at proxyen tillater `PATCH` og videresender request body. |
+| `meta.location` peker feil | `SCIM_PUBLIC_BASE_URL` og runtime | Sett offentlig HTTPS-base-URL og opprett `slim`-containeren på nytt. |
+
+Kjør eventuelt et lesekall fra en godkjent maskin for å skille Entra-konfigurasjon fra server/proxy-problemer. Kommandoen bruker miljøvariabelen for tokenet og skriver ikke tokenverdien ut:
+
+```bash
+curl --fail-with-body --get \
+  -H "Authorization: Bearer $SCIM_BEARER_TOKEN" \
+  -H 'Accept: application/scim+json' \
+  --data-urlencode 'filter=displayName eq "PRG_Aktiv_kommune_Brukere"' \
+  "$SCIM_PUBLIC_BASE_URL/Groups"
+```
+
+Sammenlign resultatet med `externalId` fra Entra og lokal SCIM `id`. Testverdiene i kapittel 6.3 er fra en lokal simulering; i produksjon skal du hente de faktiske verdiene fra Entra provisioning logs og PorticoEstate, ikke anta at ID-ene er de samme.
+
 ### Test Connection gir 401
 
 Kontroller:
@@ -481,6 +671,16 @@ Kontroller:
 - ingen ekstra whitespace ved kopiering
 - proxy videresender `Authorization`
 - `slim`-containeren er restartet etter secret-endring
+
+Med Apache og PHP-FPM må PHP-handleren videresende Authorization-headeren med `CGIPassAuth On`. Dette er satt i prosjektets `php-fpm.conf`. Uten direktivet kan selv containerens eget token gi 401 fordi PHP ikke mottar headeren.
+
+Etter endring i denne konfigurasjonsfilen må imaget bygges på nytt, siden Dockerfile kopierer filen inn i imaget:
+
+```bash
+docker compose up -d --build --no-deps --force-recreate slim
+```
+
+Ved lokale curl-tester kan `--noproxy '*'` brukes for å unngå at hostens HTTP-proxy videresender localhost-kall. Bruk vanlige mellomrom i kommandoene. Nye Compose-miljøverdier krever at containeren opprettes på nytt; en vanlig restart laster dem ikke inn.
 
 ### Test Connection gir 503
 
@@ -494,12 +694,12 @@ Entra sender et filter utenfor støttet profil. Kontroller attributtmapping og p
 
 Kontroller:
 
-- eksisterende lokal `account_lid`
+- eksisterende lokal `account_lid` og om den allerede har en SCIM-mapping til en annen identitet eller tenant
 - eksisterende `externalId` i samme tenant
 - flere SCIM-identiteter mot samme `account_id`
 - provisioning logs for hvilken ressurs Entra forsøker å opprette
 
-Ikke opprett ny lokal konto manuelt før konflikten er forstått.
+En lokal bruker eller gruppe **uten** SCIM-mapping gir ikke 409 — den adopteres automatisk ved navnematch (uavhengig av store/små bokstaver). 409 betyr at ressursen allerede er koblet til en annen Entra-identitet/tenant, at mappingen er sperret, eller at flere lokale kontoer kun skiller seg i store/små bokstaver uten eksakt treff. Ikke opprett ny lokal konto manuelt før konflikten er forstått.
 
 ### Bruker opprettes, men kan ikke logge inn
 

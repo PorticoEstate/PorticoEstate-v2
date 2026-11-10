@@ -16,7 +16,7 @@ $(function ()
 	{
 		if (($(this).val() || '').trim() != (previous_query || '').trim())
 		{
-			filterDataLocations('search', {'value': $(this).val()});
+			filterDataLocations('search', { 'value': $(this).val() });
 			previous_query = $(this).val();
 		}
 	});
@@ -32,11 +32,11 @@ $(function ()
 	{
 		if (($(this).val() || '').trim() != (previous_contract_query || '').trim())
 		{
-			filterDataContracts('search', {'value': $(this).val()});
+			filterDataContracts('search', { 'value': $(this).val() });
 			previous_contract_query = $(this).val();
 		}
 	});
-	
+
 	$('#contract_status').on('change', function ()
 	{
 		filterDataContracts('contract_status', $(this).val());
@@ -56,17 +56,17 @@ $(function ()
 	{
 		filterDataContracts('contract_type', $(this).val());
 	});
-	
+
 	var previous_application_query = '';
 	$('#applications_query').on('keyup change', function ()
 	{
 		if (($(this).val() || '').trim() != (previous_application_query || '').trim())
 		{
-			filterDataApplications('search', {'value': $(this).val()});
+			filterDataApplications('search', { 'value': $(this).val() });
 			previous_application_query = $(this).val();
 		}
 	});
-	
+
 	$('#application_status').on('change', function ()
 	{
 		filterDataApplications('filter_status', $(this).val());
@@ -75,21 +75,21 @@ $(function ()
 
 function filterDataLocations(param, value)
 {
-//	oTable1.dataTableSettings[1]['ajax']['data'][param] = value;
+	//	oTable1.dataTableSettings[1]['ajax']['data'][param] = value;
 	paramsTable1[param] = value;
 	oTable1.api().draw();
 }
 
 function filterDataContracts(param, value)
 {
-//	oTable2.dataTableSettings[2]['ajax']['data'][param] = value;
+	//	oTable2.dataTableSettings[2]['ajax']['data'][param] = value;
 	paramsTable2[param] = value;
 	oTable2.api().draw();
 }
 
 function filterDataApplications(param, value)
 {
-//	oTable3.dataTableSettings[3]['ajax']['data'][param] = value;
+	//	oTable3.dataTableSettings[3]['ajax']['data'][param] = value;
 	paramsTable3[param] = value;
 	oTable3.api().draw();
 }
@@ -203,7 +203,8 @@ removeUnit = function (oArgs, parameters)
 this.fileuploader = function ()
 {
 	var sUrl = phpGWLink('index.php', multi_upload_parans);
-	TINY.box.show({iframe: sUrl, boxid: 'frameless', width:Math.round($(window).width()*0.9), height:Math.round($(window).height()*0.9), fixed: false, maskid: 'darkmask', maskopacity: 40, mask: true, animate: true,
+	TINY.box.show({
+		iframe: sUrl, boxid: 'frameless', width: Math.round($(window).width() * 0.9), height: Math.round($(window).height() * 0.9), fixed: false, maskid: 'darkmask', maskopacity: 40, mask: true, animate: true,
 		close: true,
 		closejs: function ()
 		{
@@ -214,7 +215,7 @@ this.fileuploader = function ()
 
 this.refresh_files = function ()
 {
-	var oArgs = {menuaction:'rental.uicomposite.get_files', id:multi_upload_parans.id};
+	var oArgs = { menuaction: 'rental.uicomposite.get_files', id: multi_upload_parans.id };
 	oArgs.menuaction = 'rental.uicomposite.get_files';
 	var strURL = phpGWLink('index.php', oArgs, true);
 	JqueryPortico.updateinlineTableHelper(oTable4, strURL);

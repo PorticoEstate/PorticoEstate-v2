@@ -4,16 +4,16 @@ getRequestData = function (dataSelected, parameters)
 
     $.each(parameters.parameter, function (i, val)
     {
-            data[val.name] = {};
+        data[val.name] = {};
     });
 
     var n = 0;
     for (var n = 0; n < dataSelected.length; ++n)
     {
-            $.each(parameters.parameter, function (i, val)
-            {
-                    data[val.name][n] = dataSelected[n][val.source];
-            });
+        $.each(parameters.parameter, function (i, val)
+        {
+            data[val.name][n] = dataSelected[n][val.source];
+        });
     }
 
     return data;
@@ -24,7 +24,7 @@ function clean()
     var api = new DataTable('#datatable-container_0');
     api.rows().deselect();
     api.buttons('.record').enable(false);
-    
+
     $('#comm_descr').val('');
     $('#comm_descr_id').val('');
     $('#cancel_save').prop('disabled', true);
@@ -49,7 +49,7 @@ function updateDescr(oArgs, parameters)
         $('#comm_descr').val(result.comm_descr);
         $('#comm_descr_id').val(result.comm_descr_id);
         $('#comm_type').val(result.comm_type_id);
-        
+
     }, data, 'POST', 'JSON');
 }
 
@@ -60,7 +60,8 @@ function deleteDescr(oArgs, parameters)
     var nTable = 0;
 
     var r = confirm(confirm_msg);
-    if (r != true) {
+    if (r != true)
+    {
         return false;
     }
 
@@ -91,7 +92,7 @@ function addDescr()
     data['comm_type_id'] = $('#comm_type').val();
     data['comm_descr_id'] = $('#comm_descr_id').val();
 
-    var oArgs = {"menuaction": "addressbook.uicatalog_contact_comm_descr.save", "phpgw_return_as": "json"};
+    var oArgs = { "menuaction": "addressbook.uicatalog_contact_comm_descr.save", "phpgw_return_as": "json" };
     var requestUrl = phpGWLink('index.php', oArgs);
 
     JqueryPortico.execute_ajax(requestUrl, function (result)

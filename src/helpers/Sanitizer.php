@@ -2,6 +2,23 @@
 
 use App\modules\phpgwapi\services\Log;
 
+if (!class_exists('HTMLPurifier_URIScheme_cid'))
+{
+	class HTMLPurifier_URIScheme_cid extends HTMLPurifier_URIScheme
+	{
+		public $browsable = true;
+		public $may_omit_host = true;
+
+		public function doValidate(&$uri, $config, $context)
+		{
+			$uri->userinfo = null;
+			$uri->host = null;
+			$uri->port = null;
+			return $uri->path !== '' && !preg_match('/[\s<>"\\\\]/', $uri->path);
+		}
+	}
+}
+
 class Sanitizer
 {
 
@@ -28,7 +45,7 @@ class Sanitizer
 		//require_once PHPGW_SERVER_ROOT . '/phpgwapi/inc/htmlpurifier/vendor/ezyang/htmlpurifier/library/HTMLPurifier.auto.php';
 
 		$config = HTMLPurifier_Config::createDefault();
-		$config->set('Core', 'DefinitionCache', null);
+		$config->set('Cache.DefinitionImpl', null);
 		$config->set('HTML.Doctype', 'HTML 4.01 Transitional');
 		$config->set('HTML.Allowed', 'u,p,b,i,span[style],p,strong,em,li,ul,ol,div[align],br,img');
 		$config->set('HTML.AllowedAttributes', 'class, src, height, width, alt, id, target, href, colspan');
@@ -73,6 +90,30 @@ class Sanitizer
 
 
 		return $clean_html;
+	}
+
+	/**
+	 * Purify rich-text email signatures with a bounded email-specific markup policy.
+	 */
+	public static function clean_email_signature(string $html, bool $allow_external_images = false): string
+	{
+		HTMLPurifier_URISchemeRegistry::instance()->register('cid', new HTMLPurifier_URIScheme_cid());
+		$config = HTMLPurifier_Config::createDefault();
+		$config->set('Cache.DefinitionImpl', null);
+		$config->set('HTML.Doctype', 'HTML 4.01 Transitional');
+		$config->set(
+			'HTML.Allowed',
+			'a[href|name|target],b,blockquote[cite|class|dir|style],br,center,div[align],em,font[color|size],h1,h2,h3,hr[class|style],i,img[align|alt|border|height|src|width],li,ol[type],p[align],pre,s,span[class|style],strong,table[align|bgcolor|border|cellpadding|cellspacing|class|style|width],tbody,td[align|bgcolor|class|colspan|height|nowrap|rowspan|style|valign|width],th[align|bgcolor|class|colspan|height|nowrap|rowspan|style|valign|width],thead,tr[align|bgcolor|class|style|valign],tt,u'
+		);
+		$config->set('URI.AllowedSchemes', [
+			'http' => true,
+			'https' => true,
+			'mailto' => true,
+			'cid' => true,
+		]);
+		$config->set('URI.DisableExternalResources', !$allow_external_images);
+
+		return (new HTMLPurifier($config))->purify($html);
 	}
 
 	/**

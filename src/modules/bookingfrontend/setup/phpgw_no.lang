@@ -1,4 +1,29 @@
 %1 bookings were updated.	bookingfrontend	no	%1 interntildelinger ble oppdatert.
+Info skjerm - ressursvelger	bookingfrontend	no	Info skjerm - ressursvelger
+You can add resources from several buildings. Previous selections are kept when you search for another building.	bookingfrontend	no	Du kan legge til ressurser fra flere bygg. Tidligere valg beholdes når du søker opp et annet bygg.
+Selected resources	bookingfrontend	no	Valgte ressurser
+Remove selected resource	bookingfrontend	no	Fjern valgt ressurs
+Searching for buildings	bookingfrontend	no	Søker etter bygg
+No buildings found	bookingfrontend	no	Ingen bygg funnet
+Select a building to see its resources	bookingfrontend	no	Velg et bygg for å se ressursene
+Loading resources	bookingfrontend	no	Laster ressurser
+No active resources found for this building	bookingfrontend	no	Ingen aktive ressurser funnet for dette bygget
+Could not load data. Please try again	bookingfrontend	no	Klarte ikke å laste inn data. Prøv igjen
+Link copied	bookingfrontend	no	Lenken er kopiert
+Could not copy the link	bookingfrontend	no	Klarte ikke å kopiere lenken
+Choose a building and the resources to show on your information screen. Copy the generated link to save it as a shortcut.	bookingfrontend	no	Velg et bygg og ressursene som skal vises på infoskjermen. Kopier lenken for å lagre den som en snarvei.
+Search for a building	bookingfrontend	no	Søk etter bygg
+Type at least two characters	bookingfrontend	no	Skriv minst to tegn
+Filter resources	bookingfrontend	no	Filtrer ressurser
+Search resources	bookingfrontend	no	Søk i ressurser
+Link to the information screen	bookingfrontend	no	Lenke til infoskjermen
+Open information screen	bookingfrontend	no	Åpne infoskjermen
+Copy link	bookingfrontend	no	Kopier lenke
+Days to display	bookingfrontend	no	Dager som skal vises
+Whole week	bookingfrontend	no	Hele uken
+Weekdays	bookingfrontend	no	Ukedager
+Weekend	bookingfrontend	no	Helg
+JavaScript is required to configure the information screen	bookingfrontend	no	JavaScript må være aktivert for å konfigurere infoskjermen
 %1 bookings will be updated.	bookingfrontend	no	%1 interntildelinger vil bli oppdatert.
 -- select an activity --	bookingfrontend	no	Velg en aktivitet
 1 week	bookingfrontend	no	1 uke
@@ -1125,3 +1150,77 @@ repeating_direct_booking_warning	bookingfrontend	no	Denne ressursen har direkte 
 withdraw_timeslot	bookingfrontend	no	Trekk tilbake
 confirm_withdraw_timeslot_description	bookingfrontend	no	Er du sikker på at du vil trekke tilbake denne enkelttimen? Saksbehandler vil bli varslet om trekkingen.
 withdraw_timeslot_comment_label	bookingfrontend	no	Kommentar til saksbehandler (valgfritt)
+price_choice_label	bookingfrontend	no	Hvem søker du som?
+price_choice_help	bookingfrontend	no	Prisen avhenger av hvem som leier — velg kategorien som passer.
+price_choice_placeholder	bookingfrontend	no	Velg priskategori
+price_choice_required	bookingfrontend	no	Du må velge priskategori
+price_choice_required_footer	bookingfrontend	no	Velg priskategori for å lagre søknaden.
+price_choice_required_checkout	bookingfrontend	no	Velg priskategori før du sender inn.
+price_pending	bookingfrontend	no	Beregnes når du har valgt
+does_not_affect_price	bookingfrontend	no	Påvirker ikke prisen.
+price_category	bookingfrontend	no	Priskategori
+cancel_whole_application	bookingfrontend	no	Avbestill hele søknaden
+cancel_whole_application_help	bookingfrontend	no	Avbestiller søknaden og alle reserverte tider i den, ikke bare tiden du valgte.
+confirm_cancel_whole_application_description	bookingfrontend	no	Søknaden avbestilles, og alle reserverte tider i den frigjøres. Antall reserverte tider: {{count}}. Dette kan ikke angres.
+cancel_whole_application_failed	bookingfrontend	no	Søknaden kunne ikke avbestilles. Prøv igjen.
+withdraw_whole_application	bookingfrontend	no	Trekk hele søknaden
+withdraw_whole_application_help	bookingfrontend	no	Trekker søknaden og alle reserverte tider i den, ikke bare tiden du valgte.
+confirm_withdraw_whole_application_description	bookingfrontend	no	Søknaden trekkes, og alle reserverte tider i den frigjøres. Antall reserverte tider: {{count}}. Dette kan ikke angres.
+withdraw_whole_application_failed	bookingfrontend	no	Søknaden kunne ikke trekkes. Prøv igjen.
+withdraw_whole_application_help_no_selection	bookingfrontend	no	Trekker søknaden og alle reserverte tider i den.
+cancel_whole_application_help_no_selection	bookingfrontend	no	Avbestiller søknaden og alle reserverte tider i den.
+change_request_pending	bookingfrontend	no	Ønsket endring til kl. {{time}} venter på saksbehandling
+comment_on_time	bookingfrontend	no	Kommenter
+comment_on_time_heading	bookingfrontend	no	Kommentar til tidspunktet
+comment_time_removed	bookingfrontend	no	Tidspunktet er fjernet
+change_time	bookingfrontend	no	Endre tid
+change_allocation_time_description	bookingfrontend	no	Velg ny tid på samme dag. En kortere tid innenfor den tildelte tiden lagres med en gang, og prisen beregnes på nytt for de nye timene. En lengre eller flyttet tid sendes til saksbehandler, som godtar eller avslår endringen.
+allocation_time_shortened	bookingfrontend	no	Tiden er endret til kl. {{time}}.
+allocation_change_requested	bookingfrontend	no	Ønsket ny tid er sendt til saksbehandler. Tiden er uendret til saksbehandler har godtatt endringen.
+allocation_change_invalid_time	bookingfrontend	no	Ugyldig tidspunkt.
+allocation_change_other_day	bookingfrontend	no	Ny tid må være på samme dag som tildelingen.
+allocation_change_unchanged	bookingfrontend	no	Tiden er ikke endret.
+allocation_change_started	bookingfrontend	no	Tildelingen har allerede startet og kan ikke endres.
+allocation_change_inactive	bookingfrontend	no	Tildelingen er trukket tilbake.
+allocation_change_no_application	bookingfrontend	no	Tildelingen hører ikke til en søknad.
+allocation_change_booking_in_removed_time	bookingfrontend	no	Tiden kan ikke kortes ned: det ligger en booking i tiden som fjernes.
+allocation_changed_meanwhile	bookingfrontend	no	Tildelingen er endret i mellomtiden. Last inn siden på nytt.
+allocation_shortened_comment	bookingfrontend	no	Tildeling #%1 (%2, %3): tiden er kortet ned fra %4 til %5.
+allocation_change_requested_comment	bookingfrontend	no	Tildeling #%1 (%2, %3): ønsker ny tid %5 i stedet for %4. Saksbehandler godtar eller avslår endringen.
+allocation_price_recalculated	bookingfrontend	no	Prisen er omregnet for den nye tiden: %1 → %2. Pris låst etter forkorting.
+allocation_price_unchanged	bookingfrontend	no	Prisen er uendret.
+allocation_price_kept_locked	bookingfrontend	no	Pris ikke omregnet: prisen er satt manuelt av saksbehandler.
+allocation_price_master_order	bookingfrontend	no	Pris ikke omregnet: søknadens hovedordre.
+allocation_price_not_recalculated	bookingfrontend	no	Pris ikke omregnet: saksbehandler kontrollerer prisen.
+allocation_cost_recalculated_after_shortening	bookingfrontend	no	Pris omregnet etter forkorting (%1). Pris låst etter forkorting.
+allocation_price_off_rule	bookingfrontend	no	Pris ikke omregnet: saksbehandler har endret tiden uten å regne om prisen.
+
+repeating	bookingfrontend	no	Gjentakende
+occurrence_awaiting	bookingfrontend	no	Venter på saksbehandling
+occurrence_allocated	bookingfrontend	no	Tildelt
+occurrence_withdrawn	bookingfrontend	no	Trukket
+occurrence_not_allocated	bookingfrontend	no	Ikke tildelt
+occurrence_outside_series	bookingfrontend	no	Utenfor serien
+application_not_found	bookingfrontend	no	Fant ikke søknaden. Du kan mangle tilgang.
+catering_overview_empty	bookingfrontend	no	Ingen bevertning er bestilt for denne søknaden.
+catering_order_no_lines	bookingfrontend	no	Ingen artikler i denne bestillingen.
+catering_col_article	bookingfrontend	no	Artikkel
+catering_change_until	bookingfrontend	no	Kan endres innen %1
+catering_change_locked	bookingfrontend	no	Fristen for å endre bevertningen er ute.
+catering_cancel_locked	bookingfrontend	no	Fristen for å avbestille bevertningen er ute.
+catering_change_cancel_locked	bookingfrontend	no	Fristene for å endre og avbestille bevertningen er ute.
+catering_contact_officer	bookingfrontend	no	Kontakt saksbehandler via kommentarene på denne søknaden.
+catering_kitchen_contact	bookingfrontend	no	Kontaktinformasjon for kjøkkenet
+catering_cancel_order	bookingfrontend	no	Avbestill
+catering_confirm_cancel_order	bookingfrontend	no	Vil du avbestille denne bevertningen?
+catering_order_locked	bookingfrontend	no	Bestillingen kan ikke lenger endres her.
+catering_order_cutoff_passed	bookingfrontend	no	Fristen for å bestille eller endre bevertning er ute.
+catering_cancellation_deadline_passed	bookingfrontend	no	Fristen for å endre eller avbestille bevertningen er ute.
+catering_serving_time_passed	bookingfrontend	no	Serveringstidspunktet er passert.
+catering_application_closed	bookingfrontend	no	Søknaden er avsluttet, så bevertningen kan ikke endres.
+kr_per_hour	bookingfrontend	no	kr/time
+minutes_short	bookingfrontend	no	min
+catering_no_serving_time	bookingfrontend	no	Uten serveringstid
+prices_incl_vat	bookingfrontend	no	Alle priser er oppgitt inkl. mva
+price_category_shared_help	bookingfrontend	no	Valget gjelder alle ressursene du har valgt.
+price_per_resource	bookingfrontend	no	Velg pris per ressurs

@@ -266,6 +266,25 @@ class HospitalityArticleRepository
     }
 
     /**
+     * The VAT % of every tax code, keyed by fm_ecomva.id. Read exactly as the billing job reads it
+     * (async_task_update_reservation_state: whole percent), so a price shown incl. VAT is the price
+     * that will be billed. A code that is not in the table is not in the map: callers get NULL for
+     * it, never 0 %.
+     *
+     * @return array<int,int>
+     */
+    public function getTaxPercentByCode(): array
+    {
+        $stmt = $this->db->prepare("SELECT id, percent_ FROM fm_ecomva");
+        $stmt->execute();
+        $percents = [];
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            $percents[(int)$row['id']] = (int)$row['percent_'];
+        }
+        return $percents;
+    }
+
+    /**
      * Resolve the effective price and tax code for a hospitality article.
      * Returns override values if set, otherwise falls back to the base article system.
      */

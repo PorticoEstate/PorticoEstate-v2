@@ -83,12 +83,15 @@ class AllocationWithdrawalService
 		{
 			$this->repository->deactivateAllocation((int)$allocation['id']);
 
+			// The comment names the allocation it released (GH #1392), so both the applicant
+			// and the case officer see which time the withdrawal was about.
 			$this->commentsService->addComment(
 				$applicationId,
 				$message,
 				'comment',
 				$author,
-				$occurrenceContext
+				$occurrenceContext,
+				['type' => 'allocation', 'id' => (int)$allocation['id']]
 			);
 
 			$this->repository->commit();

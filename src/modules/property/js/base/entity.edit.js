@@ -22,7 +22,7 @@ function getEntityContext()
 		var pathMatch = formAction.match(/\/property\/entity\/([^/]+)\/(\d+)\/(\d+)/);
 		if (pathMatch)
 		{
-			if (!type)     { type     = decodeURIComponent(pathMatch[1]); }
+			if (!type) { type = decodeURIComponent(pathMatch[1]); }
 			if (!entityId) { entityId = pathMatch[2]; }
 			catId = pathMatch[3];
 		}
@@ -32,14 +32,14 @@ function getEntityContext()
 			if (qIndex !== -1)
 			{
 				var params = new URLSearchParams(formAction.substring(qIndex + 1));
-				if (!type)     { type     = params.get('type')      || ''; }
+				if (!type) { type = params.get('type') || ''; }
 				if (!entityId) { entityId = params.get('entity_id') || ''; }
 				catId = params.get('cat_id') || '';
 			}
 		}
 	}
 
-	return {type: type, entityId: entityId, catId: catId};
+	return { type: type, entityId: entityId, catId: catId };
 }
 
 formatEntityFileLink = function (key, oData)
@@ -165,13 +165,14 @@ formatEntityDocumentLink = function (key, oData)
 this.fileuploader = function ()
 {
 	var sUrl = multi_upload_url || phpGWLink('index.php', multi_upload_parans);
-	TINY.box.show({iframe: sUrl, boxid: 'frameless', width:Math.round($(window).width()*0.9), height:Math.round($(window).height()*0.9), fixed: false, maskid: 'darkmask', maskopacity: 40, mask: true, animate: true,
+	TINY.box.show({
+		iframe: sUrl, boxid: 'frameless', width: Math.round($(window).width() * 0.9), height: Math.round($(window).height() * 0.9), fixed: false, maskid: 'darkmask', maskopacity: 40, mask: true, animate: true,
 		close: true,
 		closejs: function ()
 		{
 			refresh_files()
 		}
-	});	
+	});
 };
 
 this.refresh_files = function ()
@@ -204,7 +205,8 @@ this.showlightbox_add_inventory = function (location_id, id)
 		+ '/inventory/add?location_id=' + encodeURIComponent(location_id);
 	sUrl = phpgwEnsureServerPrefix(sUrl);
 
-	TINY.box.show({iframe: sUrl, boxid: 'frameless', width:Math.round($(window).width()*0.9), height:Math.round($(window).height()*0.9), fixed: false, maskid: 'darkmask', maskopacity: 40, mask: true, animate: true,
+	TINY.box.show({
+		iframe: sUrl, boxid: 'frameless', width: Math.round($(window).width() * 0.9), height: Math.round($(window).height() * 0.9), fixed: false, maskid: 'darkmask', maskopacity: 40, mask: true, animate: true,
 		close: true,
 		closejs: function ()
 		{
@@ -229,7 +231,8 @@ this.showlightbox_edit_inventory = function (location_id, id, inventory_id)
 		+ '/edit?location_id=' + encodeURIComponent(location_id);
 	sUrl = phpgwEnsureServerPrefix(sUrl);
 
-	TINY.box.show({iframe: sUrl, boxid: 'frameless', width:Math.round($(window).width()*0.9), height:Math.round($(window).height()*0.9), fixed: false, maskid: 'darkmask', maskopacity: 40, mask: true, animate: true,
+	TINY.box.show({
+		iframe: sUrl, boxid: 'frameless', width: Math.round($(window).width() * 0.9), height: Math.round($(window).height() * 0.9), fixed: false, maskid: 'darkmask', maskopacity: 40, mask: true, animate: true,
 		close: true,
 		closejs: function ()
 		{
@@ -254,7 +257,8 @@ this.showlightbox_show_calendar = function (location_id, id, inventory_id)
 		+ '/calendar?location_id=' + encodeURIComponent(location_id);
 	sUrl = phpgwEnsureServerPrefix(sUrl);
 
-	TINY.box.show({iframe: sUrl, boxid: 'frameless', width:Math.round($(window).width()*0.9), height:Math.round($(window).height()*0.9), fixed: false, maskid: 'darkmask', maskopacity: 40, mask: true, animate: true,
+	TINY.box.show({
+		iframe: sUrl, boxid: 'frameless', width: Math.round($(window).width() * 0.9), height: Math.round($(window).height() * 0.9), fixed: false, maskid: 'darkmask', maskopacity: 40, mask: true, animate: true,
 		close: true,
 		closejs: function ()
 		{
@@ -277,7 +281,8 @@ this.showlightbox_assigned_history = function (serie_id)
 		+ '/assigned-history?serie_id=' + encodeURIComponent(serie_id);
 	sUrl = phpgwEnsureServerPrefix(sUrl);
 
-	TINY.box.show({iframe: sUrl, boxid: 'frameless', width:Math.round($(window).width()*0.9), height:Math.round($(window).height()*0.9), fixed: false, maskid: 'darkmask', maskopacity: 40, mask: true, animate: true,
+	TINY.box.show({
+		iframe: sUrl, boxid: 'frameless', width: Math.round($(window).width() * 0.9), height: Math.round($(window).height() * 0.9), fixed: false, maskid: 'darkmask', maskopacity: 40, mask: true, animate: true,
 		close: true,
 		closejs: false
 	});
@@ -337,7 +342,7 @@ this.onActionsClick = function (action)
 			alert('Sletter dersom det ikke er tilknyttet historikk');
 		}
 
-		var data = {ids: ids, action: action};
+		var data = { ids: ids, action: action };
 		data.repeat_interval = $("#repeat_interval").val();
 		data.controle_time = $("#controle_time").val();
 		data.service_time = $("#service_time").val();
@@ -345,7 +350,7 @@ this.onActionsClick = function (action)
 		data.control_start_date = $("#control_start_date").val();
 		data.repeat_type = $("#repeat_type").val();
 
-		var oArgs = {location_id: location_id, id: item_id };
+		var oArgs = { location_id: location_id, id: item_id };
 		var requestUrl = phpGWLink('property/location/component/update-control-serie', oArgs);
 		$.ajax({
 			type: 'POST',
@@ -378,7 +383,7 @@ function parseURL(url)
 
 add_control = function ()
 {
-	oArgs = {location_id:location_id, id: item_id};
+	oArgs = { location_id: location_id, id: item_id };
 	oArgs.control_id = $("#control_id").val();
 	oArgs.control_responsible = $("#control_responsible").val();
 	oArgs.control_start_date = $("#control_start_date").val();
@@ -393,7 +398,7 @@ add_control = function ()
 	oArgs.controle_time = $("#controle_time").val();
 	oArgs.service_time = $("#service_time").val();
 	var requestUrl = phpGWLink('property/location/component/add-control', oArgs);
-//								alert(requestUrl);
+	//								alert(requestUrl);
 
 	$("#controller_receipt").html("");
 
@@ -425,13 +430,13 @@ add_control = function ()
 
 var documents = null;
 var requestUrlDoc = null;
-	
+
 $(function ()
 {
-	$('#doc_type').on('change', function()
+	$('#doc_type').on('change', function ()
 	{
 		paramsTable7['doc_type'] = $(this).val();
-		oTable7.api().draw();				
+		oTable7.api().draw();
 	});
 
 	$("#workorder_cancel").on("submit", function (e)
@@ -442,7 +447,7 @@ $(function ()
 		}
 		e.preventDefault();
 		parent.closeJS_remote();
-//		parent.hide_popupBox();
+		//		parent.hide_popupBox();
 	});
 
 	var click_action_on_table = false;
@@ -987,7 +992,7 @@ $(function ()
 			setSubmitButtonsDisabled(false);
 			e.preventDefault();
 			renderFormErrorAlert(form, missingReadonlyMessages);
-			form.scrollIntoView({behavior: 'smooth', block: 'start'});
+			form.scrollIntoView({ behavior: 'smooth', block: 'start' });
 			return false;
 		}
 
@@ -1041,7 +1046,7 @@ $(function ()
 		{
 			fetchOptions = {
 				method: restRequest.method,
-				headers: {'Content-Type': 'application/json'},
+				headers: { 'Content-Type': 'application/json' },
 				credentials: 'same-origin',
 				body: JSON.stringify(formDataToObject(formData))
 			};
@@ -1079,12 +1084,12 @@ $(function ()
 					isSubmitting = false;
 					setSubmitButtonsDisabled(false);
 					renderFormErrorAlert(form, errors);
-					form.scrollIntoView({behavior: 'smooth', block: 'start'});
+					form.scrollIntoView({ behavior: 'smooth', block: 'start' });
 					return;
 				}
 
 				renderFormSuccessAlert(form, getSuccessMessage(data, restRequest.isCreate));
-				form.scrollIntoView({behavior: 'smooth', block: 'start'});
+				form.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
 				if (restRequest.isCreate && data.id)
 				{
@@ -1125,22 +1130,22 @@ $(function ()
 					}
 				}
 			})
-		.catch(function (error)
-		{
-			if (entityApiClient && typeof entityApiClient.refreshClickHistoryToken === 'function')
+			.catch(function (error)
 			{
-				entityApiClient.refreshClickHistoryToken();
-			}
-			isSubmitting = false;
-			setSubmitButtonsDisabled(false);
-			var errors = getErrorMessages(error && error.responseData);
-			if (!errors.length)
-			{
-				errors = ['Feil ved lagring. Vennligst prøv igjen.'];
-			}
-			renderFormErrorAlert(form, errors);
-			form.scrollIntoView({behavior: 'smooth', block: 'start'});
-		});
+				if (entityApiClient && typeof entityApiClient.refreshClickHistoryToken === 'function')
+				{
+					entityApiClient.refreshClickHistoryToken();
+				}
+				isSubmitting = false;
+				setSubmitButtonsDisabled(false);
+				var errors = getErrorMessages(error && error.responseData);
+				if (!errors.length)
+				{
+					errors = ['Feil ved lagring. Vennligst prøv igjen.'];
+				}
+				renderFormErrorAlert(form, errors);
+				form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+			});
 
 		return false;
 	});

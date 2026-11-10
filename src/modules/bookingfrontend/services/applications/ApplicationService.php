@@ -168,6 +168,12 @@ class ApplicationService
             {
                 $this->articleRepository->saveArticlesForApplication($data['id'], $data['articles']);
             }
+            elseif (isset($data['resources']))
+            {
+                // The resources changed and no articles were sent: the stored lines of the resources
+                // that left the application (and the add-ons only they offered) must not stay billed
+                $this->articleRepository->pruneLinesOfRemovedResources($data['id']);
+            }
 
             // Handle agegroups if present
             if (isset($data['agegroups']))
@@ -236,6 +242,10 @@ class ApplicationService
             {
                 throw new Exception('No partial applications found for checkout');
             }
+
+            // A timeslot booking leaves the resource unpriced until the citizen
+            // has chosen a price; it must not be submitted as free
+            $this->articleRepository->assertPriceChoicesMade(array_column($applications, 'id'));
 
             $resourceBookings = [];
             foreach ($applications as $application)

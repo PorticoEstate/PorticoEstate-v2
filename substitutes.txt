@@ -39,6 +39,11 @@ use App\modules\phpgwapi\services\Cache;
 phpgwapi_cache
 Cache
 
+Use this service for all persistent caching; do not add private SQL caches or direct session cache storage.
+Cache::session_get($module, $key);
+Cache::session_set($module, $key, $data);
+Cache::session_set($module, $key, null);
+
 $GLOBALS['phpgw']->link()
 phpgw::link()
 
@@ -135,3 +140,21 @@ $webhookManager = new WebhookManager();
 
 use App\modules\booking\services\WebhookNotifier;
 $webhookNotifier = new WebhookNotifier();
+
+
+$GLOBALS['phpgw']->send
+use App\modules\phpgwapi\services\Send;
+$send = new Send();
+
+$GLOBALS['phpgw']->msg
+use App\modules\email\services\MailMessage;
+$mail = MailMessage::getInstance();
+
+is_object($GLOBALS['phpgw']->msg)
+MailMessage::hasInstance();
+
+unset($GLOBALS['phpgw']->msg)
+MailMessage::releaseInstance();
+
+$GLOBALS['phpgw_dcom_'.$acctnum]->dcom
+$mail->getTransport((int) $acctnum);

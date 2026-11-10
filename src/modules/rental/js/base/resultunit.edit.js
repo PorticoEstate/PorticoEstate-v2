@@ -7,12 +7,12 @@ function searchUser()
 		return false;
 	}
 
-	var oArgs = {menuaction: 'rental.uiresultunit.search_user'};
+	var oArgs = { menuaction: 'rental.uiresultunit.search_user' };
 	var requestUrl = phpGWLink('index.php', oArgs, true);
 
-	$('.loading').css({"visibility": "visible"});
+	$('.loading').css({ "visibility": "visible" });
 
-	var data = {"username": document.getElementById('username').value};
+	var data = { "username": document.getElementById('username').value };
 	JqueryPortico.execute_ajax(requestUrl, function (result)
 	{
 
@@ -39,7 +39,7 @@ function searchUser()
 			}
 			document.getElementById('account_id').value = result.data.account_id;
 		}
-		$('.loading').css({"visibility": "hidden"});
+		$('.loading').css({ "visibility": "hidden" });
 
 	}, data, "POST", "JSON");
 }
@@ -52,7 +52,7 @@ function addDelegate()
 		return false;
 	}
 
-	var oArgs = {menuaction: 'rental.uiresultunit.add'};
+	var oArgs = { menuaction: 'rental.uiresultunit.add' };
 	var requestUrl = phpGWLink('index.php', oArgs, true);
 
 	var data = {};
@@ -60,7 +60,7 @@ function addDelegate()
 	data['level'] = document.getElementById('unit_level').value;
 	data['account_id'] = document.getElementById('account_id').value;
 
-	$('.loading').css({"visibility": "visible"});
+	$('.loading').css({ "visibility": "visible" });
 
 	JqueryPortico.execute_ajax(requestUrl, function (result)
 	{
@@ -83,7 +83,7 @@ function addDelegate()
 		document.getElementById('account_id').value = '';
 		document.getElementById('custom_message').innerHTML = '';
 
-		$('.loading').css({"visibility": "hidden"});
+		$('.loading').css({ "visibility": "hidden" });
 
 		oTable0.api().draw();
 

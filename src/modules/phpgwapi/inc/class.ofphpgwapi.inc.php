@@ -133,6 +133,8 @@ class phpgwapi_ofphpgwapi extends phpgwapi_object_factory
 				return parent::createObject('phpgwapi.jqcal2');
 			case 'locations':
 				return new	\App\modules\phpgwapi\controllers\Locations();
+			case 'mailer_smtp':
+				return new \App\modules\phpgwapi\services\MailerSmtp();
 			case 'mapping':
 				$auth_info = ($p1 !== '_UNDEF_') ? $p1 : null;
 				return new \App\modules\phpgwapi\security\Sso\Mapping($auth_info);

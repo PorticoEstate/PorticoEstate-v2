@@ -1281,3 +1281,112 @@ overwrite_all_prices	booking	en	Overwrite all
 keep_manual_prices	booking	en	Keep the manual prices
 cancel_price_update	booking	en	Cancel
 date and time	booking	en	Date and time
+outside_series	booking	en	Outside the series
+other_associated_items	booking	en	Other items
+select_organization	booking	en	Select organization
+search_organization_hint	booking	en	Search by name or organization number
+no_organizations_found	booking	en	No organizations found
+refine_organization_search	booking	en	More matches – type more to narrow down
+no_season_for_date	booking	en	No active season covers this date
+resource_not_in_building	booking	en	The resource does not belong to this building
+group_not_in_organization	booking	en	The group does not belong to the selected organization
+attachment_invalid_type	booking	en	File type not allowed. Allowed file types: %1
+attachment_too_large	booking	en	The file is too large. The maximum size is %1 MB
+attachment_invalid_name	booking	en	Invalid file name
+attachment_upload_failed	booking	en	The upload failed
+attachment_hint	booking	en	Max %1 MB. Allowed file types: %2
+add_attachment	booking	en	Add attachment
+no_attachments	booking	en	No attachments
+attachment_uploaded	booking	en	The attachment was uploaded
+attachment_deleted	booking	en	The attachment was deleted
+delete_attachment_confirm	booking	en	Delete the attachment?
+attachment_empty	booking	en	The file is empty
+attachment_delete_failed	booking	en	The deletion failed
+price_category	booking	en	Price category
+price_ex_vat	booking	en	Price excl. VAT
+price_incl_vat	booking	en	Price incl. VAT
+price_incl_vat_nearest	booking	en	Nearest possible price incl. VAT:
+vat_rate_missing	booking	en	the VAT code has no rate
+price_invalid	booking	en	Invalid price
+price_invalid_not_saved	booking	en	Invalid price – the new price was not saved
+price_row_invalid_not_saved	booking	en	Invalid price or date on row %1 – the row was not changed
+session_expired_log_in_again	booking	en	Your session has expired. Log in again in another tab and try again.
+change_requested_time	booking	en	Requested new time
+current_time	booking	en	Current time
+accept_change	booking	en	Accept change
+reject_change	booking	en	Reject change
+accept_change_help	booking	en	The event gets the requested time. The time is checked against other reservations before anything is saved.
+reject_change_help	booking	en	The event keeps its current time and the request is closed.
+change_price_not_recalculated	booking	en	The event is priced per hour. The price is not recalculated for the new time – check the articles under Edit.
+change_accepted	booking	en	The change has been saved
+change_rejected	booking	en	The change has been rejected
+change_conflicts_with	booking	en	The new time collides with
+change_request_not_open	booking	en	The request has already been handled
+change_request_stale	booking	en	The event has changed since the request
+change_request_element_inactive	booking	en	The event is not active
+change_request_dates_ambiguous	booking	en	The event's date row was not found
+change_applied_without_application_date	booking	en	The change has been saved. No application date belonged to the event, so the application's dates are unchanged.
+change_applied_shared_application_date	booking	en	The change has been saved. The application date also holds other elements, so the application's dates are unchanged.
+comment_regarding	booking	en	Regarding
+whole_application	booking	en	The whole application
+reply_on_this_time	booking	en	Reply on this time
+comment_time_removed	booking	en	The time has been removed
+accept_change_help_allocation	booking	en	The allocation gets the requested time. The time is checked against other reservations before anything is saved. The application's dates and the price are not changed.
+reject_change_help_allocation	booking	en	The allocation keeps its current time and the request is closed.
+change_price_not_recalculated_allocation	booking	en	The allocation is priced per hour. The price is not recalculated for the new time – check the articles under Edit.
+change_request_stale_allocation	booking	en	The allocation has changed since the request
+change_request_element_inactive_allocation	booking	en	The allocation is not active
+change_applied_allocation	booking	en	The change has been saved. The application's dates and the price are unchanged.
+change_request_booking_outside_allocation	booking	en	The change cannot be accepted: booking #%1 in the allocation would end up outside the new time.
+
+reactivate	booking	en	Reactivate
+sms_no_participants	booking	en	No participants with a phone number are registered – no SMS was sent.
+sms_not_configured	booking	en	SMS is not set up – contact the system administrator.
+sms_no_recipients	booking	en	No participants or applicant with a phone number are registered – no SMS was sent.
+sms_sent_to_applicant	booking	en	Sent to applicant %1
+sms_sent_to_participant	booking	en	Sent to participant %1
+sms_failed_to_applicant	booking	en	Could not send to applicant %1 (failed)
+sms_failed_to_participant	booking	en	Could not send to participant %1 (failed)
+sms_applicant_no_valid_phone	booking	en	The applicant has no valid phone number – not contacted
+sms_sent_to_creator	booking	en	Sent to creator %1
+sms_failed_to_creator	booking	en	Could not send to creator %1 (failed)
+sms_sent_to_group_contact	booking	en	Sent to team contact %1
+sms_failed_to_group_contact	booking	en	Could not send to team contact %1 (failed)
+sms_creator_no_valid_phone	booking	en	The creator has no valid phone number – not contacted
+sms_no_recipients_booking	booking	en	No participants, creator or team contacts with a phone number are registered – no SMS was sent.
+sms_no_recipients_booking_chain	booking	en	No participants, creator, applicant or team contacts with a phone number are registered – no SMS was sent.
+changed_by_applicant	booking	en	Changed by applicant
+catering_mail_subject_added	booking	en	New catering: %1, %2
+catering_mail_subject_changed	booking	en	Catering changed: %1, %2
+catering_mail_subject_cancelled	booking	en	Catering cancelled: %1, %2
+catering_mail_intro_added	booking	en	%1 has added a catering order to the application.
+catering_mail_intro_changed	booking	en	%1 has changed a catering order on the application.
+catering_mail_intro_cancelled	booking	en	%1 has cancelled a catering order on the application.
+catering_mail_the_applicant	booking	en	The applicant
+catering_mail_on_behalf_of	booking	en	(on behalf of %1)
+catering_mail_application	booking	en	Application
+catering_mail_building	booking	en	Building
+catering_mail_activity	booking	en	Activity
+catering_mail_field	booking	en	Field
+catering_mail_from	booking	en	From
+catering_mail_to	booking	en	To
+catering_mail_value	booking	en	Value
+catering_mail_open_case	booking	en	Open the case
+catering_mail_open_order	booking	en	View the order
+catering_mail_nothing	booking	en	—
+catering_field_hospitality	booking	en	Catering
+catering_field_serving_time	booking	en	Serving time
+catering_field_location	booking	en	Delivery location
+catering_field_comment	booking	en	Comment
+catering_field_special_requirements	booking	en	Special requirements
+catering_field_total	booking	en	Total
+sms_event_no_participants	booking	en	No participants with a phone number are registered for the event. SMS is only sent to registered participants.
+sms_send_failed	booking	en	Could not send the SMS. Try again, or contact the system administrator.
+price_category_none	booking	en	No category
+price_category_new	booking	en	New category
+price_category_name	booking	en	Name of the category
+price_category_add	booking	en	Add
+price_category_exists	booking	en	The category already existed and has been chosen
+price_category_invalid	booking	en	Enter a name of up to 100 characters that is not just a number
+price_category_add_failed	booking	en	The category was not added. Reload the page and try again.
+price_category_unknown_not_saved	booking	en	The new price was not saved: the category does not exist

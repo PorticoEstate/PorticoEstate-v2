@@ -376,7 +376,7 @@
 				'title' => array('type' => 'varchar', 'precision' => '255', 'nullable' => false),
 				'deleted' => array('type' => 'bool', 'default' => 'false'),
 				'export_format' => array('type' => 'varchar', 'precision' => '255', 'nullable' => true),
-				'export_data' => array('type' => 'blob', 'nullable' => true),
+				'export_data' => array('type' => 'text', 'nullable' => true),
 				'serial_start' => array('type' => 'int', 'precision' => '8', 'nullable' => true),
 				'serial_end' => array('type' => 'int', 'precision' => '8', 'nullable' => true)
 			),

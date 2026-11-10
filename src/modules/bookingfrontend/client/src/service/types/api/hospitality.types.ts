@@ -64,8 +64,39 @@ export interface IHospitalityArticle {
     unit: string;
     base_price: string;
     base_tax_code: number;
+    /** The price per unit EX VAT (override_price ?? base_price). Show it incl. VAT via utils/article-pricing. */
     effective_price: string;
     effective_tax_code: number;
+    /** VAT % of effective_tax_code (fm_ecomva.percent_). Null = the code has no such row: NOT 0 %. */
+    effective_tax_percent: number | null;
+}
+
+/** Why an action on an order is refused (HospitalityOrderGuard::REASON_*). */
+export type HospitalityActionReason =
+    | 'order_cutoff_passed'
+    | 'cancellation_deadline_passed'
+    | 'serving_time_passed'
+    | 'order_billed'
+    | 'order_paid_at_checkout'
+    | 'application_closed'
+    | 'order_status'
+    | 'no_deadline_basis';
+
+/** What the applicant may do with an order RIGHT NOW, as decided by the server. */
+export interface IHospitalityOrderAction {
+    allowed: boolean;
+    reason: HospitalityActionReason | null;
+    /** Last instant the action is open (ISO-8601); when refused, the instant that closed it. */
+    until: string | null;
+}
+
+/** Who to contact about an order once it is locked. */
+export interface IHospitalityOrderContact {
+    /** The kitchen resource's own contact_info, as stored (HTML-ish free text). */
+    info: string | null;
+    building_name: string | null;
+    building_email: string | null;
+    building_phone: string | null;
 }
 
 export interface IHospitalityOrder {
@@ -79,8 +110,13 @@ export interface IHospitalityOrder {
     serving_time_iso: string | null;
     hospitality_name: string;
     location_name: string;
+    /** Σ line amounts EX VAT. Never show it: use hospitalityOrderTotalOre (utils/article-pricing). */
     total_amount: number;
+    /** Always present from GET (an order without lines comes back as []). */
     lines: IHospitalityOrderLine[];
+    /** Only on GET /hospitality-orders; the write endpoints do not return it. */
+    actions?: { change: IHospitalityOrderAction; cancel: IHospitalityOrderAction };
+    contact?: IHospitalityOrderContact;
 }
 
 export interface IHospitalityOrderLine {
@@ -88,8 +124,12 @@ export interface IHospitalityOrderLine {
     order_id: number;
     hospitality_article_id: number;
     quantity: string;
+    /** EX VAT. */
     unit_price: string;
     tax_code: number;
+    /** VAT % of tax_code (fm_ecomva.percent_). Null = the code has no such row: NOT 0 %. */
+    tax_percent: number | null;
+    /** quantity x unit_price, EX VAT. */
     amount: string;
     comment: string | null;
     article_name: string;
@@ -101,13 +141,14 @@ export interface CreateHospitalityOrderRequest {
     location_resource_id: number;
     serving_time_iso?: string;
     comment?: string;
-    special_requirements?: string;
+    special_requirements?: string | null;
     lines: { hospitality_article_id: number; quantity: number; comment?: string }[];
 }
 
 export interface UpdateHospitalityOrderRequest {
     comment?: string;
-    special_requirements?: string;
+    /** null clears the stored text; an absent key leaves it unchanged. */
+    special_requirements?: string | null;
     serving_time_iso?: string;
     location_resource_id?: number;
     lines?: { hospitality_article_id: number; quantity: number; comment?: string }[];

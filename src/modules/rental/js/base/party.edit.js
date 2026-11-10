@@ -11,7 +11,7 @@ $(function ()
 	{
 		if (($(this).val() || '').trim() != (previous_party_query || '').trim())
 		{
-			filterDataContract('search', {'value': $(this).val()});
+			filterDataContract('search', { 'value': $(this).val() });
 			previous_party_query = $(this).val();
 		}
 	});
@@ -48,7 +48,7 @@ $(function ()
 	{
 		if (($(this).val() || '').trim() != (previous_document_query || '').trim())
 		{
-			filterDataDocument('search', {'value': $(this).val()});
+			filterDataDocument('search', { 'value': $(this).val() });
 			previous_document_query = $(this).val();
 		}
 	});
@@ -185,7 +185,7 @@ function onGetSync_data(requestUrl)
 
 	if (org_enhet_id > 0)
 	{
-		var data = {"org_enhet_id": org_enhet_id};
+		var data = { "org_enhet_id": org_enhet_id };
 		JqueryPortico.execute_ajax(requestUrl, function (result)
 		{
 			setSyncInfo(result);

@@ -1,6 +1,7 @@
 <?php
 
 use App\modules\phpgwapi\services\Cache;
+use App\modules\booking\repositories\ApplicationChangeRequestRepository;
 use App\modules\bookingfrontend\helpers\UserHelper;
 
 phpgw::import_class('booking.uievent');
@@ -246,8 +247,24 @@ class bookingfrontend_uievent extends booking_uievent
 				{
 					$comment = lang('event') . " #: " . $event['id'] . " " . lang("User has made a request to alter time on existing booking") . ' ' . $new_date['from_'] . ' - ' . $new_date['to_'];
 
-					$change_status = $free_up_time ? false : 'PENDING';
-					$this->application_ui->add_comment_to_application($event['application_id'], $comment, $change_status, $this->customer_name);
+					// A time outside the approved one is a request on this event, which the
+					// case officer accepts or rejects there ("Godta endring" in booking's
+					// application view). The application keeps its status; the comment and
+					// the staff notification still tell the case officer about it.
+					if (!$free_up_time)
+					{
+						(new ApplicationChangeRequestRepository())->open(
+							(int)$event['application_id'],
+							'event',
+							(int)$event['id'],
+							$test['from_'],
+							$test['to_'],
+							$new_date['from_'],
+							$new_date['to_'],
+							$this->customer_name
+						);
+					}
+					$this->application_ui->add_comment_to_application($event['application_id'], $comment, false, $this->customer_name);
 					Cache::message_set(lang('Request for changed time') . '</br>' . lang('Follow status'));
 				}
 			}
@@ -289,6 +306,9 @@ class bookingfrontend_uievent extends booking_uievent
 				if ($free_up_time)
 				{
 					$this->bo->update($event);
+					// The event now has a new approved time, so an open request made
+					// from the old one is no longer what the applicant asks for.
+					(new ApplicationChangeRequestRepository())->supersedeOpen('event', (int)$event['id']);
 				}
 
 				$date = substr($event['from_'], 0, 10);

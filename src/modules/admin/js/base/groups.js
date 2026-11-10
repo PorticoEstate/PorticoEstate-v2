@@ -3,12 +3,12 @@ get_user_data = function ()
 {
 	if (set_user_data === 0)
 	{
-		oTable1.dataTableSettings[1]['oFeatures']['bServerSide'] = true;
-		JqueryPortico.updateinlineTableHelper(oTable1, link_included_user_items);
+		var includedApi = oTable1.api();
+		includedApi.ajax.url(link_included_user_items).load();
 
-		oTable2.dataTableSettings[2]['oFeatures']['bServerSide'] = true;
-		oTable2.dataTableSettings[2]['ajax'] = {url: link_not_included_user_items, data: {}, type: 'GET'};
-		JqueryPortico.updateinlineTableHelper(oTable2);
+		var notIncludedApi = oTable2.api();
+		notIncludedApi.settings()[0].ajax = { url: link_not_included_user_items, data: {}, type: 'GET' };
+		notIncludedApi.ajax.url(link_not_included_user_items).load();
 
 		set_user_data = 1;
 	}
@@ -44,19 +44,20 @@ addUser = function (oArgs, parameters)
 	var selected = api.rows({selected: true}).data();
 	var nTable = 1;
 
-	if (selected.length == 0)
+	if (selectedRows.count() === 0)
 	{
 		alert('None selected');
 		return false;
 	}
 
+	var selected = selectedRows.data();
 	var data = getRequestData(selected, parameters);
 	var requestUrl = phpGWLink('index.php', oArgs);
 
 	JqueryPortico.execute_ajax(requestUrl, function (result)
 	{
 
-	//	JqueryPortico.show_message(nTable, result);
+		//	JqueryPortico.show_message(nTable, result);
 
 		oTable1.api().draw();
 		oTable2.api().draw();
@@ -71,19 +72,20 @@ removeUser = function (oArgs, parameters)
 	var selected = api.rows({selected: true}).data();
 	var nTable = 1;
 
-	if (selected.length == 0)
+	if (selectedRows.count() === 0)
 	{
 		alert('None selected');
 		return false;
 	}
 
+	var selected = selectedRows.data();
 	var data = getRequestData(selected, parameters);
 	var requestUrl = phpGWLink('index.php', oArgs);
 
 	JqueryPortico.execute_ajax(requestUrl, function (result)
 	{
 
-//		JqueryPortico.show_message(nTable, result);
+		//		JqueryPortico.show_message(nTable, result);
 
 		oTable1.api().draw();
 		oTable2.api().draw();

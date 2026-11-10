@@ -33,10 +33,11 @@
     {% include '@views/emails/_partials/application_details_bordered.twig' with { app: app } %}
     {% endfor %}
 
+    {# Case officer comment - HTML from the rich-text editor, purified when it was posted, so rendered rather than escaped #}
     {% if comment %}
     <div style="background-color: #f5f5f5; padding: 12px 16px; margin-bottom: 16px; border-radius: 4px;">
         <p style="margin: 0 0 4px; font-size: 13px; font-weight: 600; color: #4E4E4E;">{{ lang('booking.comment from caseofficer')|default('Kommentar fra saksbehandler') }}</p>
-        <p style="margin: 0; font-size: 13px; color: #2b2b2b;">{{ comment }}</p>
+        <div style="margin: 0; font-size: 13px; color: #2b2b2b;">{{ comment|safe_html }}</div>
     </div>
     {% endif %}
 
@@ -115,11 +116,11 @@
     </div>
     {% endif %}
 
-    {# Case officer comment #}
+    {# Case officer comment - HTML from the rich-text editor, purified when it was posted, so rendered rather than escaped #}
     {% if comment %}
     <div style="background-color: #f5f5f5; padding: 12px 16px; margin-bottom: 16px; border-radius: 4px;">
         <p style="margin: 0 0 4px; font-size: 13px; font-weight: 600; color: #4E4E4E;">{{ lang('booking.comment from caseofficer')|default('Kommentar fra saksbehandler') }}</p>
-        <p style="margin: 0; font-size: 13px; color: #2b2b2b;">{{ comment }}</p>
+        <div style="margin: 0; font-size: 13px; color: #2b2b2b;">{{ comment|safe_html }}</div>
     </div>
     {% endif %}
 

@@ -215,6 +215,11 @@ class Acl
 		return $this->apps[$appname]['id'] ?? 0;
 	}
 
+	private function has_account_id()
+	{
+		return $this->_account_id !== null && $this->_account_id !== '';
+	}
+
 	/**
 	 * Set the account id used for lookups
 	 *
@@ -302,6 +307,11 @@ class Acl
 	 */
 	public function read()
 	{
+		if (!$this->has_account_id())
+		{
+			return array();
+		}
+
 		if (!isset($this->_data[$this->_account_id]) || count($this->_data[$this->_account_id]) == 0)
 		{
 			$this->_read_repository();
@@ -323,6 +333,11 @@ class Acl
 	 */
 	public function add($appname, $location, $rights, $grantor = -1, $mask = 0)
 	{
+		if (!$this->has_account_id())
+		{
+			return array();
+		}
+
 		$app_id = $this->_get_app_id($appname);
 		$_location_id	= $this->location_obj->get_id($appname, $location);
 
@@ -372,6 +387,11 @@ class Acl
 	 */
 	public function delete($appname, $location, $grantor = -1, $mask = 0)
 	{
+		if (!$this->has_account_id())
+		{
+			return array();
+		}
+
 		if ($appname == '')
 		{
 			$appname = $this->server_flags['currentapp'];
@@ -424,6 +444,11 @@ class Acl
 	 */
 	public function save_repository($appname = '', $location = '')
 	{
+		if (!$this->has_account_id())
+		{
+			return array();
+		}
+
 		$app_id = $this->_get_app_id($appname);
 		$location_id	= $this->location_obj->get_id($appname, $location);
 
@@ -784,6 +809,11 @@ class Acl
 	 */
 	public function get_rights($location, $appname = '', $grantor = -1, $mask = 0, $account_type = 'both', $required = '')
 	{
+		if (!$this->has_account_id())
+		{
+			return 0;
+		}
+
 		// For XML-RPC, change this once its working correctly for passing parameters (jengo)
 		if (is_array($location))
 		{
@@ -853,6 +883,11 @@ class Acl
 	{
 		static $cache_user_rights = array();
 
+		if (!$this->has_account_id())
+		{
+			return false;
+		}
+
 		if (isset($cache_user_rights[$this->_account_id][$appname][$location][$required]))
 		{
 			return 	$cache_user_rights[$this->_account_id][$appname][$location][$required];
@@ -892,6 +927,11 @@ class Acl
 		$account_type = ''
 	)
 	{
+		if (!$this->has_account_id())
+		{
+			return false;
+		}
+
 		//This is only for setting new rights / grants
 		if (is_array($account_type))
 		{
@@ -923,6 +963,11 @@ class Acl
 	 */
 	public function get_specific_rights($location, $appname = '')
 	{
+		if (!$this->has_account_id())
+		{
+			return 0;
+		}
+
 		if ($appname == '')
 		{
 			$appname = $this->server_flags['currentapp'];
@@ -1869,6 +1914,11 @@ class Acl
 	 */
 	protected function _read_repository($account_type = 'both',  $app_id = '', $location_id = '')
 	{
+		if (!$this->has_account_id())
+		{
+			return;
+		}
+
 		if (!$this->_account_id)
 		{
 			$this->set_account_id($this->_account_id, false);
@@ -1932,6 +1982,11 @@ class Acl
 	 */
 	protected function _read_repository_ldap($account_type, $app_id = '', $location_id = '')
 	{
+		if (!$this->has_account_id())
+		{
+			return array();
+		}
+
 		if (!$account_type || $account_type == 'accounts' || $account_type == 'both')
 		{
 			$account_list[] = $this->_account_id;
@@ -2014,6 +2069,11 @@ class Acl
 	 */
 	protected function _read_repository_sql($account_type, $app_id = '', $location_id = '')
 	{
+		if (!$this->has_account_id())
+		{
+			return array();
+		}
+
 		$account_list = array();
 		if ($account_type == 'accounts' || $account_type == 'both')
 		{

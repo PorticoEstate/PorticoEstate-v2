@@ -1434,7 +1434,7 @@ class calendar_bocalendar
 		}
 		$user = $this->userSettings['account_id'];
 
-		$grants = (isset($this->grants[$owner]) ? $this->grants[$owner] : '');
+		$grants = (isset($this->grants[$owner]) ? $this->grants[$owner] : 0);
 
 		if ($owner == $user) //if the current user is the owner they have full rights
 		{
@@ -2433,7 +2433,6 @@ class calendar_bocalendar
 		}
 		$version = Settings::getInstance()->get('apps')['calendar']['version'];
 
-		$this->userSettings['preferences'] = $this->preferences->create_email_preferences();
 		$sender = $this->userSettings['preferences']['email']['address'];
 
 		$temp_tz_offset = $this->prefs['common']['tz_offset'];
@@ -2457,7 +2456,7 @@ class calendar_bocalendar
 		{
 			$user =  $this->accounts_obj->search_person($this->owner);
 		}
-		$this->userSettings['preferences'] = $this->preferences->create_email_preferences($user);
+		//$this->userSettings['preferences'] = $this->preferences->create_email_preferences($user);
 
 		$user_timezone = phpgwapi_datetime::user_timezone();
 

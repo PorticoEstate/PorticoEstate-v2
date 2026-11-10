@@ -5,6 +5,7 @@ use App\modules\phpgwapi\services\Settings;
 use App\modules\phpgwapi\services\Log;
 use App\modules\phpgwapi\services\Cache;
 use App\Database\Db;
+use App\modules\booking\helpers\CommentParts;
 
 phpgw::import_class('booking.uicommon');
 
@@ -951,6 +952,78 @@ class booking_uievent extends booking_uicommon
 		}
 	}
 
+	/**
+	 * The phone numbers the participant SMS of an event goes to: the participants registered on the event
+	 * (reservation_type 'event'), their numbers trimmed, blanks dropped, each number once.
+	 *
+	 * This is THE rule. send_sms_participants() sends to exactly this list, and edit() asks it whether the
+	 * SMS box on the event page is usable at all (see sms_has_no_recipients_for_page), so the page can never
+	 * disable the box for an event the button would send for, or the other way round. Do not copy it.
+	 *
+	 * @param int $event_id
+	 * @return array the distinct, trimmed, non-blank phone numbers (empty when nobody can be texted)
+	 */
+	protected function get_event_sms_recipients( int $event_id )
+	{
+		$soparticipant = createObject('booking.soparticipant');
+		$params = array(
+			'results' => -1,
+			'filters' => array(
+				'reservation_id' => $event_id,
+				'reservation_type' => 'event'
+			)
+		);
+
+		$participants = $soparticipant->read($params);
+		$sms_recipients = array();
+		foreach ($participants['results'] as $participant)
+		{
+			$phone = trim((string)$participant['phone']);
+			if ($phone !== '')
+			{
+				$sms_recipients[] = $phone;
+			}
+		}
+
+		return array_unique($sms_recipients);
+	}
+
+	/**
+	 * Whether the event page must show the participant SMS as unusable from the start: the SMS is on and
+	 * the event has nobody to text (get_event_sms_recipients). This is a convenience for the officer, not
+	 * the guard: send_sms_participants() still answers sms_event_no_participants on its own.
+	 *
+	 * With the SMS off nothing is read and nothing changes on the page (the box is shown as it always was).
+	 * If the read fails the page must still render, so the answer is "not unusable": the box stays enabled
+	 * and the guard in send_sms_participants() decides when the officer presses send.
+	 *
+	 * @param int $event_id
+	 * @return bool
+	 */
+	protected function sms_has_no_recipients_for_page( int $event_id )
+	{
+		if (empty($this->apps['sms']))
+		{
+			return false;
+		}
+
+		try
+		{
+			return !$this->get_event_sms_recipients($event_id);
+		}
+		catch (\Throwable $e)
+		{
+			(new Log())->error(array(
+				'text'	 => "Could not tell whether event %1 has participants to text: %2",
+				'p1'	 => $event_id,
+				'p2'	 => $e->getMessage(),
+				'line'	 => __LINE__,
+				'file'	 => __FILE__
+			));
+			return false;
+		}
+	}
+
 	public function send_sms_participants()
 	{
 		if (empty($this->apps['sms']))
@@ -959,7 +1032,6 @@ class booking_uievent extends booking_uicommon
 			return false;
 		}
 
-		$type = 'event';;
 		$id = Sanitizer::get_var('id', 'int');
 		$send_sms = Sanitizer::get_var('send_sms', 'bool');
 		$sms_content = Sanitizer::get_var('sms_content', 'string');
@@ -968,29 +1040,49 @@ class booking_uievent extends booking_uicommon
 		$message = 'Nothing...';
 		if ($send_sms && $sms_content)
 		{
-			$message = '';
-			$soparticipant = createObject('booking.soparticipant');
-			$params = array(
-				'results' => -1,
-				'filters' => array(
-					'reservation_id' => $id,
-					'reservation_type' => $type
-				)
-			);
+			// Only a positive int names an event. Sanitizer gives null for a missing id, 0 for text, and an array for
+			// id[]=...: none of these may reach the helper (its int type would throw, and a (int) cast would turn a
+			// non-empty array into event 1 and text that event's participants). They have nobody to text.
+			$final_recipients = (is_int($id) && $id > 0) ? $this->get_event_sms_recipients($id) : array();
 
-			$participants = $soparticipant->read($params);
-			if (!$participants['results'])
+			// Nobody to send to: say so before anything else is touched. This is checked before the gateway, so an
+			// event without participants gets this message even where no gateway is configured.
+			if (!$final_recipients)
 			{
-				$message = lang('no records found.');
+				return array(
+					'status' => 'error',
+					'message' => lang('sms_event_no_participants')
+				);
 			}
 
-			$sms_service = CreateObject('sms.sms');
-			$sms_recipients = array();
-			foreach ($participants['results'] as $participant)
+			// Checked before CreateObject('sms.sms'): including the sms class dies when no gateway module is available
+			// (see sms_is_configured). A named send module whose file is missing throws at include time instead.
+			if (!$this->sms_is_configured())
 			{
-				$sms_recipients[] = $participant['phone'];
+				return array(
+					'status' => 'error',
+					'message' => lang('sms_not_configured')
+				);
 			}
-			$final_recipients = array_unique($sms_recipients);
+
+			try
+			{
+				$sms_service = CreateObject('sms.sms');
+			}
+			catch (\Throwable $e)
+			{
+				(new Log())->error(array(
+					'text'	 => "SMS service could not be created for event %1: %2",
+					'p1'	 => $id,
+					'p2'	 => $e->getMessage(),
+					'line'	 => __LINE__,
+					'file'	 => __FILE__
+				));
+				return array(
+					'status' => 'error',
+					'message' => lang('sms_not_configured')
+				);
+			}
 
 			$account_id = $this->current_account_id();
 			$log_success = array();
@@ -1009,24 +1101,57 @@ class booking_uievent extends booking_uicommon
 						$log_success[] = $final_recipient;
 					}
 				}
-				catch (Exception $ex)
+				catch (\Throwable $ex)
 				{
+					// A gateway Error (a PHP 8 TypeError) leaves websend2pv's transaction open, and while one is
+					// open the next recipient's send is never committed. Close it, so the failed recipient leaves
+					// no row and the ones after it are sent as usual (same as uicommon::send_reservation_sms).
+					$db = Db::getInstance();
+					if ($db->get_transaction())
+					{
+						$db->transaction_abort();
+					}
 					$log_error[] = $final_recipient;
 				}
 			}
 
+			// The numbers come from the public participant form and reach the officer's page through .html() in
+			// event.js: they are escaped here, once, on the way into the message.
+			$escape = static fn($phone) => htmlspecialchars((string)$phone, ENT_QUOTES, 'UTF-8');
+			$parts = array();
 			if ($log_success)
 			{
 				$status = 'ok';
-				$message .= 'SMS sendt til: ' . implode(',', $log_success);
-				$event = $this->bo->read_single($id);
+				$parts[] = 'SMS sendt til: ' . implode(',', array_map($escape, $log_success));
 			}
 			if ($log_error)
 			{
-				$message .= "<br/>SMS feilet for: " . implode(',', $log_error);
+				$parts[] = 'SMS feilet for: ' . implode(',', array_map($escape, $log_error));
 			}
-			$this->add_comment($event, "SMS: $message");
-			$this->bo->update($event);
+			$message = implode('<br/>', $parts);
+
+			// Only a send that went out is worth a comment on the event. Adding it is a single INSERT: the old
+			// read_single + bo->update of the whole event threw on an event that did not load (no id to
+			// authorize the write against) after the SMS had already gone, and the officer saw nothing.
+			// The author is the officer's name, as add_comment() always stored: event_edit.xsl prints it verbatim,
+			// and add_single_comment() without one writes the account id.
+			if ($log_success)
+			{
+				try
+				{
+					$this->bo->add_single_comment($id, "SMS: $message", 'comment', $this->current_account_fullname());
+				}
+				catch (\Throwable $e)
+				{
+					(new Log())->error(array(
+						'text'	 => "SMS sent for event %1, but the comment could not be added: %2",
+						'p1'	 => $id,
+						'p2'	 => $e->getMessage(),
+						'line'	 => __LINE__,
+						'file'	 => __FILE__
+					));
+				}
+			}
 		}
 		return array(
 			'status' => $status,
@@ -1148,7 +1273,7 @@ class booking_uievent extends booking_uicommon
 
 				if ((int)$organization['customer_internal'] == 0 || ! Sanitizer::get_var('customer_internal', 'bool', 'POST'))
 				{
-					$event['customer_identifier_type'] = $organization['customer_identifier_type'];
+					$event['customer_identifier_type'] = $event['customer_identifier_type'] ? $event['customer_identifier_type'] : $organization['customer_identifier_type'];
 
 					if (!Sanitizer::get_var('customer_internal', 'bool', 'POST'))
 					{
@@ -1170,6 +1295,15 @@ class booking_uievent extends booking_uicommon
 						$organization['customer_identifier_type'] = 'organization_number';
 						$organization['customer_internal'] = 0;
 						$this->organization_bo->update($organization);
+					}
+					else if($event['customer_identifier_type'] == 'ssn' && strlen($event['customer_ssn'])==11)
+					{
+						if(!$organization['customer_ssn'])
+						{
+							$organization['customer_ssn'] = $event['customer_ssn'];
+							$organization['customer_identifier_type'] = 'ssn';
+							$this->organization_bo->update($organization);
+						}
 					}
 					else
 					{
@@ -1649,6 +1783,10 @@ class booking_uievent extends booking_uicommon
 		foreach ($comments as  &$comment)
 		{
 			$comment['comment'] = str_replace($external_site_address, $internal_site_address, $comment['comment']);
+			// The history prints the parts, never the stored string: it is HTML that people outside the
+			// building can write into, and event_edit.xsl has no way to print it that is safe.
+			$comment['parts'] = CommentParts::parse($comment['comment']);
+			unset($comment['comment']);
 		}
 		/**
 		 * End hack
@@ -1675,7 +1813,11 @@ class booking_uievent extends booking_uicommon
 
 		$event['tabs'] = phpgwapi_jquery::tabview_generate($tabs, $active_tab);
 		//              echo '<pre>'; print_r($event);echo '</pre>';
+		// The participant SMS box starts disabled, with the message the button would answer, for an event that
+		// has nobody to text. A participant who registers after this page was rendered is not seen until a reload.
+		$sms_no_recipients = $this->sms_has_no_recipients_for_page((int)$id);
 		self::render_template_xsl('event_edit', array(
+			'sms_no_recipients' => $sms_no_recipients ? 1 : 0,
 			'event'			 => $event,
 			'activities'	 => $activities,
 			'agegroups'		 => $agegroups,

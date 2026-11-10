@@ -56,6 +56,37 @@ class bookingfrontend_uibooking extends booking_uibooking
 		}
 	}
 
+	/**
+	 * The booking forms post a hidden audience[] input that stays empty until a target audience
+	 * is chosen. socommon counts that blank member as satisfying the required check and then
+	 * inserts NULL into bb_booking_targetaudience, so drop blank members before validating.
+	 */
+	private function without_blank_audience($audience)
+	{
+		return array_values(array_filter((array)$audience, function ($id)
+		{
+			return trim((string)$id) !== '';
+		}));
+	}
+
+	/**
+	 * The citizen who is making a booking: the bb_user of the logged-in person (UserHelper::ssn),
+	 * or null when there is none. Every citizen request runs as the shared bookingguest account, so
+	 * the phpgw account would name nobody; it is deliberately not recorded here.
+	 *
+	 * @return int|null
+	 */
+	private function creator_user_id()
+	{
+		$bouser = new UserHelper();
+		if (!$bouser->ssn)
+		{
+			return null;
+		}
+
+		return $bouser->get_user_id($bouser->ssn) ?: null;
+	}
+
 	public function get_freetime()
 	{
 		$building_id = Sanitizer::get_var('building_id', 'int');
@@ -484,7 +515,8 @@ class bookingfrontend_uibooking extends booking_uibooking
 			$booking['completed'] = '0';
 			$booking['reminder'] = '1';
 			$booking['secret'] = $this->generate_secret();
-			array_set_default($booking, 'audience', array());
+			$booking['created_by_user_id'] = $this->creator_user_id();
+			$booking['audience'] = $this->without_blank_audience($booking['audience'] ?? array());
 			array_set_default($booking, 'agegroups', array());
 			array_set_default($_POST, 'resources', array());
 			$this->agegroup_bo->extract_form_data($booking);
@@ -594,7 +626,9 @@ class bookingfrontend_uibooking extends booking_uibooking
 		$this->flash_form_errors($errors);
 
 		array_set_default($booking, 'resources', array());
-		array_set_default($booking, 'resource_ids', array());
+		// The POST replaces $booking, but the form only lists the resources named in the URL;
+		// read them again so the list survives a re-render after a validation error
+		array_set_default($booking, 'resource_ids', (array)Sanitizer::get_var('resource_ids'));
 		array_set_default($booking, 'audience', array());
 
 
@@ -805,6 +839,7 @@ class bookingfrontend_uibooking extends booking_uibooking
 
 				array_set_default($_POST, 'resources', array());
 				$booking = array_merge($booking, extract_values($_POST, $this->fields));
+				$booking['audience'] = $this->without_blank_audience($booking['audience'] ?? array());
 				$this->agegroup_bo->extract_form_data($booking);
 				$errors = $this->bo->validate($booking);
 
@@ -1873,6 +1908,8 @@ class bookingfrontend_uibooking extends booking_uibooking
 			{
 				continue;
 			}
+			// Served to anyone: who made the booking is for the case officer, not the public calendar.
+			unset($booking['created_by_user_id'], $booking['created_by_account_id']);
 			$booking['info_group'] = $this->group_bo->read_single($booking['group_id']);
 			$booking['info_resource_info'] = $this->calculate_resource_info($booking['resources']);
 			$booking['info_building_link'] = self::link([

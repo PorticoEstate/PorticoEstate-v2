@@ -921,6 +921,11 @@ function ManageModal<
 	// discriminator and an optional flag leaves booking correct without having to opt out.
 	// The allocation adapter sets it too now (GH #1393), but only when the viewer can actually
 	// open that application — so the population that caused 810a218ed still gets the step machine.
+	//
+	// The clicked entity is handed over as `highlight` (GH #1392): the application lists every
+	// element it owns, and without it the user lands on the whole series with nothing showing
+	// which one they came to manage. Its reserved-times row is `${type}-${id}` from the same
+	// table and application_id, so the row exists whenever this branch renders.
 	if (adapter.usesApplicationView && entity.application_id) {
 		return (
 			<Dialog
@@ -930,7 +935,12 @@ function ManageModal<
 				title={appTitleName}
 				closeOnBackdropClick={false}
 			>
-				<ApplicationDetails applicationId={entity.application_id} embedded={true} onTitleReady={setAppTitleName}/>
+				<ApplicationDetails
+					applicationId={entity.application_id}
+					embedded={true}
+					onTitleReady={setAppTitleName}
+					highlight={{type: entity.type, id: entity.id}}
+				/>
 			</Dialog>
 		);
 	}

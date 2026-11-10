@@ -1,0 +1,371 @@
+account	email	no	Konto
+account name	email	no	Kontonavn
+accounts	email	no	Kontoer
+action	email	no	Handling
+actions	email	no	Handlinger
+address book	email	no	Adressebok
+address book unavailable	email	no	Adresseboken er utilgjengelig
+after	email	no	Etter
+all	email	no	Alle
+answered	email	no	besvart
+apply	email	no	Bruk
+apply all	email	no	Bruk alle
+apply saved filter	email	no	Bruk lagret filter
+aqua fusion	email	no	Aqua Fusion
+attach signature	email	no	Legg ved signatur
+attachment	email	no	Vedlegg
+attachment exceeds the 25 mib limit	email	no	Vedlegget overskrider grensen på 25 MiB
+attachment not found	email	no	Fant ikke vedlegget
+attachments	email	no	Vedlegg
+back to email accounts	email	no	Tilbake til e-postkontoer
+back to filters	email	no	Tilbake til filtre
+back to inbox	email	no	Tilbake til innboksen
+bcc	email	no	blindkopi
+before	email	no	Før
+big	email	no	Stor
+bigger	email	no	Større
+biggest	email	no	Størst
+body	email	no	Meldingstekst
+both	email	no	Begge
+button type	email	no	Knapptype
+cache server data whenever possible	email	no	Bufre serverdata når det er mulig
+cancel	email	no	Avbryt
+cc	email	no	Kopi
+change font size in your e-mail pages	email	no	Endre skriftstørrelsen på e-postsidene
+check spelling	email	no	Kontroller stavemåte
+choose file	email	no	Velg fil
+choose password authentication or microsoft oauth2 for an outlook imap account. oauth2 requires the server administrator to configure a microsoft application.	email	no	Velg passordautentisering eller Microsoft OAuth2 for en Outlook IMAP-konto. OAuth2 krever at serveradministratoren konfigurerer en Microsoft-applikasjon.
+click here to edit the settings for this email account.	email	no	Klikk her for å endre innstillingene for denne e-postkontoen.
+click here to return to your home page.	email	no	Klikk her for å gå tilbake til startsiden.
+close	email	no	Lukk
+compose	email	no	Skriv
+compose new	common	no	Skriv ny
+conditions	email	no	Betingelser
+configure your email account username and password before using email.	email	no	Angi brukernavn og passord for e-postkontoen før du bruker e-post.
+connect microsoft outlook with oauth2	email	no	Koble til Microsoft Outlook med OAuth2
+contact scope	email	no	Kontaktutvalg
+could not open this mailbox	email	no	Kunne ikke åpne denne postkassen
+create	email	no	Opprett
+custom settings	email	no	Egendefinerte innstillinger
+date	email	no	Dato
+date range	email	no	Datointervall
+default sorting order	email	no	Standard sorteringsrekkefølge
+default:	common	no	standard:
+delete	email	no	Slett
+delete account	common	no	Slett konto
+delete selected	email	no	Slett valgte
+deleted	email	no	slettet
+deleted messages (trash) folder	email	no	Mappe for slettede meldinger (papirkurv)
+deleted messages folder name	email	no	Navn på mappe for slettede meldinger
+deleted messages go to trash	email	no	Slettede meldinger flyttes til papirkurven
+deleted messages saved to folder:	email	no	Slettede meldinger lagret i mappen:
+destination account	email	no	Målkonto
+destination folder	email	no	Målmappe
+draft messages saved in "draft" folder	email	no	Lagre utkast i utkastmappen
+e-mail	email	no	E-post
+e-mail filters	common	no	E-postfiltre
+e-mail folders	common	no	E-postmapper
+e-mail preferences	common	no	E-postinnstillinger
+each user has a summary page which can display a variety of information. this option will show a small list of email messages in the inbox of the users default email account on the users summary home page.	email	no	Hver bruker har en oversiktsside som kan vise forskjellig informasjon. Dette alternativet viser en kort liste over e-postmeldinger fra innboksen til brukerens standardkonto på oversiktssiden.
+edit	email	no	Rediger
+edit draft	email	no	Rediger utkast
+edit filter	email	no	Rediger filter
+email	email	no	E-post
+email account name	email	no	Navn på e-postkonto
+email account not found	email	no	Fant ikke e-postkontoen
+email account preferences	email	no	Innstillinger for e-postkonto
+email address	email	no	E-postadresse
+email filters	email	no	E-postfiltre
+email folders	email	no	E-postmapper
+email navigation	email	no	E-postnavigasjon
+email password	email	no	E-postpassord
+email preferences	email	no	E-postinnstillinger
+email settings	email	no	E-postinnstillinger
+email signature	email	no	E-postsignatur
+email type	common	no	E-posttype
+empty trash	email	no	Tøm papirkurven
+enable this email account	common	no	Aktiver denne e-postkontoen
+enable utf-7 encoded folder names	email	no	Tillat UTF-7-kodede mappenavn
+enter your default mail domain ( from: user@domain )	admin	no	Skriv inn standard e-postdomene (fra: bruker@domene)
+enter your pop	admin	no	Skriv inn POP-serveren
+enter your smtp server hostname or ip address	admin	no	Skriv inn vertsnavnet eller IP-adressen til SMTP-serveren
+enter your smtp server port	admin	no	Skriv inn porten til SMTP-serveren
+error	email	no	Feil
+evolution style	email	no	Evolution-stil
+extra e-mail account	common	no	Ekstra e-postkonto
+extra e-mail accounts	common	no	Ekstra e-postkontoer
+extra email accounts	email	no	Ekstra e-postkontoer
+file into	email	no	Fil til
+filter	email	no	Filter
+filter action could not be completed	email	no	Filterhandlingen kunne ikke fullføres
+filter inboxes for accounts	email	no	Filtrer innbokser for kontoer
+filter name	email	no	Filternavn
+filter not found	email	no	Fant ikke filteret
+filters	email	no	Filtre
+flagged	email	no	merket
+folder	email	no	Mappe
+folder name	email	no	Mappenavn
+folder to rename	email	no	Mappe som skal gis nytt navn
+folder updated	email	no	Mappen er oppdatert
+folders	email	no	Mapper
+for these items, fill only what is different from you default e-mail preferences	common	no	For disse feltene fyller du bare inn det som avviker fra standardinnstillingene for e-post.
+forward	email	no	Videresend
+forwarded_message	email	no	Videresendt melding
+from	email	no	Fra
+global contacts	email	no	Felles kontakter
+go	email	no	Gå
+icon size	email	no	Ikonstørrelse
+icon theme	email	no	Ikontema
+if "draft messages folder" is checked, copies of your draft messages will be stored in the folder name you type in this box. if this folder does not exist, it will be created for you automatically, when you first save a draft message. default name is "drafts". this will be your "drafts" folder, but it does not have to actually be called "drafts", you can name it anything. only works with imap servers, pop servers do not have folders.	email	no	Hvis utkastmappe er valgt, lagres kopier av utkastene i mappen du angir her. Hvis mappen ikke finnes, opprettes den automatisk første gang du lagrer et utkast. Standardnavnet er «drafts», men du kan velge et annet navn. Dette fungerer bare med IMAP-servere; POP-servere har ikke mapper.
+if &quot; deleted messages go to trash &quot; is checked, deleted message will be sent to the folder name you type in this box. if this folder does not exist, it will be created for you automatically. default name is &quot;trash&quot;. this will be your &quot;trash&quot; folder, but it does not have to actually be called &quot;trash&quot;, you can name it anything. only works with imap servers, pop servers do not have folders.	email	no	Når &quot;Slettede meldinger flyttes til papirkurven&quot; er valgt, flyttes slettede meldinger til mappen du angir her. Hvis mappen ikke finnes, opprettes den automatisk. Standardnavnet er &quot;Trash&quot;. Mappen trenger ikke hete &quot;Trash&quot;; du kan velge et hvilket som helst navn. Dette fungerer bare med IMAP-servere. POP-servere har ikke mapper.
+if &quot; sent messages folder &quot; is checked, a copy of your sent mail will be stored in the folder name you type in this box. if this folder does not exist, it will be created for you automatically. default name is &quot;sent&quot;. this will be your &quot;sent&quot; folder, but it does not have to actually be called &quot;sent&quot;, you can name it anything. only works with imap servers, pop servers do not have folders.	email	no	Når &quot;Mappe for sendte meldinger&quot; er valgt, lagres en kopi av sendt e-post i mappen du angir her. Hvis mappen ikke finnes, opprettes den automatisk. Standardnavnet er &quot;Sent&quot;. Mappen kan hete hva som helst. Dette fungerer bare med IMAP-servere. POP-servere har ikke mapper.
+if applicable	email	no	Hvis aktuelt
+if checked, a copy of your sent mail will be stored in the &quot;sent&quot; folder name which you specify in the box for &quot;sent messages folder &quot;. only works with imap servers, pop servers do not have folders.	email	no	Hvis valgt, lagres en kopi av sendt e-post i mappen &quot;Sent&quot; som du angir i feltet &quot;Mappe for sendte meldinger&quot;. Dette fungerer bare med IMAP-servere. POP-servere har ikke mapper.
+if checked, deleted message will be sent to the &quot;trash&quot; folder name which you specify in the box for &quot; deleted messages (trash) folder &quot;. only works with imap servers, pop servers do not have folders.	email	no	Hvis valgt, flyttes slettede meldinger til mappen &quot;Trash&quot; som du angir i feltet &quot;Mappe for slettede meldinger (papirkurv)&quot;. Dette fungerer bare med IMAP-servere. POP-servere har ikke mapper.
+if checked, you will be able to create draft messages and save them in the "draft" folder name which you specify in the box for "draft messages folder". only works with imap servers, pop servers do not have folders.	email	no	Hvis dette er valgt, kan du opprette utkast og lagre dem i mappen du angir i feltet for utkastmappe. Dette fungerer bare med IMAP-servere; POP-servere har ikke mapper.
+if messages match	email	no	Hvis meldingene samsvarer
+if using an imap server, what kind is it, most often this option can safely be set to &quot;cyrus or courier&quot;. technically, this means the server uses a dot between the different parts of the folder names, such as &quot;inbox.sent&quot;. the other major kind of imap server is the university of washington &quot;uwash&quot; imap server. it uses slashes instead of the dots the other servers use, and although it has a folder called &quot;inbox&quot;, it is not considered the &quot;namespace&quot; for the other folder names. the &quot;uw-maildir&quot; is a rare combination of the two above types. this is the least used kind of imap server. if you are unsure, ask your it administrator. only applies to imap servers.	email	no	Hvis du bruker en IMAP-server, hvilken type er det? Som regel kan du trygt velge &quot;Cyrus eller Courier&quot;. Disse serverne skiller delene i mappenavn med punktum, for eksempel &quot;INBOX.Sent&quot;. En annen type er University of Washingtons &quot;UWash&quot;-IMAP-server, som bruker skråstreker i stedet for punktum. Selv om den har en mappe som heter &quot;INBOX&quot;, regnes ikke denne som navnerommet for de andre mappene. &quot;UW-Maildir&quot; er en sjelden kombinasjon av de to typene. Spør IT-administratoren hvis du er usikker. Gjelder bare IMAP-servere.
+image	email	no	Bilde
+imap authentication	email	no	IMAP-autentisering
+imap mail server hostname or ip address	admin	no	Vertsnavn eller IP-adresse for IMAP-server
+imap server type	common	no	IMAP-servertype
+in the email index page, the page which lists all the mails in a folder, mail may be sorted by date, author, size, or subject, however all of these need to be ordered from first to last, this options controlls what is first and last. for example, if sorting by date, the newest to oldest displays the most recent emails first, in decending order down to the oldest emails last. 	email	no	På e-postoversikten, siden som viser alle meldingene i en mappe, kan meldingene sorteres etter dato, avsender, størrelse eller emne. Rekkefølgen må også bestemmes. Ved sortering etter dato viser for eksempel rekkefølgen nyeste til eldste de nyeste meldingene først og de eldste sist.
+inbox	email	no	Innboks
+invalid account	email	no	Ugyldig konto
+invalid address book query	email	no	Ugyldig søk i adresseboken
+invalid attachment reference	email	no	Ugyldig vedleggsreferanse
+invalid destination account	email	no	Ugyldig målkonto
+invalid draft data	email	no	Ugyldige utkastdata
+invalid email account	email	no	Ugyldig e-postkonto
+invalid email preferences	email	no	Ugyldige e-postinnstillinger
+invalid filter action	email	no	Ugyldig filterhandling
+invalid filter condition	email	no	Ugyldig filterbetingelse
+invalid filter data	email	no	Ugyldige filterdata
+invalid filter number	email	no	Ugyldig filternummer
+invalid folder action	email	no	Ugyldig mappehandling
+invalid message action	email	no	Ugyldig meldingshandling
+invalid message move	email	no	Ugyldig flytting av melding
+invalid message reference	email	no	Ugyldig meldingsreferanse
+invalid preference value	email	no	Ugyldig innstillingsverdi
+invalid read status request	email	no	Ugyldig forespørsel om lesestatus
+invalid source account	email	no	Ugyldig kildekonto
+invalid spellcheck text	email	no	Ugyldig tekst for stavekontroll
+invalid uploaded file	email	no	Ugyldig opplastet fil
+keyword	email	no	nøkkelord
+layout 1	common	no	Oppsett 1
+layout 2	common	no	Oppsett 2
+loading accounts	email	no	Laster kontoer
+loading filter	email	no	Laster filter
+loading filters	email	no	Laster filtre
+loading folders	email	no	Laster mapper
+loading message	email	no	Laster melding
+loading messages	email	no	Laster meldinger
+loading preferences	email	no	Laster innstillinger
+mail server	email	no	E-postserver
+mail server login type	admin	no	Påloggingstype for e-postserver
+mail server port	email	no	Port for e-postserver
+mail server type	email	no	E-postservertype
+mail settings	admin	no	E-postinnstillinger
+mail you send will use this address as the &quot;from&quot; address. this may be the same as your phpgroupware login name, or the server administrator may have set it for you. when the recipient clicks reply, this address will be used. you can leave this box blank and the default value will be used.	email	no	E-post du sender, bruker denne adressen som &quot;Fra&quot;-adresse. Den kan være den samme som phpGroupWare-brukernavnet ditt eller være angitt av serveradministratoren. Når mottakeren svarer, brukes denne adressen. La feltet stå tomt for å bruke standardverdien.
+manage	email	no	Administrer
+maximum file size: 25 mib	email	no	Maksimal filstørrelse: 25 MiB
+message	email	no	Melding
+message body	email	no	Meldingstekst
+message list layout	common	no	Meldingslisteoppsett
+message no longer exists	email	no	Meldingen finnes ikke lenger
+message pages	email	no	Meldingssider
+message status	email	no	Meldingsstatus
+messages	email	no	Meldinger
+microsoft outlook oauth2	email	no	Microsoft Outlook OAuth2
+microsoft oauth client id	email	no	Microsoft OAuth-klient-ID
+microsoft oauth client secret	email	no	Microsoft OAuth-klienthemmelighet
+microsoft oauth tenant	email	no	Microsoft OAuth-leier
+optional per-account microsoft application client id. leave blank to use the assigned emailadmin profile credentials.	email	no	Valgfri Microsoft-klient-ID for kontoen. La feltet stå tomt for å bruke klientopplysningene fra den tilordnede e-postprofilen.
+enter the client secret value, not its secret id. stored encrypted and never displayed. leave blank to keep the saved secret or use the assigned emailadmin profile secret.	email	no	Skriv inn verdien til klienthemmeligheten, ikke hemmelighetens ID. Verdien lagres kryptert og vises aldri. La feltet stå tomt for å beholde lagret verdi eller bruke e-postprofilens hemmelighet.
+use consumers for personal outlook.com accounts, common for personal and work accounts, or an organization tenant id. leave blank to use the assigned emailadmin profile tenant.	email	no	Bruk consumers for personlige Outlook.com-kontoer, common for personlige kontoer og jobbkontoer, eller organisasjonens leier-ID. La feltet stå tomt for å bruke leieren fra e-postprofilen.
+choose password authentication or oauth2 for microsoft outlook or google gmail. configure oauth client credentials on this account or its assigned emailadmin profile.	email	no	Velg passordautentisering eller OAuth2 for Microsoft Outlook eller Google Gmail. Konfigurer OAuth-klientopplysninger på kontoen eller i den tilordnede e-postprofilen.
+use your full outlook.com or microsoft 365 email address as the account name. enable this extra account and imap in your mailbox settings. set the mail server to outlook.office365.com, type imaps and port 993. register an application in microsoft entra that supports personal microsoft accounts. add a web redirect uri using this application address followed by /email/oauth/microsoft/callback, or the override from your emailadmin profile. add the delegated imap.accessasuser.all permission and create a client secret. enter the application client id and secret value below, or use your emailadmin profile credentials. set the tenant to consumers for personal accounts, common for personal and work accounts, or your organization tenant id. save and reopen the account, then connect to microsoft. outbound imap port 993 must be reachable; the http proxy only handles oauth requests.	email	no	Bruk hele Outlook.com- eller Microsoft 365-adressen som kontonavn. Aktiver tilleggskontoen og IMAP i postkasseinnstillingene. Velg outlook.office365.com som server, IMAPS og port 993. Registrer en app i Microsoft Entra som støtter personlige Microsoft-kontoer. Legg til en Web-viderekoblingsadresse med programmets adresse etterfulgt av /email/oauth/microsoft/callback, eller overstyringen fra e-postprofilen. Legg til den delegerte tillatelsen IMAP.AccessAsUser.All og opprett en klienthemmelighet. Skriv inn appens klient-ID og hemmelighetens verdi nedenfor, eller bruk e-postprofilens klientopplysninger. Bruk consumers som leier for personlige kontoer, common for personlige kontoer og jobbkontoer, eller organisasjonens leier-ID. Lagre og åpne kontoen på nytt, og koble deretter til Microsoft. Utgående IMAP på port 993 må være tilgjengelig; HTTP-proxyen håndterer bare OAuth-forespørsler.
+google gmail oauth2	email	no	Google Gmail OAuth2
+use the full gmail address as the account name. enter the google oauth client id and secret below or use the emailadmin profile credentials. save the settings, reload this page if you entered account credentials, and then choose connect gmail with google oauth2. for a new extra account, save and reopen it first. workspace imap must be enabled by an administrator.	email	no	Bruk hele Gmail-adressen som kontonavn. Skriv inn Google OAuth-klient-ID og hemmelighet nedenfor, eller bruk e-postadmin-profilens klientopplysninger. Lagre innstillingene, last siden på nytt hvis du la inn klientopplysninger, og velg deretter Koble til Gmail med Google OAuth2. For en ny tilleggskonto må du først lagre kontoen og åpne den på nytt. En administrator må aktivere IMAP for Workspace.
+for gmail, use the full gmail address as the account name. enter this account’s google oauth client id and secret below, or use credentials configured on the emailadmin profile. save the settings, reload this page if you just entered credentials, then use connect gmail with google oauth2. for a new extra account, save it and reopen its settings first. workspace imap must be enabled by an administrator.	email	no	For Gmail: Bruk hele Gmail-adressen som kontonavn. Skriv inn kontoens Google OAuth-klient-ID og hemmelighet nedenfor, eller bruk klientopplysningene fra e-postadmin-profilen. Lagre innstillingene, last siden på nytt hvis du nettopp la inn klientopplysninger, og velg deretter «Koble til Gmail med Google OAuth2». For en ny tilleggskonto må du først lagre kontoen og åpne innstillingene på nytt. En administrator må aktivere IMAP for Workspace.
+choose password authentication or oauth2 for microsoft outlook or google gmail. oauth2 requires the server administrator to configure the matching mail profile.	email	no	Velg passordautentisering eller OAuth2 for Microsoft Outlook eller Google Gmail. OAuth2 krever at administratoren konfigurerer den tilhørende e-postprofilen.
+google oauth client id	email	no	Google OAuth-klient-ID
+optional per-account google oauth client id. leave blank to use the google oauth client configured on the assigned emailadmin profile. register the application callback uri shown in the emailadmin profile or provided by the application.	email	no	Valgfri Google OAuth-klient-ID for kontoen. La feltet stå tomt for å bruke klienten i den tilordnede e-postprofilen. Registrer programmets tilbakeringingsadresse fra e-postprofilen eller programmet.
+google oauth client secret	email	no	Google OAuth-klienthemmelighet
+optional per-account google oauth client secret. stored encrypted and never displayed after saving. leave blank to use the assigned emailadmin profile secret.	email	no	Valgfri Google OAuth-klienthemmelighet for kontoen. Den lagres kryptert og vises ikke etter lagring. La feltet stå tomt for å bruke hemmeligheten i den tilordnede e-postprofilen.
+connect gmail with google oauth2	email	no	Koble til Gmail med Google OAuth2
+the google gmail oauth imap option sets the gmail server endpoint. configure a default google oauth client here or override the client id and secret for each mailbox in email preferences. the redirect uri must match the application callback. leave the client secret blank when editing to keep the saved secret.	email	no	Google Gmail OAuth IMAP velger Gmail-serveren. Konfigurer en standard Google OAuth-klient her, eller overstyr klient-ID og hemmelighet per postkasse under e-postinnstillinger. Tilbakeringingsadressen må samsvare med applikasjonens callback. La klienthemmeligheten stå tom ved redigering for å beholde den lagrede verdien.
+most us and european users do not need to enable this. if this option is checked then your email server can handle folder names with non us-ascii charactors in them/ default is disabled, not checked. only use if you are really sure you need it. only works with imap servers, pop servers do not have folders.	email	no	De fleste brukere i USA og Europa trenger ikke å aktivere dette. Når alternativet er valgt, kan e-postserveren håndtere mappenavn med tegn utenfor US-ASCII. Standardinnstillingen er deaktivert. Aktiver bare dette hvis du er sikker på at det trengs. Gjelder bare IMAP-servere; POP-servere har ikke mapper.
+move	email	no	Flytt
+move selected	email	no	Flytt valgte
+mozilla modern style	email	no	Mozilla Modern-stil
+my contacts	email	no	Mine kontakter
+name of the mail server you want to access. should be a name like &quot;mail.example.com&quot;. if you leave this box blank then the default value will be used.	email	no	Navnet på e-postserveren du vil bruke, for eksempel &quot;mail.example.com&quot;. La feltet stå tomt for å bruke standardverdien.
+new	email	no	Ny
+new account	email	no	Ny konto
+new filter	email	no	Nytt filter
+newest	common	no	nyeste
+next	email	no	Neste
+no error returned from server	email	no	Serveren returnerte ingen feil
+no filters are available to run	email	no	Ingen filtre er tilgjengelige for kjøring
+no subject	email	no	Uten emne
+noia &#64; carlitus style	email	no	Noia &#64; Carlitus-stil
+none	email	no	Ingen
+normal	email	no	Normal
+notify on delivery	email	no	Varsle ved levering
+number	common	no	Antall
+old	email	no	Gammel
+oldest	common	no	eldste
+on	email	no	På
+only needed with the university of washington &quot;uwash&quot; imap server. the default value is &quot;mail&quot; which means your mail folders, other then inbox, are located in a directory called &quot;mail&quot; directly under your &quot;home&quot; directory. this box may be left empty, which means your mail folders are located in your &quot;home&quot; directory, not a subdirectory. if your mail folders are located in a subdirectory of &quot;home&quot; then put the name of that subdirectory here. generally, it is not necessary to use any special slashes or tildes, &quot;home&quot; is always considered the base directory, and the slash bewteen &quot;home&quot; and the subdirectory will be added for you automatically, do not put the slash in this box.	email	no	Dette er bare nødvendig med University of Washingtons &quot;UWash&quot;-IMAP-server. Standardverdien &quot;mail&quot; betyr at e-postmappene, bortsett fra innboksen, ligger i en mappe kalt &quot;mail&quot; direkte under &quot;home&quot;-mappen. Feltet kan stå tomt hvis mappene ligger direkte i &quot;home&quot;. Hvis de ligger i en undermappe, skriver du navnet på den her. Du trenger vanligvis ikke å skrive skråstreker eller tilder; &quot;home&quot; regnes alltid som rotmappen, og skråstreken mellom &quot;home&quot; og undermappen legges til automatisk. Ikke skriv skråstreken i feltet.
+optional port number for the mail server. leave blank to use the configured imap profile port or the default port for the selected mail server type.	email	no	Valgfritt portnummer for e-postserveren. La feltet stå tomt for å bruke porten i den konfigurerte IMAP-profilen eller standardporten for den valgte servertypen.
+or	common	no	eller
+or enter text	email	no	eller skriv inn tekst
+parent folder	email	no	Overordnet mappe
+password	email	no	Passord
+persistent email server session	email	no	Vedvarende e-postserverøkt
+please set your preferences	email	no	Angi innstillingene dine
+please, check your username and password, or contact your admin.	email	no	Kontroller brukernavn og passord, eller kontakt administratoren.
+preference value is too long	email	no	Innstillingsverdien er for lang
+preferences	email	no	Innstillinger
+previous	email	no	Forrige
+print	email	no	Skriv ut
+private contacts	email	no	Private kontakter
+provide at least one recipient and valid message data	email	no	Angi minst én mottaker og gyldige meldingsdata
+read	email	no	Lest
+recent	email	no	Nylige
+rename	email	no	Gi nytt navn
+reply	email	no	Svar
+reply all	email	no	Svar alle
+replyto	email	no	Svar til
+results	email	no	Resultater
+save account	email	no	Lagre konto
+save deleted messages in folder named below	email	no	Lagre slettede meldinger i mappen nedenfor
+save draft	email	no	Lagre utkast
+save filter	email	no	Lagre filter
+save preferences	email	no	Lagre innstillinger
+save sent messages in folder named below	email	no	Lagre sendte meldinger i mappen nedenfor
+search	email	no	Søk
+search result pages	email	no	Søkeresultatsider
+search terms	email	no	Søkeord
+seen	email	no	Lest
+select a file to attach	email	no	Velg en fil som skal legges ved
+select a valid destination folder	email	no	Velg en gyldig målmappe
+select a valid folder	email	no	Velg en gyldig mappe
+select all messages on this page	email	no	Velg alle meldinger på denne siden
+select an enabled email account	email	no	Velg en aktivert e-postkonto
+select at least one folder and provide valid search criteria	email	no	Velg minst én mappe og angi gyldige søkekriterier
+select attachments to delete	email	no	Velg vedlegg som skal slettes
+select this box if you want the text body of the message you are forwarding to appear inline in the body of your sent message	email	no	Velg dette alternativet hvis meldingsteksten du videresender, skal vises direkte i teksten i meldingen du sender.
+select your mail server type	admin	no	Velg type e-postserver
+select your screensize for propper showing of the javascript addressbook	email	no	Velg skjermstørrelse for riktig visning av JavaScript-adresseboken
+select your style for the addressbook. the traditional, simple style. or the new javascript enabled complex addressbook	email	no	Velg stil for adresseboken: den tradisjonelle, enkle stilen eller den nye, avanserte JavaScript-adresseboken.
+selected	email	no	Valgt
+send	email	no	Send
+quote forwarded message body inline	email	no	Siter den videresendte meldingsteksten i meldingen
+the original message body is included as quoted text in the message body. the original email is also attached separately.	email	no	Den opprinnelige meldingsteksten legges inn som sitert tekst. Den opprinnelige e-posten legges også ved separat.
+sent	email	no	sendt
+sent folder	email	no	mappe for sendte meldinger
+sent messages folder	common	no	Mappe for sendte meldinger
+sent messages folder name	email	no	Navn på mappe for sendte meldinger
+sent messages saved in &quot;sent&quot; folder	common	no	Sendte meldinger lagret i mappen &quot;Sent&quot;
+sent messages saved to folder:	email	no	Sendte meldinger lagret i mappen:
+settings	email	no	Innstillinger
+show new messages in combobox	email	no	Vis nye meldinger i nedtrekkslisten
+show new messages on main screen	email	no	Vis nye meldinger på hovedsiden
+show sender's email address with name	email	no	Vis avsenderens e-postadresse sammen med navnet
+show total folder size by default	email	no	Vis samlet mappestørrelse som standard
+site configuration	email	no	Nettstedsoppsett
+size	email	no	Størrelse
+small	email	no	Liten
+smaller	email	no	Mindre
+smallest	email	no	Minst
+sources	email	no	Kilder
+spelling suggestions	email	no	Staveforslag
+standard preferences	email	no	Standardinnstillinger
+status	email	no	Status
+stop filtering	email	no	Stopp filtreringen
+subject	email	no	Emne
+switch current folder to	common	no	Bytt gjeldende mappe til
+test all	email	no	Test alle
+test saved filter	email	no	Test lagret filter
+text	email	no	Tekst
+the email application offers 2 different layouts for the index page, that is the page that lists the emails in a folder. this page may be the page the user looks at the most and so different layouts, or looks, are offered.	email	no	E-postprogrammet tilbyr to ulike oppsett for oversiktssiden, som viser meldingene i en mappe. Siden er ofte den brukeren ser mest på, og derfor kan du velge mellom flere utforminger.
+the email application offers different button displays, these buttons can be text, images, or both.	email	no	E-postprogrammet tilbyr ulike visninger av knappene. Knappene kan vises som tekst, bilder eller begge deler.
+the email application offers different icon image themes, groups of images of a similar style which are used in this email application. currently the available themes are images based on evolution by ximian and the netscape7, mozilla browser buttons. additional themes are anticipated and welcome.	email	no	E-postprogrammet tilbyr ulike ikontemaer med bilder i en gjennomgående stil. De tilgjengelige temaene er basert på Evolution fra Ximian og knappene i nettleserne Netscape 7 og Mozilla. Flere temaer kan komme til senere.
+the email application offers different icon image themes, these icons can be big or small.	email	no	E-postprogrammet tilbyr ulike størrelser på ikonene: store eller små.
+the imap server rejected authentication. check your credentials or sign in again.	email	no	IMAP-serveren avviste autentiseringen. Kontroller påloggingsopplysningene eller logg inn på nytt.
+the login name to use when checking mail for this email account. this may be the same as your phpgroupware login name, or the server administrator may have set it for you. if your have multiple email accounts set up, you will need to fill this in. if you have only one email account set up, then you can probably leave this alone. if you clear this box, then it goes back to the default value. if you only need some custom settings but want this one to be the default value, then leave this box blank, the default value will be used, and you will see that default value in this box the next time you come to this preferences page.	email	no	Brukernavnet som skal brukes når e-post hentes for denne kontoen. Det kan være det samme som phpGroupWare-brukernavnet ditt, eller det kan være angitt av serveradministratoren. Hvis du har flere e-postkontoer, må du fylle ut feltet. Har du bare én konto, kan du vanligvis la det stå. Hvis du tømmer feltet, gjenopprettes standardverdien. La feltet stå tomt hvis du vil bruke standardverdien selv om du tilpasser andre innstillinger. Standardverdien vises her neste gang du åpner denne siden.
+the login name to use when checking mail for this email account. this may be the same as your phpgroupware login name, or the server administrator may have set it for you. if your have multiple email accounts set up, you will need to fill this in. if you have only one email account set up, then you can probably leave this alone. if you do set a custom password, this box will be blank the next time you come to this settings page. this is a security feature because your custom email password is not sent to your browser after you set it. to change your custom password, simply enter a new password in the box. extra email accounts require you to set this. for your default email account, you can clear your custom password by unchecking the &quot;use custom settings&quot; option.	email	no	Brukernavnet som skal brukes når e-post hentes for denne kontoen. Det kan være det samme som phpGroupWare-brukernavnet ditt, eller det kan være angitt av serveradministratoren. Hvis du har flere kontoer, må du fylle ut feltet. Har du bare én konto, kan du vanligvis la det stå. Hvis du angir et eget passord, er dette feltet tomt neste gang du åpner innstillingssiden. Dette er av sikkerhetshensyn; det egendefinerte passordet sendes ikke tilbake til nettleseren. Skriv inn et nytt passord for å endre det. Ekstra kontoer krever at dette feltet fylles ut. For standardkontoen kan du fjerne det egendefinerte passordet ved å fjerne avmerkingen for &quot;Bruk egendefinerte innstillinger&quot;.
+the password to use when checking mail for this email account. this may be the same as your phpgroupware password, or the server administrator may have set it for you. if your have multiple email accounts set up, you will need to fill this in. if you have only one email account set up, then you can probably leave this alone. if you do set a custom password, this box will be blank the next time you come to this settings page. this is a security feature because your custom email password is not sent to your browser after you set it. to change your custom password, simply enter a new password in the box. extra email accounts require you to set this. for your default email account, you can clear your custom password by unchecking the &quot;use custom settings&quot; option.	email	no	Passordet som skal brukes når e-post hentes for denne kontoen. Det kan være det samme som phpGroupWare-passordet ditt, eller det kan være angitt av serveradministratoren. Hvis du har flere kontoer, må du fylle ut feltet. Har du bare én konto, kan du vanligvis la det stå. Hvis du angir et eget passord, er feltet tomt neste gang du åpner innstillingssiden. Dette er av sikkerhetshensyn; passordet sendes ikke tilbake til nettleseren. Skriv inn et nytt passord for å endre det. Ekstra kontoer krever at dette feltet fylles ut. For standardkontoen kan du fjerne det egendefinerte passordet ved å fjerne avmerkingen for &quot;Bruk egendefinerte innstillinger&quot;.
+the type of mail server you want to access. imap mail servers have folders, such as the sent and trash folders. pop servers do not have folders. pop, pop-3, and pop3 are the same thing. you can have the server connection encrypted by using imaps or pops, only if the mailserver supports it and if your phpgroupware installation has a &quot;ssl&quot; capabable version of php.	email	no	Typen e-postserver du vil bruke. IMAP-servere har mapper, for eksempel for sendte meldinger og papirkurven. POP-servere har ikke mapper. POP, POP-3 og POP3 er det samme. Du kan kryptere serverforbindelsen med IMAPS eller POPS hvis e-postserveren støtter det, og phpGroupWare-installasjonen bruker en PHP-versjon med SSL-støtte.
+then do this	email	no	Gjør deretter dette
+there was an error trying to connect to your mail server.	email	no	Det oppstod en feil ved tilkobling til e-postserveren.
+this confusing and often misunderstood option is left over from this email apps origins as aeromail by mark cushman. when viewing a list of emails in a folder, the from column may show you a) the senders name only, if a name was provided, b) the senders from email address, in addition to the senders name, or c) the senders reply to address if it is different from the senders from address, in addition to the senders name if it was provided. typically users set this to none, which will show only the senders name. if no name was supplied by the sender, then the senders from email address will be shown, whether a seperate reply to address is provided has no effect on this, the from address is always used if the senders name is not provided.	email	no	Dette forvirrende og ofte misforståtte alternativet stammer fra e-postprogrammets opprinnelse som Aeromail, laget av Mark Cushman. I meldingslisten kan Fra-kolonnen vise a) bare avsenderens navn, hvis det er oppgitt, b) avsenderens e-postadresse sammen med navnet, eller c) svaradressen hvis den er forskjellig fra avsenderadressen, sammen med navnet hvis det er oppgitt. Vanligvis velges «ingen», slik at bare avsenderens navn vises. Hvis avsenderen ikke har oppgitt et navn, vises avsenderadressen. En eventuell separat svaradresse påvirker ikke dette; avsenderadressen brukes alltid når navn mangler.
+this data not supplied.	email	no	Disse dataene er ikke oppgitt.
+this folder is empty	email	no	Denne mappen er tom
+this is the name that appears in the account combobox. if for leave this blank, your accounts will be given a standard name like account[1]: jane doe, where jane doe is the name you give below as your full name. if you want to give an account a special name you can fill this in. no matter what, this is for your use, your emails will still use your full name as your from name for email messages. note that your full name for your email account 0 is the name you gave in the phpgroupware setup.	email	no	Dette navnet vises i kontolisten. Hvis du lar feltet stå tomt, får kontoen et standardnavn, for eksempel «Konto[1]: Jane Doe», der Jane Doe er navnet du oppgir nedenfor som fullt navn. Du kan skrive inn et eget navn for kontoen. Dette navnet er bare til eget bruk; e-postmeldingene bruker fortsatt fullt navn som avsendernavn. Merk at fullt navn for e-postkonto 0 er navnet som ble oppgitt under phpGroupWare-oppsettet.
+this is the name that appears in the users from address. the default mail account gets this value automatically from the phpgwapi. additional accounts are created with the phpgwapi supplied fullname you can specify a different fullname for each extra email account.	email	no	Dette navnet vises i brukerens Fra-adresse. Standardkontoen henter verdien automatisk fra phpgwapi. Ekstra kontoer opprettes med fullt navn fra phpgwapi, men du kan angi et annet fullt navn for hver ekstra e-postkonto.
+this pref currently does nothing users may have more than one email account. in the future it is anticipated that automatic actions may be performed on these accounts, such as automatic new mail checks,auto filtering, etc... perhaps the user may want to disable an account so that these automatic actions do not occur for that account. this is one possible use. also, an admin may want to disable accounts from time to time.	email	no	Denne innstillingen har foreløpig ingen funksjon. Brukere kan ha flere e-postkontoer. I fremtiden kan automatiske handlinger utføres på kontoene, for eksempel automatisk kontroll av nye meldinger eller filtrering. Brukeren kan da ønske å deaktivere en konto slik at slike handlinger ikke utføres. Administratoren kan også ha behov for å deaktivere kontoer fra tid til annen.
+this specifies whether or not to show the number of new message in the folders combo box on the index screen.	email	no	Angir om antallet nye meldinger skal vises i mappelisten på oversiktssiden.
+this specifies whether or not to show the total size of folders by default. if this is not checked, you will be presented with a button allowing you to display folder size..	email	no	Angir om samlet størrelse for mapper skal vises som standard. Hvis alternativet ikke er valgt, vises en knapp du kan bruke til å vise mappestørrelsen.
+this text will be appended to the bottom of the users emails for this email account. currently, html tags are not supported. also, forwarded email will not get this email sig appended to it for reasons such as it clutters the email, the forwarded part probably has its own email sig from the original author, which is really the information that matters the most.	email	no	Denne teksten legges til nederst i e-postmeldingene fra denne kontoen. HTML-koder støttes ikke. Signaturen legges heller ikke til videresendt e-post, blant annet fordi den kan gjøre meldingen rotete, og den videresendte delen vanligvis allerede inneholder den opprinnelige avsenderens signatur.
+to	email	no	Til
+top level	email	no	Øverste nivå
+total	email	no	Totalt
+trash	email	no	papirkurv
+trash folder	email	no	papirkurvmappe
+u-wash mail folder	email	no	U-Wash-e-postmappe
+unable to check spelling	email	no	Kan ikke kontrollere stavemåten
+unable to complete message action	email	no	Kan ikke fullføre meldingshandlingen
+unable to delete attachments	email	no	Kan ikke slette vedlegg
+unable to delete email account	email	no	Kan ikke slette e-postkontoen
+unable to download attachment	email	no	Kan ikke laste ned vedlegget
+unable to establish a secure connection to the imap server. check the tls and certificate settings.	email	no	Kan ikke opprette en sikker forbindelse til IMAP-serveren. Kontroller TLS- og sertifikatinnstillingene.
+unable to load attachments	email	no	Kan ikke laste vedlegg
+unable to load email account	email	no	Kan ikke laste e-postkontoen
+unable to load email accounts	email	no	Kan ikke laste e-postkontoer
+unable to load email preferences	email	no	Kan ikke laste e-postinnstillingene
+unable to load filter editor	email	no	Kan ikke laste filterredigeringen
+unable to load filters	email	no	Kan ikke laste filtre
+unable to load folders	email	no	Kan ikke laste mapper
+unable to load message	email	no	Kan ikke laste meldingen
+unable to load messages	email	no	Kan ikke laste meldinger
+unable to mark message as read	email	no	Kan ikke merke meldingen som lest
+unable to move message	email	no	Kan ikke flytte meldingen
+unable to open the imap mailbox. check the mail server availability and account settings.	email	no	Kan ikke åpne IMAP-postkassen. Kontroller at e-postserveren er tilgjengelig og at kontoinnstillingene er riktige.
+unable to prepare message	email	no	Kan ikke klargjøre meldingen
+unable to reach the imap server. check the server address, port, and network connectivity.	email	no	Kan ikke nå IMAP-serveren. Kontroller serveradressen, porten og nettverkstilkoblingen.
+unable to run filters	email	no	Kan ikke kjøre filtre
+unable to save draft	email	no	Kan ikke lagre utkastet
+unable to save email account	email	no	Kan ikke lagre e-postkontoen
+unable to save email preferences	email	no	Kan ikke lagre e-postinnstillingene
+unable to save filter	email	no	Kan ikke lagre filteret
+unable to search messages	email	no	Kan ikke søke i meldinger
+unable to search the address book	email	no	Kan ikke søke i adresseboken
+unable to send message	email	no	Kan ikke sende meldingen
+unable to update filter	email	no	Kan ikke oppdatere filteret
+unable to update folder	email	no	Kan ikke oppdatere mappen
+unable to update read status	email	no	Kan ikke oppdatere lesestatus
+unable to upload attachment	email	no	Kan ikke laste opp vedlegget
+unanswered	email	no	ubesvart
+undeleted	email	no	ikke slettet
+undisclosed recipients	email	no	Skjulte mottakere
+unflagged	email	no	ikke merket
+unknown translation	email	no	ukjent oversettelse
+unread	email	no	Ulest
+unseen	email	no	Ulest
+upload	email	no	Last opp
+use custom settings	email	no	Bruk egendefinerte innstillinger
+view sanitized html	email	no	Vis renset HTML
+view unformatted	email	no	Vis uformatert
+we have recently added this new addressbook so that users can choose to have a more complex addressbook that features a) easy, point and click searching, b) best suited for organizations with large central addressbooks with many categories. you can choose here which addressbook do you prefer.	email	no	Vi har nylig lagt til denne adresseboken, slik at brukerne kan velge en mer avansert adressebok med a) enkelt søk med museklikk og b) funksjoner som passer for organisasjoner med store sentrale adressebøker og mange kategorier. Her kan du velge hvilken adressebok du foretrekker.
+we have three sizes that tell us how to better render the addressbook for you: 800x600 (addressbook will popout in a 700 pixel wide box), 1024x768 (it will be a 800 box), 1200x1600 (will be a 900 box). the fonts for all html stuff will be, respectively set to xx-small, x-small and normal (no font setting).	email	no	Velg mellom tre størrelser for best visning av adresseboken: 800x600 (adresseboken åpnes i et vindu som er 700 piksler bredt), 1024x768 (800 piksler bredt) og 1200x1600 (900 piksler bredt). Skriftstørrelsen for HTML-innhold settes henholdsvis til svært liten, liten og normal (ingen egen skriftstørrelse).
+wrote	email	no	skrevet
+you have %1 new messages!	common	no	Du har %1 nye meldinger!
+you have 1 new message!	common	no	Du har 1 ny melding!
+you have messages!	common	no	Du har meldinger!
+you have no new messages	common	no	Du har ingen nye meldinger
+your full name	common	no	Ditt fulle navn
+your message has been sent	common	no	Meldingen er sendt!
+your server administrator will set the default values for the following options. you may never need to change any of them. if you do need to use settings that are different from the defaults for the options below here, then check this box. default is disabled, not checked. if you fill in some of the options, but later decide to go back to the default values, unchecking this box will erase your custom values and put back the default values. all of the following options start out with the default value, so you may see some settings below even if you have never filled them in. this checkbox only shows up for the default email account. if you are setting up additional email accounts, you will be required to fill in the following options and this checkbox will not be displayed, it will be checked for all extra email accounts.	email	no	Serveradministratoren angir standardverdiene for alternativene nedenfor, og det kan hende du aldri trenger å endre dem. Merk av i denne boksen hvis du vil bruke andre innstillinger enn standardverdiene. Boksen er som standard ikke valgt. Hvis du senere vil gå tilbake til standardverdiene, fjerner du avmerkingen; de egendefinerte verdiene slettes og standardverdiene gjenopprettes. Alle alternativene starter med standardverdier, så noen felt kan allerede være utfylt. Avmerkingsboksen vises bare for standardkontoen. Når du setter opp ekstra e-postkontoer, må du fylle ut alternativene nedenfor; boksen vises ikke og egendefinerte innstillinger brukes alltid.

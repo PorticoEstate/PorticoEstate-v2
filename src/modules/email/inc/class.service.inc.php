@@ -1,4 +1,5 @@
 <?php
+
 /**
  * EMail - Service
  *
@@ -15,14 +16,13 @@
  * Service
  *
  * @package email
- */	
+ */
+
+use App\modules\phpgwapi\services\Settings;
+use App\modules\phpgwapi\services\Translation;
+
 class email_service
 {
-	/**
-	* @param enable debugging
-	*/ 
-	private $debug = false;
-
 	/**
 	 * Get the menus for the email module
 	 * 
@@ -30,14 +30,14 @@ class email_service
 	 */
 	public function get_menu()
 	{
-		$menu = array();
+		$menu = [];
+		$userSettings = (array) Settings::getInstance()->get('user');
+		$translation = Translation::getInstance();
 
-		$menu['navbar'] = array
-		(
-			'email'	=> array
-			(
-				'text'	=> lang('Email'),
-				'url'	=> phpgw::link('/index.php', array('menuaction'=> 'email.uiindex.index') ),
+		$menu['navbar'] = array(
+			'email'	=> array(
+				'text'	=> $translation->translate('Email', [], false, 'email'),
+				'url'	=> phpgw::link('/email/view/inbox'),
 				'image'	=> array('email', 'navbar'),
 				'order'	=> 6,
 				'group'	=> 'office'
@@ -45,110 +45,64 @@ class email_service
 		);
 
 
-		if ( isset($GLOBALS['phpgw_info']['user']['apps']['admin']) )
+		if (!empty($userSettings['apps']['admin']))
 		{
 			$menu['admin'] = array();
-			$menu['admin'][] = array
-			(
-				'text'	=> lang('Site Configuration'),
-				'url'	=> phpgw::link('/index.php', array('menuaction' => 'admin.uiconfig.index', 'appname' => 'email') )
+			$menu['admin'][] = array(
+				'text'	=> $translation->translate('Site Configuration', [], false, 'email'),
+				'url'	=> phpgw::link('/index.php', array('menuaction' => 'admin.uiconfig.index', 'appname' => 'email'))
 			);
 		}
 
-		$menu['toolbar'] = array
-		(
-			array
-			(
-				// this is a bit of a hack, but it means that we can degrade gracefully
-				'url'	=> phpgw::link('/index.php', array('menuaction' => 'email.uicompose.compose')) . '" onclick="window.open(\'' . phpgw::link('/index.php', array('menuaction' => 'email.uicompose.compose')) . '\'); return false;"',
-				'text'	=> lang('New'),
+		$menu['toolbar'] = array(
+			array(
+				'url'	=> phpgw::link('/email/view/compose'),
+				'text'	=> $translation->translate('New', [], false, 'email'),
 				'image'	=> array('email', 'new')
 			),
-			array
-			(
-				'url'	=> phpgw::link('/index.php', array('menuaction' => 'email.uisearch.form')),
-				'text'	=> lang('Search'),
+			array(
+				'url'	=> phpgw::link('/email/view/search'),
+				'text'	=> $translation->translate('Search', [], false, 'email'),
 				'image'	=> array('email', 'search')
 			),
-			array
-			(
-				'url'	=> phpgw::link('/index.php', array('menuaction' => 'email.uifilters.filters_list') ),
-				'text'	=> lang('Filters'),
+			array(
+				'url'	=> phpgw::link('/email/view/filters'),
+				'text'	=> $translation->translate('Filters', [], false, 'email'),
 				'image'	=> array('email', 'filters')
 			)
 		);
 
-		if ( isset($GLOBALS['phpgw_info']['user']['apps']['preferences']) )
+		if (!empty($userSettings['apps']['preferences']))
 		{
-			$menu['preferences'] = array
-			(
-				array
-				(
-					'text'	=> lang('EMail Preferences'),
-					'url'	=> phpgw::link('/index.php',array('menuaction'=> 'email.uipreferences.preferences'))
+			$menu['preferences'] = array(
+				array(
+					'text'	=> $translation->translate('EMail Preferences', [], false, 'email'),
+					'url'	=> phpgw::link('/email/view/preferences')
 				),
-				array
-				(
-					'text'	=> lang('Extra EMail Accounts'),
-					'url'	=> phpgw::link('/index.php',array('menuaction'=> 'email.uipreferences.ex_accounts_list'))
+				array(
+					'text'	=> $translation->translate('Extra EMail Accounts', [], false, 'email'),
+					'url'	=> phpgw::link('/email/view/accounts')
 				),
-				array
-				(
-					'text'	=> lang('EMail Filters'),
-					'url'	=> phpgw::link('/index.php',array('menuaction'=> 'email.uifilters.filters_list'))
+				array(
+					'text'	=> $translation->translate('EMail Filters', [], false, 'email'),
+					'url'	=> phpgw::link('/email/view/filters')
 				)
 			);
 
-			$menu['toolbar'][] = array
-			(
-				'text'	=> lang('Preferences'),
-				'url'	=> phpgw::link('/index.php',array('menuaction'=> 'email.uipreferences.preferences'))
+			$menu['toolbar'][] = array(
+				'text'	=> $translation->translate('Preferences', [], false, 'email'),
+				'url'	=> phpgw::link('/email/view/preferences')
 			);
 
-			$menu['toolbar'][] = array
-			(
-				'text'	=> lang('Accounts'),
-				'url'	=> phpgw::link('/index.php',array('menuaction'=> 'email.uipreferences.ex_accounts_list'))
+			$menu['toolbar'][] = array(
+				'text'	=> $translation->translate('Accounts', [], false, 'email'),
+				'url'	=> phpgw::link('/email/view/accounts')
 			);
 		}
 
 		$menu['navigation'] = $menu['toolbar'];
 
-		$msg_bootstrap = CreateObject('email.msg_bootstrap');
-		$msg_bootstrap->ensure_mail_msg_exists('email.bofolder.folder', false);
-
-		$bopreferences = CreateObject('email.bopreferences');
-//		$accts = $bopreferences->msg->a;
-		$accts = array();
-		$menu['folders'] = array();
-		foreach ( $accts as $id => $acct )
-		{
-			if ( is_array($acct) && isset($acct['prefs']) )
-			{
-				$folders = array();
-				if ( substr($acct['prefs']['mail_server_type'], 0, 4) == 'imap' )
-				{
-					$raw_folders = $GLOBALS['phpgw']->msg->get_arg_value('folder_list', $id, '', false);
-					$sep = $acct['prefs']['imap_server_type'] == 'Cyrus' ? '.' : '/';
-					$folders = self::process_folders($raw_folders, $sep, $id);
-				}
-				else // POP3 doesn't support folders
-				{
-					$folders = array( array
-					(
-						'text'	=> lang('inbox'),
-						'url'	=> phpgw::link('/index.php', array('menuaction' => 'email.uiindex.index', 'fldball[folder]' => 'INBOX', 'fldball[acctnum]' => $id)),
-						'image'	=> array('email', 'folder')
-					));
-				}
-				$menu['folders'][] = array
-				(
-					'text'		=> trim($acct['prefs']['account_name']) ? $acct['prefs']['account_name'] : $acct['prefs']['address'],
-					'image'		=> array('email', 'account'),
-					'children'	=> $folders
-				);
-			}
-		}
+		$menu['folders'] = [];
 		return $menu;
 	}
 
@@ -162,39 +116,5 @@ class email_service
 	function getFolderContent()
 	{
 		return array('content', 'this is being phased out');
-	}
-
-	/**
-	* Convert a flat folder structure into a menu compatiable associate array
-	*
-	* @param array $folders the folders to parse
-	* @param string $sep the folder separator character
-	* @param int $acct the mail account id for the folders
-	* @return array properly formatted folder array that can be used in a menu
-	*/
-	private static function process_folders($folders, $sep, $acct)
-	{
-		$nu_mboxes = array();
-		foreach ( $folders as $id => $info)
-		{
-			$parts = explode($sep, $info['folder_long']);
-			$ref =& $nu_mboxes;
-			foreach ( $parts as $part)
-			{
-				//echo "$mpart ";
-				if ( !isset($ref['children'][$part]) )
-				{
-					$ref['children'][$part] = array
-					(
-						'text'		=> $part,
-						'url'		=> phpgw::link('/index.php', array('menuaction' => 'email.uiindex.index', 'fldball[folder]' => $info['folder_long'], 'fldball[acctnum]' => $acct)),
-						'children'	=> array(),
-						'image'		=> array('email', 'folder')
-					);
-				}
-				$ref = &$ref['children'][$part];
-			}
-		}
-		return $nu_mboxes['children'];
 	}
 }

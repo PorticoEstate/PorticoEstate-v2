@@ -1,6 +1,6 @@
 'use client';
-import {FC, useEffect, useMemo, useState} from 'react';
-import {Alert, Button, Details, Field, Label, Paragraph, Select} from '@digdir/designsystemet-react';
+import {FC, useEffect, useMemo, useRef, useState} from 'react';
+import {Alert, Button, Details, Field, Label, Paragraph, Select, Textarea} from '@digdir/designsystemet-react';
 import {MinusCircleIcon, PlusCircleIcon, ChatElipsisIcon} from '@navikt/aksel-icons';
 import {useClientTranslation} from '@/app/i18n/ClientTranslationProvider';
 import {fallbackLng} from '@/app/i18n/settings';
@@ -20,7 +20,14 @@ import {useBuildingSeasons, useServerSettings} from '@/service/hooks/api-hooks';
 import {isWithinBusinessHours} from '@/service/utils/business-hours';
 import {formatCurrency} from '@/utils/cost-utils';
 import {
+    formatOreOrDash,
+    hospitalityMenuLineTotalOre,
+    hospitalityUnitPriceIncl,
+    sumOreOrNull,
+} from '@/utils/article-pricing';
+import {
     computeHospitalityDeadline,
+    hospitalityActionWindow,
     isWorkingDaysMode,
     formatOpenDays,
     isServingDayOpen,
@@ -37,6 +44,16 @@ interface HospitalityOrderModalProps {
     onHospitalitySelect: (hospitality: IHospitality) => void;
     applications: IApplication[];
     existingOrder?: IHospitalityOrder;
+}
+
+/** The application's earliest requested start — the anchor for an order that has no serving time. */
+function earliestDate(application: IApplication | undefined): Date | null {
+    let earliest: Date | null = null;
+    for (const d of application?.dates ?? []) {
+        const from = new Date(d.from_);
+        if (!earliest || from < earliest) earliest = from;
+    }
+    return earliest;
 }
 
 /** Key of the synthetic option carrying a legacy order's stored serving time. */
@@ -119,7 +136,14 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
     const [quantities, setQuantities] = useState<Record<number, number>>({});
     const [comments, setComments] = useState<Record<number, string>>({});
     const [visibleComments, setVisibleComments] = useState<Set<number>>(new Set());
+    // The order-level note to the kitchen (bb_hospitality_order.special_requirements), not a line comment.
+    const [specialRequirements, setSpecialRequirements] = useState('');
+    // What the note was prefilled with when the dialog was initialised. Save compares against this, not
+    // against the stored order at save time, to tell an untouched note from an edited one.
+    const prefilledSpecialRequirements = useRef('');
     const [editingQty, setEditingQty] = useState<number | null>(null);
+    // The server's refusal of a save (e.g. a deadline that passed while the dialog was open).
+    const [saveError, setSaveError] = useState<string | null>(null);
 
     const dateOptions = useMemo(() => buildDateOptions(applications), [applications]);
 
@@ -293,6 +317,19 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
         return new Date(existingOrder.serving_time_iso).getTime();
     }, [existingOrder]);
 
+    /** The application the existing order belongs to (an order cannot be re-parented). */
+    const orderApplication = useMemo(
+        () => existingOrder ? applications.find(a => a.id === existingOrder.application_id) : undefined,
+        [applications, existingOrder]
+    );
+
+    /**
+     * Editing an order of a SUBMITTED application is a "change" (judged on the stored serving time
+     * and both deadlines). An order still in the cart (a draft) is judged like a new one.
+     */
+    const changingSubmittedOrder = !!existingOrder && !!orderApplication
+        && orderApplication.status !== 'NEWPARTIAL1';
+
     /**
      * The option holding the existing order's serving day — kept selectable even if closed.
      * Scoped to the order's own application: matching across applications would keep another
@@ -323,36 +360,68 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
         return {valid: false, message: t('bookingfrontend.serving_day_closed')};
     }, [hospitality, servingInstant, storedServingMs, t]);
 
-    // Cutoff check — cutoff instant honours working days (mirrors the backend calc)
+    /**
+     * Is the chosen serving time still orderable? Mirrors the server's guard
+     * (HospitalityOrderGuard, via hospitalityActionWindow) so the dialog blocks exactly what the
+     * server would refuse:
+     *   - a new order, or a draft still in the cart: the order cutoff of the chosen serving time;
+     *   - a change to a SUBMITTED order: both the order cutoff and the kitchen's cancellation
+     *     deadline of the STORED serving time, and, when the time is moved, the cutoff of the new one.
+     * Nothing may be ordered or changed once the serving time itself has passed.
+     */
     const cutoffCheck = useMemo(() => {
         if (!servingInstant || !hospitality) return {valid: true, message: ''};
 
-        const cutoffDate = computeHospitalityDeadline(
-            servingInstant,
-            hospitality.order_by_time_value,
-            hospitality.order_by_time_unit,
-            hospitality.open_days_list
-        );
-        if (!cutoffDate) return {valid: true, message: ''};
+        const orderBy = {value: hospitality.order_by_time_value, unit: hospitality.order_by_time_unit};
+        const cancelBy = {
+            value: hospitality.resource_cancellation_deadline_value,
+            unit: hospitality.resource_cancellation_deadline_unit,
+        };
 
-        if (Date.now() > cutoffDate.getTime()) {
-            const workingDaysMode = isWorkingDaysMode(hospitality.open_days_list)
-                && hospitality.order_by_time_unit === 'days';
-            const unitLabel = hospitality.order_by_time_unit === 'hours'
-                ? t('bookingfrontend.hours').toLowerCase()
-                : workingDaysMode
-                    ? t('bookingfrontend.working_days').toLowerCase()
-                    : t('bookingfrontend.days').toLowerCase();
-            const msg = t('bookingfrontend.order_cutoff_warning')
-                .replace('%1', String(hospitality.order_by_time_value))
-                .replace('%2', unitLabel);
-            return {
-                valid: false,
-                message: msg,
-            };
+        let storedAnchor: Date | null = null;
+        if (changingSubmittedOrder && existingOrder) {
+            storedAnchor = existingOrder.serving_time_iso
+                ? new Date(existingOrder.serving_time_iso)
+                : earliestDate(orderApplication);
         }
-        return {valid: true, message: ''};
-    }, [servingInstant, hospitality, t]);
+
+        const deadlineVerdict = storedAnchor
+            ? hospitalityActionWindow('change', {
+                anchor: storedAnchor,
+                movedTo: storedServingMs !== null && servingInstant.getTime() === storedServingMs ? null : servingInstant,
+                orderBy,
+                cancelBy,
+                openDays: hospitality.open_days_list,
+            }, new Date())
+            : hospitalityActionWindow('add', {
+                anchor: servingInstant,
+                orderBy,
+                openDays: hospitality.open_days_list,
+            }, new Date());
+
+        if (deadlineVerdict.allowed) return {valid: true, message: ''};
+
+        if (deadlineVerdict.reason === 'cancellation_deadline_passed') {
+            return {valid: false, message: t('bookingfrontend.catering_cancellation_deadline_passed')};
+        }
+        if (deadlineVerdict.reason === 'serving_time_passed') {
+            return {valid: false, message: t('bookingfrontend.catering_serving_time_passed')};
+        }
+
+        const workingDaysMode = isWorkingDaysMode(hospitality.open_days_list)
+            && hospitality.order_by_time_unit === 'days';
+        const unitLabel = hospitality.order_by_time_unit === 'hours'
+            ? t('bookingfrontend.hours').toLowerCase()
+            : workingDaysMode
+                ? t('bookingfrontend.working_days').toLowerCase()
+                : t('bookingfrontend.days').toLowerCase();
+        return {
+            valid: false,
+            message: t('bookingfrontend.order_cutoff_warning')
+                .replace('%1', String(hospitality.order_by_time_value))
+                .replace('%2', unitLabel),
+        };
+    }, [servingInstant, hospitality, t, changingSubmittedOrder, existingOrder, orderApplication, storedServingMs]);
 
     // Cancellation deadline warning (informational, does not block ordering)
     const cancellationWarning = useMemo(() => {
@@ -378,6 +447,7 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
     // Initialize state on open / edit
     useEffect(() => {
         if (!open) return;
+        setSaveError(null);
         if (existingOrder) {
             setLocationId(existingOrder.location_resource_id);
             const qtyMap: Record<number, number> = {};
@@ -395,6 +465,9 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
             });
             setComments(commentMap);
             setVisibleComments(visSet);
+            // REST leaves the key out when the column is NULL, so a missing note is prefilled as ''.
+            prefilledSpecialRequirements.current = existingOrder.special_requirements ?? '';
+            setSpecialRequirements(prefilledSpecialRequirements.current);
             // Try to match existing serving time to a date option
             if (existingOrder.serving_time_iso) {
                 const existingDate = new Date(existingOrder.serving_time_iso);
@@ -421,6 +494,8 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
             setQuantities({});
             setComments({});
             setVisibleComments(new Set());
+            prefilledSpecialRequirements.current = '';
+            setSpecialRequirements('');
             setSelectedDateKey('');
             setSelectedTime('');
         }
@@ -434,12 +509,13 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
         return articles;
     }, [menu]);
 
-    const orderTotal = useMemo(() => {
-        return allArticles.reduce((sum, a) => {
-            const qty = quantities[a.id] || 0;
-            return sum + qty * parseFloat(a.effective_price);
-        }, 0);
-    }, [allArticles, quantities]);
+    // Incl. VAT in øre, each ordered line rounded once as it is billed; null (shown «-») as soon as an
+    // ordered article has no known VAT %, never an ex-VAT sum in its place
+    const orderTotalOre = useMemo(() => sumOreOrNull(
+        allArticles
+            .filter(a => (quantities[a.id] || 0) > 0)
+            .map(a => hospitalityMenuLineTotalOre(a, quantities[a.id]))
+    ), [allArticles, quantities]);
 
     const hasItems = Object.values(quantities).some(q => q > 0);
     const dateSelected = !!selectedDateKey;
@@ -469,24 +545,43 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
                 ...(comments[parseInt(articleId)] ? {comment: comments[parseInt(articleId)]} : {}),
             }));
 
-        if (existingOrder) {
-            await updateMutation.mutateAsync({
-                orderId: existingOrder.id,
-                data: {
+        // The order-level note is sent verbatim, never trimmed: whitespace the officer typed is theirs.
+        // An update carries the key ONLY when the note differs from what the dialog was prefilled with,
+        // character for character; an absent key leaves the stored text alone, so pressing Lagre on an
+        // untouched note writes nothing and mails nobody. A changed note that is blank is sent as null,
+        // which clears it (stored as NULL, not ''). A new order carries the key only when there is a
+        // note to store; without it the server stores NULL.
+        const noteIsBlank = specialRequirements.trim() === '';
+
+        setSaveError(null);
+        try {
+            if (existingOrder) {
+                await updateMutation.mutateAsync({
+                    orderId: existingOrder.id,
+                    data: {
+                        location_resource_id: locationId,
+                        serving_time_iso: servingTimeIso,
+                        ...(specialRequirements !== prefilledSpecialRequirements.current
+                            ? {special_requirements: noteIsBlank ? null : specialRequirements}
+                            : {}),
+                        lines,
+                    },
+                });
+            } else {
+                await createMutation.mutateAsync({
+                    hospitality_id: hospitality.id,
                     location_resource_id: locationId,
                     serving_time_iso: servingTimeIso,
+                    ...(noteIsBlank ? {} : {special_requirements: specialRequirements}),
                     lines,
-                },
-            });
-        } else {
-            await createMutation.mutateAsync({
-                hospitality_id: hospitality.id,
-                location_resource_id: locationId,
-                serving_time_iso: servingTimeIso,
-                lines,
-            });
+                });
+            }
+            onClose();
+        } catch (error) {
+            // The server refuses what the deadlines no longer allow (409) and says why. Keep the
+            // dialog open and show it; an unhandled rejection here left the user with nothing.
+            setSaveError(error instanceof Error ? error.message : String(error));
         }
-        onClose();
     };
 
     const isSaving = createMutation.isPending || updateMutation.isPending;
@@ -513,8 +608,9 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
 
     const renderArticle = (article: IHospitalityArticle) => {
         const qty = quantities[article.id] || 0;
-        const price = parseFloat(article.effective_price);
-        const amount = qty * price;
+        // Both incl. VAT; null (shown «-») when the article's VAT % is unknown
+        const price = hospitalityUnitPriceIncl(article);
+        const amountOre = qty > 0 ? hospitalityMenuLineTotalOre(article, qty) : null;
         const commentText = comments[article.id] || '';
         const commentVisible = visibleComments.has(article.id);
         const description = localizeField(article.description, i18n.language)
@@ -531,7 +627,7 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
                         )}
                     </span>
                     <span className={styles.menuUnit}>{article.unit}</span>
-                    <span className={styles.menuPrice}>{formatCurrency(price)}</span>
+                    <span className={styles.menuPrice}>{price === null ? '-' : formatCurrency(price)}</span>
                     <span className={styles.menuQty}>
                         {editingQty === article.id ? (
                             <input
@@ -576,7 +672,7 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
                             </>
                         )}
                     </span>
-                    <span className={styles.menuAmount}>{qty > 0 ? formatCurrency(amount) : ''}</span>
+                    <span className={styles.menuAmount}>{qty > 0 ? formatOreOrDash(amountOre) : ''}</span>
                     <button
                         type="button"
                         className={`${styles.commentToggle} ${commentText ? styles.commentToggleActive : ''}`}
@@ -753,6 +849,13 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
                         </Alert>
                     )}
 
+                    {/* The server refused the save (a deadline passed, the order was locked, ...) */}
+                    {saveError && (
+                        <Alert data-color="danger" data-size="sm" role="alert">
+                            {saveError}
+                        </Alert>
+                    )}
+
                     {/* Cancellation deadline warning (informational) */}
                     {cancellationWarning && (
                         <Alert data-color="warning" data-size="sm">
@@ -767,20 +870,37 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
                         </Alert>
                     )}
 
+                    {/* Order-level note to the kitchen: below the date/place/time row, above the menu.
+                        Locked like the rest of the order content (+/-, line comments). */}
+                    <Field>
+                        <Label>{t('bookingfrontend.special_requirements')}</Label>
+                        <Textarea
+                            rows={3}
+                            value={specialRequirements}
+                            onChange={(e) => setSpecialRequirements(e.target.value)}
+                            disabled={!menuEnabled}
+                        />
+                    </Field>
+
+                    {/* The menu has no column header, so say once that every price here includes VAT */}
+                    <Paragraph data-size="sm">{t('bookingfrontend.prices_incl_vat')}</Paragraph>
+
                     {/* Article menu */}
                     <div className={styles.menuList}>
                         {menu?.groups.map(group => {
-                            const groupTotal = group.articles.reduce((sum, a) => {
-                                const qty = quantities[a.id] || 0;
-                                return sum + qty * parseFloat(a.effective_price);
-                            }, 0);
+                            // Incl. VAT in øre, like the order total; shown when something in the group is
+                            // ordered, and «-» when an ordered article's VAT % is unknown
+                            const orderedInGroup = group.articles.filter(a => (quantities[a.id] || 0) > 0);
+                            const groupTotalOre = sumOreOrNull(
+                                orderedInGroup.map(a => hospitalityMenuLineTotalOre(a, quantities[a.id]))
+                            );
                             return (
                                 <Details key={group.id} defaultOpen data-color="neutral">
                                     <Details.Summary>
                                         <div className={styles.groupSummary}>
                                             <span>{group.name}</span>
-                                            {groupTotal > 0 && (
-                                                <span className={styles.groupTotal}>{formatCurrency(groupTotal)}</span>
+                                            {(groupTotalOre === null || groupTotalOre > 0) && (
+                                                <span className={styles.groupTotal}>{formatOreOrDash(groupTotalOre)}</span>
                                             )}
                                         </div>
                                     </Details.Summary>
@@ -799,8 +919,8 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
 
                         {/* Total row */}
                         <div className={styles.totalRow}>
-                            <span className={styles.totalLabel}>{t('bookingfrontend.order_total')}</span>
-                            <span className={styles.totalAmount}>{formatCurrency(orderTotal)}</span>
+                            <span className={styles.totalLabel}>{t('bookingfrontend.total_incl_vat')}</span>
+                            <span className={styles.totalAmount}>{formatOreOrDash(orderTotalOre)}</span>
                         </div>
                     </div>
                 </div>

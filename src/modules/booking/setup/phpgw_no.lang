@@ -1282,3 +1282,112 @@ overwrite_all_prices	booking	no	Overskriv alle
 keep_manual_prices	booking	no	Behold de manuelle
 cancel_price_update	booking	no	Avbryt
 date and time	booking	no	Tidspunkt
+outside_series	booking	no	Utenfor serien
+other_associated_items	booking	no	Andre elementer
+select_organization	booking	no	Velg organisasjon
+search_organization_hint	booking	no	Søk på navn eller organisasjonsnummer
+no_organizations_found	booking	no	Ingen organisasjoner funnet
+refine_organization_search	booking	no	Flere treff – skriv mer for å avgrense
+no_season_for_date	booking	no	Ingen aktiv sesong dekker denne datoen
+resource_not_in_building	booking	no	Ressursen hører ikke til dette bygget
+group_not_in_organization	booking	no	Gruppen hører ikke til den valgte organisasjonen
+attachment_invalid_type	booking	no	Filtypen er ikke tillatt. Tillatte filtyper: %1
+attachment_too_large	booking	no	Filen er for stor. Største tillatte størrelse er %1 MB
+attachment_invalid_name	booking	no	Ugyldig filnavn
+attachment_upload_failed	booking	no	Opplastingen feilet
+attachment_hint	booking	no	Maks %1 MB. Tillatte filtyper: %2
+add_attachment	booking	no	Legg til vedlegg
+no_attachments	booking	no	Ingen vedlegg
+attachment_uploaded	booking	no	Vedlegget er lastet opp
+attachment_deleted	booking	no	Vedlegget er slettet
+delete_attachment_confirm	booking	no	Vil du slette vedlegget?
+attachment_empty	booking	no	Filen er tom
+attachment_delete_failed	booking	no	Slettingen feilet
+price_category	booking	no	Priskategori
+price_ex_vat	booking	no	Pris eks. mva
+price_incl_vat	booking	no	Pris inkl. mva
+price_incl_vat_nearest	booking	no	Nærmeste mulige pris inkl. mva:
+vat_rate_missing	booking	no	mva-koden mangler sats
+price_invalid	booking	no	Ugyldig pris
+price_invalid_not_saved	booking	no	Ugyldig pris – den nye prisen ble ikke lagret
+price_row_invalid_not_saved	booking	no	Ugyldig pris eller dato på rad %1 – raden ble ikke endret
+session_expired_log_in_again	booking	no	Sesjonen din er utløpt. Logg inn på nytt i en annen fane og prøv igjen.
+change_requested_time	booking	no	Ønsket ny tid
+current_time	booking	no	Nåværende tid
+accept_change	booking	no	Godta endring
+reject_change	booking	no	Avslå endring
+accept_change_help	booking	no	Arrangementet får den ønskede tiden. Tiden sjekkes mot andre reservasjoner før noe lagres.
+reject_change_help	booking	no	Arrangementet beholder nåværende tid, og forespørselen lukkes.
+change_price_not_recalculated	booking	no	Arrangementet har timepris. Prisen beregnes ikke på nytt for den nye tiden – kontroller artiklene under Endre.
+change_accepted	booking	no	Endringen er lagret
+change_rejected	booking	no	Endringen er avslått
+change_conflicts_with	booking	no	Den nye tiden kolliderer med
+change_request_not_open	booking	no	Forespørselen er allerede behandlet
+change_request_stale	booking	no	Arrangementet er endret etter forespørselen
+change_request_element_inactive	booking	no	Arrangementet er ikke aktivt
+change_request_dates_ambiguous	booking	no	Fant ikke arrangementets datorad
+change_applied_without_application_date	booking	no	Endringen er lagret. Ingen søknadsdato hørte til arrangementet, så søknadens datoer er uendret.
+change_applied_shared_application_date	booking	no	Endringen er lagret. Søknadsdatoen gjelder også andre elementer, så søknadens datoer er uendret.
+comment_regarding	booking	no	Gjelder
+whole_application	booking	no	Hele søknaden
+reply_on_this_time	booking	no	Svar på dette tidspunktet
+comment_time_removed	booking	no	Tidspunktet er fjernet
+accept_change_help_allocation	booking	no	Tildelingen får den ønskede tiden. Tiden sjekkes mot andre reservasjoner før noe lagres. Søknadens datoer og prisen endres ikke.
+reject_change_help_allocation	booking	no	Tildelingen beholder nåværende tid, og forespørselen lukkes.
+change_price_not_recalculated_allocation	booking	no	Tildelingen har timepris. Prisen beregnes ikke på nytt for den nye tiden – kontroller artiklene under Endre.
+change_request_stale_allocation	booking	no	Tildelingen er endret etter forespørselen
+change_request_element_inactive_allocation	booking	no	Tildelingen er ikke aktiv
+change_applied_allocation	booking	no	Endringen er lagret. Søknadens datoer og prisen er uendret.
+change_request_booking_outside_allocation	booking	no	Endringen kan ikke godtas: booking #%1 i tildelingen ville havnet utenfor den nye tiden.
+
+reactivate	booking	no	Aktiver igjen
+sms_no_participants	booking	no	Ingen deltakere med telefonnummer er registrert – SMS ble ikke sendt.
+sms_not_configured	booking	no	SMS er ikke satt opp – kontakt systemadministrator.
+sms_no_recipients	booking	no	Ingen deltakere eller søker med telefonnummer er registrert – SMS ble ikke sendt.
+sms_sent_to_applicant	booking	no	Sendt til søker %1
+sms_sent_to_participant	booking	no	Sendt til deltaker %1
+sms_failed_to_applicant	booking	no	Kunne ikke sende til søker %1 (feilet)
+sms_failed_to_participant	booking	no	Kunne ikke sende til deltaker %1 (feilet)
+sms_applicant_no_valid_phone	booking	no	Søker har ikke gyldig telefonnummer – ikke kontaktet
+sms_sent_to_creator	booking	no	Sendt til oppretter %1
+sms_failed_to_creator	booking	no	Kunne ikke sende til oppretter %1 (feilet)
+sms_sent_to_group_contact	booking	no	Sendt til lagkontakt %1
+sms_failed_to_group_contact	booking	no	Kunne ikke sende til lagkontakt %1 (feilet)
+sms_creator_no_valid_phone	booking	no	Oppretter har ikke gyldig telefonnummer – ikke kontaktet
+sms_no_recipients_booking	booking	no	Ingen deltakere, oppretter eller lagkontakter med telefonnummer er registrert – SMS ble ikke sendt.
+sms_no_recipients_booking_chain	booking	no	Ingen deltakere, oppretter, søker eller lagkontakter med telefonnummer er registrert – SMS ble ikke sendt.
+changed_by_applicant	booking	no	Endret av søker
+catering_mail_subject_added	booking	no	Ny bevertning: %1, %2
+catering_mail_subject_changed	booking	no	Endret bevertning: %1, %2
+catering_mail_subject_cancelled	booking	no	Avbestilt bevertning: %1, %2
+catering_mail_intro_added	booking	no	%1 har lagt til en bevertningsbestilling på søknaden.
+catering_mail_intro_changed	booking	no	%1 har endret en bevertningsbestilling på søknaden.
+catering_mail_intro_cancelled	booking	no	%1 har avbestilt en bevertningsbestilling på søknaden.
+catering_mail_the_applicant	booking	no	Søker
+catering_mail_on_behalf_of	booking	no	(på vegne av %1)
+catering_mail_application	booking	no	Søknad
+catering_mail_building	booking	no	Bygg
+catering_mail_activity	booking	no	Aktivitet
+catering_mail_field	booking	no	Felt
+catering_mail_from	booking	no	Fra
+catering_mail_to	booking	no	Til
+catering_mail_value	booking	no	Verdi
+catering_mail_open_case	booking	no	Åpne saken
+catering_mail_open_order	booking	no	Se bestillingen
+catering_mail_nothing	booking	no	—
+catering_field_hospitality	booking	no	Bevertning
+catering_field_serving_time	booking	no	Serveringstid
+catering_field_location	booking	no	Leveringssted
+catering_field_comment	booking	no	Kommentar
+catering_field_special_requirements	booking	no	Spesielle krav
+catering_field_total	booking	no	Sum
+sms_event_no_participants	booking	no	Ingen deltakere med telefonnummer er registrert på arrangementet. SMS sendes bare til registrerte deltakere.
+sms_send_failed	booking	no	Kunne ikke sende SMS. Prøv igjen, eller kontakt systemadministrator.
+price_category_none	booking	no	Ingen kategori
+price_category_new	booking	no	Ny kategori
+price_category_name	booking	no	Navn på kategorien
+price_category_add	booking	no	Legg til
+price_category_exists	booking	no	Kategorien fantes fra før og er valgt
+price_category_invalid	booking	no	Skriv et navn på inntil 100 tegn som ikke bare er et tall
+price_category_add_failed	booking	no	Kategorien ble ikke lagt til. Last siden på nytt og prøv igjen.
+price_category_unknown_not_saved	booking	no	Den nye prisen ble ikke lagret: kategorien finnes ikke

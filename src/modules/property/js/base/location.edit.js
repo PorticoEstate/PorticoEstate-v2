@@ -43,10 +43,10 @@ formatLocationDocumentLink = function (key, oData)
 
 $(function ()
 {
-	$('#doc_type').on('change', function()
+	$('#doc_type').on('change', function ()
 	{
 		paramsTable0['doc_type'] = $(this).val();
-		oTable0.api().draw();				
+		oTable0.api().draw();
 	});
 
 	get_history_data = function ()
@@ -89,7 +89,7 @@ function editDocument(oArgs, parameters)
 	{
 		$.each(parameters.parameter, function (i, val)
 		{
-			if(selected[n]['type'] == 'generic')
+			if (selected[n]['type'] == 'generic')
 			{
 				oArgs['menuaction'] = 'property.uigeneric_document.edit';
 				oArgs['id'] = selected[n][val.source];
@@ -131,7 +131,7 @@ this.onActionsClick = function (action)
 
 	if (ids.length > 0)
 	{
-		var data = {ids: ids, action: action};
+		var data = { ids: ids, action: action };
 		data.repeat_interval = $("#repeat_interval").val();
 		data.controle_time = $("#controle_time").val();
 		data.service_time = $("#service_time").val();
@@ -139,7 +139,7 @@ this.onActionsClick = function (action)
 		data.control_start_date = $("#control_start_date").val();
 		data.repeat_type = $("#repeat_type").val();
 
-		var oArgs = {location_id : location_id, id: item_id };
+		var oArgs = { location_id: location_id, id: item_id };
 		var requestUrl = phpGWLink('property/location/component/update-control-serie', oArgs);
 		$.ajax({
 			type: 'POST',
@@ -160,7 +160,7 @@ this.onActionsClick = function (action)
 		});
 
 
-		var oArgs2 = {location_id : location_id, id: item_id};
+		var oArgs2 = { location_id: location_id, id: item_id };
 		var requestUrl2 = phpGWLink('property/location/component/controls', oArgs2);
 		JqueryPortico.updateinlineTableHelper('datatable-container_4', requestUrl2);
 	}
@@ -173,7 +173,7 @@ function parseURL(url)
 
 add_control = function ()
 {
-	oArgs = {location_id:location_id, id: item_id};
+	oArgs = { location_id: location_id, id: item_id };
 	var requestUrl = null;
 	oArgs.control_id = $("#control_id").val();
 	oArgs.control_responsible = $("#control_responsible").val();
@@ -189,7 +189,7 @@ add_control = function ()
 	oArgs.controle_time = $("#controle_time").val();
 	oArgs.service_time = $("#service_time").val();
 	requestUrl = phpGWLink('property/location/component/add-control', oArgs);
-//								alert(requestUrl);
+	//								alert(requestUrl);
 
 	$("#controller_receipt").html("");
 
@@ -214,7 +214,7 @@ add_control = function ()
 		}
 	});
 
-	var oArgs2 = {location_id: location_id, id: item_id};
+	var oArgs2 = { location_id: location_id, id: item_id };
 	var requestUrl2 = phpGWLink('property/location/component/controls', oArgs2);
 	JqueryPortico.updateinlineTableHelper('datatable-container_4', requestUrl2);
 };
@@ -225,7 +225,7 @@ function updateCaseTable(check_list_id)
 	{
 		return;
 	}
-	var oArgs = {check_list_id: check_list_id};
+	var oArgs = { check_list_id: check_list_id };
 	var requestUrl = phpGWLink('property/location/component/cases-for-checklist', oArgs);
 	JqueryPortico.updateinlineTableHelper('datatable-container_6', requestUrl);
 }
@@ -236,11 +236,11 @@ $(function ()
 	var click_action_on_table = false;
 	$("#check_lst_time_span").on('change', function ()
 	{
-		var oArgs = {location_id: location_id, id: item_id, year: $(this).val()};
+		var oArgs = { location_id: location_id, id: item_id, year: $(this).val() };
 		var requestUrl = phpGWLink('property/location/component/checklists', oArgs);
 		var _oTable = JqueryPortico.updateinlineTableHelper('datatable-container_5', requestUrl);
 
-		oArgs = {location_id: location_id, id: item_id, year: $(this).val()};
+		oArgs = { location_id: location_id, id: item_id, year: $(this).val() };
 		requestUrl = phpGWLink('property/location/component/cases', oArgs);
 		JqueryPortico.updateinlineTableHelper('datatable-container_6', requestUrl);
 
@@ -638,7 +638,7 @@ $(function ()
 
 		fetch(phpgwEnsureServerPrefix(restRequest.url), {
 			method: restRequest.method,
-			headers: {'Content-Type': 'application/json'},
+			headers: { 'Content-Type': 'application/json' },
 			credentials: 'same-origin',
 			body: JSON.stringify(formDataToObject(formData))
 		})
@@ -672,7 +672,7 @@ $(function ()
 					isSubmitting = false;
 					setSubmitButtonsDisabled(false);
 					renderLocationFormErrorAlert(form, toErrorMessageArray(data));
-					form.scrollIntoView({behavior: 'smooth', block: 'start'});
+					form.scrollIntoView({ behavior: 'smooth', block: 'start' });
 					return;
 				}
 
@@ -686,7 +686,7 @@ $(function ()
 				}
 
 				renderLocationFormSuccessAlert(form, 'Location saved successfully');
-				form.scrollIntoView({behavior: 'smooth', block: 'start'});
+				form.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
 				var redirectUrl = buildLocationEditRedirectUrl(savedLocationCode, form);
 				setTimeout(function ()
@@ -703,7 +703,7 @@ $(function ()
 				isSubmitting = false;
 				setSubmitButtonsDisabled(false);
 				renderLocationFormErrorAlert(form, toErrorMessageArray(error && error.responseData));
-				form.scrollIntoView({behavior: 'smooth', block: 'start'});
+				form.scrollIntoView({ behavior: 'smooth', block: 'start' });
 			});
 
 		return false;

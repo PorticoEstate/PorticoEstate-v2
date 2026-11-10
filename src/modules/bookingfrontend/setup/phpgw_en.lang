@@ -1,4 +1,29 @@
 %1 bookings were updated.	bookingfrontend	en	%1 bookings were updated.
+Info skjerm - ressursvelger	bookingfrontend	en	Information screen - resource selector
+You can add resources from several buildings. Previous selections are kept when you search for another building.	bookingfrontend	en	You can add resources from several buildings. Previous selections are kept when you search for another building.
+Selected resources	bookingfrontend	en	Selected resources
+Remove selected resource	bookingfrontend	en	Remove selected resource
+Searching for buildings	bookingfrontend	en	Searching for buildings
+No buildings found	bookingfrontend	en	No buildings found
+Select a building to see its resources	bookingfrontend	en	Select a building to see its resources
+Loading resources	bookingfrontend	en	Loading resources
+No active resources found for this building	bookingfrontend	en	No active resources found for this building
+Could not load data. Please try again	bookingfrontend	en	Could not load data. Please try again
+Link copied	bookingfrontend	en	Link copied
+Could not copy the link	bookingfrontend	en	Could not copy the link
+Choose a building and the resources to show on your information screen. Copy the generated link to save it as a shortcut.	bookingfrontend	en	Choose a building and the resources to show on your information screen. Copy the generated link to save it as a shortcut.
+Search for a building	bookingfrontend	en	Search for a building
+Type at least two characters	bookingfrontend	en	Type at least two characters
+Filter resources	bookingfrontend	en	Filter resources
+Search resources	bookingfrontend	en	Search resources
+Link to the information screen	bookingfrontend	en	Link to the information screen
+Open information screen	bookingfrontend	en	Open information screen
+Copy link	bookingfrontend	en	Copy link
+Days to display	bookingfrontend	en	Days to display
+Whole week	bookingfrontend	en	Whole week
+Weekdays	bookingfrontend	en	Weekdays
+Weekend	bookingfrontend	en	Weekend
+JavaScript is required to configure the information screen	bookingfrontend	en	JavaScript is required to configure the information screen
 %1 bookings will be updated.	bookingfrontend	en	%1 bookings will be updated.
 -- select an activity --	bookingfrontend	en	-- select an activity --
 1 week	bookingfrontend	en	1 week
@@ -1124,3 +1149,77 @@ repeating_direct_booking_warning	bookingfrontend	en	This resource uses direct bo
 withdraw_timeslot	bookingfrontend	en	Withdraw
 confirm_withdraw_timeslot_description	bookingfrontend	en	Are you sure you want to withdraw this single timeslot? The case officer will be notified of the withdrawal.
 withdraw_timeslot_comment_label	bookingfrontend	en	Comment to the case officer (optional)
+price_choice_label	bookingfrontend	en	Who are you applying as?
+price_choice_help	bookingfrontend	en	The price depends on who is renting — choose the category that fits.
+price_choice_placeholder	bookingfrontend	en	Choose a price category
+price_choice_required	bookingfrontend	en	You must choose a price category
+price_choice_required_footer	bookingfrontend	en	Choose a price category to save the application.
+price_choice_required_checkout	bookingfrontend	en	Choose a price category before you submit.
+price_pending	bookingfrontend	en	Calculated once you have chosen
+does_not_affect_price	bookingfrontend	en	Does not affect the price.
+price_category	bookingfrontend	en	Price category
+cancel_whole_application	bookingfrontend	en	Cancel the whole application
+cancel_whole_application_help	bookingfrontend	en	Cancels the application and every reserved time in it, not only the time you selected.
+confirm_cancel_whole_application_description	bookingfrontend	en	The application is cancelled and every reserved time in it is released. Number of reserved times: {{count}}. This cannot be undone.
+cancel_whole_application_failed	bookingfrontend	en	The application could not be cancelled. Please try again.
+withdraw_whole_application	bookingfrontend	en	Withdraw the whole application
+withdraw_whole_application_help	bookingfrontend	en	Withdraws the application and every reserved time in it, not only the time you selected.
+confirm_withdraw_whole_application_description	bookingfrontend	en	The application is withdrawn and every reserved time in it is released. Number of reserved times: {{count}}. This cannot be undone.
+withdraw_whole_application_failed	bookingfrontend	en	The application could not be withdrawn. Please try again.
+withdraw_whole_application_help_no_selection	bookingfrontend	en	Withdraws the application and every reserved time in it.
+cancel_whole_application_help_no_selection	bookingfrontend	en	Cancels the application and every reserved time in it.
+change_request_pending	bookingfrontend	en	Requested change to {{time}} is awaiting processing
+comment_on_time	bookingfrontend	en	Comment
+comment_on_time_heading	bookingfrontend	en	Comment on this time
+comment_time_removed	bookingfrontend	en	The time has been removed
+change_time	bookingfrontend	en	Change time
+change_allocation_time_description	bookingfrontend	en	Choose a new time on the same day. A shorter time within the allocated time is saved at once, and the price is recalculated for the new hours. A longer or moved time is sent to the case officer, who accepts or rejects the change.
+allocation_time_shortened	bookingfrontend	en	The time has been changed to {{time}}.
+allocation_change_requested	bookingfrontend	en	The requested time has been sent to the case officer. The time stays as it is until the case officer accepts the change.
+allocation_change_invalid_time	bookingfrontend	en	Invalid time.
+allocation_change_other_day	bookingfrontend	en	The new time must be on the same day as the allocation.
+allocation_change_unchanged	bookingfrontend	en	The time is unchanged.
+allocation_change_started	bookingfrontend	en	The allocation has already started and can no longer be changed.
+allocation_change_inactive	bookingfrontend	en	The allocation has been withdrawn.
+allocation_change_no_application	bookingfrontend	en	The allocation does not belong to an application.
+allocation_change_booking_in_removed_time	bookingfrontend	en	The time cannot be shortened: a booking lies in the time that would be removed.
+allocation_changed_meanwhile	bookingfrontend	en	The allocation was changed in the meantime. Reload the page.
+allocation_shortened_comment	bookingfrontend	en	Allocation #%1 (%2, %3): the time has been shortened from %4 to %5.
+allocation_change_requested_comment	bookingfrontend	en	Allocation #%1 (%2, %3): requests the new time %5 instead of %4. The case officer accepts or rejects the change.
+allocation_price_recalculated	bookingfrontend	en	The price has been recalculated for the new time: %1 → %2. Price locked after shortening.
+allocation_price_unchanged	bookingfrontend	en	The price is unchanged.
+allocation_price_kept_locked	bookingfrontend	en	Price not recalculated: the price was set by the case officer.
+allocation_price_master_order	bookingfrontend	en	Price not recalculated: the application's main order.
+allocation_price_not_recalculated	bookingfrontend	en	Price not recalculated: the case officer checks the price.
+allocation_cost_recalculated_after_shortening	bookingfrontend	en	Price recalculated after shortening (%1). Price locked after shortening.
+allocation_price_off_rule	bookingfrontend	en	Price not recalculated: the case officer changed the time without recalculating the price.
+
+repeating	bookingfrontend	en	Recurring
+occurrence_awaiting	bookingfrontend	en	Awaiting processing
+occurrence_allocated	bookingfrontend	en	Allocated
+occurrence_withdrawn	bookingfrontend	en	Withdrawn
+occurrence_not_allocated	bookingfrontend	en	Not allocated
+occurrence_outside_series	bookingfrontend	en	Outside the series
+application_not_found	bookingfrontend	en	The application was not found. You may not have access to it.
+catering_overview_empty	bookingfrontend	en	No catering has been ordered for this application.
+catering_order_no_lines	bookingfrontend	en	No items in this order.
+catering_col_article	bookingfrontend	en	Item
+catering_change_until	bookingfrontend	en	Can be changed until %1
+catering_change_locked	bookingfrontend	en	The deadline for changing the catering has passed.
+catering_cancel_locked	bookingfrontend	en	The deadline for cancelling the catering has passed.
+catering_change_cancel_locked	bookingfrontend	en	The deadlines for changing and cancelling the catering have passed.
+catering_contact_officer	bookingfrontend	en	Contact the case officer via the comments on this application.
+catering_kitchen_contact	bookingfrontend	en	Kitchen contact information
+catering_cancel_order	bookingfrontend	en	Cancel order
+catering_confirm_cancel_order	bookingfrontend	en	Do you want to cancel this catering order?
+catering_order_locked	bookingfrontend	en	This order can no longer be changed here.
+catering_order_cutoff_passed	bookingfrontend	en	The deadline for ordering or changing catering has passed.
+catering_cancellation_deadline_passed	bookingfrontend	en	The deadline for changing or cancelling the catering has passed.
+catering_serving_time_passed	bookingfrontend	en	The serving time has passed.
+catering_application_closed	bookingfrontend	en	The application is closed, so the catering can no longer be changed.
+kr_per_hour	bookingfrontend	en	kr/hour
+minutes_short	bookingfrontend	en	min
+catering_no_serving_time	bookingfrontend	en	No serving time set
+prices_incl_vat	bookingfrontend	en	All prices include VAT
+price_category_shared_help	bookingfrontend	en	The choice applies to all the resources you have chosen.
+price_per_resource	bookingfrontend	en	Choose the price per resource

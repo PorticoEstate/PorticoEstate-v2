@@ -4,16 +4,16 @@ getRequestData = function (dataSelected, parameters)
 
     $.each(parameters.parameter, function (i, val)
     {
-            data[val.name] = {};
+        data[val.name] = {};
     });
 
     var n = 0;
     for (var n = 0; n < dataSelected.length; ++n)
     {
-            $.each(parameters.parameter, function (i, val)
-            {
-                    data[val.name][n] = dataSelected[n][val.source];
-            });
+        $.each(parameters.parameter, function (i, val)
+        {
+            data[val.name][n] = dataSelected[n][val.source];
+        });
     }
 
     return data;
@@ -24,7 +24,7 @@ function clean()
     var api = new DataTable('#datatable-container_0');
     api.rows().deselect();
     api.buttons('.record').enable(false);
-    
+
     $('#name').val('');
     $('#field_name').val('');
     $('#cancel_save').prop('disabled', true);
@@ -49,7 +49,7 @@ function editField(oArgs, parameters)
         $('#name').val(result.name);
         $('#field_name').val(result.title);
         $('input[name="apply_for"][value="' + result.apply + '"]').prop('checked', true);
-        
+
     }, data, 'POST', 'JSON');
 }
 
@@ -60,7 +60,8 @@ function deleteField(oArgs, parameters)
     var nTable = 0;
 
     var r = confirm(confirm_msg);
-    if (r != true) {
+    if (r != true)
+    {
         return false;
     }
 
@@ -91,7 +92,7 @@ function addField()
     data['field_name'] = $('#field_name').val();
     data['apply_for'] = $('input[name=apply_for]:checked').val();
 
-    var oArgs = {"menuaction": "addressbook.uifields.save", "phpgw_return_as": "json"};
+    var oArgs = { "menuaction": "addressbook.uifields.save", "phpgw_return_as": "json" };
     var requestUrl = phpGWLink('index.php', oArgs);
 
     JqueryPortico.execute_ajax(requestUrl, function (result)

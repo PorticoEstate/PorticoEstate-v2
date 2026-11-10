@@ -336,6 +336,20 @@ $(window).on('load', function ()
 			return;
 		}
 
+		// Only a stored allocation has a series for a new price to reach, and only
+		// the edit form says which one it is: allocation_edit.xsl declares
+		// reservation_id with the allocation's id. The add form declares nothing.
+		// purchase_order_edit.js and the resource checkboxes leave an empty one
+		// behind when they run, and with articles off and the resources arriving
+		// ticked nothing runs at all - so it is read without assuming it exists,
+		// and a new allocation goes out as a plain submit with nothing to ask.
+		var stored_id = typeof reservation_id !== 'undefined' ? reservation_id : '';
+
+		if (!stored_id)
+		{
+			return;
+		}
+
 		// Numerically, never as strings. With articles on, purchase_order_edit.js
 		// rewrites this field from the article lines as soon as the page settles, so
 		// a form nobody has touched holds "500.00" against a cost_orig of "500" -
@@ -366,7 +380,7 @@ $(window).on('load', function ()
 
 		event.preventDefault();
 
-		$.getJSON(phpGWLink('index.php', {menuaction: 'booking.uiallocation.cascade_preview', id: reservation_id}, true))
+		$.getJSON(phpGWLink('index.php', {menuaction: 'booking.uiallocation.cascade_preview', id: stored_id}, true))
 			.done(function (preview)
 			{
 				if (!preview || !preview.grouped)

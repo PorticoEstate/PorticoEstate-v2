@@ -15,6 +15,7 @@ import {
 	fetchApplicationComments,
 	fetchApplicationDocuments,
 	fetchApplicationScheduleEntities,
+	fetchApplicationRecurringSeries,
 	addApplicationComment,
 	updateApplicationStatus,
 	fetchArticlesForResources,
@@ -39,7 +40,7 @@ import {
 	fetchMultiDomains,
 	patchBookingUser
 } from "@/service/api/api-utils";
-import {IApplication, IUpdatePartialApplication, NewPartialApplication, GetCommentsResponse, AddCommentRequest, AddCommentResponse, UpdateStatusRequest, UpdateStatusResponse} from "@/service/types/api/application.types";
+import {IApplication, IUpdatePartialApplication, NewPartialApplication, GetCommentsResponse, AddCommentRequest, AddCommentResponse, UpdateStatusRequest, UpdateStatusResponse, IRecurringSeries} from "@/service/types/api/application.types";
 import {INotification, INotificationListResponse, IUnreadCountResponse, IMarkReadResponse} from "@/service/types/api/notification.types";
 import {ICompletedReservation} from "@/service/types/api/invoices.types";
 import {phpGWLink} from "@/service/util";
@@ -1226,6 +1227,31 @@ export function useApplicationScheduleEntities(
         queryKey: ['applicationEventsAllocationsBookings', applicationId, secret],
         queryFn: () => fetchApplicationScheduleEntities(applicationId, secret),
         retry: 2,
+        refetchOnWindowFocus: false,
+    });
+}
+
+/**
+ * Hook to fetch every occurrence of a recurring application, with its status (GH #1392)
+ * @param applicationId The application ID
+ * @param secret Optional secret for external access
+ * @param enabled False for an application that is not recurring - the server refuses those
+ * @returns Query result with the series
+ */
+export function useApplicationRecurringSeries(
+    applicationId: number,
+    secret?: string,
+    enabled: boolean = true
+): UseQueryResult<IRecurringSeries> {
+    return useQuery({
+        // Under ['application', id] on purpose: what changes an occurrence's status - a
+        // withdrawn or changed time, a status change, a comment - already invalidates that
+        // prefix (allocation-cancellation-hooks.ts, useUpdateApplicationStatus,
+        // useAddApplicationComment), so the series follows without invalidations of its own.
+        queryKey: ['application', applicationId, 'recurringSeries', secret],
+        queryFn: () => fetchApplicationRecurringSeries(applicationId, secret),
+        enabled,
+        retry: 1,
         refetchOnWindowFocus: false,
     });
 }

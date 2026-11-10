@@ -1,13 +1,16 @@
 import { IApplication, IOrderLine } from '@/service/types/api/application.types';
 import { RecurringInfoUtils, calculateRecurringInstances } from '@/utils/recurring-utils';
 import { Season } from '@/service/types/Building';
+import { hourlyRateOfOrderLine } from '@/utils/article-pricing';
+import { formatCurrency } from '@/utils/cost-utils';
 
 export interface CartItem {
     id: number;
     name: string;
     building: { id: number; name: string };
     resources: { id: number; name: string }[];
-    resourceCosts: { name: string; resourceId: number; total: number }[];
+    // hourlyRate is set on minute-priced resources: the total is shown with it as its explanation
+    resourceCosts: { name: string; resourceId: number; total: number; hourlyRate?: number }[];
     articles: { name: string; price: number }[];
     dates: { from_: string; to_: string; id: number }[];
     recurring?: { occurrences: number };
@@ -38,13 +41,14 @@ export function mapApplicationToCartItem(
         for (const order of app.orders) {
             for (const line of order.lines) {
                 const lineTotal = Number(line.amount) + Number(line.tax || 0);
-                if (line.unit === 'hour' || line.unit === 'dag' || line.unit === 'day') {
+                if (line.unit === 'hour' || line.unit === 'minute' || line.unit === 'dag' || line.unit === 'day') {
                     // Match line name to resource to get the real resource ID for colour circles
                     const matchedResourceId = resourceByName.get(line.name) ?? 0;
                     resourceCosts.push({
                         name: line.name,
                         resourceId: matchedResourceId,
                         total: lineTotal,
+                        hourlyRate: line.unit === 'minute' ? hourlyRateOfOrderLine(line) ?? undefined : undefined,
                     });
                 } else {
                     articles.push({
@@ -139,5 +143,5 @@ export function formatRange(from: string, to: string): [string, string] {
 }
 
 export function fmtKr(n: number): string {
-    return new Intl.NumberFormat('nb-NO', { useGrouping: true }).format(Math.round(n)) + ' kr';
+    return formatCurrency(n);
 }

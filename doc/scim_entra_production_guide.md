@@ -600,7 +600,7 @@ Ikke støttet:
 Implementasjonen støtter ett aktivt token om gangen. Rotasjon må derfor koordineres:
 
 1. pause Entra provisioning
-2. oppdater `SCIM_BEARER_TOKEN` under **Admin → Configuration → SCIM**
+2. oppdater `SCIM_BEARER_TOKEN` under **Admin → Configuration → SCIM konfigurasjon**
 3. oppdater Secret Token i Entra
 4. kjør **Test Connection**
 5. start provisioning igjen

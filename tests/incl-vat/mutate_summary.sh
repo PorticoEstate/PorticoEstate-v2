@@ -86,8 +86,8 @@ mutate rows-listed-while-vat-unknown \
     "{
         for (const line of lines) {"
 mutate rental-is-everything \
-    "line.article_cat_id === ROOM_RENTAL_CATEGORY).map(pricedOrderLine)" \
-    "line.article_cat_id !== 99).map(pricedOrderLine)"
+    "rental: lines.filter(line => line.article_cat_id === ROOM_RENTAL_CATEGORY)," \
+    "rental: lines.filter(line => line.article_cat_id !== 99),"
 mutate incl-drops-the-vat \
     "inclOre: exOre === null || vatOre === null ? null : exOre + vatOre, rates}" \
     "inclOre: exOre === null || vatOre === null ? null : exOre, rates}"

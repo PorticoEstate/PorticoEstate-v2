@@ -445,14 +445,16 @@ Kjør testen i testmiljø før Entra kobles til produksjon. I produksjon skal de
 Teknisk skjer opprettelsen slik:
 
 1. Entra sender `POST /Users` med `externalId`, `userName`, navn, status og eventuelt e-post.
-2. PorticoEstate søker etter en lokal bruker med `account_type = 'u'` og `account_lid` lik innkommende `userName`. Matchen er uavhengig av store/små bokstaver, med eksakt treff foretrukket. Finnes brukeren uten SCIM-mapping, gjenbrukes den (adopsjon), og lokal `account_lid` oppdateres til Entras skrivemåte hvis casing avviker. Ellers opprettes en ny bruker i `phpgw_accounts`. Lokal `account_id` blir SCIM `id`.
+2. PorticoEstate søker først etter en lokal bruker med `account_type = 'u'` og `account_lid` lik innkommende `userName`, uavhengig av store/små bokstaver og med eksakt treff foretrukket. Hvis `userName` er på e-postformat og ingen full match finnes, prøves delen før `@` mot lokalt `account_lid`. Et entydig treff adopteres, og `account_lid` oppdateres til hele Entra-navnet. Flere mulige treff gir HTTP 409. Hvis ingen match finnes, opprettes en ny bruker i `phpgw_accounts`. Lokal `account_id` blir SCIM `id`.
 3. PorticoEstate oppretter en SCIM-rad i `phpgw_mapping` med `ext_user = externalId`, `account_id`, `auth_type = 'scim'` og `location = SCIM_TENANT_ID`.
 4. E-post lagres i `phpgw_accounts_data` som `scim_email`.
 5. Konto og mapping opprettes i samme transaksjon. Gjentatt provisioning med samme `externalId` finner eksisterende konto og skal ikke opprette en ny.
 
 Entra-objektets `objectId` bør mappes til `externalId`. Ikke bruk UPN eller e-post som `externalId`, siden disse kan endres.
 
-**Eksisterende lokale brukere:** `POST /Users` kobler automatisk en eksisterende lokal bruker dersom innkommende `userName` matcher brukerens `account_lid` (adopsjon, tilsvarende som for grupper). Matchen er uavhengig av store/små bokstaver; ved casing-avvik oppdateres lokal `account_lid` til Entras skrivemåte, slik at den eksakte OIDC-innloggingen fortsatt treffer kontoen. Finnes flere lokale brukere som kun skiller seg i store/små bokstaver, og ingen matcher eksakt, returneres HTTP 409. Brukerens eksisterende `account_id`, passord, status og øvrige attributter beholdes ved koblingen; kun SCIM-mappingen, eventuell casing-justering av `account_lid` og `scim_email` skrives. Hvis brukeren allerede har en SCIM-mapping til en annen Entra-identitet eller tenant, eller mappingen er sperret, returneres HTTP 409, og mappingen overskrives ikke. Verifiser derfor at `userName`-mappingen i Entra produserer samme verdi som eksisterende lokale `account_lid` før provisioning aktiveres mot en installasjon med eksisterende brukere.
+**Eksisterende lokale brukere:** `POST /Users` kobler automatisk en eksisterende lokal bruker dersom innkommende `userName` matcher brukerens `account_lid` (uavhengig av store/små bokstaver). Hvis Entra sender et navn på e-postformat, og ingen full navnematch finnes, kan en lokal konto med `account_lid` lik delen før `@` adopteres. For eksempel kan `sigurd.nes` kobles til `sigurd.nes@bergen.kommune.no`; lokal `account_lid` oppdateres da til hele Entra-navnet. Full match prioriteres alltid. Flere lokale kandidater, også kandidater som bare skiller seg i casing, gir HTTP 409 i stedet for automatisk kobling. Brukerens eksisterende `account_id`, passord, status og øvrige attributter beholdes ved koblingen; kun SCIM-mappingen, eventuell oppdatering av `account_lid` og `scim_email` skrives. Hvis brukeren allerede har en SCIM-mapping til en annen Entra-identitet eller tenant, eller mappingen er sperret, returneres HTTP 409, og mappingen overskrives ikke.
+
+`userName` blir lokal innloggings-ID. Etter adopsjon av kortnavn må OIDC-brukernavnclaimen derfor levere hele adressen, for eksempel `sigurd.nes@bergen.kommune.no`, for at brukeren skal kunne logge inn. Kontroller dette før provisioning aktiveres. Ikke bruk lokal-del-match dersom kortnavn ikke entydig identifiserer riktig lokal konto.
 
 ### Endre påloggingsnavn
 
@@ -554,7 +556,7 @@ Støttet:
 - `eq`-filter for `userName`, `externalId` og gruppe-`displayName`
 - pagination med maksimalt 100 ressurser per side
 - User CRUD med soft delete
-- adopsjon av eksisterende lokale brukere og grupper ved navnematch (`userName`/`displayName` = `account_lid`, uavhengig av store/små bokstaver; lokal casing oppdateres til Entras skrivemåte)
+- adopsjon av eksisterende lokale brukere og grupper ved navnematch (`userName`/`displayName` = `account_lid`, uavhengig av store/små bokstaver; lokal casing oppdateres til Entras skrivemåte); e-postformatert bruker-`userName` kan også adoptere en entydig lokal konto som matcher delen før `@`
 - User PATCH `Replace`
 - path-less Entra Replace-objekt
 - Group create/read/PATCH/soft delete

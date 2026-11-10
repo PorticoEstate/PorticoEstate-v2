@@ -216,6 +216,64 @@ class ScimProvisioningRepositoryTest extends TestCase
 		$this->assertSame(['begin', 'commit'], $db->transactions);
 	}
 
+	public function testEmailUserNameAdoptsMatchingShortLocalAccountAndStoresFullName(): void
+	{
+		$stored = ['account_id' => 9, 'account_lid' => 'sigurd.nes'];
+		$updated = [
+			'account_id' => 9,
+			'account_lid' => 'sigurd.nes@bergen.kommune.no',
+			'account_type' => 'u',
+			'external_id' => 'entra-9',
+		];
+		$db = new ScimRepositoryFakeDatabase([], [
+			[], [], [$stored], [], [], [], [], [$updated],
+		]);
+		$repository = new ScimProvisioningRepository($db, 'tenant-1', new \stdClass());
+
+		$this->assertSame($updated, $repository->createUser([
+			'userName' => 'sigurd.nes@bergen.kommune.no',
+			'externalId' => 'entra-9',
+			'givenName' => 'Sigurd',
+			'familyName' => 'Nes',
+			'active' => true,
+			'email' => 'sigurd.nes@bergen.kommune.no',
+		]));
+		$this->assertSame('sigurd.nes', $db->statements[2]->executeParams[':account_lid']);
+		$this->assertStringContainsString('UPDATE phpgw_accounts SET account_lid', $db->statements[4]->sql);
+		$this->assertSame('sigurd.nes@bergen.kommune.no', $db->statements[4]->executeParams[':account_lid']);
+		$this->assertSame(9, $db->statements[4]->executeParams[':account_id']);
+		$this->assertSame(['begin', 'commit'], $db->transactions);
+	}
+
+	public function testEmailUserNameRejectsAmbiguousShortLocalAccountMatch(): void
+	{
+		$db = new ScimRepositoryFakeDatabase([], [
+			[], [], [],
+			[
+				['account_id' => 9, 'account_lid' => 'sigurd.nes'],
+				['account_id' => 10, 'account_lid' => 'SIGURD.NES'],
+			],
+		]);
+		$repository = new ScimProvisioningRepository($db, 'tenant-1', new \stdClass());
+
+		$this->expectException(DomainException::class);
+		try
+		{
+			$repository->createUser([
+				'userName' => 'sigurd.nes@bergen.kommune.no',
+				'externalId' => 'entra-9',
+				'givenName' => 'Sigurd',
+				'familyName' => 'Nes',
+				'active' => true,
+				'email' => '',
+			]);
+		}
+		finally
+		{
+			$this->assertSame(['begin', 'rollback'], $db->transactions);
+		}
+	}
+
 	public function testAmbiguousCaseInsensitiveUserMatchIsRejected(): void
 	{
 		$db = new ScimRepositoryFakeDatabase([], [

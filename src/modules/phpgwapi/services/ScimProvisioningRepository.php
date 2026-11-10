@@ -122,6 +122,14 @@ final class ScimProvisioningRepository implements ScimProvisioningStore
 		try
 		{
 			$existing = $this->findAdoptableAccount($data['userName'], 'u');
+			if ($existing === null)
+			{
+				$localPart = $this->userNameLocalPart($data['userName']);
+				if ($localPart !== null)
+				{
+					$existing = $this->findAdoptableAccount($localPart, 'u');
+				}
+			}
 			if ($existing !== null)
 			{
 				$accountId = (int) $existing['account_id'];
@@ -552,6 +560,22 @@ final class ScimProvisioningRepository implements ScimProvisioningStore
 		}
 
 		return $match;
+	}
+
+	private function userNameLocalPart(string $userName): ?string
+	{
+		if (substr_count($userName, '@') !== 1)
+		{
+			return null;
+		}
+
+		[$localPart, $domain] = explode('@', $userName, 2);
+		if ($localPart === '' || $domain === '')
+		{
+			return null;
+		}
+
+		return $localPart;
 	}
 
 	private function accounts(): object

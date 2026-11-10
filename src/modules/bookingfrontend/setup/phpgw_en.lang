@@ -1198,3 +1198,14 @@ catering_no_serving_time	bookingfrontend	en	No serving time set
 prices_incl_vat	bookingfrontend	en	All prices include VAT
 price_category_shared_help	bookingfrontend	en	The choice applies to all the resources you have chosen.
 price_per_resource	bookingfrontend	en	Choose the price per resource
+hospitality_offer	bookingfrontend	en	Catering offer
+hospitality_offer_locked_help	bookingfrontend	en	To change the offer, cancel the serving and order again.
+edit_hospitality_order	bookingfrontend	en	Edit catering order
+hospitality_dialog_clock_time	bookingfrontend	en	Time
+hospitality_dialog_time_within_application	bookingfrontend	en	Within the application's time, %1–%2
+hospitality_dialog_selected_count	bookingfrontend	en	%1 selected
+hospitality_dialog_incl_vat_short	bookingfrontend	en	incl. VAT
+hospitality_dialog_items	bookingfrontend	en	Items
+hospitality_dialog_sum_ex_vat	bookingfrontend	en	Sum excl. VAT
+hospitality_dialog_vat_rate	bookingfrontend	en	VAT %1 %
+hospitality_dialog_vat	bookingfrontend	en	VAT

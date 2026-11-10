@@ -91,19 +91,52 @@
     }
 }
 
-.topRow {
+/* Offer: radio boxes when there is a choice; plain text for one offer and for an order being edited */
+.offerBoxes {
     display: flex;
-    gap: 1rem;
-    flex-wrap: wrap;
+    flex-direction: column;
+    gap: var(--ds-size-2);
+}
 
-    .topRowField {
-        flex: 1;
-        min-width: 160px;
-    }
+.offerBox {
+    padding: var(--ds-size-3) var(--ds-size-4);
+    border: var(--ds-border-width-default) solid var(--ds-color-neutral-border-default);
+    border-radius: var(--ds-border-radius-md);
+    cursor: pointer;
 
-    @media (max-width: 600px) {
-        flex-direction: column;
+    &[data-selected='true'] {
+        border-color: var(--ds-color-accent-base-default);
+        background-color: var(--ds-color-accent-surface-tinted);
     }
+}
+
+.offerText,
+.fieldText {
+    padding: var(--ds-size-3) var(--ds-size-4);
+    border-radius: var(--ds-border-radius-md);
+    background-color: var(--ds-color-neutral-background-tinted);
+}
+
+.offerText {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ds-size-1);
+}
+
+.offerName {
+    font-weight: var(--ds-font-weight-medium);
+}
+
+/* The offer's admin text keeps its line breaks (#374) */
+.offerDescription {
+    display: block;
+    white-space: pre-wrap;
+    color: var(--ds-color-neutral-text-subtle);
+}
+
+.menuLoading {
+    padding: 2rem;
+    text-align: center;
 }
 
 .cutoffWarning {
@@ -123,22 +156,34 @@
     padding: 1rem;
 }
 
-.locationSelect {
-    max-width: 400px;
-}
-
 .groupSummary {
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    gap: var(--ds-size-3);
     width: 100%;
     padding-right: 0.5rem;
+}
+
+.groupName {
+    flex: 1;
+    min-width: 0;
+}
+
+/* «N valgt» in a category heading */
+.groupCount {
+    padding: 1px var(--ds-size-3);
+    border: var(--ds-border-width-default) solid var(--ds-color-neutral-border-default);
+    border-radius: 999px;
+    font-size: var(--ds-font-size-sm);
+    font-weight: var(--ds-font-weight-medium);
+    white-space: nowrap;
 }
 
 .groupTotal {
     font-variant-numeric: tabular-nums;
     font-weight: 500;
     color: var(--ds-color-neutral-text-default);
+    white-space: nowrap;
 }
 
 .menuItem {
@@ -159,6 +204,51 @@
     gap: 0.75rem;
     padding: 0.5rem 0.75rem;
     font-size: 0.875rem;
+
+    /* Narrow screens: the name on its own line, unit and price beside the quantity, the amount under it
+       (the stacked rows of artboard E). Layout only: the row's content and behaviour are the same. */
+    @media (max-width: 600px) {
+        display: grid;
+        grid-template-columns: auto 1fr auto auto;
+        gap: 0.25rem 0.75rem;
+
+        .menuName {
+            grid-column: 1 / 4;
+            grid-row: 1;
+        }
+
+        .commentToggle {
+            grid-column: 4;
+            grid-row: 1;
+        }
+
+        .menuUnit {
+            grid-column: 1;
+            grid-row: 2;
+            flex: none;
+        }
+
+        .menuPrice {
+            grid-column: 2;
+            grid-row: 2;
+            flex: none;
+            text-align: left;
+        }
+
+        .menuQty {
+            grid-column: 3 / 5;
+            grid-row: 2;
+            flex: none;
+            justify-self: end;
+        }
+
+        .menuAmount {
+            grid-column: 1 / 5;
+            grid-row: 3;
+            flex: none;
+            text-align: right;
+        }
+    }
 }
 
 .menuName {
@@ -288,37 +378,86 @@
     overflow: hidden;
 }
 
-/* Hospitality-level info/routine text (#374) — preserve admin line breaks. */
-.hospitalityInfo {
-    white-space: pre-wrap;
-    margin-bottom: var(--ds-size-2, 0.5rem);
-}
-
-.totalRow {
+/* Price summary at the end of the form: sum ex VAT, VAT per rate, total incl. VAT */
+.priceSummary {
     display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 0.75rem;
-    border-top: 2px solid var(--ds-color-neutral-border-default, #dee2e6);
-    font-weight: 600;
-    font-size: 0.9375rem;
-}
-
-.totalLabel {
-    flex: 1;
-    text-align: right;
-}
-
-.totalAmount {
-    flex: 0 0 5rem;
-    text-align: right;
+    flex-direction: column;
+    gap: var(--ds-size-1);
+    margin: 0;
+    padding: var(--ds-size-3) var(--ds-size-4);
+    border-radius: var(--ds-border-radius-md);
+    background-color: var(--ds-color-neutral-background-tinted);
     font-variant-numeric: tabular-nums;
+
+    dt,
+    dd {
+        margin: 0;
+    }
 }
 
+.priceSummaryRow {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--ds-size-4);
+}
+
+.priceSummaryTotal {
+    margin-top: var(--ds-size-1);
+    padding-top: var(--ds-size-2);
+    border-top: var(--ds-border-width-default) solid var(--ds-color-neutral-border-default);
+    font-weight: var(--ds-font-weight-semibold);
+}
+
+/* The dialog's footer is a flex row that right-aligns its content; this takes the whole row so the total
+   sits left and the buttons right, and stacks them on narrow screens (primary button on top). */
 .modalFooter {
     display: flex;
-    justify-content: flex-end;
-    gap: 0.75rem;
+    flex: 1;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--ds-size-4);
+
+    @media (max-width: 600px) {
+        flex-direction: column;
+        align-items: stretch;
+        gap: var(--ds-size-3);
+    }
+}
+
+.footerTotal {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--ds-size-2);
+    font-variant-numeric: tabular-nums;
+
+    @media (max-width: 600px) {
+        justify-content: space-between;
+    }
+}
+
+.footerTotalLabel,
+.footerTotalNote {
+    color: var(--ds-color-neutral-text-subtle);
+}
+
+.footerTotalAmount {
+    font-size: var(--ds-font-size-md);
+    font-weight: var(--ds-font-weight-semibold);
+}
+
+.footerButtons {
+    display: flex;
+    gap: var(--ds-size-3);
+
+    @media (max-width: 600px) {
+        flex-direction: column-reverse;
+
+        > * {
+            width: 100%;
+            justify-content: center;
+        }
+    }
 }
 
 .hospitalityTotal {

@@ -1,6 +1,17 @@
 'use client';
 import {FC, useEffect, useMemo, useRef, useState} from 'react';
-import {Alert, Button, Details, Field, Label, Paragraph, Select, Textarea} from '@digdir/designsystemet-react';
+import {
+    Alert,
+    Button,
+    Details,
+    Field,
+    Fieldset,
+    Label,
+    Paragraph,
+    Radio,
+    Select,
+    Textarea,
+} from '@digdir/designsystemet-react';
 import {MinusCircleIcon, PlusCircleIcon, ChatElipsisIcon} from '@navikt/aksel-icons';
 import {useClientTranslation} from '@/app/i18n/ClientTranslationProvider';
 import {fallbackLng} from '@/app/i18n/settings';
@@ -25,6 +36,7 @@ import {
     hospitalityUnitPriceIncl,
     sumOreOrNull,
 } from '@/utils/article-pricing';
+import {hospitalityMenuLineForSummary, summarizeHospitalityVat} from '@/utils/hospitality-price-summary';
 import {
     computeHospitalityDeadline,
     hospitalityActionWindow,
@@ -87,26 +99,52 @@ function localizeField(field: Record<string, string> | null | undefined, lang: s
     return field[lang] || field[fallbackLng.key] || Object.values(field).find(v => !!v) || null;
 }
 
+/** «Ons. 23. desember»: short weekday, day and long month, first letter capital (the artboards' format). */
+function formatDayLabel(date: Date): string {
+    const text = date.toLocaleDateString('nb-NO', {weekday: 'short', day: 'numeric', month: 'long'});
+    return text.charAt(0).toLocaleUpperCase('nb-NO') + text.slice(1);
+}
+
+/** The browser-local calendar day of a date, as a key (the same zone the labels and slots are built in). */
+function localDayKey(date: Date): string {
+    return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+}
+
+/** One selectable serving day: a date+timerange from one application date entry (or a legacy order's own instant). */
+interface DateOption {
+    key: string;
+    from: Date;
+    to: Date;
+    /** «Ons. 23. desember» */
+    dayLabel: string;
+    /** «08:00–16:00», or just the time for the grandfathered instant. */
+    timeLabel: string;
+    applicationId: number;
+}
+
 /** Build date options from application dates. Each option is a unique date+timerange from one application date entry. */
-function buildDateOptions(applications: IApplication[]) {
-    const options: { key: string; from: Date; to: Date; label: string; applicationId: number }[] = [];
+function buildDateOptions(applications: IApplication[]): DateOption[] {
+    const options: DateOption[] = [];
     applications.forEach(app => {
         app.dates?.forEach(d => {
             const from = new Date(d.from_);
             const to = new Date(d.to_);
-            const key = `${app.id}_${d.id}`;
-            const dateStr = from.toLocaleDateString('nb-NO', {weekday: 'short', day: 'numeric', month: 'short'});
-            const timeStr = `${formatHm(from)} - ${formatHm(to)}`;
             options.push({
-                key,
+                key: `${app.id}_${d.id}`,
                 from,
                 to,
-                label: `${dateStr} | ${timeStr}`,
+                dayLabel: formatDayLabel(from),
+                timeLabel: `${formatHm(from)}–${formatHm(to)}`,
                 applicationId: app.id,
             });
         });
     });
     return options.sort((a, b) => a.from.getTime() - b.from.getTime());
+}
+
+/** A quantity for showing: whole numbers as they are, a stored fractional quantity without float noise. */
+function formatQuantity(quantity: number): string {
+    return String(Math.round(quantity * 100) / 100);
 }
 
 const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
@@ -128,7 +166,6 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
     const {data: serverSettings} = useServerSettings();
     // Mirrors application-crud: with no seasons a building is open unless an admin opted in.
     const closeWhenNoSeasons = serverSettings?.bookingfrontend_config?.close_calendar_without_season ?? false;
-    const showHospitalitySelector = hospitalities.length > 1 && !existingOrder;
 
     const [selectedDateKey, setSelectedDateKey] = useState('');
     const [selectedTime, setSelectedTime] = useState('');
@@ -171,7 +208,7 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
      * the instant moves (#373). So the stored time is offered as its own option rather than
      * leaving the order unsavable.
      */
-    const grandfatheredOption = useMemo(() => {
+    const grandfatheredOption = useMemo((): DateOption | null => {
         if (!existingOrder?.serving_time_iso) return null;
         const stored = new Date(existingOrder.serving_time_iso);
         const storedYmd = stored.toISOString().split('T')[0];
@@ -180,12 +217,12 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
             && d.from.toISOString().split('T')[0] === storedYmd
         );
         if (ownedByApplication) return null;
-        const dateStr = stored.toLocaleDateString('nb-NO', {weekday: 'short', day: 'numeric', month: 'short'});
         return {
             key: GRANDFATHERED_DATE_KEY,
             from: stored,
             to: stored,
-            label: `${dateStr} | ${formatHm(stored)}`,
+            dayLabel: formatDayLabel(stored),
+            timeLabel: formatHm(stored),
             applicationId: existingOrder.application_id,
         };
     }, [existingOrder, dateOptions]);
@@ -194,6 +231,23 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
         () => grandfatheredOption ? [grandfatheredOption, ...dateOptions] : dateOptions,
         [grandfatheredOption, dateOptions]
     );
+
+    // The option text is the day alone («Ons. 23. desember»). The time range is added only where it is the
+    // sole thing telling two options apart (two entries on one day) and on the grandfathered instant, which
+    // has no range to be «within»; it is otherwise stated once, as the time field's help text.
+    const dateOptionTexts = useMemo(() => {
+        const perDay = new Map<string, number>();
+        visibleDateOptions.forEach(d => {
+            const day = localDayKey(d.from);
+            perDay.set(day, (perDay.get(day) ?? 0) + 1);
+        });
+        return new Map(visibleDateOptions.map(d => [
+            d.key,
+            d.key === GRANDFATHERED_DATE_KEY || (perDay.get(localDayKey(d.from)) ?? 0) > 1
+                ? `${d.dayLabel} ${d.timeLabel}`
+                : d.dayLabel,
+        ]));
+    }, [visibleDateOptions]);
 
     const selectedDateOption = useMemo(
         () => visibleDateOptions.find(d => d.key === selectedDateKey),
@@ -509,13 +563,38 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
         return articles;
     }, [menu]);
 
-    // Incl. VAT in øre, each ordered line rounded once as it is billed; null (shown «-») as soon as an
-    // ordered article has no known VAT %, never an ex-VAT sum in its place
-    const orderTotalOre = useMemo(() => sumOreOrNull(
+    // The price summary on the billing basis: the sum ex VAT, the VAT per rate and the total incl. VAT, each
+    // ordered line's VAT rounded once as it is billed. Not `known` as soon as an ordered article has no known
+    // VAT %: the VAT and the total then show «-», never an ex-VAT sum in their place.
+    const priceSummary = useMemo(() => summarizeHospitalityVat(
         allArticles
             .filter(a => (quantities[a.id] || 0) > 0)
-            .map(a => hospitalityMenuLineTotalOre(a, quantities[a.id]))
+            .map(a => hospitalityMenuLineForSummary(a, quantities[a.id]))
     ), [allArticles, quantities]);
+    // The total incl. VAT of the summary, so the footer and the summary block can never disagree.
+    const orderTotalOre = priceSummary.known ? priceSummary.inclOre : null;
+
+    /**
+     * The offer's own text. The available-offers list carries it for every offer (the radio boxes need
+     * it before one is chosen); the menu's copy is the same column and covers a list that arrived without it.
+     */
+    const offerDescription = hospitality?.description ?? menu?.hospitality_description ?? null;
+
+    /**
+     * Categories that start OPEN: on an edit, those holding a line of the order, so the applicant sees the
+     * order at once; on a new order none. Read from the order's own lines (not the quantities state) because the
+     * categories mount once the menu has loaded, and `defaultOpen` is only read at mount. The open state is the
+     * applicant's afterwards.
+     */
+    const initiallyOpenGroupIds = useMemo(() => {
+        const ids = new Set<number>();
+        if (!existingOrder || !menu) return ids;
+        const orderedArticleIds = new Set(existingOrder.lines.map(line => line.hospitality_article_id));
+        menu.groups.forEach(group => {
+            if (group.articles.some(article => orderedArticleIds.has(article.id))) ids.add(group.id);
+        });
+        return ids;
+    }, [existingOrder, menu]);
 
     const hasItems = Object.values(quantities).some(q => q > 0);
     const dateSelected = !!selectedDateKey;
@@ -698,11 +777,25 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
         );
     };
 
-    const dialogTitle = existingOrder && hospitality
-        ? `${t('bookingfrontend.edit')} - ${hospitality.name}`
-        : hospitality
-            ? `${t('bookingfrontend.add_hospitality_order')} - ${hospitality.name}`
-            : t('bookingfrontend.add_hospitality_order');
+    // The offer's name is a field of its own below, so the title is the same for every offer.
+    const dialogTitle = existingOrder
+        ? t('bookingfrontend.edit_hospitality_order')
+        : t('bookingfrontend.add_hospitality_order');
+
+    const locationLabel = (loc: {name: string; location_type: 'main' | 'remote'}) =>
+        loc.location_type === 'main' ? `${t('bookingfrontend.serving_at')} ${loc.name}` : loc.name;
+
+    // One room to choose from is shown as plain text, not as a one-item dropdown. Only while the chosen
+    // room IS that room (0 = not chosen yet on a new order): an edit whose stored room is no longer among
+    // the available ones keeps the dropdown, as before, instead of showing a room that is not the order's.
+    const singleLocation = availableLocations.length === 1
+        && (locationId === 0 || locationId === availableLocations[0].id)
+        ? availableLocations[0]
+        : null;
+
+    const selectOffer = (offer: IHospitality) => {
+        if (hospitality && offer.id !== hospitality.id) onHospitalitySelect(offer);
+    };
 
     return (
         <Dialog
@@ -713,118 +806,162 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
             stickyFooter
             footer={(attemptClose) => (
                 <div className={styles.modalFooter}>
-                    <Button variant="tertiary" onClick={attemptClose} disabled={isSaving}>
-                        {t('booking.cancel')}
-                    </Button>
-                    <Button variant="primary" onClick={handleSave} disabled={!canSave || isSaving}>
-                        {isSaving
-                            ? t('common.saving')
-                            : existingOrder ? t('common.save') : t('bookingfrontend.add_hospitality_order')
-                        }
-                    </Button>
+                    {/* The total incl. VAT stays in view; the breakdown (ex VAT, VAT per rate) is the block
+                        at the end of the form */}
+                    <div className={styles.footerTotal}>
+                        <span className={styles.footerTotalLabel}>{t('bookingfrontend.order_total')}</span>
+                        <strong className={styles.footerTotalAmount}>{formatOreOrDash(orderTotalOre)}</strong>
+                        <small className={styles.footerTotalNote}>
+                            {t('bookingfrontend.hospitality_dialog_incl_vat_short')}
+                        </small>
+                    </div>
+                    <div className={styles.footerButtons}>
+                        <Button variant="tertiary" onClick={attemptClose} disabled={isSaving}>
+                            {t('common.cancel')}
+                        </Button>
+                        <Button variant="primary" onClick={handleSave} disabled={!canSave || isSaving}>
+                            {isSaving
+                                ? t('common.saving')
+                                : existingOrder ? t('common.save') : t('bookingfrontend.add_hospitality_order')
+                            }
+                        </Button>
+                    </div>
                 </div>
             )}
         >
-            {/* Main order form */}
-            {hospitality && menuLoading ? (
-                <div style={{padding: '2rem', textAlign: 'center'}}>
-                    {t('common.loading')}
-                </div>
-            ) : hospitality ? (
+            {/* Main order form. Everything but the menu is shown while the menu loads, so the offer's radio
+                group is not unmounted under the applicant's finger (or arrow keys) when the offer is switched. */}
+            {hospitality ? (
                 <div className={styles.modalContent}>
-                    {/* Top row: Date | Location | Time */}
-                    <div className={styles.topRow}>
-                        {showHospitalitySelector && (
-                            <Field className={styles.topRowField}>
-                                <Label>{t('bookingfrontend.hospitality')}</Label>
-                                <Select
-                                    value={String(hospitality.id)}
-                                    onChange={(e) => {
-                                        const h = hospitalities.find(h => h.id === parseInt(e.target.value));
-                                        if (h) onHospitalitySelect(h);
-                                    }}
-                                >
-                                    {hospitalities.map(h => (
-                                        <option key={h.id} value={String(h.id)}>{h.name}</option>
-                                    ))}
-                                </Select>
-                            </Field>
-                        )}
-                        <Field className={styles.topRowField}>
-                            <Label>{t('bookingfrontend.select_serving_date')}</Label>
-                            <Select
-                                value={selectedDateKey}
-                                onChange={(e) => {
-                                    setSelectedDateKey(e.target.value);
-                                    setSelectedTime('');
-                                }}
-                            >
-                                <option value="">{t('bookingfrontend.select_serving_date')}</option>
-                                {visibleDateOptions.map(d => {
-                                    // Closed days stay visible (a vanishing booking date is confusing)
-                                    // but are not selectable. The existing order's own day is left
-                                    // selectable — the backend only re-validates when the serving
-                                    // instant moves, so that order stays editable.
-                                    const closed = !isServingDayOpen(d.from, hospitality.open_days_list);
-                                    // Dates owned by another application stay visible for the same
-                                    // reason, but an order cannot be moved between applications.
-                                    const otherApplication = !!existingOrder
-                                        && d.applicationId !== existingOrder.application_id;
-                                    const note = otherApplication
-                                        ? ` — ${t('bookingfrontend.date_belongs_to_other_application')}`
-                                        : closed
-                                            ? ` — ${t('bookingfrontend.closed_on_weekday')
-                                                .replace('%1', formatWeekdayName(isoWeekdayInVenueTz(d.from), i18n.language))}`
-                                            : '';
-                                    return (
-                                        <option
-                                            key={d.key}
-                                            value={d.key}
-                                            disabled={otherApplication || (closed && d.key !== grandfatheredDateKey)}
-                                        >
-                                            {d.label}{note}
-                                        </option>
-                                    );
-                                })}
-                            </Select>
-                            {existingOrder && dateOptions.some(d => d.applicationId !== existingOrder.application_id) && (
-                                <Paragraph data-size="sm">
-                                    {t('bookingfrontend.hospitality_cannot_change_application')}
-                                </Paragraph>
-                            )}
-                        </Field>
+                    {/* Offer: locked text when editing, radio boxes when there is a choice, plain text otherwise */}
+                    {existingOrder ? (
+                        <Fieldset>
+                            <Fieldset.Legend>{t('bookingfrontend.hospitality_offer')}</Fieldset.Legend>
+                            <Fieldset.Description>{t('bookingfrontend.hospitality_offer_locked_help')}</Fieldset.Description>
+                            <div className={styles.offerText}>
+                                <span className={styles.offerName}>{hospitality.name}</span>
+                                {offerDescription && <span className={styles.offerDescription}>{offerDescription}</span>}
+                            </div>
+                        </Fieldset>
+                    ) : hospitalities.length > 1 ? (
+                        <Fieldset>
+                            <Fieldset.Legend>{t('bookingfrontend.hospitality_offer')}</Fieldset.Legend>
+                            <div className={styles.offerBoxes}>
+                                {hospitalities.map(offer => (
+                                    <div
+                                        key={offer.id}
+                                        className={styles.offerBox}
+                                        data-selected={offer.id === hospitality.id}
+                                        onClick={() => selectOffer(offer)}
+                                    >
+                                        <Radio
+                                            name="hospitality-offer"
+                                            value={String(offer.id)}
+                                            checked={offer.id === hospitality.id}
+                                            onChange={() => selectOffer(offer)}
+                                            label={offer.name}
+                                            description={offer.description
+                                                ? <span className={styles.offerDescription}>{offer.description}</span>
+                                                : undefined}
+                                        />
+                                    </div>
+                                ))}
+                            </div>
+                        </Fieldset>
+                    ) : (
+                        <Fieldset>
+                            <Fieldset.Legend>{t('bookingfrontend.hospitality_offer')}</Fieldset.Legend>
+                            <div className={styles.offerText}>
+                                <span className={styles.offerName}>{hospitality.name}</span>
+                                {offerDescription && <span className={styles.offerDescription}>{offerDescription}</span>}
+                            </div>
+                        </Fieldset>
+                    )}
 
-                        <Field className={styles.topRowField}>
-                            <Label>{t('bookingfrontend.delivery_location')}</Label>
+                    {/* Day */}
+                    <Field>
+                        <Label>{t('bookingfrontend.day')}</Label>
+                        <Select
+                            value={selectedDateKey}
+                            onChange={(e) => {
+                                setSelectedDateKey(e.target.value);
+                                setSelectedTime('');
+                            }}
+                        >
+                            <option value="">{t('bookingfrontend.select_serving_date')}</option>
+                            {visibleDateOptions.map(d => {
+                                // Closed days stay visible (a vanishing booking date is confusing)
+                                // but are not selectable. The existing order's own day is left
+                                // selectable — the backend only re-validates when the serving
+                                // instant moves, so that order stays editable.
+                                const closed = !isServingDayOpen(d.from, hospitality.open_days_list);
+                                // Dates owned by another application stay visible for the same
+                                // reason, but an order cannot be moved between applications.
+                                const otherApplication = !!existingOrder
+                                    && d.applicationId !== existingOrder.application_id;
+                                const note = otherApplication
+                                    ? ` — ${t('bookingfrontend.date_belongs_to_other_application')}`
+                                    : closed
+                                        ? ` — ${t('bookingfrontend.closed_on_weekday')
+                                            .replace('%1', formatWeekdayName(isoWeekdayInVenueTz(d.from), i18n.language))}`
+                                        : '';
+                                return (
+                                    <option
+                                        key={d.key}
+                                        value={d.key}
+                                        disabled={otherApplication || (closed && d.key !== grandfatheredDateKey)}
+                                    >
+                                        {dateOptionTexts.get(d.key)}{note}
+                                    </option>
+                                );
+                            })}
+                        </Select>
+                        {existingOrder && dateOptions.some(d => d.applicationId !== existingOrder.application_id) && (
+                            <Paragraph data-size="sm">
+                                {t('bookingfrontend.hospitality_cannot_change_application')}
+                            </Paragraph>
+                        )}
+                    </Field>
+
+                    {/* Place: a dropdown, or plain text when there is only one room to choose */}
+                    <Field>
+                        <Label>{t('bookingfrontend.delivery_location')}</Label>
+                        {singleLocation ? (
+                            <div className={styles.fieldText}>{locationLabel(singleLocation)}</div>
+                        ) : (
                             <Select
                                 value={String(locationId)}
                                 onChange={(e) => setLocationId(parseInt(e.target.value))}
                                 disabled={!dateSelected}
                             >
                                 {availableLocations.map(loc => (
-                                    <option key={loc.id} value={String(loc.id)}>
-                                        {loc.location_type === 'main'
-                                            ? `${t('bookingfrontend.serving_at')} ${loc.name}`
-                                            : loc.name}
-                                    </option>
+                                    <option key={loc.id} value={String(loc.id)}>{locationLabel(loc)}</option>
                                 ))}
                             </Select>
-                        </Field>
+                        )}
+                    </Field>
 
-                        <Field className={styles.topRowField}>
-                            <Label>{t('bookingfrontend.select_serving_time')}</Label>
-                            <Select
-                                value={selectedTime}
-                                onChange={(e) => setSelectedTime(e.target.value)}
-                                disabled={!dateSelected}
-                            >
-                                <option value="">{t('bookingfrontend.select_serving_time')}</option>
-                                {timeSlots.map(slot => (
-                                    <option key={slot} value={slot}>{slot}</option>
-                                ))}
-                            </Select>
-                        </Field>
-                    </div>
+                    {/* Time: the booking's own times say what is possible. The grandfathered instant has no range. */}
+                    <Field>
+                        <Label>{t('bookingfrontend.hospitality_dialog_clock_time')}</Label>
+                        {selectedDateOption && selectedDateOption.key !== GRANDFATHERED_DATE_KEY && (
+                            <Field.Description>
+                                {t('bookingfrontend.hospitality_dialog_time_within_application')
+                                    .replace('%1', formatHm(selectedDateOption.from))
+                                    .replace('%2', formatHm(selectedDateOption.to))}
+                            </Field.Description>
+                        )}
+                        <Select
+                            value={selectedTime}
+                            onChange={(e) => setSelectedTime(e.target.value)}
+                            disabled={!dateSelected}
+                        >
+                            <option value="">{t('bookingfrontend.select_serving_time')}</option>
+                            {timeSlots.map(slot => (
+                                <option key={slot} value={slot}>{slot}</option>
+                            ))}
+                        </Select>
+                    </Field>
 
                     {/* Working-days info: which days the catering is open (deadlines counted in working days) */}
                     {isWorkingDaysMode(hospitality.open_days_list) && (
@@ -863,14 +1000,10 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
                         </Alert>
                     )}
 
-                    {/* Hospitality-level info / routine text from admin (#374) */}
-                    {menu?.hospitality_description && (
-                        <Alert data-color="info" data-size="sm" className={styles.hospitalityInfo}>
-                            {menu.hospitality_description}
-                        </Alert>
-                    )}
+                    {/* The hospitality-level info / routine text from admin (#374) is the offer's description,
+                        shown with the offer above. */}
 
-                    {/* Order-level note to the kitchen: below the date/place/time row, above the menu.
+                    {/* Order-level note to the kitchen: below the date/place/time, above the menu.
                         Locked like the rest of the order content (+/-, line comments). */}
                     <Field>
                         <Label>{t('bookingfrontend.special_requirements')}</Label>
@@ -882,47 +1015,85 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
                         />
                     </Field>
 
-                    {/* The menu has no column header, so say once that every price here includes VAT */}
-                    <Paragraph data-size="sm">{t('bookingfrontend.prices_incl_vat')}</Paragraph>
+                    {/* Items. The menu has no column header, so say once that every price here includes VAT */}
+                    <Fieldset>
+                        <Fieldset.Legend>{t('bookingfrontend.hospitality_dialog_items')}</Fieldset.Legend>
+                        <Fieldset.Description>{t('bookingfrontend.prices_incl_vat')}</Fieldset.Description>
+                        {menuLoading ? (
+                            <div className={styles.menuLoading}>{t('common.loading')}</div>
+                        ) : (
+                            <div className={styles.menuList}>
+                                {menu?.groups.map(group => {
+                                    // Incl. VAT in øre, like the order total; shown when something in the group is
+                                    // ordered, and «-» when an ordered article's VAT % is unknown
+                                    const orderedInGroup = group.articles.filter(a => (quantities[a.id] || 0) > 0);
+                                    const groupTotalOre = sumOreOrNull(
+                                        orderedInGroup.map(a => hospitalityMenuLineTotalOre(a, quantities[a.id]))
+                                    );
+                                    // How many units are chosen in the category (artboard D: 3 + 1 + 30 = «34 valgt»)
+                                    const selectedCount = group.articles
+                                        .reduce((sum, a) => sum + (quantities[a.id] || 0), 0);
+                                    return (
+                                        <Details
+                                            key={group.id}
+                                            defaultOpen={initiallyOpenGroupIds.has(group.id)}
+                                            data-color="neutral"
+                                        >
+                                            <Details.Summary>
+                                                <div className={styles.groupSummary}>
+                                                    <span className={styles.groupName}>{group.name}</span>
+                                                    {selectedCount > 0 && (
+                                                        <span className={styles.groupCount}>
+                                                            {t('bookingfrontend.hospitality_dialog_selected_count')
+                                                                .replace('%1', formatQuantity(selectedCount))}
+                                                        </span>
+                                                    )}
+                                                    {(groupTotalOre === null || groupTotalOre > 0) && (
+                                                        <span className={styles.groupTotal}>{formatOreOrDash(groupTotalOre)}</span>
+                                                    )}
+                                                </div>
+                                            </Details.Summary>
+                                            <Details.Content>
+                                                {group.articles.map(renderArticle)}
+                                            </Details.Content>
+                                        </Details>
+                                    );
+                                })}
 
-                    {/* Article menu */}
-                    <div className={styles.menuList}>
-                        {menu?.groups.map(group => {
-                            // Incl. VAT in øre, like the order total; shown when something in the group is
-                            // ordered, and «-» when an ordered article's VAT % is unknown
-                            const orderedInGroup = group.articles.filter(a => (quantities[a.id] || 0) > 0);
-                            const groupTotalOre = sumOreOrNull(
-                                orderedInGroup.map(a => hospitalityMenuLineTotalOre(a, quantities[a.id]))
-                            );
-                            return (
-                                <Details key={group.id} defaultOpen data-color="neutral">
-                                    <Details.Summary>
-                                        <div className={styles.groupSummary}>
-                                            <span>{group.name}</span>
-                                            {(groupTotalOre === null || groupTotalOre > 0) && (
-                                                <span className={styles.groupTotal}>{formatOreOrDash(groupTotalOre)}</span>
-                                            )}
-                                        </div>
-                                    </Details.Summary>
-                                    <Details.Content>
-                                        {group.articles.map(renderArticle)}
-                                    </Details.Content>
-                                </Details>
-                            );
-                        })}
-
-                        {menu?.ungrouped_articles && menu.ungrouped_articles.length > 0 && (
-                            <div>
-                                {menu.ungrouped_articles.map(renderArticle)}
+                                {menu?.ungrouped_articles && menu.ungrouped_articles.length > 0 && (
+                                    <div>
+                                        {menu.ungrouped_articles.map(renderArticle)}
+                                    </div>
+                                )}
                             </div>
                         )}
+                    </Fieldset>
 
-                        {/* Total row */}
-                        <div className={styles.totalRow}>
-                            <span className={styles.totalLabel}>{t('bookingfrontend.total_incl_vat')}</span>
-                            <span className={styles.totalAmount}>{formatOreOrDash(orderTotalOre)}</span>
-                        </div>
-                    </div>
+                    {/* Price summary on the billing basis: ex VAT, VAT per rate, total incl. VAT. Nothing to
+                        summarise until something is ordered. An unknown VAT % shows «-» for the VAT and the total. */}
+                    {(!priceSummary.known || priceSummary.rates.length > 0) && (
+                        <dl className={styles.priceSummary}>
+                            <div className={styles.priceSummaryRow}>
+                                <dt>{t('bookingfrontend.hospitality_dialog_sum_ex_vat')}</dt>
+                                <dd>{formatOreOrDash(priceSummary.exOre)}</dd>
+                            </div>
+                            {priceSummary.known ? priceSummary.rates.map(rate => (
+                                <div key={rate.percent} className={styles.priceSummaryRow}>
+                                    <dt>{t('bookingfrontend.hospitality_dialog_vat_rate').replace('%1', String(rate.percent))}</dt>
+                                    <dd>{formatOreOrDash(rate.vatOre)}</dd>
+                                </div>
+                            )) : (
+                                <div className={styles.priceSummaryRow}>
+                                    <dt>{t('bookingfrontend.hospitality_dialog_vat')}</dt>
+                                    <dd>{formatOreOrDash(null)}</dd>
+                                </div>
+                            )}
+                            <div className={`${styles.priceSummaryRow} ${styles.priceSummaryTotal}`}>
+                                <dt>{t('bookingfrontend.total_incl_vat')}</dt>
+                                <dd>{formatOreOrDash(orderTotalOre)}</dd>
+                            </div>
+                        </dl>
+                    )}
                 </div>
             ) : null}
         </Dialog>

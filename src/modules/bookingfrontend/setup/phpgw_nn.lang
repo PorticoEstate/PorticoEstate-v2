@@ -1198,3 +1198,14 @@ catering_no_serving_time	bookingfrontend	nn	Utan serveringstid
 prices_incl_vat	bookingfrontend	nn	Alle prisar er oppgjevne inkl. mva
 price_category_shared_help	bookingfrontend	nn	Valet gjeld alle ressursane du har valt.
 price_per_resource	bookingfrontend	nn	Vel pris per ressurs
+hospitality_offer	bookingfrontend	nn	Bevertningstilbod
+hospitality_offer_locked_help	bookingfrontend	nn	Vil du byte tilbod, avbestiller du serveringa og bestiller på nytt.
+edit_hospitality_order	bookingfrontend	nn	Endre bevertning
+hospitality_dialog_clock_time	bookingfrontend	nn	Klokkeslett
+hospitality_dialog_time_within_application	bookingfrontend	nn	Innanfor søknaden sin tid, %1–%2
+hospitality_dialog_selected_count	bookingfrontend	nn	%1 valt
+hospitality_dialog_incl_vat_short	bookingfrontend	nn	inkl. mva
+hospitality_dialog_items	bookingfrontend	nn	Varer
+hospitality_dialog_sum_ex_vat	bookingfrontend	nn	Sum eks. mva.
+hospitality_dialog_vat_rate	bookingfrontend	nn	Mva %1 %
+hospitality_dialog_vat	bookingfrontend	nn	Mva

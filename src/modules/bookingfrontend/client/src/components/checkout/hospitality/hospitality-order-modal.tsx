@@ -3,9 +3,11 @@ import {FC, useEffect, useMemo, useRef, useState} from 'react';
 import {
     Alert,
     Button,
+    Card,
     Details,
     Field,
     Fieldset,
+    Heading,
     Label,
     Paragraph,
     Radio,
@@ -33,6 +35,7 @@ import {formatCurrency} from '@/utils/cost-utils';
 import {
     formatOreOrDash,
     hospitalityMenuLineTotalOre,
+    hospitalityUnitLabel,
     hospitalityUnitPriceIncl,
     sumOreOrNull,
 } from '@/utils/article-pricing';
@@ -694,6 +697,8 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
         const commentVisible = visibleComments.has(article.id);
         const description = localizeField(article.description, i18n.language)
             ?? localizeField(article.service_description_json, i18n.language);
+        const unit = hospitalityUnitLabel(article.unit, t);
+        const commentLabel = `${t('bookingfrontend.comment')}: ${article.article_name}`;
         return (
             <div key={article.id} className={styles.menuItem}>
                 <div className={styles.menuRow}>
@@ -705,7 +710,7 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
                             </span>
                         )}
                     </span>
-                    <span className={styles.menuUnit}>{article.unit}</span>
+                    {unit && <span className={styles.menuUnit}>{unit}</span>}
                     <span className={styles.menuPrice}>{price === null ? '-' : formatCurrency(price)}</span>
                     <span className={styles.menuQty}>
                         {editingQty === article.id ? (
@@ -729,6 +734,7 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
                                     icon={true}
                                     onClick={() => { setEditingQty(null); setQuantity(article.id, qty - 1); }}
                                     disabled={qty <= 0 || !menuEnabled}
+                                    aria-label={`${t('common.decrease')}: ${article.article_name}`}
                                 >
                                     <MinusCircleIcon aria-hidden="true"/>
                                 </Button>
@@ -745,6 +751,7 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
                                     icon={true}
                                     onClick={() => { setEditingQty(null); setQuantity(article.id, qty + 1); }}
                                     disabled={!menuEnabled}
+                                    aria-label={`${t('common.increase')}: ${article.article_name}`}
                                 >
                                     <PlusCircleIcon aria-hidden="true"/>
                                 </Button>
@@ -752,15 +759,19 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
                         )}
                     </span>
                     <span className={styles.menuAmount}>{qty > 0 ? formatOreOrDash(amountOre) : ''}</span>
-                    <button
-                        type="button"
-                        className={`${styles.commentToggle} ${commentText ? styles.commentToggleActive : ''}`}
+                    {/* Accent while the line has a comment, as the ± beside it; neutral otherwise */}
+                    <Button
+                        variant="tertiary"
+                        data-size="sm"
+                        data-color={commentText ? 'accent' : 'neutral'}
+                        icon={true}
+                        className={styles.commentToggle}
                         onClick={() => toggleComment(article.id)}
                         disabled={qty <= 0 || !menuEnabled}
-                        title={t('bookingfrontend.comment')}
+                        aria-label={commentLabel}
                     >
-                        <ChatElipsisIcon fontSize="0.875rem" aria-hidden="true"/>
-                    </button>
+                        <ChatElipsisIcon aria-hidden="true"/>
+                    </Button>
                 </div>
                 {commentVisible && qty > 0 && (
                     <div className={styles.lineComment}>
@@ -802,7 +813,7 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
             open={open}
             onClose={onClose}
             dialogId={`hospitality-order-modal`}
-            title={dialogTitle}
+            title={<Heading level={2} data-size="xs">{dialogTitle}</Heading>}
             stickyFooter
             footer={(attemptClose) => (
                 <div className={styles.modalFooter}>
@@ -833,15 +844,16 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
                 group is not unmounted under the applicant's finger (or arrow keys) when the offer is switched. */}
             {hospitality ? (
                 <div className={styles.modalContent}>
-                    {/* Offer: locked text when editing, radio boxes when there is a choice, plain text otherwise */}
+                    {/* Offer: a locked card when editing, radio boxes when there is a choice, the same card otherwise.
+                        The card is neutral: a bare Card takes the accent and would read as a selected radio box. */}
                     {existingOrder ? (
                         <Fieldset>
                             <Fieldset.Legend>{t('bookingfrontend.hospitality_offer')}</Fieldset.Legend>
                             <Fieldset.Description>{t('bookingfrontend.hospitality_offer_locked_help')}</Fieldset.Description>
-                            <div className={styles.offerText}>
+                            <Card data-color="neutral" className={styles.offerText}>
                                 <span className={styles.offerName}>{hospitality.name}</span>
                                 {offerDescription && <span className={styles.offerDescription}>{offerDescription}</span>}
-                            </div>
+                            </Card>
                         </Fieldset>
                     ) : hospitalities.length > 1 ? (
                         <Fieldset>
@@ -871,10 +883,10 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
                     ) : (
                         <Fieldset>
                             <Fieldset.Legend>{t('bookingfrontend.hospitality_offer')}</Fieldset.Legend>
-                            <div className={styles.offerText}>
+                            <Card data-color="neutral" className={styles.offerText}>
                                 <span className={styles.offerName}>{hospitality.name}</span>
                                 {offerDescription && <span className={styles.offerDescription}>{offerDescription}</span>}
-                            </div>
+                            </Card>
                         </Fieldset>
                     )}
 
@@ -1056,7 +1068,7 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
                                                     )}
                                                 </div>
                                             </Details.Summary>
-                                            <Details.Content>
+                                            <Details.Content className={styles.groupContent}>
                                                 {group.articles.map(renderArticle)}
                                             </Details.Content>
                                         </Details>

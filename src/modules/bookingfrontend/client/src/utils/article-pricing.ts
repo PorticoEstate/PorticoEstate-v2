@@ -255,6 +255,27 @@ export const formatQuantityWithUnit = (quantity: number, unit: string | null | u
     return String(quantity);
 };
 
+/** The existing label key of each article mapping unit code (ArticleMappingController::VALID_UNITS, plus the 'dag' alias). */
+const UNIT_LABEL_KEYS = new Map<string, string>([
+    ['kg', 'bookingfrontend.kg'],
+    ['m', 'bookingfrontend.m'],
+    ['m2', 'bookingfrontend.m2'],
+    ['minute', 'bookingfrontend.minute'],
+    ['hour', 'bookingfrontend.hour'],
+    ['day', 'bookingfrontend.day'],
+    ['dag', 'bookingfrontend.day'],
+]);
+
+/**
+ * A catering article's unit as the applicant reads it, or null for no unit text. Never the raw unit code:
+ * 'each' has none (a price is per piece unless it says otherwise), a known code has its existing label,
+ * lowercased like formatQuantityWithUnit («kg»), and an unknown code has none.
+ */
+export const hospitalityUnitLabel = (unit: string | null | undefined, t: Translate): string | null => {
+    const key = unit ? UNIT_LABEL_KEYS.get(unit) : undefined;
+    return key ? t(key).toLowerCase() : null;
+};
+
 /*
  * Price summary: the sum ex VAT, the VAT and the total incl. VAT of a set of stored lines, on the SAME basis
  * as billing: every line is worked out to the øre on its own (never the VAT of a sum), and the totals are

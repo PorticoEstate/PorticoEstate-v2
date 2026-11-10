@@ -6,6 +6,7 @@ import {useTrans} from '@/app/i18n/ClientTranslationProvider';
 import {IHospitalityOrder} from '@/service/types/api/hospitality.types';
 import {useDeleteHospitalityOrder} from '../hooks/hospitality-hooks';
 import {formatCurrency} from '@/utils/cost-utils';
+import {hospitalityUnitLabel} from '@/utils/article-pricing';
 import styles from './hospitality.module.scss';
 
 interface HospitalityOrderCardProps {
@@ -89,7 +90,7 @@ const HospitalityOrderCard: FC<HospitalityOrderCardProps> = ({order, application
                                 <div key={line.id} className={styles.lineItem}>
                                     <div className={styles.lineInfo}>
                                         <span>{line.article_name}</span>
-                                        <span>{line.quantity} {line.unit}</span>
+                                        <span>{[line.quantity, hospitalityUnitLabel(line.unit, t)].filter(Boolean).join(' ')}</span>
                                     </div>
                                     <span>{formatCurrency(parseFloat(line.amount))}</span>
                                 </div>

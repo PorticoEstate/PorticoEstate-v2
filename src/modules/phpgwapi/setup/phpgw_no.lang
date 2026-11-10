@@ -321,6 +321,12 @@ Showing _START_ to _END_ of _TOTAL_ entries	common	no	Viser _START_ til _END_ av
 showing items	common	no	Viser
 shows from	common	no	Viser fra
 sign in	common	no	Logg inn
+Sign in faster with a passkey	common	no	Logg inn raskere med en passkey
+Use your device’s fingerprint, face recognition, or screen lock instead of a password. Only set this up on a device you trust.	common	no	Bruk fingeravtrykket, ansiktsgjenkjenningen eller skjermlåsen på enheten din i stedet for passord. Konfigurer bare dette på en enhet du stoler på.
+Set up passkey	common	no	Sett opp passkey
+Not now	common	no	Ikke nå
+Don’t ask again	common	no	Ikke spør igjen
+Unable to save passkey suggestion preference.	common	no	Klarte ikke å lagre innstillingen for passkey-forslaget.
 site configuration	common	no	Konfigurasjon av moduler
 sms	common	no	SMS
 smtp server is not set! (admin section)	common	no	SMTP serveren er ikke konfigurert (admin seksjonen)

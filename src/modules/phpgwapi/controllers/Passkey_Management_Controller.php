@@ -13,6 +13,7 @@ namespace App\modules\phpgwapi\controllers;
 use App\modules\phpgwapi\security\Auth\Auth_Passkeys;
 use App\modules\phpgwapi\helpers\LegacyViewHelper;
 use App\modules\phpgwapi\helpers\TwigHelper;
+use App\modules\phpgwapi\services\Preferences;
 use App\modules\phpgwapi\services\Settings;
 use PDO;
 use Slim\Psr7\Request;
@@ -131,6 +132,78 @@ class Passkey_Management_Controller
 		}, $this->auth_passkeys->get_passkeys($this->account_id)));
 
 		return $this->jsonSuccess($response, 'Passkeys retrieved successfully', ['passkeys' => $passkeys])
+			->withHeader('Cache-Control', 'no-store');
+	}
+
+	/**
+	 * Check whether the current user should see the passkey enrollment suggestion.
+	 */
+	public function getSuggestion(Request $request, Response $response): Response
+	{
+		if (!$this->verifyAuthentication())
+		{
+			return $this->jsonError($response, 'Authentication required', 401);
+		}
+
+		$preferences = (new Preferences($this->account_id))->read();
+		$passkeyPreferences = $preferences['phpgwapi'] ?? [];
+		$showSuggestion = empty($passkeyPreferences['passkey_suggestion_opt_out'])
+			&& (int) ($passkeyPreferences['passkey_suggestion_snoozed_until'] ?? 0) <= time()
+			&& $this->auth_passkeys->get_passkeys($this->account_id) === [];
+
+		return $this->jsonSuccess($response, 'Passkey suggestion status retrieved', [
+			'show' => $showSuggestion,
+			'csrf_token' => $_SESSION['passkey_csrf_token'],
+			'management_url' => \phpgw::link('/passkey'),
+			'title' => lang('Sign in faster with a passkey'),
+			'description' => lang('Use your device’s fingerprint, face recognition, or screen lock instead of a password. Only set this up on a device you trust.'),
+			'setup' => lang('Set up passkey'),
+			'later' => lang('Not now'),
+			'opt_out' => lang('Don’t ask again'),
+			'save_error' => lang('Unable to save passkey suggestion preference.')
+		])->withHeader('Cache-Control', 'no-store');
+	}
+
+	/**
+	 * Save the user's passkey suggestion preference.
+	 */
+	public function updateSuggestion(Request $request, Response $response): Response
+	{
+		if (!$this->verifyAuthentication())
+		{
+			return $this->jsonError($response, 'Authentication required', 401);
+		}
+
+		if (!$this->verifyCsrfToken($request))
+		{
+			return $this->jsonError($response, 'Invalid security token', 403);
+		}
+
+		$params = $request->getParsedBody();
+		if (!is_array($params))
+		{
+			$params = json_decode((string) $request->getBody(), true);
+		}
+		$action = is_array($params) ? ($params['action'] ?? '') : '';
+		if (!in_array($action, ['snooze', 'opt_out'], true))
+		{
+			return $this->jsonError($response, 'Invalid passkey suggestion action', 400);
+		}
+
+		$preferences = new Preferences($this->account_id);
+		if ($action === 'opt_out')
+		{
+			$preferences->add('phpgwapi', 'passkey_suggestion_opt_out', 1);
+			$preferences->add('phpgwapi', 'passkey_suggestion_snoozed_until', 0);
+		}
+		else
+		{
+			$preferences->add('phpgwapi', 'passkey_suggestion_opt_out', 0);
+			$preferences->add('phpgwapi', 'passkey_suggestion_snoozed_until', time() + (30 * 24 * 60 * 60));
+		}
+		$preferences->save_repository();
+
+		return $this->jsonSuccess($response, 'Passkey suggestion preference saved')
 			->withHeader('Cache-Control', 'no-store');
 	}
 
@@ -386,18 +459,16 @@ class Passkey_Management_Controller
      */
     private function verifyCsrfToken(Request $request): bool
     {
-        $token = null;
-        
-        // Check header first
-        $headers = $request->getHeaders();
-        if (isset($headers['X-CSRF-Token']) && !empty($headers['X-CSRF-Token'][0])) {
-            $token = $headers['X-CSRF-Token'][0];
-        }
+        // Header names are case-insensitive; getHeaders() keys depend on how the server reports them
+        $token = $request->getHeaderLine('X-CSRF-Token') ?: null;
         
         // Then check POST/GET params
         if (!$token) {
             $params = $request->getParsedBody();
-            if (isset($params['csrf_token'])) {
+            if (!is_array($params)) {
+                $params = json_decode((string) $request->getBody(), true);
+            }
+            if (is_array($params) && isset($params['csrf_token'])) {
                 $token = $params['csrf_token'];
             } else {
                 $queryParams = $request->getQueryParams();
@@ -408,7 +479,7 @@ class Passkey_Management_Controller
         }
         
         // Verify the token against session token using constant-time comparison
-        return $token && isset($_SESSION['passkey_csrf_token']) && 
+        return is_string($token) && $token !== '' && isset($_SESSION['passkey_csrf_token']) &&
                hash_equals($_SESSION['passkey_csrf_token'], $token);
     }
     

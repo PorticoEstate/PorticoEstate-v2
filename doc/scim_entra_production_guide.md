@@ -33,7 +33,7 @@ Før oppsettet starter, må følgende være tilgjengelig:
 - offentlig HTTPS-adresse til PorticoEstate
 - Microsoft Entra tenant-ID
 - tilgang til å opprette eller administrere en Enterprise Application i Entra
-- tilgang til produksjonens secret manager eller containerkonfigurasjon
+- tilgang til SCIM-konfigurasjonen i PorticoEstate Admin, eller containerkonfigurasjon hvis environment-fallback skal brukes
 - tilgang til å kjøre PorticoEstate setup-oppgradering
 - databasebackup og tilgang til PostgreSQL for verifikasjon
 - én testbruker og én testgruppe i Entra
@@ -41,6 +41,8 @@ Før oppsettet starter, må følgende være tilgjengelig:
 Anbefalt utrulling er å starte med kun testbrukeren og testgruppen. Ikke aktiver synkronisering for alle brukere før hele sjekklisten er bestått.
 
 ## 3. Verdier som skal konfigureres
+
+Etter oppgradering til `phpgwapi` `0.9.17.571` settes verdiene i PorticoEstate under **Admin → Configuration → SCIM**. Ikke-tomme databaseverdier overstyrer tilsvarende environment-verdier i `slim`-containeren. Environment-variablene beholdes som fallback når feltet i databasen er tomt.
 
 | Variabel | Eksempel | Formål |
 |---|---|---|
@@ -62,14 +64,24 @@ Behandle tokenet som et passord:
 
 - ikke legg det i Git
 - ikke skriv det i dokumentasjon, logger eller supportsaker
-- lagre det i secret manager eller beskyttet runtime-konfigurasjon
+- lagre det i SCIM-konfigurasjonen i PorticoEstate Admin, eller i secret manager/runtime-konfigurasjon når environment-fallback brukes
 - begrens hvem som kan lese og rotere det
 
 ## 4. Produksjonsoppsett i PorticoEstate
 
-### 4.1 Konfigurer runtime-miljøet
+### 4.1 Konfigurer SCIM i databasen
 
-Docker Compose videresender variablene kun til `slim`-containeren:
+Åpne **Admin → Configuration → SCIM** og sett:
+
+- `SCIM_TENANT_ID`
+- `SCIM_BEARER_TOKEN`
+- `SCIM_PUBLIC_BASE_URL`
+
+Bearer-tokenet vises som et passordfelt. Begrens administrativ tilgang til konfigurasjonen. Endringer lagret i databasen gjelder uten at containeren må restartes.
+
+### 4.2 Konfigurer runtime-miljøet som fallback
+
+Environment-verdiene brukes bare når tilsvarende databasefelt ikke er satt. Docker Compose videresender variablene kun til `slim`-containeren:
 
 ```bash
 export SCIM_TENANT_ID='11111111-2222-3333-4444-555555555555'
@@ -91,7 +103,7 @@ docker compose exec slim sh -lc '
 '
 ```
 
-### 4.2 Reverse proxy og TLS
+### 4.3 Reverse proxy og TLS
 
 Krav:
 
@@ -588,11 +600,12 @@ Ikke støttet:
 Implementasjonen støtter ett aktivt token om gangen. Rotasjon må derfor koordineres:
 
 1. pause Entra provisioning
-2. oppdater secret i PorticoEstate runtime
-3. recreat/restart `slim`-containeren
-4. oppdater Secret Token i Entra
-5. kjør **Test Connection**
-6. start provisioning igjen
+2. oppdater `SCIM_BEARER_TOKEN` under **Admin → Configuration → SCIM**
+3. oppdater Secret Token i Entra
+4. kjør **Test Connection**
+5. start provisioning igjen
+
+Databaseverdien gjelder uten container-restart. Hvis environment-fallback brukes, oppdater secret i runtime og recreat/restart `slim`-containeren før tokenet oppdateres i Entra.
 
 ## 14. Overvåking og kontrollspørringer
 
@@ -646,12 +659,12 @@ Start med **Provisioning logs** i Entra og åpne den feilede operasjonen. Kontro
 | --- | --- | --- |
 | Ingen SCIM-operasjon vises i loggen | Entra scope, tildeling og provisioning-jobb | Bruk **Provision on demand** for testressursen og kontroller at ressursen er innenfor scope. |
 | HTTP 401 | `Authorization: Bearer ...`, token i Entra og `SCIM_BEARER_TOKEN`, proxy/FastCGI | Ulikt token, whitespace eller Authorization-headeren blir ikke videresendt. Se 401-avsnittet under. |
-| HTTP 503 | Runtime-miljøet i `slim` | `SCIM_BEARER_TOKEN` mangler eller er tom. Se 503-avsnittet under. |
+| HTTP 503 | SCIM-konfigurasjonen og eventuelt runtime-miljøet i `slim` | `SCIM_BEARER_TOKEN` mangler både i databasen og environment-fallbacken. Se 503-avsnittet under. |
 | HTTP 400 / `invalidFilter` | Filterfelt og operator i request-URL-en | Kun `eq` på støttede felt er implementert. Se filteravsnittet under. |
 | HTTP 409 | `externalId`, tenant-mapping og lokal bruker/gruppe med samme navn | Identiteten er allerede koblet på en konfliktfylt måte, eller den lokale brukeren/gruppen er koblet til en annen identitet/tenant. Ikke overskriv mappingen manuelt før konflikten er undersøkt. |
 | Gruppen finnes, men medlemskap feiler | PATCH-URL, gruppe-ID og `members[].value` | `members[].value` må være en eksisterende SCIM-bruker-ID i samme tenant, ikke Entra object ID. |
 | Kallet når ikke SCIM eller gir proxyfeil | DNS, TLS-sertifikat, reverse proxy/WAF og metode/body | Kontroller at `/api/scim/v2` nås offentlig, og at proxyen tillater `PATCH` og videresender request body. |
-| `meta.location` peker feil | `SCIM_PUBLIC_BASE_URL` og runtime | Sett offentlig HTTPS-base-URL og opprett `slim`-containeren på nytt. |
+| `meta.location` peker feil | `SCIM_PUBLIC_BASE_URL` i SCIM-konfigurasjonen eller environment-fallback | Sett offentlig HTTPS-base-URL. Databaseverdier gjelder uten container-restart; endringer i environment krever at `slim` opprettes på nytt. |
 
 Kjør eventuelt et lesekall fra en godkjent maskin for å skille Entra-konfigurasjon fra server/proxy-problemer. Kommandoen bruker miljøvariabelen for tokenet og skriver ikke tokenverdien ut:
 
@@ -686,7 +699,7 @@ Ved lokale curl-tester kan `--noproxy '*'` brukes for å unngå at hostens HTTP-
 
 ### Test Connection gir 503
 
-`SCIM_BEARER_TOKEN` mangler eller er tom i PHP-runtime.
+`SCIM_BEARER_TOKEN` mangler eller er tom både i databasekonfigurasjonen og PHP-runtime-miljøet.
 
 ### Provisioning gir 400 invalidFilter
 
@@ -713,7 +726,7 @@ SCIM og OIDC bruker sannsynligvis ulike innloggingsverdier. Sammenlign:
 
 ### `meta.location` viser intern host eller HTTP
 
-Sett korrekt `SCIM_PUBLIC_BASE_URL` og restart `slim`-containeren.
+Sett korrekt `SCIM_PUBLIC_BASE_URL` i **Admin → Configuration → SCIM**. Hvis environment-fallback brukes, opprett `slim`-containeren på nytt etter endringen.
 
 ### Gruppe-medlem avvises
 
@@ -726,13 +739,13 @@ Kjør duplikatspørringen i kapittel 14. Avklar korrekt eier og rydd mappingene 
 ## 16. Produksjonssjekkliste
 
 - [ ] Databasebackup er tatt og verifisert
-- [ ] `phpgwapi` er oppgradert til `0.9.17.570`
+- [ ] `phpgwapi` er oppgradert til `0.9.17.571`
 - [ ] `phpgw_mapping.account_id` finnes
 - [ ] SCIM-mappinger er backfillet
 - [ ] Partial-indeksen finnes
-- [ ] `SCIM_TENANT_ID` er satt
-- [ ] `SCIM_BEARER_TOKEN` ligger i secret manager
-- [ ] `SCIM_PUBLIC_BASE_URL` peker til offentlig HTTPS-URL
+- [ ] `SCIM_TENANT_ID` er satt under **Admin → Configuration → SCIM** eller i environment-fallback
+- [ ] `SCIM_BEARER_TOKEN` er satt under **Admin → Configuration → SCIM** som passordfelt, eller i secret manager for environment-fallback
+- [ ] `SCIM_PUBLIC_BASE_URL` peker til offentlig HTTPS-URL i databasekonfigurasjonen eller environment-fallback
 - [ ] Proxy videresender Authorization og PATCH
 - [ ] Discovery returnerer HTTP 200
 - [ ] Feil token returnerer HTTP 401

@@ -4284,3 +4284,55 @@ function phpgwapi_upgrade0_9_17_569($oProc)
 		return $currentver;
 	}
 }
+
+$test[] = '0.9.17.570';
+/**
+ * Add database-backed SCIM 2 provisioning configuration.
+ *
+ * @return string the new version number
+ */
+function phpgwapi_upgrade0_9_17_570($oProc)
+{
+	$oProc->m_odb->transaction_begin();
+
+	$location_obj = new App\modules\phpgwapi\controllers\Locations();
+	$location_id = $location_obj->add('scim_config', 'SCIM 2 provisioning configuration', 'admin', false);
+	$custom_config = CreateObject('admin.soconfig', $location_id);
+	$section = $custom_config->add_section([
+		'name' => 'scim_config',
+		'descr' => 'SCIM 2 provisioning settings. Database values take precedence over container environment variables.',
+	]);
+
+	$attributes = [
+		[
+			'name' => 'SCIM_TENANT_ID',
+			'descr' => 'Microsoft Entra tenant ID',
+			'input_type' => 'text',
+		],
+		[
+			'name' => 'SCIM_BEARER_TOKEN',
+			'descr' => 'SCIM bearer token',
+			'input_type' => 'password',
+		],
+		[
+			'name' => 'SCIM_PUBLIC_BASE_URL',
+			'descr' => 'Public SCIM base URL',
+			'input_type' => 'text',
+		],
+	];
+
+	foreach ($attributes as $attribute)
+	{
+		$custom_config->add_attrib($attribute + [
+			'section_id' => $section['section_id'],
+			'value' => '',
+		]);
+	}
+
+	if ($oProc->m_odb->transaction_commit())
+	{
+		$currentver = '0.9.17.571';
+		Settings::getInstance()->update('setup_info', ['phpgwapi' => ['currentver' => $currentver]]);
+		return $currentver;
+	}
+}

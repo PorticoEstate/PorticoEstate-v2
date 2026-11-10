@@ -22,7 +22,7 @@ final class ScimProvisioningRepository implements ScimProvisioningStore
 	{
 		$this->db = $db ?? Db::getInstance();
 		$this->accounts = $accounts;
-		$configuredTenant = $tenantId ?? getenv('SCIM_TENANT_ID');
+		$configuredTenant = $tenantId ?? (new ScimConfiguration())->get('SCIM_TENANT_ID');
 		if (!is_string($configuredTenant) || trim($configuredTenant) === '')
 		{
 			throw new InvalidArgumentException('SCIM_TENANT_ID is not configured');

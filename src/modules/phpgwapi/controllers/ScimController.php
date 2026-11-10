@@ -7,6 +7,7 @@ use App\modules\phpgwapi\services\ScimFilterParser;
 use App\modules\phpgwapi\services\ScimProvisioningRepository;
 use App\modules\phpgwapi\services\ScimProvisioningStore;
 use App\modules\phpgwapi\services\ScimResourceMapper;
+use App\modules\phpgwapi\services\ScimConfiguration;
 use DomainException;
 use InvalidArgumentException;
 use PDOException;
@@ -101,7 +102,7 @@ final class ScimController
 		$this->store = $store;
 		$this->filterParser = $filterParser ?? new ScimFilterParser();
 		$this->mapper = $mapper ?? new ScimResourceMapper();
-		$configuredBaseUrl = $publicBaseUrl ?? getenv('SCIM_PUBLIC_BASE_URL');
+		$configuredBaseUrl = $publicBaseUrl ?? (new ScimConfiguration())->get('SCIM_PUBLIC_BASE_URL');
 		$this->publicBaseUrl = is_string($configuredBaseUrl) && trim($configuredBaseUrl) !== ''
 			? rtrim(trim($configuredBaseUrl), '/')
 			: null;

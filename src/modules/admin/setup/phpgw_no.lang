@@ -149,3 +149,4 @@ redis database	admin	no	Redis database
 opcache monitor	admin	no	Opcache monitor
 Trusted proxies	admin	no	Betrodde proxyer
 comma separated list of IPs or CIDR	admin	no	Komma-separert liste av IP-adresser eller CIDR
+scim configuration	common	no	SCIM konfigurasjon

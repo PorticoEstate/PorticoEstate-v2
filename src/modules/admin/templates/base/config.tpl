@@ -35,6 +35,14 @@
 				<td><input name="newsettings[privacy_message]" value="{value_privacy_message}" class="pure-u-1" /></td>
 			</tr>
 			<tr>
+				<td>{lang_Add_auto-created_users_to_this_group}:</td>
+				<td>
+					<select name="newsettings[default_group_lid]" class="pure-u-1">
+						{hook_required_group}
+					</select>
+				</td>
+			</tr>
+			<tr>
 				<td>{lang_Timeout_for_sessions_in_seconds} (default 14400 = 4 hours):</td>
 				<td><input size="8" name="newsettings[sessions_timeout]" value="{value_sessions_timeout}"
 						class="pure-u-1" /></td>

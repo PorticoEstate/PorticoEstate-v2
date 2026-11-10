@@ -275,10 +275,12 @@ Middleware skal:
 Foreslått konfigurasjon:
 
 ```text
+SCIM_TENANT_ID=<Entra tenant-ID>
 SCIM_BEARER_TOKEN=<lang tilfeldig hemmelig verdi>
+SCIM_PUBLIC_BASE_URL=https://<host>/api/scim/v2
 ```
 
-Tokenet skal kunne roteres uten kodeendring. I produksjon bør det ligge i en hemmelighetsløsning eller container secret.
+Verdiene konfigureres primært under Admin → Configuration → SCIM i databasen. Ikke-tomme databaseverdier overstyrer tilsvarende environment-verdier; miljøvariablene beholdes som fallback. Bearer-tokenet skal være et passordfelt og skal ikke logges.
 
 ### 6.2 HTTP- og input-sikkerhet
 
@@ -308,7 +310,7 @@ Beslutninger for første versjon:
 - Eksisterende lokale kontoer kobles bare gjennom eksplisitt `externalId`-mapping; automatisk kobling på e-post eller UPN utføres ikke.
 - Manuelle medlemskap som ikke er kjent som SCIM-administrerte beholdes. SCIM add/remove gjelder bare medlemskap som behandles i den aktuelle provisioning-operasjonen.
 - `location` inneholder Entra tenant-ID. Hvis flere Enterprise Applications i samme tenant senere trenger isolasjon, utvides verdien deterministisk med applikasjons-ID.
-- Bearer-token leses fra `SCIM_BEARER_TOKEN` i runtime-miljøet.
+- SCIM-verdiene konfigureres primært under Admin → Configuration → SCIM. Ikke-tomme databaseverdier overstyrer environment-verdier; miljøvariablene beholdes som fallback.
 
 Oppgaver:
 
@@ -530,7 +532,7 @@ SCIM_SMOKE_ALLOW_WRITES=1 \
 php test_scripts/scim_entra_smoke.php
 ```
 
-`SCIM_TENANT_ID` skal være konfigurert i webapplikasjonens runtime-miljø, ikke i smoke-testklienten.
+`SCIM_TENANT_ID` skal være konfigurert i SCIM-databasekonfigurasjonen eller webapplikasjonens runtime-miljø som fallback, ikke i smoke-testklienten.
 
 Oppgaver:
 

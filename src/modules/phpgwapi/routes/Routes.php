@@ -368,6 +368,9 @@ $app->group('/passkey', function ($group)
 	// Main passkey management page
 	$group->get('', 'App\modules\phpgwapi\controllers\Passkey_Management_Controller:index');
 
+	// API endpoint for listing the current user's passkeys
+	$group->get('/list', 'App\modules\phpgwapi\controllers\Passkey_Management_Controller:listPasskeys');
+
 	// API endpoint for registration options
 	$group->get('/register/options', 'App\modules\phpgwapi\controllers\Passkey_Management_Controller:getRegistrationOptions');
 

@@ -1,0 +1,91 @@
+	<div
+		id="passkey-management-app"
+		data-api-url="{{ api_url|e('html_attr') }}"
+		data-registration-options-url="{{ registration_options_url|e('html_attr') }}"
+		data-registration-verify-url="{{ registration_verify_url|e('html_attr') }}"
+		data-delete-url="{{ delete_url|e('html_attr') }}"
+		data-csrf-token="{{ csrf_token|e('html_attr') }}"
+		data-username="{{ username|e('html_attr') }}"
+		data-lang-name="{{ lang('Name')|e('html_attr') }}"
+		data-lang-created="{{ lang('Created')|e('html_attr') }}"
+		data-lang-last-used="{{ lang('Last Used')|e('html_attr') }}"
+		data-lang-actions="{{ lang('Actions')|e('html_attr') }}"
+		data-lang-delete="{{ lang('Delete')|e('html_attr') }}"
+		data-lang-load-error="{{ lang('Error loading passkeys')|e('html_attr') }}"
+		data-lang-confirm-delete="{{ lang('Are you sure you want to delete this passkey?')|e('html_attr') }}"
+		data-lang-delete-error="{{ lang('Error deleting passkey')|e('html_attr') }}"
+		data-lang-delete-failed="{{ lang('Failed to delete passkey.')|e('html_attr') }}"
+		data-lang-delete-success="{{ lang('Passkey deleted successfully')|e('html_attr') }}"
+		data-lang-registration-error="{{ lang('Error registering passkey')|e('html_attr') }}"
+		data-lang-registration-failed="{{ lang('Passkey registration failed.')|e('html_attr') }}"
+		data-lang-registration-success="{{ lang('Passkey registered successfully!')|e('html_attr') }}"
+		data-lang-registering="{{ lang('Registering passkey, please follow your device prompts...')|e('html_attr') }}"
+		data-lang-name-required="{{ lang('Please enter a name for your passkey.')|e('html_attr') }}"
+		data-lang-never="{{ lang('Never')|e('html_attr') }}"
+		data-lang-unknown="{{ lang('Unknown')|e('html_attr') }}"
+		data-lang-unnamed="{{ lang('Unnamed Device')|e('html_attr') }}"
+		data-lang-not-supported="{{ lang('Your browser or device does not support passkeys. Please use a modern browser like Chrome, Edge, or Safari.')|e('html_attr') }}"
+		data-lang-session-expired="{{ lang('Your session has been inactive. Would you like to refresh the page?')|e('html_attr') }}"
+	>
+		<div class="container">
+			<h1>{{ lang('Passkey Management') }}</h1>
+			<p class="lead">{{ lang('Passkeys are a secure way to sign in without using passwords. They use biometrics like fingerprints or facial recognition from your device.') }}</p>
+
+			<div class="alert alert-info" id="passkey-compatibility-check" role="status">
+				{{ lang('Checking browser support for passkeys...') }}
+			</div>
+			<div class="alert alert-warning" id="passkey-not-supported" hidden role="status"></div>
+			<div class="alert alert-danger" id="passkey-list-error" hidden role="alert"></div>
+			<div class="alert mt-3" id="passkey-status" hidden role="status"></div>
+
+			<div id="passkey-content" hidden>
+				<div class="row">
+					<div class="col-md-12 mb-4">
+						<div class="card">
+							<div class="card-header">
+								<h2 class="card-title">{{ lang('Your Passkeys') }}</h2>
+							</div>
+							<div class="card-body">
+								<p id="passkey-list-loading" class="text-muted" role="status">{{ lang('Loading...') }}</p>
+								<div id="passkey-list-container"></div>
+								<p id="no-passkeys-message" class="text-muted text-center py-3" hidden>
+									{{ lang('You have not registered any passkeys yet.') }}
+								</p>
+							</div>
+						</div>
+					</div>
+
+					<div class="col-md-12">
+						<div class="card">
+							<div class="card-header">
+								<h2 class="card-title">{{ lang('Add New Passkey') }}</h2>
+							</div>
+							<div class="card-body">
+								<form id="register-passkey-form">
+									<div class="form-group mb-3">
+										<label for="passkey-name">{{ lang('Passkey Name') }}</label>
+										<input
+											type="text"
+											class="form-control"
+											id="passkey-name"
+											placeholder="{{ lang('e.g., Work Laptop, Personal Phone')|e('html_attr') }}"
+											required
+										>
+										<small class="form-text text-muted">{{ lang('Give your passkey a memorable name to identify which device it belongs to.') }}</small>
+									</div>
+									<div class="alert alert-warning mb-3">
+										{{ lang('You will be prompted to verify your identity using your device. This may require biometric authentication or a PIN.') }}
+									</div>
+									<button type="submit" id="register-passkey-button" class="btn btn-primary">
+										<i class="fas fa-fingerprint" aria-hidden="true"></i> {{ lang('Register Passkey') }}
+									</button>
+								</form>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<script src="{{ passkey_client_url|e('html_attr') }}"></script>
+		<script>{{ source('@views/passkey_management/phpgwapi_passkey_management.js') }}</script>

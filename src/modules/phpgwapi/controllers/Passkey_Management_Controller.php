@@ -11,8 +11,8 @@
 namespace App\modules\phpgwapi\controllers;
 
 use App\modules\phpgwapi\security\Auth\Auth_Passkeys;
-use App\helpers\Template;
-use App\helpers\DateHelper;
+use App\modules\phpgwapi\helpers\LegacyViewHelper;
+use App\modules\phpgwapi\helpers\TwigHelper;
 use App\modules\phpgwapi\services\Settings;
 use PDO;
 use Slim\Psr7\Request;
@@ -21,14 +21,13 @@ use Slim\Psr7\Response;
 class Passkey_Management_Controller
 {
 	protected $db;
-	protected $template;
 	protected $auth_passkeys;
 	protected $account_id;
 	protected $account_lid;
 	protected $serverSettings;
 	protected $userSettings;
-	protected $flags;
-	protected $phpgwapi_common;
+	private TwigHelper $twig;
+	private LegacyViewHelper $legacyView;
     // Add rate limiting properties
     protected $max_attempts = 5;
     protected $rate_window = 300; // 5 minutes in seconds
@@ -37,12 +36,8 @@ class Passkey_Management_Controller
 	{
 		require_once SRC_ROOT_PATH . '/helpers/LegacyObjectHandler.php';
 		$this->db = \App\Database\Db::getInstance();
-		$this->phpgwapi_common = new \phpgwapi_common();
-
-		$root = SRC_ROOT_PATH . "/modules/phpgwapi/templates/base";
-
-		$this->template = Template::getInstance($root);
-		$this->template->set_file('head', 'passkey_management.tpl');
+		$this->legacyView = new LegacyViewHelper();
+		$this->twig = new TwigHelper('phpgwapi');
 
 		$this->auth_passkeys = new Auth_Passkeys();
 
@@ -51,55 +46,15 @@ class Passkey_Management_Controller
 		$this->userSettings = Settings::getInstance()->get('user');
 		Settings::getInstance()->update('flags', [
 			'currentapp' => 'preferences']);
-		$this->flags = Settings::getInstance()->get('flags');
 
 		// Get current user's account ID and username
 		$this->account_id = (int) $this->userSettings['account_id'];
 		$this->account_lid = $this->userSettings['account_lid'];
 
-		// Set up common template variables
-		$this->template->set_var([
-			'webserver_url' => $this->serverSettings['webserver_url'],
-			'username' => $this->account_lid
-		]);
-
-		// Set up translations
-		$this->template->set_var([
-			'lang_passkey_management' => lang('Passkey Management'),
-			'lang_passkey_description' => lang('Passkeys are a secure way to sign in without using passwords. They use biometrics like fingerprints or facial recognition from your device.'),
-			'lang_checking_passkey_support' => lang('Checking browser support for passkeys...'),
-			'lang_passkey_not_supported' => lang('Your browser or device does not support passkeys. Please use a modern browser like Chrome, Edge, or Safari.'),
-			'lang_your_passkeys' => lang('Your Passkeys'),
-			'lang_no_passkeys' => lang('You have not registered any passkeys yet.'),
-			'lang_add_new_passkey' => lang('Add New Passkey'),
-			'lang_passkey_name' => lang('Passkey Name'),
-			'lang_passkey_name_placeholder' => lang('e.g., Work Laptop, Personal Phone'),
-			'lang_passkey_name_help' => lang('Give your passkey a memorable name to identify which device it belongs to.'),
-			'lang_passkey_security_notice' => lang('You will be prompted to verify your identity using your device. This may require biometric authentication or a PIN.'),
-			'lang_register_passkey' => lang('Register Passkey'),
-			'lang_registering_passkey' => lang('Registering passkey, please follow your device prompts...'),
-			'lang_passkey_registered_success' => lang('Passkey registered successfully!'),
-			'lang_passkey_registration_failed' => lang('Passkey registration failed.'),
-			'lang_passkey_registration_error' => lang('Error registering passkey'),
-			'lang_error_passkey_name_required' => lang('Please enter a name for your passkey.'),
-			'lang_confirm_delete_passkey' => lang('Are you sure you want to delete this passkey?'),
-			'lang_delete_failed' => lang('Failed to delete passkey.'),
-			'lang_delete_error' => lang('Error deleting passkey'),
-			'lang_delete_passkey' => lang('Delete'),
-			'lang_last_used' => lang('Last Used'),
-			'lang_created_on' => lang('Created On'),
-			'lang_never' => lang('Never')
-		]);
-
-		// Set up CSRF protection token if not already present
-        if (!isset($_SESSION['passkey_csrf_token']) || empty($_SESSION['passkey_csrf_token'])) {
-            $_SESSION['passkey_csrf_token'] = bin2hex(random_bytes(32));
-        }
-        
-        // Add CSRF token to template variables
-        $this->template->set_var([
-            'csrf_token' => $_SESSION['passkey_csrf_token']
-        ]);
+		if (!isset($_SESSION['passkey_csrf_token']) || empty($_SESSION['passkey_csrf_token']))
+		{
+			$_SESSION['passkey_csrf_token'] = bin2hex(random_bytes(32));
+		}
 	}
 
 	/**
@@ -107,77 +62,24 @@ class Passkey_Management_Controller
 	 */
 	public function index(Request $request, Response $response): Response
 	{
-		// Get user's passkeys
-		$passkeys = $this->auth_passkeys->get_passkeys($this->account_id);
+		Settings::getInstance()->update('flags', [
+			'app_header' => lang('Passkey Management'),
+			'currentapp' => 'preferences'
+		]);
 
-		// Generate HTML for the passkey list
-		$passkey_list_html = '';
-		if (!empty($passkeys))
-		{
-			$passkey_list_html = '<table class="table table-hover">
-                <thead>
-                    <tr>
-                        <th>' . lang('Name') . '</th>
-                        <th>' . lang('Created') . '</th>
-                        <th>' . lang('Last Used') . '</th>
-                        <th>' . lang('Actions') . '</th>
-                    </tr>
-                </thead>
-                <tbody>';
+		$serverUrl = rtrim((string) ($this->serverSettings['webserver_url'] ?? ''), '/');
+		$html = $this->twig->render('@views/passkey_management/phpgwapi_passkey_management.twig', [
+			'api_url' => \phpgw::link('/passkey/list'),
+			'registration_options_url' => \phpgw::link('/passkey/register/options'),
+			'registration_verify_url' => \phpgw::link('/passkey/register/verify'),
+			'delete_url' => \phpgw::link('/passkey/delete'),
+			'csrf_token' => $_SESSION['passkey_csrf_token'],
+			'username' => $this->account_lid,
+			'passkey_client_url' => $serverUrl . '/src/modules/phpgwapi/js/passkey/passkey-client.js?n=' . rawurlencode((string) ($this->serverSettings['cache_refresh_token'] ?? ''))
+		]);
 
-			foreach ($passkeys as $passkey)
-			{
-				$created_date = !empty($passkey['added']) ?
-					$this->format_datetime($passkey['added']) :
-					lang('Unknown');
-
-				$last_used = isset($passkey['last_used']) && !empty($passkey['last_used']) ?
-					$this->format_datetime($passkey['last_used']) :
-					lang('Never');
-
-				$device_name = htmlspecialchars($passkey['device_name'] ?: lang('Unnamed Device'));
-
-				$passkey_list_html .= '<tr>
-                    <td>' . $device_name . '</td>
-                    <td>' . $created_date . '</td>
-                    <td>' . $last_used . '</td>
-                    <td>
-                        <button class="btn btn-sm btn-danger delete-passkey-button" 
-                                data-credential-id="' . htmlspecialchars($passkey['credential_id']) . '"
-                                title="' . lang('Delete') . '">
-                            <i class="fas fa-trash"></i> ' . lang('Delete') . '
-                        </button>
-                    </td>
-                </tr>';
-			}
-
-			$passkey_list_html .= '</tbody></table>';
-
-			$this->template->set_var([
-				'passkey_list_html' => $passkey_list_html,
-				'no_passkeys_class' => 'd-none'
-			]);
-		}
-		else
-		{
-			$this->template->set_var([
-				'passkey_list_html' => '',
-				'no_passkeys_class' => ''
-			]);
-		}
-
-
-		// Set app header and update flags
-		$this->flags['app_header'] = lang('Passkey Management');
-		$this->flags['currentapp'] = 'preferences';
-		Settings::getInstance()->set('flags', $this->flags);
-
-		// Add the page to the framework
-		$this->phpgwapi_common->phpgw_header(true);
-		$this->template->pfp('out', 'head');
-		$this->phpgwapi_common->phpgw_footer();
-
-		return $response;
+		$response->getBody()->write($this->legacyView->render($html, 'preferences'));
+		return $response->withHeader('Content-Type', 'text/html');
 	}
 
 	/**
@@ -206,6 +108,30 @@ class Passkey_Management_Controller
 			error_log("Error formatting datetime: " . $e->getMessage());
 			return $datetime_str; // Return original string if parsing fails
 		}
+	}
+
+	/**
+	 * Return the current user's passkeys for the management view.
+	 */
+	public function listPasskeys(Request $request, Response $response): Response
+	{
+		if (!$this->verifyAuthentication())
+		{
+			return $this->jsonError($response, 'Authentication required', 401);
+		}
+
+		$passkeys = array_values(array_map(function (array $passkey): array
+		{
+			return [
+				'credential_id' => (string) ($passkey['credential_id'] ?? ''),
+				'device_name' => (string) ($passkey['device_name'] ?? lang('Unnamed Device')),
+				'created' => !empty($passkey['added']) ? $this->format_datetime((string) $passkey['added']) : lang('Unknown'),
+				'last_used' => !empty($passkey['last_used']) ? $this->format_datetime((string) $passkey['last_used']) : lang('Never')
+			];
+		}, $this->auth_passkeys->get_passkeys($this->account_id)));
+
+		return $this->jsonSuccess($response, 'Passkeys retrieved successfully', ['passkeys' => $passkeys])
+			->withHeader('Cache-Control', 'no-store');
 	}
 
 	/**

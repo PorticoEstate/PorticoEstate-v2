@@ -237,6 +237,11 @@ class Passkey_Management_Controller
         if (!$this->verifyAuthentication()) {
             return $this->jsonError($response, 'Authentication required', 401);
         }
+
+        if (!$this->hasRecentAuthentication())
+        {
+            return $this->jsonError($response, lang('Please sign in again before adding a passkey.'), 403);
+        }
         
         // Check for CSRF token - should be sent in header or query param
         if (!$this->verifyCsrfToken($request)) {
@@ -286,6 +291,11 @@ class Passkey_Management_Controller
         if (!$this->verifyAuthentication()) {
             return $this->jsonError($response, 'Authentication required', 401);
         }
+
+		if (!$this->hasRecentAuthentication())
+		{
+			return $this->jsonError($response, lang('Please sign in again before adding a passkey.'), 403);
+		}
         
         // Check for CSRF token
         if (!$this->verifyCsrfToken($request)) {
@@ -357,8 +367,15 @@ class Passkey_Management_Controller
 			{
                 // Record successful operation for audit logging
                 $this->logAuditEvent('passkey_register', 'Registered new passkey: ' . $deviceName);
-                
-				return $this->jsonSuccess($response, 'Passkey registered successfully');
+
+				$notificationSent = $this->notifyPasskeyRegistered($deviceName);
+				return $this->jsonSuccess(
+					$response,
+					lang($notificationSent
+						? 'Passkey registered successfully!'
+						: 'Passkey registered, but the security email could not be sent.'),
+					['notification_sent' => $notificationSent]
+				);
 			}
 			else
 			{
@@ -540,6 +557,48 @@ class Passkey_Management_Controller
     private function verifyAuthentication(): bool
     {
         return isset($this->account_id) && $this->account_id > 0;
+    }
+
+    private function hasRecentAuthentication(): bool
+    {
+        $loginTime = $_SESSION['phpgw_session']['session_logintime'] ?? null;
+        $now = time();
+        return is_int($loginTime) && $loginTime <= $now && $loginTime >= $now - 600;
+    }
+
+    private function notifyPasskeyRegistered(string $deviceName): bool
+    {
+        try
+        {
+            $emailAddress = (new Preferences($this->account_id))->email_address();
+            if (!filter_var($emailAddress, FILTER_VALIDATE_EMAIL))
+            {
+                error_log("Passkey registration notification skipped: no valid email address for account {$this->account_id}.");
+                return false;
+            }
+
+            $deviceName = preg_replace('/[\r\n\t]+/', ' ', $deviceName);
+            $deviceName = mb_substr($deviceName, 0, 100);
+            $subject = lang('A passkey was added to your account');
+            $body = lang('A passkey named "%1" was added to your account at %2.', [
+                $deviceName,
+                date(DATE_RFC2822)
+            ]) . "\n\n"
+                . lang('If you did not add this passkey, contact your system administrator immediately.');
+
+            $send = new \App\modules\phpgwapi\services\Send();
+            $sent = $send->msg('email', $emailAddress, $subject, $body, '', '', '', '', '', 'plain');
+            if (!$sent)
+            {
+                error_log("Passkey registration notification failed for account {$this->account_id}.");
+            }
+            return (bool) $sent;
+        }
+        catch (\Throwable $e)
+        {
+            error_log("Passkey registration notification failed for account {$this->account_id}: " . $e->getMessage());
+            return false;
+        }
     }
 
 	private function isPasskeyLoginEnabled(): bool

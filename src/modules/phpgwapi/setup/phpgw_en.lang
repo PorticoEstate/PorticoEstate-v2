@@ -621,3 +621,9 @@ error_loading_events	common	en	Could not load events
 contacts	common	en	Contacts
 inactive	common	en	Inactive
 Passkeys are unavailable: set webserver_url to the public HTTPS address, or set hostname to the public domain name when webserver_url is a relative path. http://localhost is allowed for development, IP addresses are not.	common	en	Passkeys are unavailable: set webserver_url to the public HTTPS address, or set hostname to the public domain name when webserver_url is a relative path. http://localhost is allowed for development, IP addresses are not.
+Please sign in again before adding a passkey.	common	en	Please sign in again before adding a passkey.
+Passkey registered successfully!	common	en	Passkey registered successfully!
+Passkey registered, but the security email could not be sent.	common	en	Passkey registered, but the security email could not be sent.
+A passkey was added to your account	common	en	A passkey was added to your account
+A passkey named "%1" was added to your account at %2.	common	en	A passkey named "%1" was added to your account at %2.
+If you did not add this passkey, contact your system administrator immediately.	common	en	If you did not add this passkey, contact your system administrator immediately.

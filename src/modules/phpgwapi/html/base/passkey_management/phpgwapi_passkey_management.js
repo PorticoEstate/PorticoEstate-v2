@@ -185,12 +185,12 @@ document.addEventListener('DOMContentLoaded', function () {
 				const verifyUrl = withQueryParams(app.dataset.registrationVerifyUrl, {
 					device_name: deviceName
 				});
-				const success = await registerPasskey(app.dataset.username, optionsUrl, verifyUrl, app.dataset.csrfToken);
-				if (!success) {
+				const result = await registerPasskey(app.dataset.username, optionsUrl, verifyUrl, app.dataset.csrfToken);
+				if (result.success !== true) {
 					throw new Error(messages.registrationFailed);
 				}
 				passkeyNameInput.value = '';
-				showStatus('success', messages.registrationSuccess);
+				showStatus('success', result.message || messages.registrationSuccess);
 				await loadPasskeys();
 			} catch (error) {
 				showStatus('error', messages.registrationError + ': ' + (error.message || messages.registrationFailed));

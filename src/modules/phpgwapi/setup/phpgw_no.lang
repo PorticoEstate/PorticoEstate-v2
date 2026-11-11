@@ -424,3 +424,9 @@ uploading	common	no	Laster opp
 error_loading_data	common	no	Kunne ikke laste data
 error_loading_events	common	no	Kunne ikke laste arrangementer
 Passkeys are unavailable: set webserver_url to the public HTTPS address, or set hostname to the public domain name when webserver_url is a relative path. http://localhost is allowed for development, IP addresses are not.	common	no	Passkeys er ikke tilgjengelig: sett webserver_url til den offentlige HTTPS-adressen, eller sett hostname til det offentlige domenenavnet når webserver_url er en relativ sti. http://localhost er tillatt for utvikling, IP-adresser er ikke tillatt.
+Please sign in again before adding a passkey.	common	no	Logg inn på nytt før du legger til en passnøkkel.
+Passkey registered successfully!	common	no	Passnøkkelen er registrert.
+Passkey registered, but the security email could not be sent.	common	no	Passnøkkelen er registrert, men sikkerhetsvarslingen kunne ikke sendes.
+A passkey was added to your account	common	no	En passnøkkel er lagt til på kontoen din
+A passkey named "%1" was added to your account at %2.	common	no	En passnøkkel med navnet «%1» ble lagt til på kontoen din %2.
+If you did not add this passkey, contact your system administrator immediately.	common	no	Hvis du ikke la til denne passnøkkelen, kontakt systemadministratoren umiddelbart.

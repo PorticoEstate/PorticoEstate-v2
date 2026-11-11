@@ -209,7 +209,7 @@ async function registerPasskey(_username, registrationOptionsUrl, registrationVe
         body: JSON.stringify(prepareCreationResponse(credential))
     });
     const result = await readJsonResponse(verifyResponse, 'Unable to verify passkey registration');
-    return result.success === true;
+    return result;
 }
 
 async function readJsonResponse(response, fallbackMessage)

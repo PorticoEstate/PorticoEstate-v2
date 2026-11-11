@@ -440,7 +440,10 @@ class CheckoutController
                 // 3. Update ALL applications with contact info but don't finalize any yet.
                 //    Everything stays as partials until Vipps payment succeeds.
                 //    On success, the callback will checkout normal apps and approve direct ones.
-                $this->applicationService->updateApplicationsWithContactInfo($session_id, $data, false);
+                //    The total below is taken from what this returns: it can price a line that
+                //    was waiting for a price choice (price category hidden), which the
+                //    applications read above do not carry yet.
+                $applications = $this->applicationService->updateApplicationsWithContactInfo($session_id, $data, false);
 
                 // 4. Handle Vipps payment for direct applications
                 if (!empty($directApplicationIds)) {

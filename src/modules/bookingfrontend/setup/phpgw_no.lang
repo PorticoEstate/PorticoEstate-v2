@@ -1272,3 +1272,4 @@ unauthorized	bookingfrontend	no	Du har ikke tilgang til dette
 hide price category	bookingfrontend	no	Skjul priskategori i den nye klienten
 hide price category note	bookingfrontend	no	Når aktiv vises ikke «Hvem søker du som?»-valget og bryteren «Velg pris per ressurs»; søkeren velger pris per ressurs. Endrer ikke priser eller lagrede data.
 hours_short	bookingfrontend	no	t
+hide price category note no choice	bookingfrontend	no	Når aktiv velger ikke søkeren pris: verken priskategori eller pris per ressurs vises, og hver ressurs faktureres med standardprisen, ellers prisen med nyeste dato, slik som før søkeren kunne velge. Har flere priser samme dato og ingen er standard, er det ikke bestemt hvilken som brukes, så merk én som standard. Søknader som alt er sendt beholder prisen; en tidsslotbooking som venter på prisvalg får denne prisen ved utsjekking.

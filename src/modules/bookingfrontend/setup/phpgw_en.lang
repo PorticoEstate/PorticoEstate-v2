@@ -1271,3 +1271,4 @@ unauthorized	bookingfrontend	en	You are not authorised to do this
 hide price category	bookingfrontend	en	Hide price category in the new client
 hide price category note	bookingfrontend	en	When enabled, the «Who are you applying as?» choice and the «Choose the price per resource» switch are not shown; the applicant chooses a price per resource. Prices and stored data are not changed.
 hours_short	bookingfrontend	en	h
+hide price category note no choice	bookingfrontend	en	When enabled, the applicant chooses no price: neither the price category nor a price per resource is shown, and each resource is billed at its default price, otherwise its most recently dated price, as before applicants could choose. If several prices share that date and none is the default, which one is used is not defined, so mark one as default. Applications already submitted keep their price; a time-slot booking still waiting for a price choice gets this price at checkout.

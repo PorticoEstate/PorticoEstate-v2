@@ -5,16 +5,44 @@ use App\Database\Db;
 use App\modules\booking\repositories\PriceCategoryRepository;
 use App\modules\bookingfrontend\helpers\PriceChoiceException;
 use App\modules\bookingfrontend\models\Article;
+use App\modules\bookingfrontend\models\BookingfrontendConfig;
+use App\modules\phpgwapi\services\Config;
 use PDO;
 
 class ArticleRepository
 {
     private $db;
     private $currentapp = 'bookingfrontend';
+    private ?bool $hidesPriceChoice = null;
 
     public function __construct()
     {
         $this->db = Db::getInstance();
+    }
+
+    /**
+     * Whether the citizen chooses no price because the price category is hidden
+     * (bookingfrontend config hide_price_category, ref #1477). A resource is then
+     * priced as on origin/master, by getArticleMappingById like every other line, and
+     * a price_id the client sends is not read.
+     *
+     * For a resource with several prices, no default and the newest from_ shared, that
+     * query, as on master, orders the rows no further, so which of them is billed
+     * depends on the database's row order (operator's choice, forum/pe-general/42463).
+     *
+     * Read as the client reads it: through BookingfrontendConfig (@ParseBool), and
+     * hidden only when that gives true. The timeslot path reads the same value
+     * (WebSocket/node/src/modules/booking/resource-price.ts hidesPriceChoice).
+     * Read once per repository, so that one request prices all its lines alike.
+     */
+    private function hidesPriceChoice(): bool
+    {
+        if ($this->hidesPriceChoice === null) {
+            $config = new BookingfrontendConfig((new Config('bookingfrontend'))->read());
+            $this->hidesPriceChoice = ($config->serialize()['hide_price_category'] ?? null) === true;
+        }
+
+        return $this->hidesPriceChoice;
     }
 
     /**
@@ -198,6 +226,76 @@ class ArticleRepository
     }
 
     /**
+     * Before checkout, the resource lines still waiting for the citizen's price.
+     * While the price category is shown they are refused (assertPriceChoicesMade).
+     * While it is hidden there is nothing to choose: each such line, booked through
+     * a time slot while it was shown, gets the price a line booked while hidden gets
+     * (ref #1477). Only those lines: a price the citizen chose is kept.
+     *
+     * @param int[] $applicationIds
+     * @return int The number of lines priced; always 0 while the category is shown
+     * @throws PriceChoiceException
+     */
+    public function settlePendingPriceChoices(array $applicationIds): int
+    {
+        if (!$this->hidesPriceChoice()) {
+            $this->assertPriceChoicesMade($applicationIds);
+            return 0;
+        }
+
+        $applicationIds = array_map('intval', $applicationIds);
+        if (empty($applicationIds)) {
+            return 0;
+        }
+
+        // The lines assertPriceChoicesMade refuses; keep the two selections the same
+        $placeholders = implode(',', array_fill(0, count($applicationIds), '?'));
+        $sql = "SELECT pol.id, pol.article_mapping_id, pol.quantity
+                FROM bb_purchase_order po
+                JOIN bb_purchase_order_line pol ON po.id = pol.order_id
+                JOIN bb_article_mapping am ON pol.article_mapping_id = am.id
+                WHERE po.cancelled IS NULL
+                AND po.application_id IN ({$placeholders})
+                AND am.article_cat_id = 1
+                AND pol.article_price_id IS NULL
+                AND pol.unit_price = 0
+                ORDER BY pol.id";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($applicationIds);
+
+        $update = $this->db->prepare(
+            "UPDATE bb_purchase_order_line
+             SET tax_code = :tax_code, unit_price = :unit_price, amount = :amount, tax = :tax
+             WHERE id = :id"
+        );
+
+        $priced = 0;
+        foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $pending) {
+            $mappingId = (int)$pending['article_mapping_id'];
+            if (empty($this->getEligibleResourcePrices($mappingId))) {
+                continue; // without a price the line was never waiting for one
+            }
+
+            // As saveArticlesForApplication and savePurchaseOrderLine price a line while hidden
+            $mapping = $this->getArticleMappingById($mappingId);
+            $unitPrice = $mapping['price'] ?? 0;
+            $amount = $unitPrice * $pending['quantity'];
+            $tax = $amount * ((float)($mapping['tax_percent'] ?? 0) / 100);
+
+            $update->execute([
+                ':tax_code' => $mapping['tax_code'] ?? null,
+                ':unit_price' => $unitPrice,
+                ':amount' => $amount,
+                ':tax' => $tax,
+                ':id' => (int)$pending['id']
+            ]);
+            $priced++;
+        }
+
+        return $priced;
+    }
+
+    /**
      * Fetch articles for an application in ArticleOrder format
      *
      * @param int $application_id The application ID
@@ -250,6 +348,7 @@ class ArticleRepository
             // application's resources BEFORE its articles, in the same transaction
             $resourceIds = $this->applicationResourceIds($applicationId);
             $serviceIds = $this->servicesOfApplicationResources($applicationId);
+            $hidden = $this->hidesPriceChoice();
 
             // Price every line before anything is deleted, so a refused price
             // choice leaves the existing order as it was
@@ -269,8 +368,9 @@ class ArticleRepository
                     continue;
                 }
 
+                // While the price category is hidden there is no choice, and what the client sends is not read
                 $priceId = null;
-                if (isset($article['price_id'])) {
+                if (isset($article['price_id']) && !$hidden) {
                     $priceId = filter_var($article['price_id'], FILTER_VALIDATE_INT);
                     if ($priceId === false) {
                         throw new PriceChoiceException(PriceChoiceException::INVALID, (int)$article['id']);
@@ -290,7 +390,10 @@ class ArticleRepository
                     'category_id' => null
                 ];
 
-                if ((int)$mapping['article_cat_id'] === 1) {
+                // With the price category hidden the resource keeps the mapping's price above,
+                // which is what origin/master bills, and as nothing was chosen no price row,
+                // label or category is recorded
+                if ((int)$mapping['article_cat_id'] === 1 && !$hidden) {
                     // The resource itself: billed at the price row the citizen chose.
                     // Its category is the row's, never one the client sends
                     $price = $this->resolveResourcePrice((int)$article['id'], $priceId);
@@ -684,7 +787,9 @@ class ArticleRepository
         // Create Article objects and add pricing info
         $articles = [];
         foreach ($articlesData as $articleData) {
-            if (isset($articleData['resource_id'])) {
+            // With the price category hidden the resource has no prices to choose between:
+            // it is priced below like any other article, as on origin/master
+            if (isset($articleData['resource_id']) && !$this->hidesPriceChoice()) {
                 // The resource itself: the citizen chooses between today's prices.
                 // The article's own price is the preselected option, and 0 while
                 // a choice is required.

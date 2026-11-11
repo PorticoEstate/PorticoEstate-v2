@@ -245,8 +245,13 @@ class ApplicationService
             }
 
             // A timeslot booking leaves the resource unpriced until the citizen
-            // has chosen a price; it must not be submitted as free
-            $this->articleRepository->assertPriceChoicesMade(array_column($applications, 'id'));
+            // has chosen a price; it must not be submitted as free. With the price
+            // category hidden it is priced here instead, so the applications are read
+            // again to carry that price
+            if ($this->articleRepository->settlePendingPriceChoices(array_column($applications, 'id')) > 0)
+            {
+                $applications = $this->getPartialApplications($session_id);
+            }
 
             $resourceBookings = [];
             foreach ($applications as $application)

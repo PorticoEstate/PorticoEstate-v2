@@ -64,6 +64,10 @@ automatically deactivate its PorticoEstate account.
 - WebAuthn origins are checked against the configured browser-facing origin.
 - Credential public keys, IDs, counters, device labels, and use timestamps are
   stored in the account's `phpgw_accounts_data` JSON data under `passkeys`.
+- A credential ID can belong to only one account. Registering an ID that is
+  already in use is rejected. If the same ID is somehow stored on several
+  accounts, sign-in with it is refused and the conflict is written to the PHP
+  error log.
 - The suggestion shown after a successful login can be snoozed for 30 days or
   permanently dismissed. Those choices are stored in the user's `phpgw_preferences`
   under the `phpgwapi` preference group.

@@ -686,7 +686,26 @@ class Auth_Passkeys
     {
         try
         {
+            $buffer = new ByteBuffer($credentialId);
+            ByteBuffer::$useBase64UrlEncoding = true;
+            $credentialIdBase64Url = $buffer->jsonSerialize();
+
             $this->db->transaction_begin();
+
+            // Serialize registrations of the same credential ID across accounts and reject IDs
+            // already registered to any user (WebAuthn §7.1 step 22).
+            $stmt = $this->db->prepare('SELECT pg_advisory_xact_lock(hashtext(CAST(:credential_id AS text)))');
+            $stmt->execute([':credential_id' => $credentialIdBase64Url]);
+            $stmt = $this->db->prepare('SELECT account_id FROM phpgw_accounts_data WHERE account_data @> CAST(:search_json AS jsonb) LIMIT 1');
+            $stmt->execute([':search_json' => json_encode(['passkeys' => [['credential_id' => $credentialIdBase64Url]]])]);
+            $existingOwner = $stmt->fetchColumn();
+            if ($existingOwner !== false)
+            {
+                $this->db->transaction_abort();
+                error_log("Rejected registration of credential ID {$credentialIdBase64Url} for account {$account_id}: already registered to account " . (int) $existingOwner);
+                return false;
+            }
+
             $sql = 'SELECT account_data FROM phpgw_accounts_data WHERE account_id = :account_id FOR UPDATE';
             $stmt = $this->db->prepare($sql);
             $stmt->execute([':account_id' => $account_id]);
@@ -703,9 +722,6 @@ class Auth_Passkeys
                 $accountData['passkeys'] = [];
             }
 
-            $buffer = new ByteBuffer($credentialId);
-            ByteBuffer::$useBase64UrlEncoding = true;
-            $credentialIdBase64Url = $buffer->jsonSerialize();
             foreach ($accountData['passkeys'] as $passkey)
             {
                 if (is_array($passkey) && ($passkey['credential_id'] ?? null) === $credentialIdBase64Url)
@@ -812,7 +828,13 @@ class Auth_Passkeys
         $searchJson = json_encode(['passkeys' => [['credential_id' => $credentialIdBase64Url]]]);
         $stmt->execute([':search_json' => $searchJson]);
 
-        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        if (count($rows) > 1)
+        {
+            error_log("Passkey credential ID {$credentialIdBase64Url} is registered to multiple accounts; refusing to authenticate.");
+            return null;
+        }
+        $row = $rows[0] ?? null;
         if ($row)
         {
             $account_data = json_decode($row['account_data'], true);

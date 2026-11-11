@@ -414,6 +414,10 @@ class Login
 			];
 		}
 
+		$assetBaseUrl = htmlspecialchars(rtrim((string) ($this->serverSettings['webserver_url'] ?? ''), '/'), ENT_QUOTES, 'UTF-8');
+		$cacheRefreshToken = rawurlencode((string) ($this->serverSettings['cache_refresh_token'] ?? ''));
+		$siteTitle = htmlspecialchars((string) ($this->serverSettings['site_title'] ?? ''), ENT_QUOTES, 'UTF-8');
+
 		if (empty($_POST['data']))
 		{
 			// Refactored WebAuthn form that uses passkey-client.js
@@ -431,10 +435,10 @@ class Login
 <!DOCTYPE html>
 <html>
 <head>
-	<title>{$this->serverSettings['site_title']} - Login with Passkey</title>
+	<title>{$siteTitle} - Login with Passkey</title>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<link href="{$this->serverSettings['webserver_url']}/src/modules/phpgwapi/js/bootstrap5/vendor/twbs/bootstrap/dist/css/bootstrap.min.css?n={$this->serverSettings['cache_refresh_token']}" type="text/css" rel="StyleSheet">
+	<link href="{$assetBaseUrl}/src/modules/phpgwapi/js/bootstrap5/vendor/twbs/bootstrap/dist/css/bootstrap.min.css?n={$cacheRefreshToken}" type="text/css" rel="StyleSheet">
 	<style>
 		body {
 			background-color: #f8f9fa;
@@ -466,7 +470,7 @@ class Login
 		}
 	</style>
 	<!-- Include the passkey client library -->
-	<script src="{$this->serverSettings['webserver_url']}/src/modules/phpgwapi/js/passkey/passkey-client.js?n={$this->serverSettings['cache_refresh_token']}"></script>
+	<script src="{$assetBaseUrl}/src/modules/phpgwapi/js/passkey/passkey-client.js?n={$cacheRefreshToken}"></script>
 </head>
 <body>
 	<div class="container">
@@ -723,7 +727,7 @@ HTML;
 	<title>Authentication Error</title>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<link href="{$this->serverSettings['webserver_url']}/src/modules/phpgwapi/js/bootstrap5/vendor/twbs/bootstrap/dist/css/bootstrap.min.css?n={$this->serverSettings['cache_refresh_token']}" type="text/css" rel="StyleSheet">
+	<link href="{$assetBaseUrl}/src/modules/phpgwapi/js/bootstrap5/vendor/twbs/bootstrap/dist/css/bootstrap.min.css?n={$cacheRefreshToken}" type="text/css" rel="StyleSheet">
 </head>
 <body>
 	<div class="container mt-5">
@@ -760,7 +764,7 @@ HTML;
 	<title>Authentication Error</title>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<link href="{$this->serverSettings['webserver_url']}/src/modules/phpgwapi/js/bootstrap5/vendor/twbs/bootstrap/dist/css/bootstrap.min.css?n={$this->serverSettings['cache_refresh_token']}" type="text/css" rel="StyleSheet">
+	<link href="{$assetBaseUrl}/src/modules/phpgwapi/js/bootstrap5/vendor/twbs/bootstrap/dist/css/bootstrap.min.css?n={$cacheRefreshToken}" type="text/css" rel="StyleSheet">
 </head>
 <body>
 	<div class="container mt-5">

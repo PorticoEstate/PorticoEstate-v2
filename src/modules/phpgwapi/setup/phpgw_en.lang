@@ -608,3 +608,8 @@ previous	common	en	Previous
 session_expired_log_in_again	common	en	Your session has expired. Log in again in another tab and try again.
 increase	common	en	Increase quantity
 decrease	common	en	Decrease quantity
+uploading	common	en	Uploading
+error_loading_data	common	en	Could not load data
+error_loading_events	common	en	Could not load events
+contacts	common	en	Contacts
+inactive	common	en	Inactive

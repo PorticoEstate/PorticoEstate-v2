@@ -21,7 +21,7 @@ const HospitalityOrderCard: FC<HospitalityOrderCardProps> = ({order, application
     const [expanded, setExpanded] = useState(false);
 
     const handleDelete = async () => {
-        if (window.confirm(t('common.confirm_delete'))) {
+        if (window.confirm(t('booking.confirm_delete'))) {
             await deleteMutation.mutateAsync(order.id);
         }
     };

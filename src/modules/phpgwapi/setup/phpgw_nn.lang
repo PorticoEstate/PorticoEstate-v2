@@ -493,3 +493,6 @@ previous	common	nn	Førre
 session_expired_log_in_again	common	nn	Sesjonen din er gått ut. Logg inn på nytt i ei anna fane og prøv igjen.
 increase	common	nn	Auk talet
 decrease	common	nn	Reduser talet
+uploading	common	nn	Lastar opp
+error_loading_data	common	nn	Kunne ikkje laste data
+error_loading_events	common	nn	Kunne ikkje laste arrangement

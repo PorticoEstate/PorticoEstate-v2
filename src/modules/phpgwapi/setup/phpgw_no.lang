@@ -413,3 +413,6 @@ access not permitted	common	no	Tilgang nektet
 session_expired_log_in_again	common	no	Sesjonen din er utløpt. Logg inn på nytt i en annen fane og prøv igjen.
 increase	common	no	Øk antall
 decrease	common	no	Reduser antall
+uploading	common	no	Laster opp
+error_loading_data	common	no	Kunne ikke laste data
+error_loading_events	common	no	Kunne ikke laste arrangementer

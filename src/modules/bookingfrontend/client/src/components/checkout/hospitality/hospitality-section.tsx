@@ -27,7 +27,7 @@ const HospitalityOrderRow: FC<HospitalityOrderRowProps> = ({order, onEdit, forma
     const deleteMutation = useDeleteHospitalityOrder(order.application_id);
 
     const handleDelete = async () => {
-        if (window.confirm(t('common.confirm_delete'))) {
+        if (window.confirm(t('booking.confirm_delete'))) {
             await deleteMutation.mutateAsync(order.id);
         }
     };

@@ -1248,3 +1248,24 @@ application_col_addon	bookingfrontend	no	Tillegg
 application_services_total	bookingfrontend	no	Utstyr og tjenester total inkl. mva.
 application_rental_total	bookingfrontend	no	Romleie total inkl. mva.
 application_registered_total	bookingfrontend	no	Registrert total inkl. mva.
+building_parent_constraint_note	bookingfrontend	no	Hovedsøknaden må gjelde samme bygg.
+cannot_delete_yourself	bookingfrontend	no	Du kan ikke fjerne deg selv som delegat
+delegate_not_available	bookingfrontend	no	Delegaten er ikke tilgjengelig
+delegate_not_found	bookingfrontend	no	Fant ikke delegaten
+delete_delegate	bookingfrontend	no	Fjern delegat
+no information available	bookingfrontend	no	Ingen informasjon tilgjengelig
+no_activities_match	bookingfrontend	no	Ingen aktiviteter samsvarer med søket
+no_articles_available	bookingfrontend	no	Ingen tilleggstjenester tilgjengelig
+no_contacts_available	bookingfrontend	no	Ingen kontakter funnet
+no_facilities_match	bookingfrontend	no	Ingen fasiliteter samsvarer med søket
+no_groups_available	bookingfrontend	no	Ingen grupper funnet
+not_available	bookingfrontend	no	Ikke tilgjengelig
+past	bookingfrontend	no	Passert
+searching_across_domains	bookingfrontend	no	Søker på tvers av {{count}} domener
+town	bookingfrontend	no	By
+unknown_error	bookingfrontend	no	Ukjent feil
+you	bookingfrontend	no	deg
+no_valid_owner	bookingfrontend	no	Ingen gyldig eierkonto er tilgjengelig
+queue_timeout	bookingfrontend	no	Bestillingen ble tidsavbrutt i køen. Prøv igjen.
+booking_outside_horizon	bookingfrontend	no	Tidspunktet er utenfor tillatt bookingperiode
+unauthorized	bookingfrontend	no	Du har ikke tilgang til dette

@@ -1247,3 +1247,24 @@ application_col_addon	bookingfrontend	en	Add-on
 application_services_total	bookingfrontend	en	Equipment and services total incl. VAT
 application_rental_total	bookingfrontend	en	Room rental total incl. VAT
 application_registered_total	bookingfrontend	en	Registered total incl. VAT
+building_parent_constraint_note	bookingfrontend	en	The main application must be for the same building.
+cannot_delete_yourself	bookingfrontend	en	You cannot remove yourself as a delegate
+delegate_not_available	bookingfrontend	en	The delegate is not available
+delegate_not_found	bookingfrontend	en	Delegate not found
+delete_delegate	bookingfrontend	en	Remove delegate
+no information available	bookingfrontend	en	No information available
+no_activities_match	bookingfrontend	en	No activities match your search
+no_articles_available	bookingfrontend	en	No articles available
+no_contacts_available	bookingfrontend	en	No contacts found
+no_facilities_match	bookingfrontend	en	No facilities match your search
+no_groups_available	bookingfrontend	en	No groups found
+not_available	bookingfrontend	en	Not available
+past	bookingfrontend	en	Past
+searching_across_domains	bookingfrontend	en	Searching across {{count}} domains
+town	bookingfrontend	en	Town
+unknown_error	bookingfrontend	en	Unknown error
+you	bookingfrontend	en	you
+no_valid_owner	bookingfrontend	en	No valid owner account is available
+queue_timeout	bookingfrontend	en	Your booking request timed out in the queue. Please try again.
+booking_outside_horizon	bookingfrontend	en	The time is outside the allowed booking period
+unauthorized	bookingfrontend	en	You are not authorised to do this

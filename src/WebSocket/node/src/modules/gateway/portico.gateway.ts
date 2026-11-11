@@ -743,7 +743,7 @@ export class PorticoGateway
           {
             id: `err_${Date.now()}`,
             type: 'error',
-            text: isTranslatable ? err.translationKey : err.message,
+            text: isTranslatable ? `bookingfrontend.${err.translationKey}` : err.message,
             translatable: isTranslatable,
           },
         ],

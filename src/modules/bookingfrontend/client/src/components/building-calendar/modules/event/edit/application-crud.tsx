@@ -248,6 +248,9 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 	const [hasExternalChanges, setHasExternalChanges] = useState(false);
 	const {building, buildingResources, audience, agegroups, noAudiences, noAgeGroups, partials, existingApplication} = props;
 	const t = useTrans();
+	// A form error is either a translation key (schema message) or text already translated by setError().
+	// t() of the latter shows "TRANSLATION MISSING FOR ..." on its first render, so translate keys only.
+	const translateIfKey = (message?: string) => message?.startsWith('bookingfrontend.') ? t(message) : message;
 	const [isEditingResources, setIsEditingResources] = useState(false);
 	const createMutation = useCreatePartialApplication();
 	const deleteMutation = useDeletePartialApplication();
@@ -1485,7 +1488,7 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 											seasons={props.seasons}
 										/>
 										{errors.end &&
-											<span className={styles.error}>{errors.end.message}</span>}
+											<span className={styles.error}>{translateIfKey(errors.end.message)}</span>}
 									</>
 								)}
 							/>
@@ -1769,7 +1772,7 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 					<div className={`${styles.formGroup} ${styles.wide}`}>
 						{renderResourceList()}
 						{errors.resources?.message && (
-							<span className={styles.error}>{t(errors.resources.message)}</span>
+							<span className={styles.error}>{translateIfKey(errors.resources.message)}</span>
 						)}
 					</div>
 

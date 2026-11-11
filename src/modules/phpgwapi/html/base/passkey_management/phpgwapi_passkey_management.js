@@ -203,7 +203,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
 	passkeyContent.hidden = false;
 	loadPasskeys();
-	isPlatformAuthenticatorAvailable().then(function (supported) {
+	Promise.resolve(isWebAuthnAvailable()).then(function (supported) {
 		compatibilityCheck.hidden = true;
 		if (!supported) {
 			notSupportedMessage.textContent = messages.notSupported;

@@ -158,13 +158,12 @@ class Auth_Passkeys
 
         // 7. Set Authenticator Selection (Consistent & Secure Values)
         $finalOptions->publicKey->authenticatorSelection = new \stdClass();
-        $finalOptions->publicKey->authenticatorSelection->authenticatorAttachment = null; // Allow any
         $finalOptions->publicKey->authenticatorSelection->userVerification = 'required';
         $finalOptions->publicKey->authenticatorSelection->residentKey = 'preferred';
         $finalOptions->publicKey->authenticatorSelection->requireResidentKey = false;
 
-        // 8. Set Attestation
-        $finalOptions->publicKey->attestation = $options->attestation ?? 'indirect'; // Use library default or 'indirect'
+        // Passkeys do not need identifying authenticator attestation.
+        $finalOptions->publicKey->attestation = 'none';
 
         // 9. Set Extensions (if any)
         if (isset($options->extensions)) {
@@ -277,49 +276,17 @@ class Auth_Passkeys
      * @param string $credentialId Base64URL encoded credential ID (from client, for logging/reference)
      * @param int $account_id The user ID this credential should be associated with
      * @param string $deviceName Optional device name provided by user
-     * @param bool $requireResidentKey Whether resident key was required during creation
      * @return bool True if registration was successful
      */
-    public function processRegistration(string $clientDataJSON, string $attestationObject, string $credentialId, int $account_id, string $challenge, string $deviceName = '', bool $requireResidentKey = true): bool
+    public function processRegistration(string $clientDataJSON, string $attestationObject, string $credentialId, int $account_id, string $challenge, string $deviceName = ''): bool
     {
         try
         {
-            // The library expects raw binary data, not Base64URL
-            // Properly decode the input data
-            $clientDataJSONDecoded = null;
-            $attestationObjectDecoded = null;
+            $clientDataJSONDecoded = self::base64url_decode($clientDataJSON);
+            $attestationObjectDecoded = self::base64url_decode($attestationObject);
+            $credentialIdDecoded = self::base64url_decode($credentialId);
 
-            // Check if the data appears to already be JSON (might start with '{')
-            if (substr($clientDataJSON, 0, 1) === '{')
-            {
-                $clientDataJSONDecoded = $clientDataJSON;
-            }
-            else
-            {
-                // Use proper Base64URL decoding
-                try
-                {
-                    $clientDataJSONDecoded = self::base64url_decode($clientDataJSON);
-                }
-                catch (\Exception $e)
-                {
-                    // Fallback to regular base64 decode if that fails
-                    $clientDataJSONDecoded = base64_decode($clientDataJSON);
-                }
-            }
-
-            // Similarly for attestation object
-            try
-            {
-                $attestationObjectDecoded = self::base64url_decode($attestationObject);
-            }
-            catch (\Exception $e)
-            {
-                // Fallback to regular base64 decode if that fails
-                $attestationObjectDecoded = base64_decode($attestationObject);
-            }
-
-            if (!$clientDataJSONDecoded || !$attestationObjectDecoded)
+            if (!$clientDataJSONDecoded || !$attestationObjectDecoded || !$credentialIdDecoded)
             {
                 throw new \Exception('Failed to decode WebAuthn response data');
             }
@@ -330,33 +297,24 @@ class Auth_Passkeys
                 $clientDataJSONDecoded,
                 $attestationObjectDecoded,
                 $challenge,
-                $requireResidentKey, // requireResidentKey
-                true,  // requireUserVerification
+                true, // Require user verification
+                true, // Require user presence
                 false // Do not require a trusted attestation root certificate
             );
 
-            // Extract the sign count with proper checks
-            // The property might be named counter, signCount, or something else
-            // Let's check what properties are available and use the appropriate one
-            $initialSignCount = 0; // Default if not available
-            if (property_exists($credentialData, 'signCount'))
+            if (!hash_equals($credentialData->credentialId, $credentialIdDecoded))
             {
-                $initialSignCount = $credentialData->signCount;
-            }
-            elseif (property_exists($credentialData, 'counter'))
-            {
-                $initialSignCount = $credentialData->counter;
+                throw new \Exception('Credential ID does not match the attestation data.');
             }
 
-            // Log the property structure for debugging
-            error_log('WebAuthn credential data properties: ' . print_r(get_object_vars($credentialData), true));
+            $initialSignCount = (int) ($credentialData->signatureCounter ?? 0);
 
             // Store the credential data
             $this->storeCredentialSource(
                 $account_id,
-                $credentialData->credentialId, // Raw binary ID from library
-                $credentialData->credentialPublicKey, // PEM format public key
-                $initialSignCount, // Initial sign count (or 0 if not provided)
+                $credentialData->credentialId,
+                $credentialData->credentialPublicKey,
+                $initialSignCount,
                 $deviceName
             );
 

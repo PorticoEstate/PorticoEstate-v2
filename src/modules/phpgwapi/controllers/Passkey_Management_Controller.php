@@ -254,24 +254,18 @@ class Passkey_Management_Controller
 	 */
 	public function verifyRegistration(Request $request, Response $response): Response
 	{
-        // Add debug logging
-        error_log("[PASSKEY DEBUG] Starting verification of passkey registration");
-        
         // Verify session authentication
         if (!$this->verifyAuthentication()) {
-            error_log("[PASSKEY DEBUG] Authentication verification failed");
             return $this->jsonError($response, 'Authentication required', 401);
         }
         
         // Check for CSRF token
         if (!$this->verifyCsrfToken($request)) {
-            error_log("[PASSKEY DEBUG] CSRF token verification failed");
             return $this->jsonError($response, 'Invalid security token', 403);
         }
         
         // Apply rate limiting
         if ($this->isRateLimited('register')) {
-            error_log("[PASSKEY DEBUG] Rate limit exceeded for registration");
             return $this->jsonError($response, 'Too many registration attempts. Please try again later.', 429);
         }
 
@@ -288,7 +282,6 @@ class Passkey_Management_Controller
 		
 		if (empty($deviceName))
 		{
-		    error_log("[PASSKEY DEBUG] Empty device name provided");
 			return $this->jsonError($response, 'Device name is required');
 		}
 		
@@ -302,25 +295,19 @@ class Passkey_Management_Controller
 			|| !is_string($params['response']['attestationObject'])
 		)
 		{
-		    error_log("[PASSKEY DEBUG] Invalid registration data format: " . json_encode($params));
 			return $this->jsonError($response, 'Invalid registration data format');
 		}
 		
 		try
 		{
 			// Verify with WebAuthn
-			error_log("[PASSKEY DEBUG] Processing registration with clientDataJSON size: " . 
-			    strlen($params['response']['clientDataJSON']) . ", attestationObject size: " . 
-			    strlen($params['response']['attestationObject']));
-			    
 			$success = $this->auth_passkeys->processRegistration(
 				$params['response']['clientDataJSON'],
 				$params['response']['attestationObject'],
 				$params['id'],
 				$this->account_id,
 				$challenge,
-				$deviceName,
-				true
+				$deviceName
 			);
 
 			if ($success)
@@ -328,7 +315,6 @@ class Passkey_Management_Controller
                 // Record successful operation for audit logging
                 $this->logAuditEvent('passkey_register', 'Registered new passkey: ' . $deviceName);
                 
-                error_log("[PASSKEY DEBUG] Registration successful for device: " . $deviceName);
 				return $this->jsonSuccess($response, 'Passkey registered successfully');
 			}
 			else
@@ -336,7 +322,6 @@ class Passkey_Management_Controller
                 // Increment failed attempts counter
                 $this->incrementRateLimitCounter('register');
                 
-                error_log("[PASSKEY DEBUG] Registration failed - verification returned false");
 				return $this->jsonError($response, 'Failed to register passkey - verification returned false');
 			}
 		}
@@ -345,7 +330,7 @@ class Passkey_Management_Controller
             // Increment failed attempts counter
             $this->incrementRateLimitCounter('register');
             
-            error_log("[PASSKEY DEBUG] Exception during registration: " . $e->getMessage());
+            error_log('Passkey registration request failed: ' . $e->getMessage());
 			return $this->jsonError($response, 'Error processing registration request');
 		}
 	}

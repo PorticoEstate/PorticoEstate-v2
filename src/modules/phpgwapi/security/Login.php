@@ -456,9 +456,21 @@ class Login
 			</div>
 
 			<div class="text-center">
-				<button id="passkey-button" class="btn btn-primary btn-lg">
-					Continue with Passkey
-				</button>
+				<form id="passkey-login-form" autocomplete="on">
+					<label class="visually-hidden" for="passkey-username">Username</label>
+					<input
+						id="passkey-username"
+						name="username"
+						class="form-control mb-3"
+						type="text"
+						autocomplete="username webauthn"
+						autocapitalize="off"
+						spellcheck="false"
+					>
+					<button id="passkey-button" type="button" class="btn btn-primary btn-lg">
+						Continue with Passkey
+					</button>
+				</form>
 			</div>
 
 			<div id="loading-spinner" class="loading-spinner">
@@ -477,10 +489,17 @@ class Login
 	</div>
 
 	<script>
-	document.addEventListener('DOMContentLoaded', function() {
+	document.addEventListener('DOMContentLoaded', async function() {
 		const passkeyButton = document.getElementById('passkey-button');
+		const loginForm = document.getElementById('passkey-login-form');
 		const loadingSpinner = document.getElementById('loading-spinner');
 		const statusMessage = document.getElementById('status-message');
+		const authenticationOptions = {$authenticationOptionsJson};
+		let conditionalController = null;
+		let credentialSubmitted = false;
+		loginForm.addEventListener('submit', function(event) {
+			event.preventDefault();
+		});
 		
 		// Function to show status messages
 		function showStatus(message, type) {
@@ -489,53 +508,79 @@ class Login
 			statusMessage.classList.add('alert-' + type);
 		}
 
-		// Check if WebAuthn is supported by the browser
+		function submitCredential(credential) {
+			if (!credential) {
+				loadingSpinner.style.display = 'none';
+				passkeyButton.disabled = false;
+				showStatus('No passkey was selected. Try again or choose a passkey from the username field.', 'info');
+				return;
+			}
+			if (credentialSubmitted) {
+				return;
+			}
+			const response = prepareAuthenticationResponse(credential);
+			credentialSubmitted = true;
+			showStatus('Processing authentication...', 'info');
+			const form = document.createElement('form');
+			form.method = 'POST';
+			form.action = 'login.php?type=passkey';
+			const dataInput = document.createElement('input');
+			dataInput.type = 'hidden';
+			dataInput.name = 'data';
+			dataInput.value = JSON.stringify(response);
+			form.appendChild(dataInput);
+			document.body.appendChild(form);
+			form.submit();
+		}
+
 		if (!window.PublicKeyCredential) {
 			showStatus('Your browser does not support passkeys. Please use a modern browser.', 'danger');
 			passkeyButton.disabled = true;
 			return;
 		}
 
-		// Handle the button click to start authentication
 		passkeyButton.addEventListener('click', async function() {
 			try {
 				passkeyButton.disabled = true;
 				loadingSpinner.style.display = 'block';
 				showStatus('Starting authentication...', 'info');
-				
-				const publicKeyOptions = prepareRequestOptions({$authenticationOptionsJson});
-				
-				// Start authentication request
+				if (conditionalController) {
+					conditionalController.abort();
+					conditionalController = null;
+				}
 				const credential = await navigator.credentials.get({
-					publicKey: publicKeyOptions,
+					publicKey: prepareRequestOptions(authenticationOptions),
 					mediation: 'optional'
 				});
-				
-				showStatus('Processing authentication...', 'info');
-				
-				// Prepare response using the utility functions from passkey-client.js
-				const response = prepareAuthenticationResponse(credential);
-				
-				// Submit the form with the response data
-				const form = document.createElement('form');
-				form.method = 'POST';
-				form.action = 'login.php?type=passkey';
-				
-				const dataInput = document.createElement('input');
-				dataInput.type = 'hidden';
-				dataInput.name = 'data';
-				dataInput.value = JSON.stringify(response);
-				
-				form.appendChild(dataInput);
-				document.body.appendChild(form);
-				form.submit();
+				submitCredential(credential);
 			} catch (error) {
-				console.error('Authentication error:', error);
 				loadingSpinner.style.display = 'none';
 				passkeyButton.disabled = false;
 				showStatus(error.message || 'Authentication failed. Please try again.', 'danger');
 			}
 		});
+
+		if (
+			typeof AbortController !== 'undefined'
+			&& typeof PublicKeyCredential.isConditionalMediationAvailable === 'function'
+		) {
+			try {
+				if (await PublicKeyCredential.isConditionalMediationAvailable()) {
+					conditionalController = new AbortController();
+					navigator.credentials.get({
+						publicKey: prepareRequestOptions(authenticationOptions),
+						mediation: 'conditional',
+						signal: conditionalController.signal
+					}).then(submitCredential).catch(function(error) {
+						if (error.name !== 'AbortError' && error.name !== 'NotAllowedError') {
+							showStatus(error.message || 'Automatic passkey sign-in failed. Use the button below.', 'info');
+						}
+					});
+				}
+			} catch (error) {
+				showStatus(error.message || 'Automatic passkey sign-in is unavailable. Use the button below.', 'info');
+			}
+		}
 	});
 	</script>
 </body>

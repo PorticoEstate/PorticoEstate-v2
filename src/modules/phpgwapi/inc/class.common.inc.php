@@ -272,7 +272,7 @@ class phpgwapi_common
 	 * @param string $host LDAP host name
 	 * @param string $dn LDAP distinguised name
 	 * @param string $passwd LDAP password
-	 * @return resource LDAP link identifier
+	 * @return \LDAP\Connection|false LDAP connection or false on failure
 	 */
 	public function ldapConnect($host = '', $dn = '', $passwd = '')
 	{
@@ -494,6 +494,7 @@ HTML;
 		{
 			$icon = $this->image($appname, 'navbar', '', ($this->userSettings['preferences']['common']['template_set'] == 'funkwerk' ? True : False));
 
+			$link_data = array();
 			if (count($file))
 			{
 				foreach ($file as $text => $url)
@@ -1186,6 +1187,17 @@ HTML;
 		{
 			$js .= $flags['java_script_end'] . "\n";
 		}
+
+		$accountId = (int) ($this->userSettings['account_id'] ?? 0);
+		$requestPath = parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH) ?: '';
+		$isPasskeyPage = preg_match('#(?:^|/)passkey(?:/|$)#', $requestPath) === 1;
+		if ($accountId > 0 && !$isPasskeyPage && empty($flags['noframework']))
+		{
+			$scriptUrl = htmlspecialchars($this->webserver_url . '/phpgwapi/js/passkey/passkey-suggestion.js' . $cache_refresh_token, ENT_QUOTES, 'UTF-8');
+			$apiUrl = htmlspecialchars(\phpgw::link('/passkey/suggestion'), ENT_QUOTES, 'UTF-8');
+			$js .= '<script src="' . $scriptUrl . '" data-api-url="' . $apiUrl . '"></script>' . "\n";
+		}
+
 		return $js;
 	}
 
@@ -1353,8 +1365,8 @@ HTML;
 	 */
 	public function create_emailpreferences($prefs = '', $accountid = '')
 	{
-		$preferences = createObject('phpgwapi.preferences');
-		return $preferences->create_email_preferences($accountid);
+		$userSettings = \App\modules\phpgwapi\services\Settings::getInstance()->get('user');
+		return $userSettings['preferences']['email'] ?? [];
 	}
 
 	/**

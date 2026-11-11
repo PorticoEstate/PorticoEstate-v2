@@ -1422,25 +1422,26 @@ JS;
 			array('key' => 'transfer_time', 'label' => lang('transfer time'), 'sortable' => true)
 		);
 
+		$voucher_data = $this->bo->get_vouchers(array(
+			'project_id' => $id,
+			'paid'		 => 'both',
+			'order'		 => 'voucher_id',
+			'sort'		 => 'asc',
+			'allrows'	 => true,
+		));
 		$datatable_def[] = array(
 			'container'	 => 'datatable-container_2',
-			'requestUrl' => json_encode(phpgw::link('/property/project/' . $id . '/vouchers', array())),
-			'data'		 => json_encode(array()),
+			'requestUrl' => "''",
+			'data'		 => json_encode($voucher_data),
 			'ColumnDefs' => $invoice_def,
 			'tabletools' => array(),
 			'config'	 => array(
-				array('disableFilter' => false),
+				//array('disableFilter' => false),
 				//					array('disablePagination' => false),
 				array('singleSelect' => true),
-				array('allrows' => true),
+				//array('allrows' => true),
 				array('order' => json_encode(array(1, 'asc')))
 			)
-
-			//				'config'	 => array(
-			//					array('disableFilter' => false),
-			//					array('disablePagination' => false),
-			//					array('singleSelect' => true)
-			//				)
 		);
 
 		/*

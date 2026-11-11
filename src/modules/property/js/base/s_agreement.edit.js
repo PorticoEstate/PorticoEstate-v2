@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-var sUrl_agreement = phpGWLink('index.php', {'menuaction': 'property.uis_agreement.edit_alarm'});
+var sUrl_agreement = phpGWLink('index.php', { 'menuaction': 'property.uis_agreement.edit_alarm' });
 
 $(function ()
 {
@@ -35,7 +35,7 @@ onActionsClick_notify = function (type, ids, requestUrl)
 		type: 'POST',
 		dataType: 'json',
 		url: "" + sUrl_agreement + "&phpgw_return_as=json",
-		data: {ids: ids, type: type},
+		data: { ids: ids, type: type },
 		success: function (data)
 		{
 			if (data != null)
@@ -63,7 +63,7 @@ onAddClick_Alarm = function (type)
 			type: 'POST',
 			dataType: 'json',
 			url: "" + sUrl_agreement + "&phpgw_return_as=json",
-			data: {day: day, hour: hour, minute: minute, user_list: user, type: type, id: id},
+			data: { day: day, hour: hour, minute: minute, user_list: user, type: type, id: id },
 			success: function (data)
 			{
 				JqueryPortico.updateinlineTableHelper('datatable-container_0');
@@ -83,7 +83,7 @@ onUpdateClickAlarm = function (type)
 	var oIndex = $('#new_index').val();
 	var id = $('#agreementid').val();
 
-	var api = $('#datatable-container_1').dataTable().api();
+	var api = new DataTable('#datatable-container_1');
 	var selected = api.rows({selected: true}).data();
 	var numSelected = selected.length;
 
@@ -122,7 +122,7 @@ onUpdateClickAlarm = function (type)
 		type: 'POST',
 		dataType: 'json',
 		url: "" + sUrl_agreement + "&phpgw_return_as=json",
-		data: {id: id, ids: ids, mcost: mcost, icoun: icoun, type: type, date: oDate, index: oIndex},
+		data: { id: id, ids: ids, mcost: mcost, icoun: icoun, type: type, date: oDate, index: oIndex },
 		success: function (data)
 		{
 			obj = JSON.parse(data);
@@ -172,7 +172,7 @@ onUpdateClickItems = function (type)
 		type: 'POST',
 		dataType: 'json',
 		url: "" + sUrl_agreement + "&phpgw_return_as=json",
-		data: {id: id, ids: ids, mcost: mcost, icoun: icoun, type: type, date: oDate, index: oIndex},
+		data: { id: id, ids: ids, mcost: mcost, icoun: icoun, type: type, date: oDate, index: oIndex },
 		success: function (data)
 		{
 			obj = JSON.parse(data);
@@ -196,7 +196,7 @@ onActionsClickDeleteLastIndex = function (type)
 		type: 'POST',
 		dataType: 'json',
 		url: "" + sUrl_agreement + "&phpgw_return_as=json",
-		data: {ids: oSelid, type: type, id: id},
+		data: { ids: oSelid, type: type, id: id },
 		success: function (data)
 		{
 			obj = JSON.parse(data);

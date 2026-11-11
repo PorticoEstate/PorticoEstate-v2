@@ -31,7 +31,7 @@ function formatterPayer(key, oData)
 
 function changeDate_price_item(param, value)
 {
-	var oArgs_request = {menuaction: 'rental.uiprice_item.set_value'};
+	var oArgs_request = { menuaction: 'rental.uiprice_item.set_value' };
 	var arr = param.split('__');
 
 	var data = {};
@@ -52,7 +52,7 @@ function changeDate_price_item(param, value)
 }
 function changeOne_time_price_item(param, value)
 {
-	var oArgs_request = {menuaction: 'rental.uiprice_item.set_value'};
+	var oArgs_request = { menuaction: 'rental.uiprice_item.set_value' };
 	var arr = param.split('__');
 
 	var data = {};
@@ -184,7 +184,7 @@ $(function ()
 
 	$("#location_id").on('change', function ()
 	{
-		var oArgs = {menuaction: 'rental.uicontract.get_contract_type_options', location_id: $(this).val()};
+		var oArgs = { menuaction: 'rental.uicontract.get_contract_type_options', location_id: $(this).val() };
 		var requestUrl = phpGWLink('index.php', oArgs, true);
 		var htmlString;
 
@@ -234,7 +234,7 @@ $(function ()
 					$.each(obj, function (i)
 					{
 						htmlString += "<option value='" + obj[i].id + "'";
-						if(obj[i].selected == 1)
+						if (obj[i].selected == 1)
 						{
 							htmlString += " selected='selected'";
 						}
@@ -281,7 +281,7 @@ $(function ()
 	{
 		if (($(this).val() || '').trim() != (previous_composite_query || '').trim())
 		{
-			filterDataComposite('search', {'value': $(this).val()});
+			filterDataComposite('search', { 'value': $(this).val() });
 			previous_composite_query = $(this).val();
 		}
 	});
@@ -313,7 +313,7 @@ $(function ()
 	{
 		if (($(this).val() || '').trim() != (previous_party_query || '').trim())
 		{
-			filterDataParty('search', {'value': $(this).val()});
+			filterDataParty('search', { 'value': $(this).val() });
 			previous_party_query = $(this).val();
 		}
 	});
@@ -348,7 +348,7 @@ $(function ()
 	{
 		if (($(this).val() || '').trim() != (previous_document_query || '').trim())
 		{
-			filterDataDocument('search', {'value': $(this).val()});
+			filterDataDocument('search', { 'value': $(this).val() });
 			previous_document_query = $(this).val();
 		}
 	});
@@ -368,7 +368,7 @@ $(function ()
 			JqueryPortico.updateinlineTableHelper(oTable1, link_included_composites);
 
 			oTable2.dataTableSettings[2]['oFeatures']['bServerSide'] = true;
-			oTable2.dataTableSettings[2]['ajax'] = {url: link_not_included_composites, data: {is_active:'active'}, type: 'GET'};
+			oTable2.dataTableSettings[2]['ajax'] = { url: link_not_included_composites, data: { is_active: 'active' }, type: 'GET' };
 			JqueryPortico.updateinlineTableHelper(oTable2);
 
 			set_composite_data = 1;
@@ -383,7 +383,7 @@ $(function ()
 			JqueryPortico.updateinlineTableHelper(oTable3, link_included_parties);
 
 			oTable4.dataTableSettings[4]['oFeatures']['bServerSide'] = true;
-			oTable4.dataTableSettings[4]['ajax'] = {url: link_not_included_parties, data: {}, type: 'GET'};
+			oTable4.dataTableSettings[4]['ajax'] = { url: link_not_included_parties, data: {}, type: 'GET' };
 			JqueryPortico.updateinlineTableHelper(oTable4);
 
 			set_parties_data = 1;
@@ -402,7 +402,7 @@ $(function ()
 			api.on('draw', setOne_price_item);
 
 			oTable6.dataTableSettings[6]['oFeatures']['bServerSide'] = true;
-			oTable6.dataTableSettings[6]['ajax'] = {url: link_not_included_price_items, data: {}, type: 'GET'};
+			oTable6.dataTableSettings[6]['ajax'] = { url: link_not_included_price_items, data: {}, type: 'GET' };
 			JqueryPortico.updateinlineTableHelper(oTable6);
 
 			set_price_data = 1;
@@ -508,7 +508,7 @@ getRequestData = function (dataSelected, parameters)
 addComposite = function (oArgs, parameters)
 {
 
-	var api = $('#datatable-container_2').dataTable().api();
+	var api = new DataTable('#datatable-container_2');
 	var selected = api.rows({selected: true}).data();
 	var nTable = 1;
 
@@ -535,7 +535,7 @@ addComposite = function (oArgs, parameters)
 removeComposite = function (oArgs, parameters)
 {
 
-	var api = $('#datatable-container_1').dataTable().api();
+	var api = new DataTable('#datatable-container_1');
 	var selected = api.rows({selected: true}).data();
 	var nTable = 1;
 
@@ -581,7 +581,7 @@ downloadComposite = function (oArgs)
 addParty = function (oArgs, parameters)
 {
 
-	var api = $('#datatable-container_4').dataTable().api();
+	var api = new DataTable('#datatable-container_4');
 	var selected = api.rows({selected: true}).data();
 
 	var nTable = 3;
@@ -609,7 +609,7 @@ addParty = function (oArgs, parameters)
 removeParty = function (oArgs, parameters)
 {
 
-	var api = $('#datatable-container_3').dataTable().api();
+	var api = new DataTable('#datatable-container_3');
 	var selected = api.rows({selected: true}).data();
 	var nTable = 3;
 
@@ -666,7 +666,7 @@ downloadParties = function (oArgs)
 addPrice = function (oArgs, parameters)
 {
 
-	var api = $('#datatable-container_6').dataTable().api();
+	var api = new DataTable('#datatable-container_6');
 	var selected = api.rows({selected: true}).data();
 	var nTable = 5;
 
@@ -694,7 +694,7 @@ addPrice = function (oArgs, parameters)
 removePrice = function (oArgs, parameters)
 {
 
-	var api = $('#datatable-container_5').dataTable().api();
+	var api = new DataTable('#datatable-container_5');
 	var selected = api.rows({selected: true}).data();
 	var nTable = 5;
 
@@ -735,7 +735,7 @@ downloadInvoice = function (oArgs)
 removeDocument = function (oArgs, parameters)
 {
 
-	var api = $('#datatable-container_8').dataTable().api();
+	var api = new DataTable('#datatable-container_8');
 	var selected = api.rows({selected: true}).data();
 	var nTable = 8;
 
@@ -760,7 +760,7 @@ removeDocument = function (oArgs, parameters)
 deleteNotification = function (oArgs, parameters)
 {
 
-	var api = $('#datatable-container_9').dataTable().api();
+	var api = new DataTable('#datatable-container_9');
 	var selected = api.rows({selected: true}).data();
 
 	if (selected.length == 0)
@@ -798,7 +798,7 @@ addNotification = function ()
 	data['notification_location'] = $('#notification_location').val();
 	data['date_notification'] = $('#date_notification').val();
 
-	var oArgs = {"menuaction": "rental.uicontract.add_notification", "phpgw_return_as": "json"};
+	var oArgs = { "menuaction": "rental.uicontract.add_notification", "phpgw_return_as": "json" };
 	var requestUrl = phpGWLink('index.php', oArgs);
 
 	JqueryPortico.execute_ajax(requestUrl, function (result)

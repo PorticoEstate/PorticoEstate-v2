@@ -84,7 +84,8 @@ class phpgw
 		}
 
 		//W3C Compliant in markup
-		$term = '&amp;';
+//		$term = '&amp;';
+		$term = '&';
 		if ($redirect)
 		{
 			// RFC Compliant for Header('Location: ...

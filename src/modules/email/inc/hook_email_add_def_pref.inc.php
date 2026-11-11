@@ -14,7 +14,7 @@
 $preferences = \App\modules\phpgwapi\services\Preferences::getInstance();
 $preferences->add("email", "mainscreen_showmail", "True");
 $preferences->add("email", "use_trash_folder", "False");
-$preferences->add("email", "default_sorting", "old_new");
-$preferences->add("email", "show_addresses", "from");
+$defaults = (new \App\modules\email\services\EmailPreferenceDefaults())->resolve([], 0);
+$preferences->add("email", "default_sorting", $defaults['default_sorting']);
+$preferences->add("email", "show_addresses", $defaults['show_addresses']);
 $preferences->add("email", "email_sig", "");
-

@@ -42,7 +42,8 @@ class ApplicationService
 	public function assignCurrentUser(int $appId, int $accountId): void
 	{
 		$row = $this->repo->getById($appId);
-		if (!$row) {
+		if (!$row)
+		{
 			throw new RuntimeException('Application not found', 404);
 		}
 
@@ -51,15 +52,18 @@ class ApplicationService
 
 		// Assign + status transition on the primary application
 		$this->repo->assignCaseOfficer($appId, $accountId);
-		if (($row['status'] ?? '') === 'NEW') {
+		if (($row['status'] ?? '') === 'NEW')
+		{
 			$this->repo->updateStatus($appId, 'PENDING');
 		}
 		$this->repo->addComment($appId, $authorName, $commentText, 'ownership');
 
 		// Propagate to related applications when combining is enabled
-		if ($this->combineApplications) {
+		if ($this->combineApplications)
+		{
 			$relatedInfo = $this->repo->getRelatedApplications($appId);
-			if ($relatedInfo['total_count'] > 1) {
+			if ($relatedInfo['total_count'] > 1)
+			{
 				$relatedIds = array_filter(
 					$relatedInfo['application_ids'],
 					fn(int $id) => $id !== $appId
@@ -67,20 +71,24 @@ class ApplicationService
 
 				$relatedRows = $this->repo->getByIds($relatedIds);
 
-				foreach ($relatedIds as $relatedId) {
+				foreach ($relatedIds as $relatedId)
+				{
 					$relatedRow = $relatedRows[$relatedId] ?? null;
-					if (!$relatedRow) {
+					if (!$relatedRow)
+					{
 						continue;
 					}
 
 					// Only assign if not already assigned to this user
-					if (($relatedRow['case_officer_id'] ?? null) == $accountId) {
+					if (($relatedRow['case_officer_id'] ?? null) == $accountId)
+					{
 						continue;
 					}
 
 					$this->repo->assignCaseOfficer($relatedId, $accountId);
 
-					if (($relatedRow['status'] ?? '') === 'NEW') {
+					if (($relatedRow['status'] ?? '') === 'NEW')
+					{
 						$this->repo->updateStatus($relatedId, 'PENDING');
 					}
 
@@ -101,11 +109,13 @@ class ApplicationService
 	public function unassignCurrentUser(int $appId, int $accountId): void
 	{
 		$row = $this->repo->getById($appId);
-		if (!$row) {
+		if (!$row)
+		{
 			throw new RuntimeException('Application not found', 404);
 		}
 
-		if ((int) ($row['case_officer_id'] ?? 0) !== $accountId) {
+		if ((int) ($row['case_officer_id'] ?? 0) !== $accountId)
+		{
 			throw new RuntimeException('You are not the case officer', 403);
 		}
 
@@ -120,9 +130,11 @@ class ApplicationService
 		$this->repo->updateDisplayInDashboard($appId, 1);
 
 		// Propagate to related applications when combining is enabled
-		if ($this->combineApplications) {
+		if ($this->combineApplications)
+		{
 			$relatedInfo = $this->repo->getRelatedApplications($appId);
-			if ($relatedInfo['total_count'] > 1) {
+			if ($relatedInfo['total_count'] > 1)
+			{
 				$relatedIds = array_filter(
 					$relatedInfo['application_ids'],
 					fn(int $id) => $id !== $appId
@@ -130,14 +142,17 @@ class ApplicationService
 
 				$relatedRows = $this->repo->getByIds($relatedIds);
 
-				foreach ($relatedIds as $relatedId) {
+				foreach ($relatedIds as $relatedId)
+				{
 					$relatedRow = $relatedRows[$relatedId] ?? null;
-					if (!$relatedRow) {
+					if (!$relatedRow)
+					{
 						continue;
 					}
 
 					// Only unassign if this user IS the case officer on that related app
-					if ((int) ($relatedRow['case_officer_id'] ?? 0) !== $accountId) {
+					if ((int) ($relatedRow['case_officer_id'] ?? 0) !== $accountId)
+					{
 						continue;
 					}
 
@@ -160,11 +175,13 @@ class ApplicationService
 	public function toggleDashboard(int $appId, int $accountId): int
 	{
 		$row = $this->repo->getById($appId);
-		if (!$row) {
+		if (!$row)
+		{
 			throw new RuntimeException('Application not found', 404);
 		}
 
-		if ((int) ($row['case_officer_id'] ?? 0) !== $accountId) {
+		if ((int) ($row['case_officer_id'] ?? 0) !== $accountId)
+		{
 			throw new RuntimeException('You are not the case officer', 403);
 		}
 
@@ -186,13 +203,18 @@ class ApplicationService
 	public function addComment(int $appId, int $accountId, string $comment, ?string $elementType = null, ?int $elementId = null): void
 	{
 		$row = $this->repo->getById($appId);
-		if (!$row) {
+		if (!$row)
+		{
 			throw new RuntimeException('Application not found', 404);
 		}
 
-		if ($elementType !== null || $elementId !== null) {
-			if ($elementType === null || $elementId === null
-				|| !(new ApplicationCommentElementRepository())->belongsToApplication($appId, $elementType, $elementId)) {
+		if ($elementType !== null || $elementId !== null)
+		{
+			if (
+				$elementType === null || $elementId === null
+				|| !(new ApplicationCommentElementRepository())->belongsToApplication($appId, $elementType, $elementId)
+			)
+			{
 				throw new RuntimeException('The element does not belong to this application', 400);
 			}
 		}
@@ -207,7 +229,7 @@ class ApplicationService
 		$authorName = $this->repo->fetchAccountName($accountId) ?? 'Unknown';
 		$commentId = $this->repo->addComment($appId, $authorName, $comment, 'comment', $elementType, $elementId);
 
- 		// Send email notification (non-fatal on failure). Pass the officer's reply text
+		// Send email notification (non-fatal on failure). Pass the officer's reply text
 		// so the applicant email contains the actual message — without it the email is
 		// rebuilt from the DB row alone and the reply body is empty.
 		$this->sendNotificationSafe($appId, $comment);
@@ -215,13 +237,17 @@ class ApplicationService
 		// Broadcast the live thread-update event regardless of whether there is a
 		// resolvable applicant to notify, and create the in-app notification (bell)
 		// only when customer_ssn resolves to someone. Non-fatal on failure.
-		try {
+		try
+		{
 			$customerSsn = $row['customer_ssn'] ?? '';
 			$notificationService = new NotificationService();
 
-			if (empty($customerSsn)) {
+			if (empty($customerSsn))
+			{
 				$notificationService->broadcastCommentEvent($appId, $commentId, $authorName, $comment);
-			} else {
+			}
+			else
+			{
 				$notificationService->createCommentNotification(
 					$appId,
 					$commentId,
@@ -231,7 +257,9 @@ class ApplicationService
 					$customerSsn
 				);
 			}
-		} catch (\Throwable $e) {
+		}
+		catch (\Throwable $e)
+		{
 			error_log("Failed to create applicant notification for application {$appId}: " . $e->getMessage());
 		}
 	}
@@ -244,7 +272,8 @@ class ApplicationService
 	public function addInternalNote(int $appId, int $accountId, string $content): void
 	{
 		$row = $this->repo->getById($appId);
-		if (!$row) {
+		if (!$row)
+		{
 			throw new RuntimeException('Application not found', 404);
 		}
 
@@ -261,17 +290,20 @@ class ApplicationService
 	public function acceptApplication(int $appId, int $accountId, string $message, bool $sendEmail): array
 	{
 		$row = $this->repo->getById($appId);
-		if (!$row) {
+		if (!$row)
+		{
 			throw new RuntimeException('Application not found', 404);
 		}
 
 		$status = $row['status'] ?? '';
-		if (!in_array($status, ['PENDING', 'REJECTED', 'NEWPARTIAL1'])) {
+		if (!in_array($status, ['PENDING', 'REJECTED', 'NEWPARTIAL1']))
+		{
 			throw new RuntimeException('Application cannot be accepted in current status: ' . $status, 400);
 		}
 
 		$numAssoc = $this->repo->countAssociations($appId);
-		if ($numAssoc === 0) {
+		if ($numAssoc === 0)
+		{
 			throw new RuntimeException(lang('booking.One or more bookings, allocations or events needs to be created before an application can be Accepted'), 400);
 		}
 
@@ -284,12 +316,16 @@ class ApplicationService
 		// Gated on enable_hospitality for the same reason the toolbar is: with
 		// hospitality switched off there is no orders tab, so a leftover pending
 		// row would block Accept with no interface anywhere to clear it.
-		if ($this->enableHospitality) {
+		if ($this->enableHospitality)
+		{
 			$groupIds = $this->repo->getRelatedApplications($appId)['application_ids'];
 
-			try {
+			try
+			{
 				$numPending = $this->repo->countPendingHospitalityOrders($groupIds);
-			} catch (\Throwable $e) {
+			}
+			catch (\Throwable $e)
+			{
 				// The count could not be computed. A gate must not fail open on an
 				// error it cannot interpret: an unknown count blocks the accept
 				// rather than permitting it. The underlying message is deliberately
@@ -300,7 +336,8 @@ class ApplicationService
 				);
 			}
 
-			if ($numPending > 0) {
+			if ($numPending > 0)
+			{
 				throw new RuntimeException(
 					'Cannot accept: ' . $numPending . ' hospitality order(s) still awaiting a decision',
 					400
@@ -311,7 +348,8 @@ class ApplicationService
 		$authorName = $this->repo->fetchAccountName($accountId) ?? 'Unknown';
 
 		// Add optional message as comment
-		if (!empty($message)) {
+		if (!empty($message))
+		{
 			$this->repo->addComment($appId, $authorName, $message, 'comment');
 		}
 
@@ -325,23 +363,29 @@ class ApplicationService
 		$cartIds = [];
 
 		// Handle combined applications
-		if ($this->combineApplications) {
+		if ($this->combineApplications)
+		{
 			$relatedInfo = $this->repo->getRelatedApplications($appId);
-			if ($relatedInfo['total_count'] > 1) {
+			if ($relatedInfo['total_count'] > 1)
+			{
 				$cartIds = $this->cartIdsParentFirst($relatedInfo);
 				$relatedIds = array_filter(
 					$relatedInfo['application_ids'],
 					fn(int $id) => $id !== $appId
 				);
 
-				foreach ($relatedIds as $relatedId) {
+				foreach ($relatedIds as $relatedId)
+				{
 					$relatedAssocCount = $this->repo->countAssociations($relatedId);
-					if ($relatedAssocCount > 0) {
+					if ($relatedAssocCount > 0)
+					{
 						// Accept related apps that have associations
 						$this->repo->updateStatus($relatedId, 'ACCEPTED');
 						$this->repo->activateAssociations($relatedId);
 						$acceptedIds[] = $relatedId;
-					} else {
+					}
+					else
+					{
 						// Auto-reject related apps without associations
 						$this->repo->updateStatus($relatedId, 'REJECTED');
 						$this->repo->addComment(
@@ -358,7 +402,8 @@ class ApplicationService
 
 		// One email to the applicant: for a combined cart it covers every part and its
 		// outcome (an auto-rejected part is listed there, not mailed separately).
-		if ($sendEmail) {
+		if ($sendEmail)
+		{
 			$this->sendStatusNotification($appId, $cartIds, $message);
 		}
 
@@ -383,14 +428,16 @@ class ApplicationService
 	public function rejectApplication(int $appId, int $accountId, string $reason, bool $sendEmail, bool $cascade = true): void
 	{
 		$row = $this->repo->getById($appId);
-		if (!$row) {
+		if (!$row)
+		{
 			throw new RuntimeException('Application not found', 404);
 		}
 
 		$authorName = $this->repo->fetchAccountName($accountId) ?? 'Unknown';
 
 		// Add rejection reason as comment
-		if (!empty($reason)) {
+		if (!empty($reason))
+		{
 			$this->repo->addComment($appId, $authorName, $reason, 'comment');
 		}
 
@@ -402,16 +449,19 @@ class ApplicationService
 		$cartIds = [];
 
 		// Handle combined applications (skipped for a single-application rejection)
-		if ($cascade && $this->combineApplications) {
+		if ($cascade && $this->combineApplications)
+		{
 			$relatedInfo = $this->repo->getRelatedApplications($appId);
-			if ($relatedInfo['total_count'] > 1) {
+			if ($relatedInfo['total_count'] > 1)
+			{
 				$cartIds = $this->cartIdsParentFirst($relatedInfo);
 				$relatedIds = array_filter(
 					$relatedInfo['application_ids'],
 					fn(int $id) => $id !== $appId
 				);
 
-				foreach ($relatedIds as $relatedId) {
+				foreach ($relatedIds as $relatedId)
+				{
 					$this->repo->updateStatus($relatedId, 'REJECTED');
 					$this->repo->deactivateAssociations($relatedId);
 					$this->repo->addComment($relatedId, $authorName, $reason, 'comment');
@@ -420,7 +470,8 @@ class ApplicationService
 		}
 
 		// One email to the applicant, covering the whole cart when the rejection cascaded
-		if ($sendEmail) {
+		if ($sendEmail)
+		{
 			$this->sendStatusNotification($appId, $cartIds, $reason);
 		}
 	}
@@ -434,7 +485,8 @@ class ApplicationService
 	public function reassignCaseOfficer(int $appId, int $accountId, int $newUserId): void
 	{
 		$row = $this->repo->getById($appId);
-		if (!$row) {
+		if (!$row)
+		{
 			throw new RuntimeException('Application not found', 404);
 		}
 
@@ -443,15 +495,18 @@ class ApplicationService
 
 		// Assign + status transition on the primary application
 		$this->repo->assignCaseOfficer($appId, $newUserId);
-		if (($row['status'] ?? '') === 'NEW') {
+		if (($row['status'] ?? '') === 'NEW')
+		{
 			$this->repo->updateStatus($appId, 'PENDING');
 		}
 		$this->repo->addComment($appId, $newUserName, $commentText, 'ownership');
 
 		// Propagate to related applications when combining is enabled
-		if ($this->combineApplications) {
+		if ($this->combineApplications)
+		{
 			$relatedInfo = $this->repo->getRelatedApplications($appId);
-			if ($relatedInfo['total_count'] > 1) {
+			if ($relatedInfo['total_count'] > 1)
+			{
 				$relatedIds = array_filter(
 					$relatedInfo['application_ids'],
 					fn(int $id) => $id !== $appId
@@ -459,14 +514,16 @@ class ApplicationService
 
 				$relatedRows = $this->repo->getByIds($relatedIds);
 
-				foreach ($relatedIds as $relatedId) {
+				foreach ($relatedIds as $relatedId)
+				{
 					$relatedRow = $relatedRows[$relatedId] ?? null;
 					if (!$relatedRow) continue;
 
 					if (($relatedRow['case_officer_id'] ?? null) == $newUserId) continue;
 
 					$this->repo->assignCaseOfficer($relatedId, $newUserId);
-					if (($relatedRow['status'] ?? '') === 'NEW') {
+					if (($relatedRow['status'] ?? '') === 'NEW')
+					{
 						$this->repo->updateStatus($relatedId, 'PENDING');
 					}
 					$this->repo->addComment($relatedId, $newUserName, $commentText, 'ownership');
@@ -483,15 +540,18 @@ class ApplicationService
 	public function sendMessage(int $appId, int $fromAccountId, string $subject, string $content): void
 	{
 		$app = $this->repo->getById($appId);
-		if (!$app) {
+		if (!$app)
+		{
 			throw new RuntimeException('Application not found', 404);
 		}
 
 		$caseOfficerId = (int) ($app['case_officer_id'] ?? 0);
-		if (!$caseOfficerId) {
+		if (!$caseOfficerId)
+		{
 			throw new RuntimeException('No case officer assigned', 400);
 		}
-		if ($caseOfficerId === $fromAccountId) {
+		if ($caseOfficerId === $fromAccountId)
+		{
 			throw new RuntimeException('Cannot send message to yourself', 400);
 		}
 
@@ -513,7 +573,8 @@ class ApplicationService
 		$emailApp = $row;
 		$emailApp['resources'] = $this->repo->fetchResourceIds($appId);
 		$dates = $this->repo->fetchDates($appId);
-		$emailApp['dates'] = array_map(function ($d) {
+		$emailApp['dates'] = array_map(function ($d)
+		{
 			return ['from_' => $d['from_'], 'to_' => $d['to_']];
 		}, $dates);
 		return $emailApp;
@@ -529,7 +590,8 @@ class ApplicationService
 	 */
 	private function statusMessageToMailHtml(string $message): string
 	{
-		if ($message === '') {
+		if ($message === '')
+		{
 			return '';
 		}
 
@@ -565,9 +627,12 @@ class ApplicationService
 	{
 		$messageHtml = $this->statusMessageToMailHtml($message);
 
-		if (!empty($cartIds)) {
+		if (!empty($cartIds))
+		{
 			$this->sendGroupNotificationSafe($cartIds, $messageHtml);
-		} else {
+		}
+		else
+		{
 			$this->sendNotificationSafe($appId, null, $messageHtml);
 		}
 	}
@@ -583,14 +648,17 @@ class ApplicationService
 	 */
 	private function sendGroupNotificationSafe(array $appIds, string $statusMessageHtml): void
 	{
-		try {
+		try
+		{
 			$applications = [];
-			foreach ($appIds as $id) {
+			foreach ($appIds as $id)
+			{
 				$row = $this->repo->getById($id);
 				if (!$row) continue;
 
 				$emailApp = $this->buildEmailApplicationData($id, $row);
-				if ($statusMessageHtml !== '') {
+				if ($statusMessageHtml !== '')
+				{
 					$emailApp['comment'] = $statusMessageHtml;
 				}
 				$applications[] = $emailApp;
@@ -600,7 +668,9 @@ class ApplicationService
 
 			$emailService = new EmailService();
 			$emailService->sendApplicationGroupNotification($applications, false);
-		} catch (\Throwable $e) {
+		}
+		catch (\Throwable $e)
+		{
 			error_log('Failed to send group notification for applications ' . implode(',', $appIds) . ': ' . $e->getMessage());
 		}
 	}
@@ -618,7 +688,8 @@ class ApplicationService
 	 */
 	private function sendNotificationSafe(int $appId, ?string $commentText = null, string $statusMessageHtml = ''): void
 	{
-		try {
+		try
+		{
 			$row = $this->repo->getById($appId);
 			if (!$row) return;
 
@@ -626,14 +697,19 @@ class ApplicationService
 			// A non-null comment text means this is an explicit case-officer reply: render
 			// the comment email (regardless of status) and carry the message text.
 			$isCommentReply = $commentText !== null;
-			if ($isCommentReply) {
+			if ($isCommentReply)
+			{
 				$emailApp['comment'] = $commentText;
-			} elseif ($statusMessageHtml !== '') {
+			}
+			elseif ($statusMessageHtml !== '')
+			{
 				$emailApp['comment'] = $statusMessageHtml;
 			}
 			$emailService = new EmailService();
 			$emailService->sendApplicationNotification($emailApp, false, false, $isCommentReply);
-		} catch (\Throwable $e) {
+		}
+		catch (\Throwable $e)
+		{
 			error_log("Failed to send notification for application {$appId}: " . $e->getMessage());
 		}
 	}
@@ -653,25 +729,31 @@ class ApplicationService
 	public function generateRecurringPreview(int $appId): array
 	{
 		$app = $this->repo->getById($appId);
-		if (!$app) {
+		if (!$app)
+		{
 			throw new RuntimeException('Application not found', 404);
 		}
 
 		$rawRecurring = $app['recurring_info'] ?? null;
 		$recurringData = null;
-		if (!empty($rawRecurring) && is_string($rawRecurring)) {
+		if (!empty($rawRecurring) && is_string($rawRecurring))
+		{
 			$recurringData = json_decode($rawRecurring, true);
-		} elseif (is_array($rawRecurring)) {
+		}
+		elseif (is_array($rawRecurring))
+		{
 			$recurringData = $rawRecurring;
 		}
 
-		if (!is_array($recurringData)) {
+		if (!is_array($recurringData))
+		{
 			throw new RuntimeException('Application has no recurring data', 400);
 		}
 
 		// Fetch first application date
 		$dates = $this->repo->fetchDates($appId);
-		if (empty($dates)) {
+		if (empty($dates))
+		{
 			throw new RuntimeException('Application has no dates', 400);
 		}
 
@@ -679,7 +761,8 @@ class ApplicationService
 		$fromTs = strtotime($firstDate['from_']);
 		$toTs = strtotime($firstDate['to_']);
 
-		if (!$fromTs || !$toTs) {
+		if (!$fromTs || !$toTs)
+		{
 			throw new RuntimeException('Invalid date format', 400);
 		}
 
@@ -696,9 +779,11 @@ class ApplicationService
 		$boundIsInclusive = false;
 		$buildingId = (int) ($app['building_id'] ?? 0);
 
-		if ($buildingId > 0) {
+		if ($buildingId > 0)
+		{
 			$season = $this->repo->fetchSeasonInfo($buildingId, $firstDate['from_']);
-			if ($season) {
+			if ($season)
+			{
 				$seasonInfo = [
 					'id'   => (int) $season['id'],
 					'name' => $season['name'],
@@ -706,7 +791,8 @@ class ApplicationService
 					'to_'   => $season['to_'],
 				];
 
-				if (!empty($recurringData['outseason'])) {
+				if (!empty($recurringData['outseason']))
+				{
 					// Use season end date - inclusive (legacy :789)
 					$repeatUntilTs = strtotime($season['to_']);
 					$boundIsInclusive = true;
@@ -714,19 +800,24 @@ class ApplicationService
 			}
 		}
 
-		if ($repeatUntilTs === null && !empty($recurringData['repeat_until'])) {
+		if ($repeatUntilTs === null && !empty($recurringData['repeat_until']))
+		{
 			// The date the citizen picked - inclusive (legacy :783)
 			$repeatUntilTs = strtotime($recurringData['repeat_until']);
 			$boundIsInclusive = true;
 		}
 
 		// Fallback: season end or +3 months from first date (matches legacy DateInterval P3M)
-		if (!$repeatUntilTs) {
-			if ($seasonInfo) {
+		if (!$repeatUntilTs)
+		{
+			if ($seasonInfo)
+			{
 				// Season end - inclusive (legacy :789), same as the outseason path
 				$repeatUntilTs = strtotime($seasonInfo['to_']);
 				$boundIsInclusive = true;
-			} else {
+			}
+			else
+			{
 				// NOT inclusive and NOT bumped - see the comment below
 				$repeatUntilTs = strtotime('+3 months', $fromTs);
 				$boundIsInclusive = false;
@@ -758,7 +849,8 @@ class ApplicationService
 		// Raw seconds rather than day-aware arithmetic on purpose: legacy expands
 		// the whole series in raw seconds ($interval = weeks * 60*60*24*7), so only
 		// raw seconds reproduces it across a DST transition too.
-		if ($boundIsInclusive) {
+		if ($boundIsInclusive)
+		{
 			$repeatUntilTs += 86400;
 		}
 
@@ -773,7 +865,8 @@ class ApplicationService
 		$i = 0;
 
 		// Loop: from_ts + (interval * i) until repeat_until, matching legacy condition
-		while (($toTs + ($intervalSeconds * $i)) <= $repeatUntilTs && $i < $maxIterations) {
+		while (($toTs + ($intervalSeconds * $i)) <= $repeatUntilTs && $i < $maxIterations)
+		{
 			$occurrences[] = [
 				'from_' => date('Y-m-d H:i', $fromTs + ($intervalSeconds * $i)),
 				'to_'   => date('Y-m-d H:i', $toTs + ($intervalSeconds * $i)),
@@ -797,7 +890,8 @@ class ApplicationService
 		$items = [];
 		$counts = ['total' => 0, 'existing' => 0, 'conflict' => 0, 'inactive' => 0, 'creatable' => 0];
 
-		foreach ($occurrences as $index => $occurrence) {
+		foreach ($occurrences as $index => $occurrence)
+		{
 			$itemFrom = $occurrence['from_'];
 			$itemTo = $occurrence['to_'];
 			$itemFromTs = strtotime($itemFrom);
@@ -822,12 +916,15 @@ class ApplicationService
 			];
 
 			// Check if the occurrence already holds an active element of its own
-			foreach ($elements as $element) {
-				if ((int) $element['active'] !== 1) {
+			foreach ($elements as $element)
+			{
+				if ((int) $element['active'] !== 1)
+				{
 					continue;
 				}
 				$item['exists'] = true;
-				if ($element['type'] === 'allocation' && $item['allocation_id'] === null) {
+				if ($element['type'] === 'allocation' && $item['allocation_id'] === null)
+				{
 					$item['allocation_id'] = (int) $element['id'];
 				}
 			}
@@ -835,22 +932,33 @@ class ApplicationService
 			// Collisions with anything that is not the occurrence's own. For an
 			// open occurrence this is the same set as conflict_details below.
 			$item['collision_foreign_details'] = $this->slotForeignCollisions(
-				$resourceIds, $itemFrom, $itemTo, $elements
+				$resourceIds,
+				$itemFrom,
+				$itemTo,
+				$elements
 			);
 			$item['collision_foreign'] = !empty($item['collision_foreign_details']);
 
-			if ($item['exists']) {
+			if ($item['exists'])
+			{
 				$counts['existing']++;
-			} else {
+			}
+			else
+			{
 				// Check collision. Own elements included on purpose: this is what
 				// stops createRecurringAllocations from booking over them.
-				if ($this->repo->hasCollision($resourceIds, $itemFrom, $itemTo)) {
+				if ($this->repo->hasCollision($resourceIds, $itemFrom, $itemTo))
+				{
 					$item['has_conflict'] = true;
 					$item['conflict_details'] = $this->repo->getCollisionDetails(
-						$resourceIds, $itemFrom, $itemTo
+						$resourceIds,
+						$itemFrom,
+						$itemTo
 					);
 					$counts['conflict']++;
-				} elseif (!empty($elements)) {
+				}
+				elseif (!empty($elements))
+				{
 					// Elements of its own, and none active (an active one is `exists`).
 					// Not creatable: accept reactivates every element of the
 					// application, so a new allocation would sit active beside the old
@@ -858,7 +966,9 @@ class ApplicationService
 					// applicant's Min side reads it (bookingfrontend RecurringSeriesService).
 					$item['inactive_only'] = true;
 					$counts['inactive']++;
-				} else {
+				}
+				else
+				{
 					$counts['creatable']++;
 				}
 			}
@@ -872,7 +982,8 @@ class ApplicationService
 		// `items`: createRecurringAllocations creates an allocation for every
 		// item that is neither existing nor conflicting.
 		$outsideSeries = [];
-		foreach ($placement['unplaced'] as $association) {
+		foreach ($placement['unplaced'] as $association)
+		{
 			$assocFromTs = strtotime((string) $association['from_']);
 			$assocToTs = strtotime((string) $association['to_']);
 			$outsideSeries[] = $association + [
@@ -909,7 +1020,8 @@ class ApplicationService
 	public function placeDateElements(int $appId, array $dates, array $resourceIds): array
 	{
 		$slots = [];
-		foreach ($dates as $date) {
+		foreach ($dates as $date)
+		{
 			$slots[(int) $date['id']] = $date;
 		}
 
@@ -920,12 +1032,16 @@ class ApplicationService
 		);
 
 		$rows = [];
-		foreach ($slots as $dateId => $date) {
+		foreach ($slots as $dateId => $date)
+		{
 			$elements = $placement['placed'][$dateId] ?? [];
 			$rows[$dateId] = [
 				'associations'              => $elements,
 				'collision_foreign_details' => $this->slotForeignCollisions(
-					$resourceIds, $date['from_'], $date['to_'], $elements
+					$resourceIds,
+					$date['from_'],
+					$date['to_'],
+					$elements
 				),
 			];
 		}
@@ -963,37 +1079,47 @@ class ApplicationService
 	private function placeElements(array $slots, array $elements, array $allocationGroups, bool $dateMatchSeriesOnly = false): array
 	{
 		$slotTimes = [];
-		foreach ($slots as $key => $slot) {
+		foreach ($slots as $key => $slot)
+		{
 			$from = strtotime((string) $slot['from_']);
 			$to = strtotime((string) $slot['to_']);
-			if ($from && $to) {
+			if ($from && $to)
+			{
 				$slotTimes[$key] = ['from' => $from, 'to' => $to, 'date' => date('Y-m-d', $from)];
 			}
 		}
 
 		$placed = [];
 		$typesPlaced = [];
-		$place = function ($key, array $element) use (&$placed, &$typesPlaced) {
+		$place = function ($key, array $element) use (&$placed, &$typesPlaced)
+		{
 			$placed[$key][] = $element;
 			$typesPlaced[$key][$element['type']] = true;
 		};
 
 		// 1. Exact start
 		$rest = [];
-		foreach ($elements as $element) {
+		foreach ($elements as $element)
+		{
 			$from = empty($element['from_']) ? false : strtotime((string) $element['from_']);
 			$match = null;
-			if ($from) {
-				foreach ($slotTimes as $key => $slot) {
-					if ($slot['from'] === $from) {
+			if ($from)
+			{
+				foreach ($slotTimes as $key => $slot)
+				{
+					if ($slot['from'] === $from)
+					{
 						$match = $key;
 						break;
 					}
 				}
 			}
-			if ($match !== null) {
+			if ($match !== null)
+			{
 				$place($match, $element);
-			} else {
+			}
+			else
+			{
 				$rest[] = $element;
 			}
 		}
@@ -1008,30 +1134,41 @@ class ApplicationService
 			<=> [!$inSeries($b), strtotime((string) $b['from_']), (int) $b['id']]);
 
 		$unplaced = [];
-		foreach ($rest as $element) {
+		foreach ($rest as $element)
+		{
 			$from = empty($element['from_']) ? false : strtotime((string) $element['from_']);
 			$to = empty($element['to_']) ? false : strtotime((string) $element['to_']);
 			$byDate = !$dateMatchSeriesOnly || $inSeries($element);
 			$best = null;
-			if ($from && $to) {
-				foreach ($slotTimes as $key => $slot) {
-					if (isset($typesPlaced[$key][$element['type']])) {
+			if ($from && $to)
+			{
+				foreach ($slotTimes as $key => $slot)
+				{
+					if (isset($typesPlaced[$key][$element['type']]))
+					{
 						continue;
 					}
 					$overlap = max(0, min($to, $slot['to']) - max($from, $slot['from']));
-					if ($overlap === 0 && (!$byDate || date('Y-m-d', $from) !== $slot['date'])) {
+					if ($overlap === 0 && (!$byDate || date('Y-m-d', $from) !== $slot['date']))
+					{
 						continue;
 					}
 					$distance = abs($slot['from'] - $from);
-					if ($best === null || $overlap > $best['overlap']
-						|| ($overlap === $best['overlap'] && $distance < $best['distance'])) {
+					if (
+						$best === null || $overlap > $best['overlap']
+						|| ($overlap === $best['overlap'] && $distance < $best['distance'])
+					)
+					{
 						$best = ['key' => $key, 'overlap' => $overlap, 'distance' => $distance];
 					}
 				}
 			}
-			if ($best !== null) {
+			if ($best !== null)
+			{
 				$place($best['key'], $element);
-			} else {
+			}
+			else
+			{
 				$unplaced[] = $element;
 			}
 		}
@@ -1052,18 +1189,23 @@ class ApplicationService
 	private function slotForeignCollisions(array $resourceIds, string $from, string $to, array $slotElements): array
 	{
 		$windows = [];
-		foreach ($slotElements as $element) {
-			if ((int) $element['active'] === 1 && !empty($element['from_']) && !empty($element['to_'])) {
+		foreach ($slotElements as $element)
+		{
+			if ((int) $element['active'] === 1 && !empty($element['from_']) && !empty($element['to_']))
+			{
 				$windows[] = [(string) $element['from_'], (string) $element['to_']];
 			}
 		}
-		if (!$windows) {
+		if (!$windows)
+		{
 			$windows[] = [$from, $to];
 		}
 
 		$foreign = [];
-		foreach ($windows as [$windowFrom, $windowTo]) {
-			foreach ($this->windowForeignCollisions($resourceIds, $windowFrom, $windowTo, $slotElements) as $collision) {
+		foreach ($windows as [$windowFrom, $windowTo])
+		{
+			foreach ($this->windowForeignCollisions($resourceIds, $windowFrom, $windowTo, $slotElements) as $collision)
+			{
 				$foreign[$collision['type'] . ':' . $collision['id']] = $collision;
 			}
 		}
@@ -1082,14 +1224,17 @@ class ApplicationService
 	public function windowForeignCollisions(array $resourceIds, string $from, string $to, array $ownElements): array
 	{
 		$own = [];
-		foreach ($ownElements as $element) {
+		foreach ($ownElements as $element)
+		{
 			$own[$element['type'] . ':' . $element['id']] = true;
 		}
 
 		$foreign = [];
-		foreach ($this->repo->getCollisionDetails($resourceIds, $from, $to) as $collision) {
+		foreach ($this->repo->getCollisionDetails($resourceIds, $from, $to) as $collision)
+		{
 			$ref = $collision['type'] . ':' . $collision['id'];
-			if (!isset($own[$ref])) {
+			if (!isset($own[$ref]))
+			{
 				$foreign[$ref] = $collision;
 			}
 		}
@@ -1107,7 +1252,8 @@ class ApplicationService
 	public function createRecurringAllocations(int $appId, int $accountId): array
 	{
 		$app = $this->repo->getById($appId);
-		if (!$app) {
+		if (!$app)
+		{
 			throw new RuntimeException('Application not found', 404);
 		}
 
@@ -1116,9 +1262,11 @@ class ApplicationService
 
 		// Resolve organization ID: prefer stored ID, fall back to lookup by org number
 		$organizationId = (int) ($app['customer_organization_id'] ?? 0);
-		if ($organizationId === 0 && !empty($app['customer_organization_number'])) {
+		if ($organizationId === 0 && !empty($app['customer_organization_number']))
+		{
 			$org = $this->repo->fetchOrganizationByNumber($app['customer_organization_number']);
-			if ($org) {
+			if ($org)
+			{
 				$organizationId = (int) $org['id'];
 			}
 		}
@@ -1129,13 +1277,16 @@ class ApplicationService
 			? $this->repo->fetchBuildingName($buildingId)
 			: '';
 
-		if ($organizationId === 0) {
+		if ($organizationId === 0)
+		{
 			throw new RuntimeException('Cannot create allocations: organization not found', 400);
 		}
-		if ($seasonId === 0) {
+		if ($seasonId === 0)
+		{
 			throw new RuntimeException('Cannot create allocations: no active season found', 400);
 		}
-		if (empty($resourceIds)) {
+		if (empty($resourceIds))
+		{
 			throw new RuntimeException('Cannot create allocations: no resources linked', 400);
 		}
 
@@ -1145,11 +1296,14 @@ class ApplicationService
 		$failed = [];
 		$totalAttempted = 0;
 
-		foreach ($preview['items'] as $item) {
-			if ($item['exists']) {
+		foreach ($preview['items'] as $item)
+		{
+			if ($item['exists'])
+			{
 				continue;
 			}
-			if ($item['has_conflict']) {
+			if ($item['has_conflict'])
+			{
 				$failed[] = [
 					'date'   => $item['date_display'],
 					'time'   => $item['time_display'],
@@ -1161,13 +1315,15 @@ class ApplicationService
 			// Same flag as the preview's counts, so the button and this loop agree:
 			// accept reactivates the occurrence's inactive elements, and another
 			// allocation here would double the slot.
-			if ($item['inactive_only']) {
+			if ($item['inactive_only'])
+			{
 				continue;
 			}
 
 			$totalAttempted++;
 
-			try {
+			try
+			{
 				$allocation = new Allocation([
 					'application_id' => $appId,
 					'organization_id' => $organizationId,
@@ -1182,21 +1338,26 @@ class ApplicationService
 					'resources'      => $resourceIds,
 				]);
 
-				if ($allocation->save()) {
+				if ($allocation->save())
+				{
 					$created[] = [
 						'id'   => $allocation->id,
 						'date' => $item['date_display'],
 						'time' => $item['time_display'],
 					];
 					$this->attachPurchaseOrder((int) $allocation->id, $appId, $authorName);
-				} else {
+				}
+				else
+				{
 					$failed[] = [
 						'date'   => $item['date_display'],
 						'time'   => $item['time_display'],
 						'reason' => 'save_failed',
 					];
 				}
-			} catch (\Throwable $e) {
+			}
+			catch (\Throwable $e)
+			{
 				$failed[] = [
 					'date'   => $item['date_display'],
 					'time'   => $item['time_display'],
@@ -1205,7 +1366,8 @@ class ApplicationService
 			}
 		}
 
-		if ($created) {
+		if ($created)
+		{
 			$groupId = $this->resolveAllocationGroupId($appId);
 			$this->repo->setAllocationGroupForIds(array_column($created, 'id'), $groupId);
 		}
@@ -1258,18 +1420,38 @@ class ApplicationService
 			$this->checkResources($buildingId, $input['resource_ids']),
 			$this->legacyValidate($allocationBo, $allocation)
 		);
-		if ($errors) {
+		if ($errors)
+		{
 			return ['errors' => $errors];
 		}
 
-		if (!$allocationBo->allow_create($allocation)) {
+		if (!$allocationBo->allow_create($allocation))
+		{
 			throw new RuntimeException('Not allowed to create this allocation', 403);
 		}
 
-		$receipt = $allocationBo->add($allocation);
-		$allocationId = (int) $receipt['id'];
-		$allocationBo->so->update_id_string($allocationId);
-		$this->attachPurchaseOrder($allocationId, $appId, $this->currentFullName());
+		$db = \App\Database\Db::getInstance();
+		if ($db->get_transaction())
+		{
+			throw new RuntimeException('Cannot create the booking inside an open transaction', 500);
+		}
+
+		$db->transaction_begin();
+		try
+		{
+
+			$receipt = $allocationBo->add($allocation);
+			$allocationId = (int) $receipt['id'];
+			$allocationBo->so->update_id_string($allocationId);
+			$this->attachPurchaseOrder($allocationId, $appId, $this->currentFullName());
+			$db->transaction_commit();
+		}
+		catch (\Throwable $e)
+		{
+			$db->transaction_abort();
+			error_log("Creating a allocation for application {$appId} failed: " . $e->getMessage());
+			throw new RuntimeException('The booking could not be saved', 500);
+		}
 
 		return [
 			'id'       => $allocationId,
@@ -1300,17 +1482,22 @@ class ApplicationService
 
 		$errors = $this->checkResources($buildingId, $input['resource_ids']);
 
-		if (!$orgId) {
+		if (!$orgId)
+		{
 			// The booking itself has no organization field, so its validation would
 			// not catch this; the allocation it is made inside needs one.
 			$errors['organization_id'][] = lang('booking.Field %1 is required', lang('booking.organization_id'));
-		} else {
+		}
+		else
+		{
 			$groupIds = $this->repo->fetchActiveGroupIds($orgId);
 			// A single-group organization books as that group (uibooking::add).
-			if (!$groupId && count($groupIds) === 1) {
+			if (!$groupId && count($groupIds) === 1)
+			{
 				$groupId = $groupIds[0];
 			}
-			if ($groupId && !in_array($groupId, $groupIds, true)) {
+			if ($groupId && !in_array($groupId, $groupIds, true))
+			{
 				$errors['group_id'][] = lang('booking.group_not_in_organization');
 			}
 		}
@@ -1324,12 +1511,15 @@ class ApplicationService
 		// leaves them, so validation asks for the number of participants.
 		$rows = $this->repo->fetchAgegroups($appId);
 		$hasParticipants = false;
-		foreach ($rows as $row) {
-			if ((int) $row['male'] > 0 || (int) $row['female'] > 0) {
+		foreach ($rows as $row)
+		{
+			if ((int) $row['male'] > 0 || (int) $row['female'] > 0)
+			{
 				$hasParticipants = true;
 			}
 		}
-		$agegroups = array_map(static function (array $row) use ($hasParticipants): array {
+		$agegroups = array_map(static function (array $row) use ($hasParticipants): array
+		{
 			return [
 				'agegroup_id' => (int) $row['id'],
 				'male'        => $hasParticipants ? (int) $row['male'] : null,
@@ -1359,6 +1549,7 @@ class ApplicationService
 			// Who made it, for audit: the case officer. Only recorded; nothing is sent to them.
 			'created_by_account_id' => $accountId,
 		];
+
 		$this->addCostHistory($booking, (float) $input['cost']);
 
 		$bookingBo = \CreateObject('booking.bobooking');
@@ -1366,7 +1557,8 @@ class ApplicationService
 		// uibooking::add lets a booking overlap an event: it drops that error.
 		unset($validation['event']);
 		$errors = array_merge_recursive($errors, $validation);
-		if ($errors) {
+		if ($errors)
+		{
 			return ['errors' => $errors];
 		}
 
@@ -1385,7 +1577,8 @@ class ApplicationService
 		];
 		$allocationBo = \CreateObject('booking.boallocation');
 
-		if (!$bookingBo->allow_create($booking) || !$allocationBo->allow_create($allocation)) {
+		if (!$bookingBo->allow_create($booking) || !$allocationBo->allow_create($allocation))
+		{
 			throw new RuntimeException('Not allowed to create this booking', 403);
 		}
 
@@ -1393,16 +1586,23 @@ class ApplicationService
 		// committing its own, so this one covers both inserts. It must be the only
 		// one: Db keeps a single flag, so an inner begin/commit would end it early.
 		$db = \App\Database\Db::getInstance();
-		if ($db->get_transaction()) {
+		if ($db->get_transaction())
+		{
 			throw new RuntimeException('Cannot create the booking inside an open transaction', 500);
 		}
 		$db->transaction_begin();
-		try {
+		try
+		{
 			$allocationReceipt = $allocationBo->add($allocation);
+
+			$this->attachPurchaseOrder($allocationReceipt['id'], $appId, $this->currentFullName());
+
 			$booking['allocation_id'] = (int) $allocationReceipt['id'];
 			$bookingReceipt = $bookingBo->add($booking);
 			$db->transaction_commit();
-		} catch (\Throwable $e) {
+		}
+		catch (\Throwable $e)
+		{
 			$db->transaction_abort();
 			error_log("Creating a booking for application {$appId} failed: " . $e->getMessage());
 			throw new RuntimeException('The booking could not be saved', 500);
@@ -1420,7 +1620,8 @@ class ApplicationService
 	private function requireApplication(int $appId): array
 	{
 		$app = $this->repo->getById($appId);
-		if (!$app) {
+		if (!$app)
+		{
 			throw new RuntimeException('Application not found', 404);
 		}
 		return $app;
@@ -1433,15 +1634,20 @@ class ApplicationService
 	{
 		// The validator reads every defined field; an absent one validates like
 		// null, so name them all and spare the error log the undefined keys.
-		foreach (array_keys($bo->so->get_field_defs()) as $field) {
-			if (!array_key_exists($field, $entity)) {
+		foreach (array_keys($bo->so->get_field_defs()) as $field)
+		{
+			if (!array_key_exists($field, $entity))
+			{
 				$entity[$field] = null;
 			}
 		}
 
-		try {
+		try
+		{
 			return $bo->validate($entity);
-		} catch (\InvalidArgumentException $e) {
+		}
+		catch (\InvalidArgumentException $e)
+		{
 			// soseason::timespan_within_season throws for a season that does not exist.
 			return ['season_id' => [lang('booking.please select a season')]];
 		}
@@ -1455,8 +1661,10 @@ class ApplicationService
 	private function checkResources(int $buildingId, array $resourceIds): array
 	{
 		$allowed = $this->repo->fetchBuildingResourceIds($buildingId);
-		foreach ($resourceIds as $resourceId) {
-			if (!in_array((int) $resourceId, $allowed, true)) {
+		foreach ($resourceIds as $resourceId)
+		{
+			if (!in_array((int) $resourceId, $allowed, true))
+			{
 				return ['resources' => [lang('booking.resource_not_in_building')]];
 			}
 		}
@@ -1469,7 +1677,8 @@ class ApplicationService
 	 */
 	private function addCostHistory(array &$entity, float $cost): void
 	{
-		if ($cost == 0.0) {
+		if ($cost == 0.0)
+		{
 			return;
 		}
 		$entity['costs'][] = [
@@ -1488,9 +1697,11 @@ class ApplicationService
 	private function legacyTime(string $value, string $format): string
 	{
 		$value = str_replace('T', ' ', trim($value));
-		foreach (['Y-m-d H:i:s', 'Y-m-d H:i'] as $inputFormat) {
+		foreach (['Y-m-d H:i:s', 'Y-m-d H:i'] as $inputFormat)
+		{
 			$time = \DateTime::createFromFormat('!' . $inputFormat, $value);
-			if ($time && $time->format($inputFormat) === $value) {
+			if ($time && $time->format($inputFormat) === $value)
+			{
 				return $time->format($format);
 			}
 		}
@@ -1535,11 +1746,13 @@ class ApplicationService
 	 */
 	private function attachPurchaseOrder(int $allocationId, int $appId, string $author): void
 	{
-		if ($allocationId <= 0 || $appId <= 0) {
+		if ($allocationId <= 0 || $appId <= 0)
+		{
 			return;
 		}
 
-		if ($this->repo->findPurchaseOrderIdForAllocation($allocationId) !== null) {
+		if ($this->repo->findPurchaseOrderIdForAllocation($allocationId) !== null)
+		{
 			return;
 		}
 
@@ -1551,7 +1764,8 @@ class ApplicationService
 			'allocation'
 		);
 
-		if (!$orderId) {
+		if (!$orderId)
+		{
 			return;
 		}
 
@@ -1561,7 +1775,8 @@ class ApplicationService
 		// all, so 'sum' is unset rather than zero and assigning it would write
 		// NULL to cost. An order that genuinely totals zero is a real price and
 		// must still be written.
-		if (empty($order['lines'])) {
+		if (empty($order['lines']))
+		{
 			return;
 		}
 
@@ -1593,7 +1808,8 @@ class ApplicationService
 	{
 		$existing = $this->repo->findAllocationGroupIdsForApplication($appId);
 
-		if (count($existing) > 1) {
+		if (count($existing) > 1)
+		{
 			error_log(sprintf(
 				'booking: application %d carries more than one allocation_group_id (%s); reusing the oldest, %d',
 				$appId,

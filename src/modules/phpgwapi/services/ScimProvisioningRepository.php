@@ -6,6 +6,7 @@ use App\Database\Db;
 use App\modules\phpgwapi\controllers\Accounts\Accounts;
 use App\modules\phpgwapi\controllers\Accounts\phpgwapi_user;
 use App\modules\phpgwapi\controllers\Accounts\phpgwapi_group;
+use DomainException;
 use InvalidArgumentException;
 use PDO;
 use RuntimeException;
@@ -21,7 +22,7 @@ final class ScimProvisioningRepository implements ScimProvisioningStore
 	{
 		$this->db = $db ?? Db::getInstance();
 		$this->accounts = $accounts;
-		$configuredTenant = $tenantId ?? getenv('SCIM_TENANT_ID');
+		$configuredTenant = $tenantId ?? (new ScimConfiguration())->get('SCIM_TENANT_ID');
 		if (!is_string($configuredTenant) || trim($configuredTenant) === '')
 		{
 			throw new InvalidArgumentException('SCIM_TENANT_ID is not configured');
@@ -120,19 +121,64 @@ final class ScimProvisioningRepository implements ScimProvisioningStore
 		$this->db->transaction_begin();
 		try
 		{
-			$accounts = $this->accounts();
-			$user = new phpgwapi_user();
-			$user->init([
-				'lid' => $data['userName'],
-				'firstname' => $data['givenName'],
-				'lastname' => $data['familyName'],
-				'passwd_hash' => password_hash(bin2hex(random_bytes(32)), PASSWORD_DEFAULT),
-				'enabled' => $data['active'],
-				'expires' => -1,
-				'person_id' => 0,
-				'quota' => -1,
-			]);
-			$accountId = (int) $accounts->create_user_account($user);
+			$existing = $this->findAdoptableAccount($data['userName'], 'u');
+			if ($existing === null)
+			{
+				$localPart = $this->userNameLocalPart($data['userName']);
+				if ($localPart !== null)
+				{
+					$existing = $this->findAdoptableAccount($localPart, 'u');
+				}
+			}
+			if ($existing !== null)
+			{
+				$accountId = (int) $existing['account_id'];
+				$mapping = $this->fetchOne(
+					"SELECT ext_user, location, status FROM phpgw_mapping"
+					. " WHERE account_id = :account_id AND auth_type = 'scim'",
+					[':account_id' => $accountId]
+				);
+				if ($mapping !== null)
+				{
+					if ($mapping['ext_user'] !== $data['externalId']
+						|| $mapping['location'] !== $this->tenantId || $mapping['status'] !== 'A')
+					{
+						throw new DomainException('Local user already has a different or disabled SCIM mapping');
+					}
+					$row = $this->findById($accountId, 'u')
+						?? throw new RuntimeException('Mapped SCIM user could not be read');
+					$this->db->transaction_commit();
+					return $row;
+				}
+				if ($existing['account_lid'] !== $data['userName'])
+				{
+					$caseStatement = $this->db->prepare(
+						'UPDATE phpgw_accounts SET account_lid = :account_lid'
+						. ' WHERE account_id = :account_id AND account_type = :account_type'
+					);
+					$caseStatement->execute([
+						':account_lid' => $data['userName'],
+						':account_id' => $accountId,
+						':account_type' => 'u',
+					]);
+				}
+			}
+			else
+			{
+				$accounts = $this->accounts();
+				$user = new phpgwapi_user();
+				$user->init([
+					'lid' => $data['userName'],
+					'firstname' => $data['givenName'],
+					'lastname' => $data['familyName'],
+					'passwd_hash' => password_hash(bin2hex(random_bytes(32)), PASSWORD_DEFAULT),
+					'enabled' => $data['active'],
+					'expires' => -1,
+					'person_id' => 0,
+					'quota' => -1,
+				]);
+				$accountId = (int) $accounts->create_user_account($user);
+			}
 
 			$statement = $this->db->prepare(
 				"INSERT INTO phpgw_mapping (ext_user, auth_type, status, location, account_lid, account_id)"
@@ -145,10 +191,11 @@ final class ScimProvisioningRepository implements ScimProvisioningStore
 				':account_id' => $accountId,
 			]);
 			$this->storeEmail($accountId, $data['email']);
+			$row = $this->findById($accountId, 'u')
+				?? throw new RuntimeException('Created SCIM user could not be read');
 			$this->db->transaction_commit();
 
-			return $this->findById($accountId, 'u')
-				?? throw new RuntimeException('Created SCIM user could not be read');
+			return $row;
 		}
 		catch (Throwable $exception)
 		{
@@ -230,17 +277,55 @@ final class ScimProvisioningRepository implements ScimProvisioningStore
 		$this->db->transaction_begin();
 		try
 		{
-			$group = new phpgwapi_group();
-			$group->init([
-				'lid' => $data['displayName'],
-				'firstname' => $data['displayName'],
-				'passwd_hash' => '',
-				'enabled' => true,
-				'expires' => -1,
-				'person_id' => 0,
-				'quota' => -1,
-			]);
-			$accountId = (int) $this->accounts()->create_group_account($group);
+			$existing = $this->findAdoptableAccount($data['displayName'], 'g');
+			if ($existing !== null)
+			{
+				$accountId = (int) $existing['account_id'];
+				$mapping = $this->fetchOne(
+					"SELECT ext_user, location, status FROM phpgw_mapping"
+					. " WHERE account_id = :account_id AND auth_type = 'scim'",
+					[':account_id' => $accountId]
+				);
+				if ($mapping !== null)
+				{
+					if ($mapping['ext_user'] !== $data['externalId']
+						|| $mapping['location'] !== $this->tenantId || $mapping['status'] !== 'A')
+					{
+						throw new DomainException('Local group already has a different or disabled SCIM mapping');
+					}
+					$row = $this->findById($accountId, 'g')
+						?? throw new RuntimeException('Mapped SCIM group could not be read');
+					$this->db->transaction_commit();
+					return $row;
+				}
+				if ($existing['account_lid'] !== $data['displayName'])
+				{
+					$caseStatement = $this->db->prepare(
+						'UPDATE phpgw_accounts SET account_lid = :account_lid, account_firstname = :account_lid'
+						. ' WHERE account_id = :account_id AND account_type = :account_type'
+					);
+					$caseStatement->execute([
+						':account_lid' => $data['displayName'],
+						':account_id' => $accountId,
+						':account_type' => 'g',
+					]);
+				}
+			}
+			else
+			{
+				$accounts = $this->accounts();
+				$group = new phpgwapi_group();
+				$group->init([
+					'lid' => $data['displayName'],
+					'firstname' => $data['displayName'],
+					'passwd_hash' => '',
+					'enabled' => true,
+					'expires' => -1,
+					'person_id' => 0,
+					'quota' => -1,
+				]);
+				$accountId = (int) $accounts->create_group_account($group);
+			}
 
 			$statement = $this->db->prepare(
 				"INSERT INTO phpgw_mapping (ext_user, auth_type, status, location, account_lid, account_id)"
@@ -252,10 +337,11 @@ final class ScimProvisioningRepository implements ScimProvisioningStore
 				':account_lid' => $data['displayName'],
 				':account_id' => $accountId,
 			]);
+			$row = $this->findById($accountId, 'g')
+				?? throw new RuntimeException('Created SCIM group could not be read');
 			$this->db->transaction_commit();
 
-			return $this->findById($accountId, 'g')
-				?? throw new RuntimeException('Created SCIM group could not be read');
+			return $row;
 		}
 		catch (Throwable $exception)
 		{
@@ -438,12 +524,58 @@ final class ScimProvisioningRepository implements ScimProvisioningStore
 	{
 		$statement = $this->db->prepare(
 			'INSERT INTO phpgw_accounts_data (account_id, account_data)'
-			. " VALUES (:account_id, jsonb_build_object('scim_email', :email))"
+			. " VALUES (:account_id, jsonb_build_object('scim_email', CAST(:email AS text)))"
 			. ' ON CONFLICT (account_id) DO UPDATE SET account_data ='
 			. " COALESCE(phpgw_accounts_data.account_data, '{}'::jsonb)"
 			. " || jsonb_build_object('scim_email', EXCLUDED.account_data->>'scim_email')"
 		);
 		$statement->execute([':account_id' => $accountId, ':email' => $email]);
+	}
+
+	private function findAdoptableAccount(string $accountLid, string $accountType): ?array
+	{
+		$exact = $this->fetchOne(
+			'SELECT account_id, account_lid FROM phpgw_accounts'
+			. ' WHERE account_lid = :account_lid AND account_type = :account_type FOR UPDATE',
+			[':account_lid' => $accountLid, ':account_type' => $accountType]
+		);
+		if ($exact !== null)
+		{
+			return $exact;
+		}
+
+		$statement = $this->db->prepare(
+			'SELECT account_id, account_lid FROM phpgw_accounts'
+			. ' WHERE LOWER(account_lid) = LOWER(:account_lid) AND account_type = :account_type FOR UPDATE'
+		);
+		$statement->execute([':account_lid' => $accountLid, ':account_type' => $accountType]);
+		$match = $statement->fetch(PDO::FETCH_ASSOC);
+		if ($match === false)
+		{
+			return null;
+		}
+		if ($statement->fetch(PDO::FETCH_ASSOC) !== false)
+		{
+			throw new DomainException('Multiple local accounts match the incoming name case-insensitively');
+		}
+
+		return $match;
+	}
+
+	private function userNameLocalPart(string $userName): ?string
+	{
+		if (substr_count($userName, '@') !== 1)
+		{
+			return null;
+		}
+
+		[$localPart, $domain] = explode('@', $userName, 2);
+		if ($localPart === '' || $domain === '')
+		{
+			return null;
+		}
+
+		return $localPart;
 	}
 
 	private function accounts(): object

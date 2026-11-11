@@ -356,3 +356,4 @@ you must select a file type	admin	en	You must select a file type
 you will need to remove the subcategories before you can delete this category	admin	en	You will need to remove the subcategories before you can delete this category !
 opcache monitor	admin	en	Opcache monitor
 info	admin	en	Information
+scim configuration	common	en	SCIM configuration

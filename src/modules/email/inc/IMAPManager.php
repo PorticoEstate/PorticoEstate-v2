@@ -25,9 +25,11 @@ class IMAPManager
      */
     public static function setMode($mode)
     {
-        if (in_array($mode, [self::MODE_AUTO, self::MODE_MODERN, self::MODE_LEGACY])) {
+        if (in_array($mode, [self::MODE_AUTO, self::MODE_MODERN, self::MODE_LEGACY]))
+        {
             self::$mode = $mode;
-            self::$currentWrapper = null; // Reset wrapper selection
+            self::$currentWrapper = null;
+            self::$fallbackOccurred = false;
         }
     }
     
@@ -50,29 +52,83 @@ class IMAPManager
     /**
      * Get the appropriate wrapper class
      */
-    private static function getWrapper()
+    private static function getWrapper($function, $args)
     {
-        if (self::$currentWrapper !== null) {
-            return self::$currentWrapper;
+        if (($args[0] ?? null) instanceof LocalPopConnection)
+        {
+            return 'LocalPopIMAPWrapper';
         }
-        
-        switch (self::$mode) {
+        switch (self::$mode)
+        {
             case self::MODE_LEGACY:
-                self::$currentWrapper = 'LegacyIMAPWrapper';
-                break;
+                return 'LegacyIMAPWrapper';
                 
             case self::MODE_MODERN:
-                self::$currentWrapper = 'ModernIMAPWrapper';
-                break;
+                return 'ModernIMAPWrapper';
                 
             case self::MODE_AUTO:
             default:
-                // Try modern first, fallback to legacy if needed
-                self::$currentWrapper = 'ModernIMAPWrapper';
-                break;
+                if ($function === 'imap_last_error' && self::$currentWrapper !== null)
+                {
+                    return self::$currentWrapper;
+                }
+
+                $streamFunctions = [
+                    'imap_close', 'imap_search', 'imap_fetchheader', 'imap_fetchbody',
+                    'imap_fetchstructure', 'imap_header', 'imap_headerinfo', 'imap_delete',
+                    'imap_expunge', 'imap_num_msg', 'imap_list', 'imap_listmailbox',
+                    'imap_ping', 'imap_append', 'imap_body', 'imap_createmailbox',
+                    'imap_deletemailbox', 'imap_renamemailbox', 'imap_status',
+                    'imap_mailboxmsginfo', 'imap_mail_copy', 'imap_mail_move',
+                    'imap_setflag_full', 'imap_clearflag_full', 'imap_sort', 'imap_reopen', 'imap_msgno',
+                    'imap_getmailboxes', 'imap_subscribe', 'imap_unsubscribe', 'imap_headers', 'imap_fetch_sort_metadata',
+                ];
+
+                if (in_array($function, $streamFunctions, true))
+                {
+                    $stream = $args[0] ?? null;
+                    if (is_string($stream))
+                    {
+                        return 'ModernIMAPWrapper';
+                    }
+                    if (is_resource($stream) || is_object($stream))
+                    {
+                        return 'LegacyIMAPWrapper';
+                    }
+                }
+
+                return 'ModernIMAPWrapper';
         }
-        
-        return self::$currentWrapper;
+    }
+
+    private static function canFallback($function, $wrapper, $oauthAuthentication)
+    {
+        return $function === 'imap_open'
+            && !$oauthAuthentication
+            && self::$mode === self::MODE_AUTO
+            && $wrapper === 'ModernIMAPWrapper';
+    }
+
+    private static function fallbackToLegacy($function, $args)
+    {
+        self::$fallbackOccurred = true;
+        self::$currentWrapper = 'LegacyIMAPWrapper';
+        error_log('[email] IMAP connection falling back to native implementation');
+
+        try
+        {
+            $result = call_user_func_array('LegacyIMAPWrapper::' . $function, $args);
+            if ($result === false)
+            {
+            	error_log('[email] Native IMAP connection failed');
+            }
+            return $result;
+        }
+        catch (Exception $exception)
+        {
+            error_log('[email] Native IMAP connection failed (' . get_class($exception) . ')');
+            return false;
+        }
     }
     
     /**
@@ -80,41 +136,34 @@ class IMAPManager
      */
     private static function executeWithFallback($function, $args)
     {
-        $wrapper = self::getWrapper();
+        $wrapper = self::getWrapper($function, $args);
+        self::$currentWrapper = $wrapper;
+        $oauthAuthentication = $function === 'imap_open'
+            && (($args[5]['authentication'] ?? 'login') === 'oauth');
         
-        try {
+        try
+        {
             // Try primary wrapper
             $result = call_user_func_array([$wrapper, $function], $args);
             
             // If result is false and we haven't tried legacy yet, try fallback
-            if ($result === false && self::$mode === self::MODE_AUTO && $wrapper === 'ModernIMAPWrapper' && !self::$fallbackOccurred) {
-                self::$fallbackOccurred = true;
-                self::$currentWrapper = 'LegacyIMAPWrapper';
-                
-                error_log("IMAP: Falling back to legacy wrapper for function: $function");
-                
-                $result = call_user_func_array([self::$currentWrapper, $function], $args);
+            if (self::canFallback($function, $wrapper, $oauthAuthentication) && $result === false)
+            {
+                return self::fallbackToLegacy($function, $args);
             }
             
             return $result;
             
-        } catch (Exception $e) {
+        }
+        catch (Exception $e)
+        {
             // If exception occurs and we're in auto mode, try fallback
-            if (self::$mode === self::MODE_AUTO && $wrapper === 'ModernIMAPWrapper' && !self::$fallbackOccurred) {
-                self::$fallbackOccurred = true;
-                self::$currentWrapper = 'LegacyIMAPWrapper';
-                
-                error_log("IMAP: Exception in modern wrapper, falling back to legacy: " . $e->getMessage());
-                
-                try {
-                    return call_user_func_array([self::$currentWrapper, $function], $args);
-                } catch (Exception $e2) {
-                    error_log("IMAP: Legacy wrapper also failed: " . $e2->getMessage());
-                    return false;
-                }
+            if (self::canFallback($function, $wrapper, $oauthAuthentication))
+            {
+                return self::fallbackToLegacy($function, $args);
             }
             
-            error_log("IMAP: Error in $wrapper::$function - " . $e->getMessage());
+            error_log("[email] $wrapper::$function failed (" . get_class($e) . ')');
             return false;
         }
     }
@@ -150,10 +199,19 @@ class IMAPManager
     {
         return self::executeWithFallback('imap_fetchstructure', [$stream, $msgNum, $flags]);
     }
-    
-    public static function imap_header($stream, $msgNum, $fromlength = 0, $tolength = 0, $defaulthost = '')
+
+    public static function imap_prefetch_message_metadata($stream, array $messageNumbers, $flags = 0)
     {
-        return self::executeWithFallback('imap_header', [$stream, $msgNum, $fromlength, $tolength, $defaulthost]);
+        if (!is_string($stream))
+        {
+            return false;
+        }
+        return ModernIMAPWrapper::imap_prefetch_message_metadata($stream, $messageNumbers, $flags);
+    }
+    
+    public static function imap_header($stream, $msgNum, $fromlength = 0, $tolength = 0, $defaulthost = '', $flags = 0)
+    {
+        return self::executeWithFallback('imap_header', [$stream, $msgNum, $fromlength, $tolength, $defaulthost, $flags]);
     }
     
     public static function imap_headerinfo($stream, $msgNum, $fromlength = 0, $tolength = 0, $defaulthost = '')
@@ -261,9 +319,19 @@ class IMAPManager
         return self::executeWithFallback('imap_setflag_full', [$stream, $msgNum, $flag, $options]);
     }
     
+    public static function imap_clearflag_full($stream, $msgNum, $flag, $options = 0)
+    {
+        return self::executeWithFallback('imap_clearflag_full', [$stream, $msgNum, $flag, $options]);
+    }
+
     public static function imap_sort($stream, $criteria, $reverse, $options = 0)
     {
         return self::executeWithFallback('imap_sort', [$stream, $criteria, $reverse, $options]);
+    }
+
+    public static function imap_fetch_sort_metadata($stream, array $messageNumbers, $flags = 0)
+    {
+        return self::executeWithFallback('imap_fetch_sort_metadata', [$stream, $messageNumbers, $flags]);
     }
     
     public static function imap_reopen($stream, $mailbox, $flags = 0)

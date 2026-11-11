@@ -85,6 +85,66 @@ class BuildingController extends DocumentController
 
 	/**
 	 * @OA\Get(
+	 *     path="/bookingfrontend/buildings/search",
+	 *     summary="Search active buildings by name, address or ID (up to 20 matches)",
+	 *     tags={"Buildings"},
+	 *     @OA\Parameter(
+	 *         name="query", in="query", required=true,
+	 *         @OA\Schema(type="string", minLength=2, maxLength=200)
+	 *     ),
+	 *     @OA\Response(
+	 *         response=200, description="Matching buildings",
+	 *         @OA\JsonContent(
+	 *             type="object",
+	 *             @OA\Property(property="results", type="array", @OA\Items(
+	 *                 @OA\Property(property="id", type="integer"),
+	 *                 @OA\Property(property="name", type="string")
+	 *             ))
+	 *         )
+	 *     ),
+	 *     @OA\Response(response=400, description="Invalid search query"),
+	 *     @OA\Response(response=500, description="Could not search buildings")
+	 * )
+	 */
+	public function search(Request $request, Response $response): Response
+	{
+		$query = $request->getQueryParams()['query'] ?? '';
+		if (!is_string($query) || mb_strlen($query) > 200)
+		{
+			return ResponseHelper::sendErrorResponse(['error' => 'Invalid search query'], 400, $response);
+		}
+		$query = trim($query);
+		if (mb_strlen($query) < 2)
+		{
+			return ResponseHelper::sendJSONResponse(['results' => []], 200, $response);
+		}
+
+		$sql = "SELECT id, name FROM bb_building
+			WHERE active = 1 AND (name ILIKE :name OR street ILIKE :street OR id = :id)
+			ORDER BY name, id LIMIT 20";
+		$pattern = '%' . str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $query) . '%';
+		$id = filter_var($query, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]) ?: 0;
+
+		try
+		{
+			$stmt = $this->db->prepare($sql);
+			$stmt->execute([':name' => $pattern, ':street' => $pattern, ':id' => $id]);
+			$buildings = array_map(static function (array $building): array
+			{
+				return ['id' => (int)$building['id'], 'name' => $building['name']];
+			}, $stmt->fetchAll(\PDO::FETCH_ASSOC));
+
+			return ResponseHelper::sendJSONResponse(['results' => $buildings], 200, $response);
+		}
+		catch (Exception $e)
+		{
+			error_log('Error searching information screen buildings: ' . $e->getMessage());
+			return ResponseHelper::sendErrorResponse(['error' => 'Could not search buildings'], 500, $response);
+		}
+	}
+
+	/**
+	 * @OA\Get(
 	 *     path="/bookingfrontend/buildings",
 	 *     summary="Get a list of all buildings",
 	 *     tags={"Buildings"},

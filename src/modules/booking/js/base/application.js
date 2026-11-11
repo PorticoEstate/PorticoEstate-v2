@@ -89,9 +89,9 @@ $(document).ready(function ()
 						html_agegroups += "<td>";
 						html_agegroups += "<input class=\"input50\" type=\"text\" name='male[" + agegroups[i]['id'] + "]' value='0'></input>";
 						html_agegroups += "</td>";
-	//					html_agegroups += "<td>";
-	//					html_agegroups += "<input class=\"input50\" type=\"text\" name='female[" + agegroups[i]['id'] + "]' value='0'></input>";
-	//					html_agegroups += "</td>";
+						//					html_agegroups += "<td>";
+						//					html_agegroups += "<input class=\"input50\" type=\"text\" name='female[" + agegroups[i]['id'] + "]' value='0'></input>";
+						//					html_agegroups += "</td>";
 						html_agegroups += "</tr>";
 					}
 					$("#agegroup_tbody").html(html_agegroups);
@@ -175,8 +175,10 @@ $(window).on('load', function ()
 
 		if (typeof (populateTableChkArticles) !== 'undefined')
 		{
+			let edit = true;
+			let alloc_template_id = null;
 			populateTableChkArticles([
-			], resources, application_id, reservation_type, reservation_id);
+			], resources, application_id, reservation_type, reservation_id, alloc_template_id, edit);
 		}
 	});
 

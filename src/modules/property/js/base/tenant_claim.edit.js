@@ -14,7 +14,7 @@ var intVal = function (i)
 
 this.local_DrawCallback0 = function (container)
 {
-	var api = $("#" + container).dataTable().api();
+	var api = new DataTable("#" + container);
 	// Remove the formatting to get integer data for summation
 //	var columns = ["6"];
 //	$(api.column(5).footer()).html("<div style=\"text-align:right;\">Sum</div>");

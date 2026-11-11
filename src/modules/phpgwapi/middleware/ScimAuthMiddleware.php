@@ -3,6 +3,7 @@
 namespace App\modules\phpgwapi\middleware;
 
 use App\modules\phpgwapi\services\ScimResponse;
+use App\modules\phpgwapi\services\ScimConfiguration;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
@@ -14,7 +15,7 @@ final class ScimAuthMiddleware implements MiddlewareInterface
 
 	public function __construct(?string $token = null)
 	{
-		$configuredToken = $token ?? getenv('SCIM_BEARER_TOKEN');
+		$configuredToken = $token ?? (new ScimConfiguration())->get('SCIM_BEARER_TOKEN');
 		$this->token = is_string($configuredToken) && $configuredToken !== '' ? $configuredToken : null;
 	}
 

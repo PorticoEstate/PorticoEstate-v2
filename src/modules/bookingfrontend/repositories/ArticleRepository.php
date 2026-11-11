@@ -35,7 +35,7 @@ class ArticleRepository
      * (WebSocket/node/src/modules/booking/resource-price.ts hidesPriceChoice).
      * Read once per repository, so that one request prices all its lines alike.
      */
-    private function hidesPriceChoice(): bool
+    public function hidesPriceChoice(): bool
     {
         if ($this->hidesPriceChoice === null) {
             $config = new BookingfrontendConfig((new Config('bookingfrontend'))->read());
@@ -233,7 +233,7 @@ class ArticleRepository
      * (ref #1477). Only those lines: a price the citizen chose is kept.
      *
      * @param int[] $applicationIds
-     * @return int The number of lines priced; always 0 while the category is shown
+     * @return int The number of lines given a price other than 0 kr; always 0 while the category is shown
      * @throws PriceChoiceException
      */
     public function settlePendingPriceChoices(array $applicationIds): int
@@ -243,14 +243,34 @@ class ArticleRepository
             return 0;
         }
 
+        return count($this->priceLinesPendingWhileHidden($applicationIds));
+    }
+
+    /**
+     * With the price category hidden, prices the resource lines still waiting for a
+     * price, as settlePendingPriceChoices does. While it is shown nothing is read or
+     * written; the assert refuses those lines at submit.
+     *
+     * A line master's query prices at 0 kr is written too but not returned: what will
+     * be billed did not change, so there is nothing new for the applicant to see.
+     *
+     * @param int[] $applicationIds
+     * @return array<int, int> The application id of each line given a price other than 0 kr, by line id
+     */
+    public function priceLinesPendingWhileHidden(array $applicationIds): array
+    {
+        if (!$this->hidesPriceChoice()) {
+            return [];
+        }
+
         $applicationIds = array_map('intval', $applicationIds);
         if (empty($applicationIds)) {
-            return 0;
+            return [];
         }
 
         // The lines assertPriceChoicesMade refuses; keep the two selections the same
         $placeholders = implode(',', array_fill(0, count($applicationIds), '?'));
-        $sql = "SELECT pol.id, pol.article_mapping_id, pol.quantity
+        $sql = "SELECT pol.id, pol.article_mapping_id, pol.quantity, po.application_id
                 FROM bb_purchase_order po
                 JOIN bb_purchase_order_line pol ON po.id = pol.order_id
                 JOIN bb_article_mapping am ON pol.article_mapping_id = am.id
@@ -269,7 +289,7 @@ class ArticleRepository
              WHERE id = :id"
         );
 
-        $priced = 0;
+        $priced = [];
         foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $pending) {
             $mappingId = (int)$pending['article_mapping_id'];
             if (empty($this->getEligibleResourcePrices($mappingId))) {
@@ -289,7 +309,9 @@ class ArticleRepository
                 ':tax' => $tax,
                 ':id' => (int)$pending['id']
             ]);
-            $priced++;
+            if ((float)$amount != 0.0) {
+                $priced[(int)$pending['id']] = (int)$pending['application_id'];
+            }
         }
 
         return $priced;

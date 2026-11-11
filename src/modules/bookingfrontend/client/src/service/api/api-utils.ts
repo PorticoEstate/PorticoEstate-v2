@@ -1013,6 +1013,30 @@ export interface VippsPaymentResponse {
 	error?: string;
 }
 
+/**
+ * A checkout or Vipps submit the server refused: the status and the body, so the caller
+ * can tell a refusal it handles from any other failure.
+ */
+export class CheckoutSubmitError extends Error {
+	readonly status: number;
+	readonly payload: Record<string, unknown>;
+
+	constructor(message: string, status: number, payload: Record<string, unknown> | null) {
+		super(message);
+		this.name = 'CheckoutSubmitError';
+		this.status = status;
+		this.payload = payload ?? {};
+	}
+
+	/**
+	 * With the price category hidden, the server priced a line the applicant had not
+	 * seen and stopped the submit; the price is stored and nothing was submitted (ref #1477).
+	 */
+	get isPriceSet(): boolean {
+		return this.status === 409 && this.payload.code === 'price_set';
+	}
+}
+
 export async function initiateVippsPayment(paymentData: VippsPaymentData): Promise<VippsPaymentResponse> {
 	const url = phpGWLink(['bookingfrontend', 'applications', 'partials', 'vipps-payment']);
 	console.log('=== VIPPS API FUNCTION ===');
@@ -1044,7 +1068,7 @@ export async function initiateVippsPayment(paymentData: VippsPaymentData): Promi
 	console.log('Parsed result:', result);
 
 	if (!response.ok) {
-		throw new Error(result.error || 'Vipps payment initiation failed');
+		throw new CheckoutSubmitError(result.error || 'Vipps payment initiation failed', response.status, result);
 	}
 
 	return result;

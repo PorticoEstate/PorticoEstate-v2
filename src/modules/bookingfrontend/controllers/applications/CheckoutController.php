@@ -5,6 +5,7 @@ namespace App\modules\bookingfrontend\controllers\applications;
 use App\helpers\ResponseHelper;
 use App\modules\bookingfrontend\helpers\ParentApplicationChoiceException;
 use App\modules\bookingfrontend\helpers\PriceChoiceException;
+use App\modules\bookingfrontend\helpers\PriceSetException;
 use App\modules\bookingfrontend\helpers\UserHelper;
 use App\modules\bookingfrontend\helpers\WebSocketHelper;
 use App\modules\bookingfrontend\services\applications\ApplicationService;
@@ -72,6 +73,10 @@ class CheckoutController
      *     @OA\Response(
      *         response=400,
      *         description="Invalid data, or a parent application that is not one of the applications in this checkout or is in another building; nothing is changed"
+     *     ),
+     *     @OA\Response(
+     *         response=409,
+     *         description="code price_set: with the price category hidden, a line in the cart was priced just now; the price is stored and nothing is submitted"
      *     )
      * )
      */
@@ -97,6 +102,10 @@ class CheckoutController
             }
 
             try {
+                // A line whose price the applicant has not seen is priced first, and the
+                // submit stops there (409), before anything is submitted
+                $this->applicationService->stopIfPriceSetBeforeSubmit($session_id);
+
                 // Update all partial applications
                 $result = $this->applicationService->checkoutPartials($session_id, $data);
 
@@ -169,6 +178,9 @@ class CheckoutController
                     ]
                 ]);
 
+            } catch (PriceSetException $e) {
+                // A price was set just now; the applicant sees it before submitting again
+                return ResponseHelper::sendErrorResponse($e->toResponseBody(), 409);
             } catch (PriceChoiceException $e) {
                 // A resource still waits for the citizen's price choice
                 return ResponseHelper::sendErrorResponse($e->toResponseBody(), 422);
@@ -378,6 +390,10 @@ class CheckoutController
      *     @OA\Response(
      *         response=400,
      *         description="Invalid data or Vipps not available"
+     *     ),
+     *     @OA\Response(
+     *         response=409,
+     *         description="code price_set: with the price category hidden, a line in the cart was priced just now; the price is stored, nothing is submitted and no payment is started"
      *     )
      * )
      */
@@ -404,6 +420,10 @@ class CheckoutController
 
             // 1. Validate and update applications with contact info
             try {
+                // As at checkout: a line whose price the applicant has not seen is priced
+                // first, and the payment stops there (409), before anything is read for it
+                $this->applicationService->stopIfPriceSetBeforeSubmit($session_id);
+
                 // First check if any applications have recurring data - Vipps is not allowed for recurring bookings
                 $applications = $this->applicationService->getPartialApplications($session_id);
                 foreach ($applications as $application) {
@@ -500,6 +520,9 @@ class CheckoutController
                     ]);
                 }
 
+            } catch (PriceSetException $e) {
+                // A price was set just now; the applicant sees it before paying
+                return ResponseHelper::sendErrorResponse($e->toResponseBody(), 409);
             } catch (PriceChoiceException $e) {
                 // A resource still waits for the citizen's price choice
                 return ResponseHelper::sendErrorResponse($e->toResponseBody(), 422);

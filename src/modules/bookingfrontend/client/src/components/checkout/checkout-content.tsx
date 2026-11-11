@@ -11,6 +11,7 @@ import styles from './checkout.module.scss';
 import {Spinner} from "@digdir/designsystemet-react";
 import ApplicationCrud from "@/components/building-calendar/modules/event/edit/application-crud";
 import {useCheckoutApplications, useVippsPayment, useExternalPaymentEligibility} from "@/components/checkout/hooks/checkout-hooks";
+import {CheckoutSubmitError} from "@/service/api/api-utils";
 import {useRouter} from "next/navigation";
 import { useTrans } from '@/app/i18n/ClientTranslationProvider';
 import RegulationDocuments from './regulation-documents';
@@ -160,6 +161,15 @@ const CheckoutContent: FC = () => {
         return true;
     };
 
+    // The server priced a line the applicant had not seen and stopped the submit
+    // (price category hidden, ref #1477); the cart is read again and shows the amount
+    const [priceSetBeforeSubmit, setPriceSetBeforeSubmit] = useState(false);
+    const notePriceSet = (error: unknown) => {
+        if (error instanceof CheckoutSubmitError && error.isPriceSet) {
+            setPriceSetBeforeSubmit(true);
+        }
+    };
+
     // A successful submit clears partialApplications (checkout-hooks.ts
     // onMutate/onSuccess), so this component re-renders with list.length===0
     // right as handleFormSubmit's .then() is navigating to /user/applications.
@@ -305,6 +315,7 @@ const CheckoutContent: FC = () => {
                 });
             }
             
+            setPriceSetBeforeSubmit(false);
             checkoutMutation.mutateAsync({
                 organizerName: eventDetails.organizerName,
                 customerType: billingDetails?.customerType || 'ssn',
@@ -330,6 +341,7 @@ const CheckoutContent: FC = () => {
                     console.error('🐛 CheckoutContent: checkoutMutation error:', error);
                 }
                 console.error('Error updating applications:', error);
+                notePriceSet(error);
                 // TODO: Handle error (show error message to user)
             });
         } catch (error) {
@@ -413,11 +425,13 @@ const CheckoutContent: FC = () => {
             };
             console.log('Payment data:', paymentData);
 
+            setPriceSetBeforeSubmit(false);
             await vippsPaymentMutation.mutateAsync(paymentData);
             saveLastOrderedResources();
             console.log('=== VIPPS API CALL COMPLETED ===');
         } catch (error) {
             console.error('Error initiating Vipps payment:', error);
+            notePriceSet(error);
             // TODO: Handle error (show error message to user)
         }
     };
@@ -495,7 +509,9 @@ const CheckoutContent: FC = () => {
                 applications={applications?.list || []}
                 submitError={showPriceChoiceErrors && pendingPriceChoice
                     ? t('bookingfrontend.price_choice_required_checkout')
-                    : undefined}
+                    : priceSetBeforeSubmit
+                        ? t('bookingfrontend.price_set_check_amount')
+                        : undefined}
             />
 
             {currentApplication && (

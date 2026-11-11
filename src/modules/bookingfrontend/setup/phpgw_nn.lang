@@ -1272,3 +1272,4 @@ hide price category	bookingfrontend	nn	Skjul priskategori i den nye klienten
 hide price category note	bookingfrontend	nn	Når aktiv blir ikkje «Kven søkjer du som?»-valet og brytaren «Vel pris per ressurs» viste; søkjaren vel pris per ressurs. Endrar ikkje prisar eller lagra data.
 hours_short	bookingfrontend	nn	t
 hide price category note no choice	bookingfrontend	nn	Når aktiv vel ikkje søkjaren pris: verken priskategori eller pris per ressurs blir vist, og kvar ressurs blir fakturert med standardprisen, elles prisen med nyaste dato, slik som før søkjaren kunne velje. Har fleire prisar same dato og ingen er standard, er det ikkje bestemt kva for ein som blir brukt, så merk éin som standard. Søknader som alt er sende, held prisen; ei tidsslotbooking som ventar på prisval, får denne prisen ved utsjekking.
+price_set_check_amount	bookingfrontend	nn	Prisen er no sett. Sjå over beløpet og send inn på nytt.

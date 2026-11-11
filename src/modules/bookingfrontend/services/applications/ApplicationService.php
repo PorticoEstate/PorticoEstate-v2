@@ -3,7 +3,9 @@
 namespace App\modules\bookingfrontend\services\applications;
 
 use App\modules\bookingfrontend\helpers\ParentApplicationChoiceException;
+use App\modules\bookingfrontend\helpers\PriceSetException;
 use App\modules\bookingfrontend\helpers\UserHelper;
+use App\modules\bookingfrontend\helpers\WebSocketHelper;
 use App\modules\bookingfrontend\models\Application;
 use App\modules\booking\models\Document;
 use App\modules\bookingfrontend\repositories\ApplicationRepository;
@@ -51,6 +53,43 @@ class ApplicationService
     public function getPartialApplications(string $session_id): array
     {
         return $this->applicationRepository->getPartialApplications($session_id);
+    }
+
+    /**
+     * Stops a submit while the cart holds a line whose price the applicant has not seen
+     * (ref #1477). With the price category hidden, a time slot booked while it was shown
+     * waits at 0 kr with no price, and checkout shows no amount for it. Such a line is
+     * priced here as the submit would price it, and stored at once; the submit stops with
+     * nothing submitted, so the applicant sees the amount and submits again, and that
+     * submit finds nothing to price. While the category is shown nothing is read or
+     * written: such a line is refused inside the submit (assertPriceChoicesMade, 422).
+     *
+     * Call it before the submit opens a transaction: rolled back, the price would be lost
+     * and every submit stopped again.
+     *
+     * @param string $session_id Session ID
+     * @throws PriceSetException When a line was given a price
+     */
+    public function stopIfPriceSetBeforeSubmit(string $session_id): void
+    {
+        if (!$this->articleRepository->hidesPriceChoice()) {
+            return;
+        }
+
+        if ($this->db->inTransaction()) {
+            throw new \LogicException('The price set before submit must be stored outside the submit\'s transaction');
+        }
+
+        $applicationIds = array_column($this->getPartialApplications($session_id), 'id');
+        $priced = $this->articleRepository->priceLinesPendingWhileHidden($applicationIds);
+        if (empty($priced)) {
+            return;
+        }
+
+        // Every open view of the cart shows the amount, not only the one that submitted
+        WebSocketHelper::triggerPartialApplicationsUpdate($session_id);
+
+        throw new PriceSetException(array_unique($priced));
     }
 
     /**

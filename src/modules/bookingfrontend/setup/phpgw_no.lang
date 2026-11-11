@@ -1294,3 +1294,5 @@ no_valid_owner	bookingfrontend	no	Ingen gyldig eierkonto er tilgjengelig
 queue_timeout	bookingfrontend	no	Bestillingen ble tidsavbrutt i køen. Prøv igjen.
 booking_outside_horizon	bookingfrontend	no	Tidspunktet er utenfor tillatt bookingperiode
 unauthorized	bookingfrontend	no	Du har ikke tilgang til dette
+hide price category	bookingfrontend	no	Skjul priskategori i den nye klienten
+hide price category note	bookingfrontend	no	Når aktiv vises ikke «Hvem søker du som?»-valget og bryteren «Velg pris per ressurs»; søkeren velger pris per ressurs. Endrer ikke priser eller lagrede data.

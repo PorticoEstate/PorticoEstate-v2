@@ -551,7 +551,7 @@ class Passkey_Management_Controller
 	{
 		if ($this->auth_passkeys === null)
 		{
-			return lang('Passkeys are unavailable: the server address (webserver_url) must be an HTTPS address with a domain name. http://localhost is allowed for development, IP addresses are not.');
+			return lang('Passkeys are unavailable: set webserver_url to the public HTTPS address, or set hostname to the public domain name when webserver_url is a relative path. http://localhost is allowed for development, IP addresses are not.');
 		}
 		return lang('Passkey sign-in is disabled while external authentication is configured.');
 	}

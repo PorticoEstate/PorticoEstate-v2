@@ -496,13 +496,11 @@ zip_code_min_length	common	nn	Postnummer må vere minst 4 teikn
 invalid_url_format	common	nn	Ugyldig URL-format
 phone_number_required	common	nn	Telefonnummer er påkrevd
 email_required	common	nn	E-post er påkrevd
-
 previous	common	nn	Førre
 session_expired_log_in_again	common	nn	Sesjonen din er gått ut. Logg inn på nytt i ei anna fane og prøv igjen.
-Passkeys are unavailable: the server address (webserver_url) must be an HTTPS address with a domain name. http://localhost is allowed for development, IP addresses are not.	common	nn	Passkeys er ikkje tilgjengeleg: serveradressa (webserver_url) må vere ei HTTPS-adresse med domenenamn. http://localhost er tillate for utvikling, IP-adresser er ikkje tillate.
-
 increase	common	nn	Auk talet
 decrease	common	nn	Reduser talet
 uploading	common	nn	Lastar opp
 error_loading_data	common	nn	Kunne ikkje laste data
 error_loading_events	common	nn	Kunne ikkje laste arrangement
+Passkeys are unavailable: set webserver_url to the public HTTPS address, or set hostname to the public domain name when webserver_url is a relative path. http://localhost is allowed for development, IP addresses are not.	common	nn	Passkeys er ikkje tilgjengeleg: set webserver_url til den offentlege HTTPS-adressa, eller set hostname til det offentlege domenenamnet når webserver_url er ein relativ sti. http://localhost er tillate for utvikling, IP-adresser er ikkje tillate.

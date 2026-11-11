@@ -609,13 +609,10 @@ zip_code_min_length	common	en	Zip code must be at least 4 characters
 invalid_url_format	common	en	Invalid URL format
 phone_number_required	common	en	Phone number is required
 email_required	common	en	Email is required
-
 first	common	en	First
 last	common	en	Last
 previous	common	en	Previous
 session_expired_log_in_again	common	en	Your session has expired. Log in again in another tab and try again.
-Passkeys are unavailable: the server address (webserver_url) must be an HTTPS address with a domain name. http://localhost is allowed for development, IP addresses are not.	common	en	Passkeys are unavailable: the server address (webserver_url) must be an HTTPS address with a domain name. http://localhost is allowed for development, IP addresses are not.
-
 increase	common	en	Increase quantity
 decrease	common	en	Decrease quantity
 uploading	common	en	Uploading
@@ -623,3 +620,4 @@ error_loading_data	common	en	Could not load data
 error_loading_events	common	en	Could not load events
 contacts	common	en	Contacts
 inactive	common	en	Inactive
+Passkeys are unavailable: set webserver_url to the public HTTPS address, or set hostname to the public domain name when webserver_url is a relative path. http://localhost is allowed for development, IP addresses are not.	common	en	Passkeys are unavailable: set webserver_url to the public HTTPS address, or set hostname to the public domain name when webserver_url is a relative path. http://localhost is allowed for development, IP addresses are not.

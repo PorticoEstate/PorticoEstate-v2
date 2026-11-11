@@ -396,7 +396,7 @@ class Login
 		$passkeyUnavailableReason = null;
 		if (!\App\modules\phpgwapi\security\Auth\Auth_Passkeys::isRelyingPartyConfigured())
 		{
-			$passkeyUnavailableReason = lang('Passkeys are unavailable: the server address (webserver_url) must be an HTTPS address with a domain name. http://localhost is allowed for development, IP addresses are not.');
+			$passkeyUnavailableReason = lang('Passkeys are unavailable: set webserver_url to the public HTTPS address, or set hostname to the public domain name when webserver_url is a relative path. http://localhost is allowed for development, IP addresses are not.');
 		}
 		else if (!\App\modules\phpgwapi\security\Auth\Auth_Passkeys::isLocalAuthenticationAllowed())
 		{

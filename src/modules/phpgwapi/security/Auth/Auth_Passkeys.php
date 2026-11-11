@@ -37,7 +37,7 @@ class Auth_Passkeys
         $relyingParty = self::getRelyingPartyConfiguration();
         if ($relyingParty === null)
         {
-            throw new \RuntimeException('Passkeys require webserver_url to be an absolute HTTPS URL with a domain name (http://localhost is allowed for development).');
+            throw new \RuntimeException('Passkeys require an absolute HTTPS webserver_url, or a public domain in hostname when webserver_url is relative.');
         }
 
         $this->rpId = $relyingParty['rp_id'];
@@ -58,8 +58,12 @@ class Auth_Passkeys
     }
 
     /**
-     * Derive the WebAuthn RP ID and origin from the configured browser-facing URL
+     * Derive the WebAuthn RP ID and origin from admin configuration
      * (never from request Host or proxy headers).
+     *
+     * Uses webserver_url when it is absolute. When it is a relative path (typical behind
+     * a reverse proxy, e.g. "/"), the configured hostname is used instead, with HTTPS
+     * unless the host is localhost and enforce_ssl is off.
      *
      * WebAuthn requires a domain-name RP ID: IP addresses are rejected by browsers,
      * and plain HTTP is only a secure context for localhost.
@@ -73,6 +77,21 @@ class Auth_Passkeys
         if (!is_array($urlParts))
         {
             return null;
+        }
+
+        if (empty($urlParts['host']))
+        {
+            $configuredHost = trim((string) ($serverSettings['hostname'] ?? ''));
+            $urlParts = $configuredHost !== '' && !preg_match('#[/?\#@\s]#', $configuredHost)
+                ? parse_url('//' . $configuredHost)
+                : false;
+            if (!is_array($urlParts) || empty($urlParts['host']))
+            {
+                return null;
+            }
+            $fallbackHost = strtolower(rtrim((string) $urlParts['host'], '.'));
+            $fallbackIsLocalhost = $fallbackHost === 'localhost' || str_ends_with($fallbackHost, '.localhost');
+            $urlParts['scheme'] = ($fallbackIsLocalhost && empty($serverSettings['enforce_ssl'])) ? 'http' : 'https';
         }
 
         $scheme = strtolower((string) ($urlParts['scheme'] ?? ''));

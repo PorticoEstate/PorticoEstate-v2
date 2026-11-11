@@ -71,6 +71,9 @@ verify connectivity inside build steps.
 
 ## A bit about the principles of the new API and how it is combined with existing code
 
+For passkey requirements and reverse-proxy configuration, see
+[the passkey guide](doc/passkeys.md).
+
 All endpoints must be defined as a "route" and method (post, get, put, delete).
 
 To handle existing code, a generic route has been created that handles everything as before:

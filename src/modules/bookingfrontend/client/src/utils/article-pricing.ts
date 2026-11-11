@@ -240,6 +240,22 @@ export const priceLabelForDisplay = (
 export const formatMinutes = (minutes: number, t: Translate): string =>
     `${minutes}${NBSP}${t('bookingfrontend.minutes_short')}`;
 
+const QUANTITY_FORMAT = new Intl.NumberFormat('nb-NO', {maximumFractionDigits: 2, useGrouping: false});
+
+/**
+ * A stored quantity for showing, from the number or the decimal string the API sends ("3.00"): a whole quantity
+ * reads «3», a stored fraction keeps at most two decimals and the comma of the amounts beside it («2,5»). Never
+ * grouped («1800») and never rounded to a whole number. nb-NO whatever the UI language, like formatCurrency, so
+ * «2,5 × 81,25 kr» has one decimal separator. A value with nothing to show (null, undefined, blank, not a
+ * number) is '', never a made-up «0».
+ */
+export const formatQuantity = (value: number | string | null | undefined): string => {
+    if (value === null || value === undefined) return '';
+    if (typeof value === 'string' && value.trim() === '') return '';
+    const quantity = Number(value);
+    return Number.isFinite(quantity) ? QUANTITY_FORMAT.format(quantity) : '';
+};
+
 /**
  * A resource line's quantity with its unit: «1 dag» / «2 dager» for a day line, «1 stk» for an each line
  * (the existing bookingfrontend.day, .days and .each labels, lowercased). Every other unit keeps the bare

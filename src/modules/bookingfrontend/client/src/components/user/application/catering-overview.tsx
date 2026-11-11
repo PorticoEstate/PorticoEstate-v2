@@ -19,6 +19,7 @@ import {useServerSettings} from '@/service/hooks/api-hooks';
 import {
     applicationPriceSummary,
     formatOreOrDash,
+    formatQuantity,
     hospitalityLineTotalOre,
     hospitalityOrderTotalOre,
     hospitalityUnitPriceIncl,
@@ -58,9 +59,6 @@ const STATUS_LABEL_KEY: Record<IHospitalityOrder['status'], string> = {
     delivered: 'booking.delivered',
     cancelled: 'booking.cancelled',
 };
-
-/** "3.00" -> "3", "2.50" -> "2.5": a quantity reads the way it was typed. */
-const formatQuantity = (quantity: string): string => String(Number(quantity));
 
 interface CateringOverviewProps {
     application: IApplication;

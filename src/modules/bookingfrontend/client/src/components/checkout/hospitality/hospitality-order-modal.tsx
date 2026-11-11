@@ -35,6 +35,7 @@ import {isWithinBusinessHours} from '@/service/utils/business-hours';
 import {formatCurrency} from '@/utils/cost-utils';
 import {
     formatOreOrDash,
+    formatQuantity,
     hospitalityMenuLineTotalOre,
     hospitalityUnitLabel,
     hospitalityUnitPriceIncl,
@@ -144,11 +145,6 @@ function buildDateOptions(applications: IApplication[]): DateOption[] {
         });
     });
     return options.sort((a, b) => a.from.getTime() - b.from.getTime());
-}
-
-/** A quantity for showing: whole numbers as they are, a stored fractional quantity without float noise. */
-function formatQuantity(quantity: number): string {
-    return String(Math.round(quantity * 100) / 100);
 }
 
 const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({

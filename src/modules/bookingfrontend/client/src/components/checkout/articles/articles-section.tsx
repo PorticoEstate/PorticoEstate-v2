@@ -10,6 +10,7 @@ import PriceChoiceField from '@/components/price-choice/price-choice-field';
 import {formatCurrency} from '@/utils/cost-utils';
 import {
     formatMinutes,
+    formatQuantity,
     formatTotalWithHourlyRate,
     hourlyRateOfOrderLine,
     isMinuteUnit,
@@ -186,7 +187,7 @@ const ArticlesSection: FC<ArticlesSectionProps> = ({applications, showPriceChoic
                                                 </Paragraph>
                                             )}
                                         </Table.Cell>
-                                        <Table.Cell>{line.isMinuteUnit ? formatMinutes(line.quantity, t) : line.quantity}</Table.Cell>
+                                        <Table.Cell>{line.isMinuteUnit ? formatMinutes(line.quantity, t) : formatQuantity(line.quantity)}</Table.Cell>
                                         <Table.Cell>
                                             {line.pricePending
                                                 ? t('bookingfrontend.price_pending')

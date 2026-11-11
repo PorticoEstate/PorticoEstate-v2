@@ -12,6 +12,7 @@ import {
     CateringState,
     formatMinutes,
     formatOreOrDash,
+    formatQuantity,
     formatTotalWithHourlyRate,
     hourlyRateOfOrderLine,
     isMinuteUnit,
@@ -25,9 +26,6 @@ import styles from './application-details.module.scss';
 import linesStyles from './application-price-lines.module.scss';
 
 type Translate = (key: string, options?: any) => string;
-
-/** The API sends a stored quantity as a decimal string: "2.00" -> "2", "2.50" -> "2.5" (the catering lines read the same way). */
-const formatQuantity = (quantity: number | string): string => String(Number(quantity));
 
 /**
  * One stored order line: its name, «N × unit price incl. VAT» and its amount incl. VAT. The VAT is the line's own

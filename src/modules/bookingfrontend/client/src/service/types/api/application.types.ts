@@ -98,7 +98,8 @@ export interface IOrderLine {
     article_mapping_id: number;
     /** Article category: 1 = resource (rental), 2 = service (add-on article) */
     article_cat_id: number;
-    quantity: number;
+    /** The API sends a stored quantity as a decimal string ("3.00"); show it through formatQuantity. */
+    quantity: number | string;
     unit_price: number;
     overridden_unit_price: number;
     currency: string;

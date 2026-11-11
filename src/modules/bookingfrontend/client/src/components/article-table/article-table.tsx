@@ -11,6 +11,7 @@ import {
 	bookedMinutes,
 	formatHourlyRate,
 	formatMinutes,
+	formatQuantity,
 	formatQuantityWithUnit,
 	formatTotalWithHourlyRate,
 	hourlyRateOfMinuteArticle,
@@ -555,7 +556,7 @@ const ArticleTable: React.FC<ArticleTableProps> = ({
 																<MinusCircleIcon aria-hidden="true"/>
 															</Button>
 															<span className={styles.quantityValue}>
-																{isSelected ? (isMinute ? formatMinutes(quantity, t) : quantity) : 0}
+																{isSelected ? (isMinute ? formatMinutes(quantity, t) : formatQuantity(quantity)) : 0}
 															</span>
 															<Button
 																variant="tertiary"

@@ -420,6 +420,8 @@ Not now	common	en	Not now
 register_globals = %1	common	en	register_globals = %1
 register_globals_off	common	en	This application has been tested to work with register_globals = off in your php.ini.  This application should work with most PHP 5.2.0+ servers.  If you experience any problems, please report them on our bug tracker at <a href="https://github.com/PorticoEstate/PorticoEstate/issues" target="_blank">savannah.gnu.org</a>.
 Sign in faster with a passkey	common	en	Sign in faster with a passkey
+Passkey sign-in is disabled while external authentication is configured.	common	en	Passkey sign-in is disabled while external authentication is configured.
+New passkeys require a discoverable credential. Remove an existing passkey here before registering it again.	common	en	New passkeys require a discoverable credential. Remove an existing passkey here before registering it again.
 Use your device’s fingerprint, face recognition, or screen lock instead of a password. Only set this up on a device you trust.	common	en	Use your device’s fingerprint, face recognition, or screen lock instead of a password. Only set this up on a device you trust.
 Set up passkey	common	en	Set up passkey
 Don’t ask again	common	en	Don’t ask again
@@ -612,6 +614,8 @@ first	common	en	First
 last	common	en	Last
 previous	common	en	Previous
 session_expired_log_in_again	common	en	Your session has expired. Log in again in another tab and try again.
+Passkeys are unavailable: the server address (webserver_url) must be an HTTPS address with a domain name. http://localhost is allowed for development, IP addresses are not.	common	en	Passkeys are unavailable: the server address (webserver_url) must be an HTTPS address with a domain name. http://localhost is allowed for development, IP addresses are not.
+
 increase	common	en	Increase quantity
 decrease	common	en	Decrease quantity
 uploading	common	en	Uploading

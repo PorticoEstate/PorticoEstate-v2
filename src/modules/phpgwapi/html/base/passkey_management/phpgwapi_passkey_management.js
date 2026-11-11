@@ -168,53 +168,56 @@ document.addEventListener('DOMContentLoaded', function () {
 		return endpoint.toString();
 	}
 
-	registerForm.addEventListener('submit', async function (event) {
-		event.preventDefault();
-		const deviceName = passkeyNameInput.value.trim();
-		if (!deviceName) {
-			showStatus('error', messages.nameRequired);
-			passkeyNameInput.focus();
-			return;
-		}
-
-		registerButton.disabled = true;
-		showStatus('info', messages.registering);
-		try {
-			const optionsUrl = withQueryParams(app.dataset.registrationOptionsUrl, {
-				csrf_token: app.dataset.csrfToken
-			});
-			const verifyUrl = withQueryParams(app.dataset.registrationVerifyUrl, {
-				device_name: deviceName,
-				csrf_token: app.dataset.csrfToken
-			});
-			const success = await registerPasskey(app.dataset.username, optionsUrl, verifyUrl);
-			if (!success) {
-				throw new Error(messages.registrationFailed);
+	if (registerForm) {
+		registerForm.addEventListener('submit', async function (event) {
+			event.preventDefault();
+			const deviceName = passkeyNameInput.value.trim();
+			if (!deviceName) {
+				showStatus('error', messages.nameRequired);
+				passkeyNameInput.focus();
+				return;
 			}
-			passkeyNameInput.value = '';
-			showStatus('success', messages.registrationSuccess);
-			await loadPasskeys();
-		} catch (error) {
-			showStatus('error', messages.registrationError + ': ' + (error.message || messages.registrationFailed));
-		} finally {
-			registerButton.disabled = false;
-		}
-	});
+
+			registerButton.disabled = true;
+			showStatus('info', messages.registering);
+			try {
+				const optionsUrl = app.dataset.registrationOptionsUrl;
+				const verifyUrl = withQueryParams(app.dataset.registrationVerifyUrl, {
+					device_name: deviceName
+				});
+				const success = await registerPasskey(app.dataset.username, optionsUrl, verifyUrl, app.dataset.csrfToken);
+				if (!success) {
+					throw new Error(messages.registrationFailed);
+				}
+				passkeyNameInput.value = '';
+				showStatus('success', messages.registrationSuccess);
+				await loadPasskeys();
+			} catch (error) {
+				showStatus('error', messages.registrationError + ': ' + (error.message || messages.registrationFailed));
+			} finally {
+				registerButton.disabled = false;
+			}
+		});
+	}
 
 	passkeyContent.hidden = false;
 	loadPasskeys();
-	isPlatformAuthenticatorAvailable().then(function (supported) {
+	Promise.resolve(isWebAuthnAvailable()).then(function (supported) {
 		compatibilityCheck.hidden = true;
 		if (!supported) {
 			notSupportedMessage.textContent = messages.notSupported;
 			notSupportedMessage.hidden = false;
-			registerButton.disabled = true;
+			if (registerButton) {
+				registerButton.disabled = true;
+			}
 		}
 	}).catch(function (error) {
 		compatibilityCheck.hidden = true;
 		notSupportedMessage.textContent = messages.notSupported;
 		notSupportedMessage.hidden = false;
-		registerButton.disabled = true;
+		if (registerButton) {
+			registerButton.disabled = true;
+		}
 		console.error('Error checking WebAuthn support:', error);
 	});
 

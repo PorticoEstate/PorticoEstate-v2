@@ -56,32 +56,41 @@
 					</div>
 
 					<div class="col-md-12">
-						<div class="card">
-							<div class="card-header">
-								<h2 class="card-title">{{ lang('Add New Passkey') }}</h2>
+						{% if passkey_login_enabled %}
+							<div class="card">
+								<div class="card-header">
+									<h2 class="card-title">{{ lang('Add New Passkey') }}</h2>
+								</div>
+								<div class="card-body">
+									<p class="alert alert-info">
+										{{ lang('New passkeys require a discoverable credential. Remove an existing passkey here before registering it again.') }}
+									</p>
+									<form id="register-passkey-form">
+										<div class="form-group mb-3">
+											<label for="passkey-name">{{ lang('Passkey Name') }}</label>
+											<input
+												type="text"
+												class="form-control"
+												id="passkey-name"
+												placeholder="{{ lang('e.g., Work Laptop, Personal Phone')|e('html_attr') }}"
+												required
+											>
+											<small class="form-text text-muted">{{ lang('Give your passkey a memorable name to identify which device it belongs to.') }}</small>
+										</div>
+										<div class="alert alert-warning mb-3">
+											{{ lang('You will be prompted to verify your identity using your device. This may require biometric authentication or a PIN.') }}
+										</div>
+										<button type="submit" id="register-passkey-button" class="btn btn-primary">
+											<i class="fas fa-fingerprint" aria-hidden="true"></i> {{ lang('Register Passkey') }}
+										</button>
+									</form>
+								</div>
 							</div>
-							<div class="card-body">
-								<form id="register-passkey-form">
-									<div class="form-group mb-3">
-										<label for="passkey-name">{{ lang('Passkey Name') }}</label>
-										<input
-											type="text"
-											class="form-control"
-											id="passkey-name"
-											placeholder="{{ lang('e.g., Work Laptop, Personal Phone')|e('html_attr') }}"
-											required
-										>
-										<small class="form-text text-muted">{{ lang('Give your passkey a memorable name to identify which device it belongs to.') }}</small>
-									</div>
-									<div class="alert alert-warning mb-3">
-										{{ lang('You will be prompted to verify your identity using your device. This may require biometric authentication or a PIN.') }}
-									</div>
-									<button type="submit" id="register-passkey-button" class="btn btn-primary">
-										<i class="fas fa-fingerprint" aria-hidden="true"></i> {{ lang('Register Passkey') }}
-									</button>
-								</form>
+						{% else %}
+							<div class="alert alert-info">
+								{{ lang('Passkey sign-in is disabled while external authentication is configured.') }}
 							</div>
-						</div>
+						{% endif %}
 					</div>
 				</div>
 			</div>

@@ -393,9 +393,40 @@ class Login
 	 */
 	protected function auth_passkey(): ?array
 	{
+		$passkeyUnavailableReason = null;
+		if (!\App\modules\phpgwapi\security\Auth\Auth_Passkeys::isRelyingPartyConfigured())
+		{
+			$passkeyUnavailableReason = lang('Passkeys are unavailable: the server address (webserver_url) must be an HTTPS address with a domain name. http://localhost is allowed for development, IP addresses are not.');
+		}
+		else if (!\App\modules\phpgwapi\security\Auth\Auth_Passkeys::isLocalAuthenticationAllowed())
+		{
+			$passkeyUnavailableReason = lang('Passkey sign-in is disabled while external authentication is configured.');
+		}
+		if ($passkeyUnavailableReason !== null)
+		{
+			$passkeyUnavailableReason = htmlspecialchars($passkeyUnavailableReason, ENT_QUOTES, 'UTF-8');
+			return [
+				'html' => '<!DOCTYPE html><html><head><title>Passkey sign-in unavailable</title>'
+					. '<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">'
+					. '</head><body><main><h1>Passkey sign-in unavailable</h1>'
+					. '<p>' . $passkeyUnavailableReason . '</p>'
+					. '<a href="login_ui">Return to sign in</a></main></body></html>'
+			];
+		}
+
 		if (empty($_POST['data']))
 		{
 			// Refactored WebAuthn form that uses passkey-client.js
+			$auth_passkeys = new \App\modules\phpgwapi\security\Auth\Auth_Passkeys();
+			$authenticationOptionsJson = json_encode(
+				$auth_passkeys->getAuthenticationArgs(),
+				JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
+			);
+			if ($authenticationOptionsJson === false)
+			{
+				throw new \RuntimeException('Unable to create passkey authentication options.');
+			}
+
 			$html = <<<HTML
 <!DOCTYPE html>
 <html>
@@ -446,9 +477,21 @@ class Login
 			</div>
 
 			<div class="text-center">
-				<button id="passkey-button" class="btn btn-primary btn-lg">
-					Continue with Passkey
-				</button>
+				<form id="passkey-login-form" autocomplete="on">
+					<label class="visually-hidden" for="passkey-username">Username</label>
+					<input
+						id="passkey-username"
+						name="username"
+						class="form-control mb-3"
+						type="text"
+						autocomplete="username webauthn"
+						autocapitalize="off"
+						spellcheck="false"
+					>
+					<button id="passkey-button" type="button" class="btn btn-primary btn-lg">
+						Continue with Passkey
+					</button>
+				</form>
 			</div>
 
 			<div id="loading-spinner" class="loading-spinner">
@@ -467,10 +510,18 @@ class Login
 	</div>
 
 	<script>
-	document.addEventListener('DOMContentLoaded', function() {
+	document.addEventListener('DOMContentLoaded', async function() {
 		const passkeyButton = document.getElementById('passkey-button');
+		const loginForm = document.getElementById('passkey-login-form');
 		const loadingSpinner = document.getElementById('loading-spinner');
 		const statusMessage = document.getElementById('status-message');
+		const authenticationOptions = {$authenticationOptionsJson};
+		let conditionalController = null;
+		let manualAuthenticationStarted = false;
+		let credentialSubmitted = false;
+		loginForm.addEventListener('submit', function(event) {
+			event.preventDefault();
+		});
 		
 		// Function to show status messages
 		function showStatus(message, type) {
@@ -479,69 +530,83 @@ class Login
 			statusMessage.classList.add('alert-' + type);
 		}
 
-		// Check if WebAuthn is supported by the browser
+		function submitCredential(credential) {
+			if (!credential) {
+				loadingSpinner.style.display = 'none';
+				passkeyButton.disabled = false;
+				showStatus('No passkey was selected. Try again or choose a passkey from the username field.', 'info');
+				return;
+			}
+			if (credentialSubmitted) {
+				return;
+			}
+			const response = prepareAuthenticationResponse(credential);
+			credentialSubmitted = true;
+			showStatus('Processing authentication...', 'info');
+			const form = document.createElement('form');
+			form.method = 'POST';
+			form.action = 'login.php?type=passkey';
+			const dataInput = document.createElement('input');
+			dataInput.type = 'hidden';
+			dataInput.name = 'data';
+			dataInput.value = JSON.stringify(response);
+			form.appendChild(dataInput);
+			document.body.appendChild(form);
+			form.submit();
+		}
+
 		if (!window.PublicKeyCredential) {
 			showStatus('Your browser does not support passkeys. Please use a modern browser.', 'danger');
 			passkeyButton.disabled = true;
 			return;
 		}
 
-		// Handle the button click to start authentication
 		passkeyButton.addEventListener('click', async function() {
 			try {
+				manualAuthenticationStarted = true;
 				passkeyButton.disabled = true;
 				loadingSpinner.style.display = 'block';
 				showStatus('Starting authentication...', 'info');
-				
-				// Generate a random challenge on the client side
-				const challenge = new Uint8Array(32);
-				window.crypto.getRandomValues(challenge);
-				
-				// Create a simplified publicKey request using the same options format
-				// that the prepareRequestOptions function in passkey-client.js expects
-				const publicKeyOptions = {
-					challenge: challenge.buffer,
-					timeout: 60000,
-					userVerification: 'preferred',
-					rpId: window.location.hostname
-				};
-				
-				console.log('Starting WebAuthn authentication with client-side challenge');
-				
-				// Start authentication request
+				if (conditionalController) {
+					conditionalController.abort();
+					conditionalController = null;
+				}
 				const credential = await navigator.credentials.get({
-					publicKey: publicKeyOptions,
+					publicKey: prepareRequestOptions(authenticationOptions),
 					mediation: 'optional'
 				});
-				
-				showStatus('Processing authentication...', 'info');
-				
-				// Prepare response using the utility functions from passkey-client.js
-				const response = prepareAuthenticationResponse(credential);
-				
-				// Add client challenge to the response
-				response.clientChallenge = PasskeyUtils.arrayBufferToBase64url(challenge.buffer);
-				
-				// Submit the form with the response data
-				const form = document.createElement('form');
-				form.method = 'POST';
-				form.action = 'login.php?type=passkey';
-				
-				const dataInput = document.createElement('input');
-				dataInput.type = 'hidden';
-				dataInput.name = 'data';
-				dataInput.value = JSON.stringify(response);
-				
-				form.appendChild(dataInput);
-				document.body.appendChild(form);
-				form.submit();
+				submitCredential(credential);
 			} catch (error) {
-				console.error('Authentication error:', error);
 				loadingSpinner.style.display = 'none';
 				passkeyButton.disabled = false;
 				showStatus(error.message || 'Authentication failed. Please try again.', 'danger');
 			}
 		});
+
+		if (
+			typeof AbortController !== 'undefined'
+			&& typeof PublicKeyCredential.isConditionalMediationAvailable === 'function'
+		) {
+			try {
+				if (
+					!manualAuthenticationStarted
+					&& await PublicKeyCredential.isConditionalMediationAvailable()
+				) {
+					conditionalController = new AbortController();
+					navigator.credentials.get({
+						publicKey: prepareRequestOptions(authenticationOptions),
+						mediation: 'conditional',
+						signal: conditionalController.signal
+					}).then(submitCredential).catch(function(error) {
+						if (error.name !== 'AbortError' && error.name !== 'NotAllowedError') {
+							showStatus(error.message || 'Automatic passkey sign-in failed. Use the button below.', 'info');
+						}
+					});
+				}
+			} catch (error) {
+				showStatus(error.message || 'Automatic passkey sign-in is unavailable. Use the button below.', 'info');
+			}
+		}
 	});
 	</script>
 </body>
@@ -557,31 +622,60 @@ HTML;
 			// Process passkey authentication from client
 			try
 			{
+				$auth_passkeys = new \App\modules\phpgwapi\security\Auth\Auth_Passkeys();
 				// Parse credential data from POST
 				$response = json_decode($_POST['data'], true);
 
-				if (!$response || !isset($response['id']) || !isset($response['response']))
+				if (
+					!is_array($response)
+					|| !isset(
+						$response['id'],
+						$response['rawId'],
+						$response['response']['clientDataJSON'],
+						$response['response']['authenticatorData'],
+						$response['response']['signature']
+					)
+					|| !is_string($response['id'])
+					|| !is_string($response['rawId'])
+					|| !is_string($response['response']['clientDataJSON'])
+					|| !is_string($response['response']['authenticatorData'])
+					|| !is_string($response['response']['signature'])
+				)
 				{
-					return null; // Invalid data
+					throw new \Exception('Invalid passkey response data.');
 				}
-
-				// Initialize the Auth_Passkeys class
-				$auth_passkeys = new \App\modules\phpgwapi\security\Auth\Auth_Passkeys();
 
 				// Get credential details from the response
 				$clientDataJSON = $response['response']['clientDataJSON'];
+				try
+				{
+					$clientData = json_decode(
+						\App\modules\phpgwapi\security\Auth\Auth_Passkeys::base64url_decode($clientDataJSON),
+						true
+					);
+				}
+				catch (\InvalidArgumentException $e)
+				{
+					throw new \Exception('Invalid passkey client data.');
+				}
+				$clientChallenge = is_array($clientData) ? ($clientData['challenge'] ?? null) : null;
+				if (!is_string($clientChallenge))
+				{
+					throw new \Exception('Invalid passkey challenge.');
+				}
+				$challenge = $auth_passkeys->consumeAuthenticationChallenge($clientChallenge);
+				if ($challenge === null)
+				{
+					throw new \Exception('Passkey challenge is missing, expired, or already used.');
+				}
+
 				$authenticatorData = $response['response']['authenticatorData'];
 				$signature = $response['response']['signature'];
 				$credentialId = $response['rawId'];
 				$userHandle = $response['response']['userHandle'] ?? null;
-
-				// Skip using the session for challenge - instead set it directly from the client
-				if (isset($response['clientChallenge']))
+				if ($userHandle !== null && !is_string($userHandle))
 				{
-					// Decode the client challenge
-					$clientChallenge = \App\modules\phpgwapi\security\Auth\Auth_Passkeys::base64url_decode($response['clientChallenge']);
-					// Store it in the session for the Auth_Passkeys class to use
-					$_SESSION['webauthn_challenge'] = $clientChallenge;
+					throw new \Exception('Invalid passkey user handle.');
 				}
 
 				try
@@ -593,7 +687,8 @@ HTML;
 						$authenticatorData,
 						$signature,
 						$credentialId,
-						$userHandle
+						$userHandle,
+						$challenge
 					);
 
 					if (!empty($account) && $account['account_status'] === 'A')
@@ -619,8 +714,7 @@ HTML;
 				}
 				catch (\Exception $e)
 				{
-					// Authentication failed - show detailed error
-					$debug_info = isset($GLOBALS['webauthn_debug']) ? $GLOBALS['webauthn_debug'] : [];
+					error_log('Passkey authentication failed: ' . $e->getMessage());
 
 					$html = <<<HTML
 <!DOCTYPE html>
@@ -638,16 +732,7 @@ HTML;
 				<h4>Authentication Failed</h4>
 			</div>
 			<div class="card-body">
-				<p>Credential verification error: {$e->getMessage()}</p>
-				
-				<div class="bg-light p-3 mb-3">
-					<h5>Debug Information:</h5>
-					<pre>
-Authentication Debug Info:
--------------------------
-<?php echo implode("\n", $debug_info); ?>
-					</pre>
-				</div>
+				<p>Passkey authentication failed. Please try again.</p>
 				
 				<div class="mt-4">
 					<a href="login.php?type=passkey" class="btn btn-primary">Try Again</a>
@@ -667,7 +752,7 @@ HTML;
 			}
 			catch (\Exception $e)
 			{
-				// General error handling
+				error_log('Passkey login request failed: ' . $e->getMessage());
 				$html = <<<HTML
 <!DOCTYPE html>
 <html>
@@ -684,7 +769,7 @@ HTML;
 				<h4>Authentication Failed</h4>
 			</div>
 			<div class="card-body">
-				<p>Error: {$e->getMessage()}</p>
+				<p>Passkey authentication could not be completed. Please try again.</p>
 				
 				<div class="mt-4">
 					<a href="login.php?type=passkey" class="btn btn-primary">Try Again</a>

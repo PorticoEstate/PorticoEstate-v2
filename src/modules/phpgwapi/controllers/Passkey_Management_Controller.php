@@ -40,7 +40,7 @@ class Passkey_Management_Controller
 		$this->legacyView = new LegacyViewHelper();
 		$this->twig = new TwigHelper('phpgwapi');
 
-		$this->auth_passkeys = new Auth_Passkeys();
+		$this->auth_passkeys = Auth_Passkeys::isRelyingPartyConfigured() ? new Auth_Passkeys() : null;
 
 		// Get settings
 		$this->serverSettings = Settings::getInstance()->get('server');
@@ -68,6 +68,15 @@ class Passkey_Management_Controller
 			'currentapp' => 'preferences'
 		]);
 
+		if ($this->auth_passkeys === null)
+		{
+			$html = $this->twig->render('@views/passkey_management/phpgwapi_passkey_management_unavailable.twig', [
+				'message' => $this->passkeyUnavailableMessage()
+			]);
+			$response->getBody()->write($this->legacyView->render($html, 'preferences'));
+			return $response->withHeader('Content-Type', 'text/html');
+		}
+
 		$serverUrl = rtrim((string) ($this->serverSettings['webserver_url'] ?? ''), '/');
 		$html = $this->twig->render('@views/passkey_management/phpgwapi_passkey_management.twig', [
 			'api_url' => \phpgw::link('/passkey/list'),
@@ -76,6 +85,7 @@ class Passkey_Management_Controller
 			'delete_url' => \phpgw::link('/passkey/delete'),
 			'csrf_token' => $_SESSION['passkey_csrf_token'],
 			'username' => $this->account_lid,
+			'passkey_login_enabled' => $this->isPasskeyLoginEnabled(),
 			'passkey_client_url' => $serverUrl . '/src/modules/phpgwapi/js/passkey/passkey-client.js?n=' . rawurlencode((string) ($this->serverSettings['cache_refresh_token'] ?? ''))
 		]);
 
@@ -121,6 +131,11 @@ class Passkey_Management_Controller
 			return $this->jsonError($response, 'Authentication required', 401);
 		}
 
+		if ($this->auth_passkeys === null)
+		{
+			return $this->jsonError($response, $this->passkeyUnavailableMessage(), 503);
+		}
+
 		$passkeys = array_values(array_map(function (array $passkey): array
 		{
 			return [
@@ -147,7 +162,8 @@ class Passkey_Management_Controller
 
 		$preferences = (new Preferences($this->account_id))->read();
 		$passkeyPreferences = $preferences['phpgwapi'] ?? [];
-		$showSuggestion = empty($passkeyPreferences['passkey_suggestion_opt_out'])
+		$showSuggestion = $this->isPasskeyLoginEnabled()
+			&& empty($passkeyPreferences['passkey_suggestion_opt_out'])
 			&& (int) ($passkeyPreferences['passkey_suggestion_snoozed_until'] ?? 0) <= time()
 			&& $this->auth_passkeys->get_passkeys($this->account_id) === [];
 
@@ -212,6 +228,11 @@ class Passkey_Management_Controller
 	 */
 	public function getRegistrationOptions(Request $request, Response $response): Response
 	{
+		if (!$this->isPasskeyLoginEnabled())
+		{
+			return $this->jsonError($response, $this->passkeyUnavailableMessage(), 403);
+		}
+
         // Verify session authentication
         if (!$this->verifyAuthentication()) {
             return $this->jsonError($response, 'Authentication required', 401);
@@ -245,14 +266,10 @@ class Passkey_Management_Controller
 			$displayName
 		);
 
-		// Store the challenge in session with a timestamp for expiration
-        $_SESSION['webauthn_challenge'] = [
-            'value' => $this->auth_passkeys->getWebAuthnInstance()->getChallenge()->getBinaryString(),
-            'expires' => time() + 300 // 5 minute expiration
-        ];
-
 		$response->getBody()->write(json_encode($options));
-		return $response->withHeader('Content-Type', 'application/json');
+		return $response
+		->withHeader('Content-Type', 'application/json')
+		->withHeader('Cache-Control', 'no-store');
 	}
 
 	/**
@@ -260,27 +277,26 @@ class Passkey_Management_Controller
 	 */
 	public function verifyRegistration(Request $request, Response $response): Response
 	{
-        // Add debug logging
-        error_log("[PASSKEY DEBUG] Starting verification of passkey registration");
-        
+		if (!$this->isPasskeyLoginEnabled())
+		{
+			return $this->jsonError($response, $this->passkeyUnavailableMessage(), 403);
+		}
+
         // Verify session authentication
         if (!$this->verifyAuthentication()) {
-            error_log("[PASSKEY DEBUG] Authentication verification failed");
             return $this->jsonError($response, 'Authentication required', 401);
         }
         
         // Check for CSRF token
         if (!$this->verifyCsrfToken($request)) {
-            error_log("[PASSKEY DEBUG] CSRF token verification failed");
             return $this->jsonError($response, 'Invalid security token', 403);
         }
         
         // Apply rate limiting
         if ($this->isRateLimited('register')) {
-            error_log("[PASSKEY DEBUG] Rate limit exceeded for registration");
             return $this->jsonError($response, 'Too many registration attempts. Please try again later.', 429);
         }
-        
+
 		// Get device name from query params
 		$queryParams = $request->getQueryParams();
 		$deviceName = $queryParams['device_name'] ?? '';
@@ -288,53 +304,60 @@ class Passkey_Management_Controller
 		
 		if (empty($deviceName))
 		{
-		    error_log("[PASSKEY DEBUG] Empty device name provided");
 			return $this->jsonError($response, 'Device name is required');
 		}
 		
 		// Get registration data from request body
 		$params = json_decode($request->getBody()->getContents(), true);
-		if (!$params || !isset($params['id']) || !isset($params['response']))
+		if (
+			!is_array($params)
+			|| !isset($params['id'], $params['response']['clientDataJSON'], $params['response']['attestationObject'])
+			|| !is_string($params['id'])
+			|| !is_string($params['response']['clientDataJSON'])
+			|| !is_string($params['response']['attestationObject'])
+		)
 		{
-		    error_log("[PASSKEY DEBUG] Invalid registration data format: " . json_encode($params));
 			return $this->jsonError($response, 'Invalid registration data format');
+		}
+
+		try
+		{
+			$clientDataJSON = Auth_Passkeys::base64url_decode($params['response']['clientDataJSON']);
+		}
+		catch (\InvalidArgumentException $e)
+		{
+			return $this->jsonError($response, 'Invalid registration client data');
+		}
+		$clientData = json_decode($clientDataJSON, true);
+		$clientChallenge = is_array($clientData) ? ($clientData['challenge'] ?? null) : null;
+		if (!is_string($clientChallenge))
+		{
+			return $this->jsonError($response, 'Invalid registration challenge');
+		}
+
+		$challenge = $this->auth_passkeys->consumeRegistrationChallenge($clientChallenge);
+		if ($challenge === null)
+		{
+			return $this->jsonError($response, 'Registration challenge is missing, expired, or already used.', 400);
 		}
 		
 		try
 		{
-            // Get challenge value from session
-            $challengeData = $_SESSION['webauthn_challenge'] ?? null;
-            if (!$challengeData) {
-                error_log("[PASSKEY DEBUG] No challenge found in session");
-                return $this->jsonError($response, 'No challenge found in session');
-            }
-            
-            $challenge = $challengeData['value'];
-            error_log("[PASSKEY DEBUG] Challenge retrieved from session: " . substr(bin2hex($challenge), 0, 10) . "...");
-            
 			// Verify with WebAuthn
-			error_log("[PASSKEY DEBUG] Processing registration with clientDataJSON size: " . 
-			    strlen($params['response']['clientDataJSON']) . ", attestationObject size: " . 
-			    strlen($params['response']['attestationObject']));
-			    
 			$success = $this->auth_passkeys->processRegistration(
 				$params['response']['clientDataJSON'],
 				$params['response']['attestationObject'],
 				$params['id'],
 				$this->account_id,
-				$deviceName,
-				true
+				$challenge,
+				$deviceName
 			);
 
 			if ($success)
 			{
-                // Clear the challenge from session after use
-                unset($_SESSION['webauthn_challenge']);
-                
                 // Record successful operation for audit logging
                 $this->logAuditEvent('passkey_register', 'Registered new passkey: ' . $deviceName);
                 
-                error_log("[PASSKEY DEBUG] Registration successful for device: " . $deviceName);
 				return $this->jsonSuccess($response, 'Passkey registered successfully');
 			}
 			else
@@ -342,7 +365,6 @@ class Passkey_Management_Controller
                 // Increment failed attempts counter
                 $this->incrementRateLimitCounter('register');
                 
-                error_log("[PASSKEY DEBUG] Registration failed - verification returned false");
 				return $this->jsonError($response, 'Failed to register passkey - verification returned false');
 			}
 		}
@@ -351,7 +373,7 @@ class Passkey_Management_Controller
             // Increment failed attempts counter
             $this->incrementRateLimitCounter('register');
             
-            error_log("[PASSKEY DEBUG] Exception during registration: " . $e->getMessage());
+            error_log('Passkey registration request failed: ' . $e->getMessage());
 			return $this->jsonError($response, 'Error processing registration request');
 		}
 	}
@@ -383,6 +405,11 @@ class Passkey_Management_Controller
 		}
 
 		$credentialId = $this->sanitizeInput($params['credential_id']);
+
+		if ($this->auth_passkeys === null)
+		{
+			return $this->jsonError($response, $this->passkeyUnavailableMessage(), 503);
+		}
 
 		try
 		{
@@ -497,23 +524,6 @@ class Passkey_Management_Controller
     }
     
     /**
-     * Check if the current challenge is valid and not expired
-     * @return bool
-     */
-    private function isValidChallenge(): bool
-    {
-        if (!isset($_SESSION['webauthn_challenge']) || 
-            !is_array($_SESSION['webauthn_challenge']) ||
-            !isset($_SESSION['webauthn_challenge']['value']) ||
-            !isset($_SESSION['webauthn_challenge']['expires'])) {
-            return false;
-        }
-        
-        // Check if challenge has expired
-        return $_SESSION['webauthn_challenge']['expires'] > time();
-    }
-    
-    /**
      * Sanitize user input to prevent injection attacks
      * @param string $input
      * @return string
@@ -531,6 +541,20 @@ class Passkey_Management_Controller
     {
         return isset($this->account_id) && $this->account_id > 0;
     }
+
+	private function isPasskeyLoginEnabled(): bool
+	{
+		return $this->auth_passkeys !== null && Auth_Passkeys::isLocalAuthenticationAllowed();
+	}
+
+	private function passkeyUnavailableMessage(): string
+	{
+		if ($this->auth_passkeys === null)
+		{
+			return lang('Passkeys are unavailable: the server address (webserver_url) must be an HTTPS address with a domain name. http://localhost is allowed for development, IP addresses are not.');
+		}
+		return lang('Passkey sign-in is disabled while external authentication is configured.');
+	}
     
     /**
      * Regenerate session ID safely
@@ -538,14 +562,21 @@ class Passkey_Management_Controller
      */
     private function regenerateSession(): void
     {
-        // Preserve session data
-        $session_data = $_SESSION;
-        
-        // Regenerate session ID
-        session_regenerate_id(true);
-        
-        // Restore session data
-        $_SESSION = $session_data;
+        if (!session_regenerate_id(true))
+        {
+            throw new \RuntimeException('Unable to rotate the passkey registration session.');
+        }
+
+        $sessionId = session_id();
+        if (isset($_SESSION['phpgw_session']) && is_array($_SESSION['phpgw_session']))
+        {
+            $_SESSION['phpgw_session']['session_id'] = $sessionId;
+        }
+
+        \App\modules\phpgwapi\security\Sessions::getInstance()->set_session_id($sessionId);
+        $userSettings = Settings::getInstance()->get('user');
+        $userSettings['sessionid'] = $sessionId;
+        Settings::getInstance()->set('user', $userSettings);
     }
     
     /**

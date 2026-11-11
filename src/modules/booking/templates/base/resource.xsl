@@ -1,6 +1,11 @@
 <xsl:template match="data" xmlns:php="http://php.net/xsl">
 	<xsl:call-template name="jquery_phpgw_i18n"/>
 	<xsl:call-template name="msgbox"/>
+	<xsl:if test="resource/direct_booking_conflict_html != ''">
+		<div class="ds-alert" data-color="warning" role="alert">
+			<xsl:value-of disable-output-escaping="yes" select="resource/direct_booking_conflict_html"/>
+		</div>
+	</xsl:if>
 	<xsl:variable name="date_format">
 		<xsl:value-of select="php:function('get_phpgw_info', 'user|preferences|common|dateformat')" />
 	</xsl:variable>

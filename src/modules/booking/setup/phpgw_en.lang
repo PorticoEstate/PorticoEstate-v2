@@ -1390,3 +1390,8 @@ price_category_exists	booking	en	The category already existed and has been chose
 price_category_invalid	booking	en	Enter a name of up to 100 characters that is not just a number
 price_category_add_failed	booking	en	The category was not added. Reload the page and try again.
 price_category_unknown_not_saved	booking	en	The new price was not saved: the category does not exist
+hospitality_blocked_resource_has_direct_booking	booking	en	The resource “%1” has direct booking and cannot be linked to hospitality. Direct booking and hospitality cannot be used on the same resource. Turn off direct booking on the resource first.
+direct_booking_blocked_resource_has_hospitality	booking	en	The resource is linked to hospitality (%1) and cannot get direct booking. Direct booking and hospitality cannot be used on the same resource. Remove the link to hospitality first.
+direct_booking_conflict_warning_resource	booking	en	Warning. This resource has direct booking and is also linked to hospitality (%1). Using both on the same resource is no longer allowed. Nothing has been changed. Turn off direct booking or remove the link to hospitality.
+direct_booking_conflict_warning_hospitality	booking	en	Warning. The resources marked “Has direct booking” are linked to this hospitality. Using both on the same resource is no longer allowed. Nothing has been changed. Turn off direct booking on the resource or remove the link here.
+resource_has_direct_booking_tag	booking	en	Has direct booking

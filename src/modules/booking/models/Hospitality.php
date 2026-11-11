@@ -132,6 +132,15 @@ class Hospitality
     public $resource_name;
 
     /**
+     * True when this hospitality is active and its own resource has direct booking: an existing
+     * conflict the admin UI warns about. Filled by the controller on read (show, update); null elsewhere.
+     *
+     * @OA\Property(type="boolean", nullable=true)
+     * @Expose
+     */
+    public $direct_booking_conflict;
+
+    /**
      * @OA\Property(type="integer", nullable=true)
      * @Expose
      */

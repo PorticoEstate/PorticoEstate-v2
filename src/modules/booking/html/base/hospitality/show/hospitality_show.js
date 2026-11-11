@@ -738,10 +738,27 @@
 
 	var _inlineBuildingSelect = null;
 
+	/**
+	 * Marks a resource that has direct booking AND is linked to this hospitality: a conflict that
+	 * predates the rule (a resource cannot have both). Read-only; nothing is unlinked for the admin.
+	 */
+	function directBookingTag(isConflict)
+	{
+		return isConflict
+			? ' <span class="ds-tag" data-color="warning">' + esc(lang('resourceHasDirectBookingTag')) + '</span>'
+			: '';
+	}
+
+	function hasDirectBookingConflict(h)
+	{
+		return !!h.direct_booking_conflict ||
+			(h.remote_locations || []).some(function (loc) { return !!loc.direct_booking_conflict; });
+	}
+
 	function renderResourceToggleRow(r)
 	{
 		var html = '<div class="hosp-show__article-row' + (!r.isAdded ? ' hosp-show__article-row--dimmed' : '') + '">';
-		html += '<span class="hosp-show__article-name">' + esc(r.resource_name) + '</span>';
+		html += '<span class="hosp-show__article-name">' + esc(r.resource_name) + directBookingTag(r.directBookingConflict) + '</span>';
 
 		if (canWrite)
 		{
@@ -786,7 +803,8 @@
 					return {
 						resource_id: r.id,
 						resource_name: r.name,
-						isAdded: !!addedMap[r.id]
+						isAdded: !!addedMap[r.id],
+						directBookingConflict: !!(addedMap[r.id] && addedMap[r.id].direct_booking_conflict)
 					};
 				});
 		} else
@@ -799,7 +817,8 @@
 					return {
 						resource_id: loc.resource_id,
 						resource_name: loc.resource_name,
-						isAdded: true
+						isAdded: true,
+						directBookingConflict: !!loc.direct_booking_conflict
 					};
 				});
 		}
@@ -953,8 +972,17 @@
 				'</div>';
 		}
 
+		// Warning (not an error): existing links to resources that have direct booking. Untouched.
+		if (hasDirectBookingConflict(h))
+		{
+			html += '<div class="hosp-show__info-banner hosp-show__info-banner--warning" role="alert">' +
+				'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg> ' +
+				esc(lang('directBookingConflictWarning')) +
+				'</div>';
+		}
+
 		// Main resource (read-only)
-		html += section(lang('mainResource'), fieldHtml(lang('main_resource'), '<a href="/?menuaction=booking.uiresource.show&id=' + esc(h.resource_id) + '">' + esc(h.resource_name) + '</a>'));
+		html += section(lang('mainResource'), fieldHtml(lang('main_resource'), '<a href="/?menuaction=booking.uiresource.show&id=' + esc(h.resource_id) + '">' + esc(h.resource_name) + '</a>' + directBookingTag(h.direct_booking_conflict)));
 
 		// Inline building search (top, where add button used to be)
 		if (canWrite)

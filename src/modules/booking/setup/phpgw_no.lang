@@ -1391,3 +1391,8 @@ price_category_exists	booking	no	Kategorien fantes fra før og er valgt
 price_category_invalid	booking	no	Skriv et navn på inntil 100 tegn som ikke bare er et tall
 price_category_add_failed	booking	no	Kategorien ble ikke lagt til. Last siden på nytt og prøv igjen.
 price_category_unknown_not_saved	booking	no	Den nye prisen ble ikke lagret: kategorien finnes ikke
+hospitality_blocked_resource_has_direct_booking	booking	no	Ressursen «%1» har direktebooking og kan ikke kobles til bevertning. Direktebooking og bevertning kan ikke brukes på samme ressurs. Slå av direktebooking på ressursen først.
+direct_booking_blocked_resource_has_hospitality	booking	no	Ressursen er koblet til bevertning (%1) og kan ikke få direktebooking. Direktebooking og bevertning kan ikke brukes på samme ressurs. Fjern koblingen til bevertning først.
+direct_booking_conflict_warning_resource	booking	no	Advarsel. Denne ressursen har direktebooking og er samtidig koblet til bevertning (%1). Det er ikke lenger tillatt å bruke begge på samme ressurs. Ingenting er endret. Slå av direktebooking eller fjern koblingen til bevertning.
+direct_booking_conflict_warning_hospitality	booking	no	Advarsel. Ressursene som er merket «Har direktebooking» er koblet til denne bevertningen. Det er ikke lenger tillatt å bruke begge på samme ressurs. Ingenting er endret. Slå av direktebooking på ressursen eller fjern koblingen her.
+resource_has_direct_booking_tag	booking	no	Har direktebooking

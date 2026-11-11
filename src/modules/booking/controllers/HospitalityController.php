@@ -6,6 +6,7 @@ use App\modules\phpgwapi\services\Settings;
 use App\modules\phpgwapi\security\Acl;
 use App\modules\booking\repositories\HospitalityRepository;
 use App\modules\booking\repositories\HospitalityArticleRepository;
+use App\modules\booking\services\HospitalityDirectBookingGuard;
 use App\modules\booking\models\Hospitality;
 use App\modules\booking\models\HospitalityRemoteLocation;
 use App\modules\booking\models\HospitalityArticleGroup;
@@ -23,6 +24,7 @@ class HospitalityController
 	protected Acl $acl;
 	protected HospitalityRepository $repository;
 	protected HospitalityArticleRepository $articleRepository;
+	protected HospitalityDirectBookingGuard $directBookingGuard;
 
 	public function __construct(ContainerInterface $container)
 	{
@@ -30,6 +32,19 @@ class HospitalityController
 		$this->acl = Acl::getInstance();
 		$this->repository = new HospitalityRepository();
 		$this->articleRepository = new HospitalityArticleRepository();
+		$this->directBookingGuard = new HospitalityDirectBookingGuard();
+	}
+
+	/**
+	 * 422 for a save that would link a resource with direct booking to hospitality. 422, not 409:
+	 * 409 + error=CONFLICT is the stale-version answer the admin UI special-cases.
+	 *
+	 * @param array{code: string, error: string, resource_ids: int[]} $refusal from HospitalityDirectBookingGuard
+	 */
+	private function refuseDirectBookingConflict(Response $response, array $refusal): Response
+	{
+		$response->getBody()->write(json_encode($refusal));
+		return $response->withHeader('Content-Type', 'application/json')->withStatus(422);
 	}
 
 	/**
@@ -120,6 +135,12 @@ class HospitalityController
 				return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
 			}
 
+			// A resource with direct booking cannot be linked to hospitality (operator 2026-11-11).
+			$refusal = $this->directBookingGuard->checkHospitalityCreate($body);
+			if ($refusal !== null) {
+				return $this->refuseDirectBookingConflict($response, $refusal);
+			}
+
 			$body['created_by'] = (int)$this->userSettings['account_id'];
 
 			$id = $this->repository->create($body);
@@ -157,9 +178,12 @@ class HospitalityController
 
 			$model = new Hospitality($row);
 
-			// Enrich with remote locations
+			// Enrich with remote locations, and mark the links that are existing direct-booking conflicts
 			$remoteRows = $this->repository->getRemoteLocations($id);
-			$model->remote_locations = array_map(function ($r) {
+			$conflicts = $this->directBookingGuard->conflictFlagsForHospitality($row, $remoteRows);
+			$model->direct_booking_conflict = $conflicts['main'];
+			$model->remote_locations = array_map(function ($r) use ($conflicts) {
+				$r['direct_booking_conflict'] = $conflicts['remote'][(int)$r['resource_id']] ?? false;
 				return (new HospitalityRemoteLocation($r))->serialize();
 			}, $remoteRows);
 
@@ -229,12 +253,23 @@ class HospitalityController
 			}
 
 			$body = $request->getParsedBody() ?? json_decode($request->getBody()->getContents(), true) ?? [];
+
+			// Moving the hospitality to a resource, or re-activating it, links resources to it again:
+			// refuse when one of them has direct booking. Any other edit (name, deadlines, flags)
+			// of a hospitality that is already in conflict still saves.
+			$refusal = $this->directBookingGuard->checkHospitalityUpdate($existing, $body);
+			if ($refusal !== null) {
+				return $this->refuseDirectBookingConflict($response, $refusal);
+			}
+
 			$accountId = (int)$this->userSettings['account_id'];
 			$body['modified_by'] = $accountId;
 
 			$this->repository->update($id, $body);
 			$row = $this->repository->getById($id);
 			$model = new Hospitality($row);
+			// The UI merges this response over what it holds: keep the warning flag in it.
+			$model->direct_booking_conflict = $this->directBookingGuard->conflictFlagsForHospitality($row, [])['main'];
 
 			// Broadcast update via WebSocket
 			WebSocketHelper::sendEntityNotificationAsync(
@@ -365,6 +400,12 @@ class HospitalityController
 				return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
 			}
 
+			// A delivery location with direct booking cannot be attached (operator 2026-11-11).
+			$refusal = $this->directBookingGuard->checkRemoteLocation($existing, (int)$body['resource_id'], true);
+			if ($refusal !== null) {
+				return $this->refuseDirectBookingConflict($response, $refusal);
+			}
+
 			$this->repository->addRemoteLocation($id, (int)$body['resource_id']);
 
 			$rows = $this->repository->getRemoteLocations($id);
@@ -455,6 +496,12 @@ class HospitalityController
 			if (!array_key_exists('active', $body)) {
 				$response->getBody()->write(json_encode(['error' => 'active field is required']));
 				return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+			}
+
+			// Re-activating a delivery location attaches it again; switching it off is the remedy and is never refused.
+			$refusal = $this->directBookingGuard->checkRemoteLocation($this->repository->getById($id), $resourceId, (bool)$body['active']);
+			if ($refusal !== null) {
+				return $this->refuseDirectBookingConflict($response, $refusal);
 			}
 
 			$this->repository->toggleRemoteLocation($id, $resourceId, (bool)$body['active']);

@@ -178,12 +178,15 @@ function prepareAuthenticationResponse(credential)
     return response;
 }
 
-async function registerPasskey(_username, registrationOptionsUrl, registrationVerifyUrl)
+async function registerPasskey(_username, registrationOptionsUrl, registrationVerifyUrl, csrfToken)
 {
     const optionsResponse = await fetch(appendNoCacheParam(registrationOptionsUrl), {
         method: 'GET',
         credentials: 'same-origin',
-        headers: {'Accept': 'application/json'},
+        headers: {
+            'Accept': 'application/json',
+            'X-CSRF-Token': csrfToken
+        },
         cache: 'no-store'
     });
     const optionsData = await readJsonResponse(optionsResponse, 'Unable to load passkey registration options');
@@ -200,7 +203,8 @@ async function registerPasskey(_username, registrationOptionsUrl, registrationVe
         credentials: 'same-origin',
         headers: {
             'Accept': 'application/json',
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': csrfToken
         },
         body: JSON.stringify(prepareCreationResponse(credential))
     });

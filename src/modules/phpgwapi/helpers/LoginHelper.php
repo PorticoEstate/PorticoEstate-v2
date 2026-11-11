@@ -135,10 +135,13 @@ HTML;
 				<option value="{$type}">{$method_name}</option>
 HTML;
 			}
-			// Add passkey login option
-			$options .= <<<HTML
-			<option value="passkey">Passkey (Passwordless)</option>
+			if (\App\modules\phpgwapi\security\Auth\Auth_Passkeys::isRelyingPartyConfigured()
+				&& \App\modules\phpgwapi\security\Auth\Auth_Passkeys::isLocalAuthenticationAllowed())
+			{
+				$options .= <<<HTML
+				<option value="passkey">Passkey (Passwordless)</option>
 HTML;
+			}
 			$options .= <<<HTML
 			<option value="sql">Brukernavn/Passord</option>
 HTML;

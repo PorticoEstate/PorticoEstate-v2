@@ -393,6 +393,27 @@ class Login
 	 */
 	protected function auth_passkey(): ?array
 	{
+		$passkeyUnavailableReason = null;
+		if (!\App\modules\phpgwapi\security\Auth\Auth_Passkeys::isRelyingPartyConfigured())
+		{
+			$passkeyUnavailableReason = lang('Passkeys are unavailable: the server address (webserver_url) must be an HTTPS address with a domain name. http://localhost is allowed for development, IP addresses are not.');
+		}
+		else if (!\App\modules\phpgwapi\security\Auth\Auth_Passkeys::isLocalAuthenticationAllowed())
+		{
+			$passkeyUnavailableReason = lang('Passkey sign-in is disabled while external authentication is configured.');
+		}
+		if ($passkeyUnavailableReason !== null)
+		{
+			$passkeyUnavailableReason = htmlspecialchars($passkeyUnavailableReason, ENT_QUOTES, 'UTF-8');
+			return [
+				'html' => '<!DOCTYPE html><html><head><title>Passkey sign-in unavailable</title>'
+					. '<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">'
+					. '</head><body><main><h1>Passkey sign-in unavailable</h1>'
+					. '<p>' . $passkeyUnavailableReason . '</p>'
+					. '<a href="login_ui">Return to sign in</a></main></body></html>'
+			];
+		}
+
 		if (empty($_POST['data']))
 		{
 			// Refactored WebAuthn form that uses passkey-client.js
@@ -496,6 +517,7 @@ class Login
 		const statusMessage = document.getElementById('status-message');
 		const authenticationOptions = {$authenticationOptionsJson};
 		let conditionalController = null;
+		let manualAuthenticationStarted = false;
 		let credentialSubmitted = false;
 		loginForm.addEventListener('submit', function(event) {
 			event.preventDefault();
@@ -541,6 +563,7 @@ class Login
 
 		passkeyButton.addEventListener('click', async function() {
 			try {
+				manualAuthenticationStarted = true;
 				passkeyButton.disabled = true;
 				loadingSpinner.style.display = 'block';
 				showStatus('Starting authentication...', 'info');
@@ -565,7 +588,10 @@ class Login
 			&& typeof PublicKeyCredential.isConditionalMediationAvailable === 'function'
 		) {
 			try {
-				if (await PublicKeyCredential.isConditionalMediationAvailable()) {
+				if (
+					!manualAuthenticationStarted
+					&& await PublicKeyCredential.isConditionalMediationAvailable()
+				) {
 					conditionalController = new AbortController();
 					navigator.credentials.get({
 						publicKey: prepareRequestOptions(authenticationOptions),
@@ -597,12 +623,6 @@ HTML;
 			try
 			{
 				$auth_passkeys = new \App\modules\phpgwapi\security\Auth\Auth_Passkeys();
-				$challenge = $auth_passkeys->consumeAuthenticationChallenge();
-				if ($challenge === null)
-				{
-					throw new \Exception('Passkey challenge is missing, expired, or already used.');
-				}
-
 				// Parse credential data from POST
 				$response = json_decode($_POST['data'], true);
 
@@ -627,6 +647,28 @@ HTML;
 
 				// Get credential details from the response
 				$clientDataJSON = $response['response']['clientDataJSON'];
+				try
+				{
+					$clientData = json_decode(
+						\App\modules\phpgwapi\security\Auth\Auth_Passkeys::base64url_decode($clientDataJSON),
+						true
+					);
+				}
+				catch (\InvalidArgumentException $e)
+				{
+					throw new \Exception('Invalid passkey client data.');
+				}
+				$clientChallenge = is_array($clientData) ? ($clientData['challenge'] ?? null) : null;
+				if (!is_string($clientChallenge))
+				{
+					throw new \Exception('Invalid passkey challenge.');
+				}
+				$challenge = $auth_passkeys->consumeAuthenticationChallenge($clientChallenge);
+				if ($challenge === null)
+				{
+					throw new \Exception('Passkey challenge is missing, expired, or already used.');
+				}
+
 				$authenticatorData = $response['response']['authenticatorData'];
 				$signature = $response['response']['signature'];
 				$credentialId = $response['rawId'];
@@ -672,8 +714,7 @@ HTML;
 				}
 				catch (\Exception $e)
 				{
-					// Authentication failed - show detailed error
-					$debug_info = isset($GLOBALS['webauthn_debug']) ? $GLOBALS['webauthn_debug'] : [];
+					error_log('Passkey authentication failed: ' . $e->getMessage());
 
 					$html = <<<HTML
 <!DOCTYPE html>
@@ -691,16 +732,7 @@ HTML;
 				<h4>Authentication Failed</h4>
 			</div>
 			<div class="card-body">
-				<p>Credential verification error: {$e->getMessage()}</p>
-				
-				<div class="bg-light p-3 mb-3">
-					<h5>Debug Information:</h5>
-					<pre>
-Authentication Debug Info:
--------------------------
-<?php echo implode("\n", $debug_info); ?>
-					</pre>
-				</div>
+				<p>Passkey authentication failed. Please try again.</p>
 				
 				<div class="mt-4">
 					<a href="login.php?type=passkey" class="btn btn-primary">Try Again</a>
@@ -720,7 +752,7 @@ HTML;
 			}
 			catch (\Exception $e)
 			{
-				// General error handling
+				error_log('Passkey login request failed: ' . $e->getMessage());
 				$html = <<<HTML
 <!DOCTYPE html>
 <html>
@@ -737,7 +769,7 @@ HTML;
 				<h4>Authentication Failed</h4>
 			</div>
 			<div class="card-body">
-				<p>Error: {$e->getMessage()}</p>
+				<p>Passkey authentication could not be completed. Please try again.</p>
 				
 				<div class="mt-4">
 					<a href="login.php?type=passkey" class="btn btn-primary">Try Again</a>

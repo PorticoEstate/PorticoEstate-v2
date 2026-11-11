@@ -27,30 +27,21 @@ class Auth_Passkeys
     private string $rpId; // Relying Party ID (domain name)
     private string $origin;
     private $serverSettings;
+    private const MAX_PENDING_CHALLENGES = 10;
 
     public function __construct()
     {
         $this->db = \App\Database\Db::getInstance();
         $this->serverSettings = Settings::getInstance()->get('server');
 
-        // Bind credentials to the configured browser-facing URL, not request Host or proxy headers.
-        $configuredUrl = trim((string) ($this->serverSettings['webserver_url'] ?? ''));
-        $urlParts = parse_url($configuredUrl);
-        $scheme = is_array($urlParts) ? strtolower((string) ($urlParts['scheme'] ?? '')) : '';
-        $host = is_array($urlParts) ? strtolower(rtrim((string) ($urlParts['host'] ?? ''), '.')) : '';
-        if ($host === '' || !in_array($scheme, ['https', 'http'], true)
-            || ($scheme !== 'https' && $host !== 'localhost'))
+        $relyingParty = self::getRelyingPartyConfiguration();
+        if ($relyingParty === null)
         {
-            throw new \RuntimeException('Passkeys require webserver_url to be the browser-visible HTTPS URL (HTTP localhost is allowed).');
+            throw new \RuntimeException('Passkeys require webserver_url to be an absolute HTTPS URL with a domain name (http://localhost is allowed for development).');
         }
 
-        $this->rpId = $host;
-        $port = $urlParts['port'] ?? null;
-        if (($port === 443 && $scheme === 'https') || ($port === 80 && $scheme === 'http'))
-        {
-            $port = null;
-        }
-        $this->origin = $scheme . '://' . $host . ($port ? ':' . $port : '');
+        $this->rpId = $relyingParty['rp_id'];
+        $this->origin = $relyingParty['origin'];
 
         try
         {
@@ -67,6 +58,68 @@ class Auth_Passkeys
     }
 
     /**
+     * Derive the WebAuthn RP ID and origin from the configured browser-facing URL
+     * (never from request Host or proxy headers).
+     *
+     * WebAuthn requires a domain-name RP ID: IP addresses are rejected by browsers,
+     * and plain HTTP is only a secure context for localhost.
+     *
+     * @return array{rp_id: string, origin: string}|null Null when passkeys cannot work with the configuration.
+     */
+    public static function getRelyingPartyConfiguration(): ?array
+    {
+        $serverSettings = Settings::getInstance()->get('server');
+        $urlParts = parse_url(trim((string) ($serverSettings['webserver_url'] ?? '')));
+        if (!is_array($urlParts))
+        {
+            return null;
+        }
+
+        $scheme = strtolower((string) ($urlParts['scheme'] ?? ''));
+        $host = strtolower(rtrim((string) ($urlParts['host'] ?? ''), '.'));
+        $isLocalhost = $host === 'localhost' || str_ends_with($host, '.localhost');
+        if ($host === '' || filter_var(trim($host, '[]'), FILTER_VALIDATE_IP) !== false
+            || !($scheme === 'https' || ($scheme === 'http' && $isLocalhost)))
+        {
+            return null;
+        }
+
+        $port = $urlParts['port'] ?? null;
+        if (($port === 443 && $scheme === 'https') || ($port === 80 && $scheme === 'http'))
+        {
+            $port = null;
+        }
+
+        return [
+            'rp_id' => $host,
+            'origin' => $scheme . '://' . $host . ($port ? ':' . $port : ''),
+        ];
+    }
+
+    public static function isRelyingPartyConfigured(): bool
+    {
+        return self::getRelyingPartyConfiguration() !== null;
+    }
+
+    public static function isLocalAuthenticationAllowed(): bool
+    {
+        $serverSettings = Settings::getInstance()->get('server');
+        if (strtolower((string) ($serverSettings['auth_type'] ?? '')) !== 'sql')
+        {
+            return false;
+        }
+
+        $locationId = (new \App\modules\phpgwapi\controllers\Locations())->get_id('admin', 'openid_connect');
+        if (!$locationId)
+        {
+            return true;
+        }
+
+        $openidConfiguration = (new \App\modules\phpgwapi\services\ConfigLocation($locationId))->read();
+        return empty($openidConfiguration['common']['method_backend']);
+    }
+
+    /**
      * Generates arguments for navigator.credentials.create()
      * @param int $account_id The user's account ID
      * @param string $username The user's username
@@ -77,103 +130,80 @@ class Auth_Passkeys
     {
         $existingCredentialIds = $this->getCredentialIdsForUser($account_id);
 
-        // Create user ID as a random value + account ID (base64url encoded)
-        $randomBytes = random_bytes(16);
-        $rawUserId = $account_id . '_' . bin2hex($randomBytes);
+        $rawUserId = $this->getUserHandleForAccount($account_id);
         $userIdBase64Url = self::base64url_encode($rawUserId);
 
-        // Generate registration options
-        // Note: The lbuchs/webauthn library might set some defaults we need to override
+        // Generate registration options with the library's positional arguments.
         $options = $this->webAuthn->getCreateArgs(
-            $userIdBase64Url, // Use base64url encoded user ID
+            $rawUserId,
             $username,
             $displayName,
             60 * 3, // Timeout
-            true, // Prevent re-registration
-            $existingCredentialIds // Exclude existing
+            true, // Require a discoverable credential
+            'required', // Require user verification
+            null, // Allow platform and roaming authenticators
+            $existingCredentialIds
         );
+        $libraryOptions = $options->publicKey;
 
         // Generate and store the challenge (raw binary in session, base64url for client)
         $rawChallenge = $this->webAuthn->getChallenge()->getBinaryString();
-        $_SESSION['webauthn_registration_challenge'] = [
-            'value' => $rawChallenge,
-            'expires' => time() + 300 // 5 minute expiration
-        ];
-        $challengeBase64Url = self::base64url_encode($rawChallenge);
+        $challengeBase64Url = $this->storeChallenge('webauthn_registration_challenges', $rawChallenge);
 
-        // --- Start Correcting the Options Structure ---
-
-        // Create a clean stdClass object for the final response
         $finalOptions = new \stdClass();
-
-        // Build the publicKey object correctly
         $finalOptions->publicKey = new \stdClass();
 
-        // 1. Set Relying Party (rp) - Ensure it's not null
-        if (isset($options->rp) && is_object($options->rp)) {
-            $finalOptions->publicKey->rp = $options->rp;
+        if (isset($libraryOptions->rp) && is_object($libraryOptions->rp)) {
+            $finalOptions->publicKey->rp = $libraryOptions->rp;
         } else {
-            // Fallback if library didn't provide it (should not happen with correct setup)
             $finalOptions->publicKey->rp = (object)[
                 'id' => $this->rpId,
                 'name' => $this->appName
             ];
         }
 
-        // 2. Set User Information (ensure ID is base64url)
         $finalOptions->publicKey->user = new \stdClass();
-        $finalOptions->publicKey->user->id = $userIdBase64Url; // Already base64url
+        $finalOptions->publicKey->user->id = $userIdBase64Url;
         $finalOptions->publicKey->user->name = $username;
         $finalOptions->publicKey->user->displayName = $displayName;
 
-        // 3. Set Challenge (base64url)
-        $finalOptions->publicKey->challenge = $challengeBase64Url; // Use base64url challenge
+        $finalOptions->publicKey->challenge = $challengeBase64Url;
 
-        // 4. Set pubKeyCredParams - Ensure it's not null
-        if (isset($options->pubKeyCredParams) && is_array($options->pubKeyCredParams)) {
-            $finalOptions->publicKey->pubKeyCredParams = $options->pubKeyCredParams;
+        if (isset($libraryOptions->pubKeyCredParams) && is_array($libraryOptions->pubKeyCredParams)) {
+            $finalOptions->publicKey->pubKeyCredParams = $libraryOptions->pubKeyCredParams;
         } else {
-            // Fallback to common algorithms if library didn't provide
             $finalOptions->publicKey->pubKeyCredParams = [
                 (object)['type' => 'public-key', 'alg' => -7],  // ES256
                 (object)['type' => 'public-key', 'alg' => -257] // RS256
             ];
         }
 
-        // 5. Set Timeout - Ensure it's not null
-        if (isset($options->timeout) && is_numeric($options->timeout)) {
-            $finalOptions->publicKey->timeout = $options->timeout;
+        if (isset($libraryOptions->timeout) && is_numeric($libraryOptions->timeout)) {
+            $finalOptions->publicKey->timeout = $libraryOptions->timeout;
         } else {
             $finalOptions->publicKey->timeout = 180000; // Default to 180 seconds (3 minutes)
         }
 
-        // 6. Set ExcludeCredentials (ensure IDs are base64url)
         $finalOptions->publicKey->excludeCredentials = [];
         foreach ($existingCredentialIds as $rawId) {
             $finalOptions->publicKey->excludeCredentials[] = (object)[
                 'type' => 'public-key',
-                'id' => self::base64url_encode($rawId) // Encode existing IDs to base64url
+                'id' => self::base64url_encode($rawId),
+                'transports' => ['usb', 'nfc', 'ble', 'hybrid', 'internal']
             ];
         }
 
-        // 7. Set Authenticator Selection (Consistent & Secure Values)
         $finalOptions->publicKey->authenticatorSelection = new \stdClass();
         $finalOptions->publicKey->authenticatorSelection->userVerification = 'required';
-        $finalOptions->publicKey->authenticatorSelection->residentKey = 'preferred';
-        $finalOptions->publicKey->authenticatorSelection->requireResidentKey = false;
+        $finalOptions->publicKey->authenticatorSelection->residentKey = 'required';
+        $finalOptions->publicKey->authenticatorSelection->requireResidentKey = true;
 
-        // Passkeys do not need identifying authenticator attestation.
         $finalOptions->publicKey->attestation = 'none';
 
-        // 9. Set Extensions (if any)
-        if (isset($options->extensions)) {
-            $finalOptions->publicKey->extensions = $options->extensions;
+        if (isset($libraryOptions->extensions)) {
+            $finalOptions->publicKey->extensions = $libraryOptions->extensions;
         }
 
-        // --- End Correcting the Options Structure ---
-
-        // Return ONLY the correctly structured object
-        // Do NOT return the original $options or add root-level properties
         return $finalOptions;
     }
 
@@ -184,39 +214,77 @@ class Auth_Passkeys
     {
         ByteBuffer::$useBase64UrlEncoding = true;
         $options = $this->webAuthn->getGetArgs([], 60, true, true, true, true, true, true);
-        $_SESSION['webauthn_login_challenge'] = [
-            'value' => $this->webAuthn->getChallenge()->getBinaryString(),
-            'expires' => time() + 300
-        ];
+        $this->storeChallenge('webauthn_login_challenges', $this->webAuthn->getChallenge()->getBinaryString());
 
         return $options->publicKey;
     }
 
     /**
-     * Take and consume the current login challenge, even if subsequent verification fails.
+     * Consume the server-issued challenge identified by the client response.
      */
-    public function consumeAuthenticationChallenge(): ?string
+    public function consumeAuthenticationChallenge(string $challengeBase64Url): ?string
     {
-        $challenge = $_SESSION['webauthn_login_challenge'] ?? null;
-        unset($_SESSION['webauthn_login_challenge']);
+        return $this->consumeChallenge('webauthn_login_challenges', $challengeBase64Url);
+    }
 
-        if (!is_array($challenge) || !isset($challenge['value'], $challenge['expires'])
-            || !is_string($challenge['value']) || $challenge['value'] === ''
-            || (int) $challenge['expires'] <= time())
+    /**
+     * Consume the server-issued registration challenge identified by the client response.
+     */
+    public function consumeRegistrationChallenge(string $challengeBase64Url): ?string
+    {
+        return $this->consumeChallenge('webauthn_registration_challenges', $challengeBase64Url);
+    }
+
+    private function storeChallenge(string $sessionKey, string $rawChallenge): string
+    {
+        $challengeBase64Url = self::base64url_encode($rawChallenge);
+        $challenges = $_SESSION[$sessionKey] ?? [];
+        if (!is_array($challenges))
+        {
+            $challenges = [];
+        }
+
+        $now = time();
+        foreach ($challenges as $challenge => $data)
+        {
+            if (!is_array($data) || (int) ($data['expires'] ?? 0) <= $now)
+            {
+                unset($challenges[$challenge]);
+            }
+        }
+        while (count($challenges) >= self::MAX_PENDING_CHALLENGES)
+        {
+            unset($challenges[array_key_first($challenges)]);
+        }
+
+        $challenges[$challengeBase64Url] = [
+            'value' => $rawChallenge,
+            'expires' => $now + 300
+        ];
+        $_SESSION[$sessionKey] = $challenges;
+        return $challengeBase64Url;
+    }
+
+    private function consumeChallenge(string $sessionKey, string $challengeBase64Url): ?string
+    {
+        try
+        {
+            self::base64url_decode($challengeBase64Url);
+        }
+        catch (\InvalidArgumentException $e)
         {
             return null;
         }
 
-        return $challenge['value'];
-    }
+        $challenges = $_SESSION[$sessionKey] ?? [];
+        if (!is_array($challenges) || !isset($challenges[$challengeBase64Url]))
+        {
+            return null;
+        }
 
-    /**
-     * Take and consume the current registration challenge, even if verification fails.
-     */
-    public function consumeRegistrationChallenge(): ?string
-    {
-        $challenge = $_SESSION['webauthn_registration_challenge'] ?? null;
-        unset($_SESSION['webauthn_registration_challenge']);
+        $challenge = $challenges[$challengeBase64Url];
+        unset($challenges[$challengeBase64Url]);
+        $_SESSION[$sessionKey] = $challenges;
 
         if (!is_array($challenge) || !isset($challenge['value'], $challenge['expires'])
             || !is_string($challenge['value']) || $challenge['value'] === ''
@@ -310,15 +378,13 @@ class Auth_Passkeys
             $initialSignCount = (int) ($credentialData->signatureCounter ?? 0);
 
             // Store the credential data
-            $this->storeCredentialSource(
+            return $this->storeCredentialSource(
                 $account_id,
                 $credentialData->credentialId,
                 $credentialData->credentialPublicKey,
                 $initialSignCount,
                 $deviceName
             );
-
-            return true;
         }
         catch (\Exception $e)
         {
@@ -365,6 +431,21 @@ class Auth_Passkeys
                 throw new \Exception('Credential ID not found');
             }
 
+            if ($userHandle === null)
+            {
+                throw new \Exception('Discoverable credential response did not include a user handle.');
+            }
+            $userHandleRaw = self::base64url_decode($userHandle);
+            $userHandleBase64Url = self::base64url_encode($userHandleRaw);
+            if (isset($credentialSource['user_handle']))
+            {
+                $storedUserHandle = self::base64url_decode($credentialSource['user_handle']);
+                if (!hash_equals($storedUserHandle, $userHandleRaw))
+                {
+                    throw new \Exception('Credential user handle does not match the stored account binding.');
+                }
+            }
+
             $this->webAuthn->processGet(
                 $clientDataJSONDecoded,
                 $authenticatorDataDecoded,
@@ -376,9 +457,12 @@ class Auth_Passkeys
             );
 
             $signCount = $this->webAuthn->getSignatureCounter();
-            if ($signCount !== null && $signCount > $credentialSource['sign_count'])
+            $storedSignCount = $signCount === null
+                ? $credentialSource['sign_count']
+                : max($credentialSource['sign_count'], $signCount);
+            if (!$this->updateCredentialCounter($credentialIdDecoded, $storedSignCount, $userHandleBase64Url))
             {
-                $this->updateCredentialCounter($credentialIdDecoded, $signCount);
+                throw new \RuntimeException('Unable to update passkey usage data.');
             }
 
             $this->update_lastlogin($credentialSource['account_id'], $_SERVER['REMOTE_ADDR'] ?? '');
@@ -434,20 +518,19 @@ class Auth_Passkeys
      * @param int $newSignCount New sign count value
      * @return bool Success status
      */
-    private function updateCredentialCounter(string $rawCredentialId, int $newSignCount): bool
+    private function updateCredentialCounter(string $rawCredentialId, int $newSignCount, string $userHandle): bool
     {
-        // Create a ByteBuffer and use jsonSerialize to get the Base64URL string
         $buffer = new ByteBuffer($rawCredentialId);
-        // Set to use Base64URL encoding
         ByteBuffer::$useBase64UrlEncoding = true;
         $credentialIdBase64Url = $buffer->jsonSerialize();
 
         try
         {
-            // Get the account data containing this credential ID using parameterized query
+            $this->db->transaction_begin();
             $sql = "SELECT account_id, account_data
                    FROM phpgw_accounts_data 
-                   WHERE account_data @> :search_json::jsonb";
+                   WHERE account_data @> :search_json::jsonb
+                   FOR UPDATE";
 
             $stmt = $this->db->prepare($sql);
             $searchJson = json_encode(['passkeys' => [['credential_id' => $credentialIdBase64Url]]]);
@@ -456,107 +539,57 @@ class Auth_Passkeys
             $row = $stmt->fetch(PDO::FETCH_ASSOC);
             if ($row)
             {
-                $account_id = (int)$row['account_id'];
-                $account_data = json_decode($row['account_data'], true);
+                $accountId = (int) $row['account_id'];
+                $accountData = json_decode($row['account_data'], true);
 
-                // Find the passkey in the array
-                if (isset($account_data['passkeys']) && is_array($account_data['passkeys']))
+                if (isset($accountData['passkeys']) && is_array($accountData['passkeys']))
                 {
-                    foreach ($account_data['passkeys'] as $index => $passkey)
+                    foreach ($accountData['passkeys'] as $index => $passkey)
                     {
                         if (isset($passkey['credential_id']) && $passkey['credential_id'] === $credentialIdBase64Url)
                         {
-                            // Update the sign count and last_used fields
-                            $account_data['passkeys'][$index]['sign_count'] = $newSignCount;
-                            $account_data['passkeys'][$index]['last_used'] = date('c');
-
-                            // Update the account data in the database
+                            if (isset($passkey['user_handle']))
+                            {
+                                $storedUserHandle = self::base64url_decode((string) $passkey['user_handle']);
+                                $providedUserHandle = self::base64url_decode($userHandle);
+                                if (!hash_equals($storedUserHandle, $providedUserHandle))
+                                {
+                                    $this->db->transaction_abort();
+                                    return false;
+                                }
+                            }
+                            else
+                            {
+                                $accountData['passkeys'][$index]['user_handle'] = $userHandle;
+                            }
+                            $accountData['passkeys'][$index]['sign_count'] = $newSignCount;
+                            $accountData['passkeys'][$index]['last_used'] = date('c');
                             $updateSql = "UPDATE phpgw_accounts_data 
                                          SET account_data = :account_data
                                          WHERE account_id = :account_id";
-
                             $updateStmt = $this->db->prepare($updateSql);
-
-                            return $updateStmt->execute([
-                                ':account_data' => json_encode($account_data),
-                                ':account_id' => $account_id
+                            $updated = $updateStmt->execute([
+                                ':account_data' => json_encode($accountData),
+                                ':account_id' => $accountId
                             ]);
+                            if (!$updated)
+                            {
+                                $this->db->transaction_abort();
+                                return false;
+                            }
+                            return $this->db->transaction_commit();
                         }
                     }
                 }
             }
 
+            $this->db->transaction_abort();
             return false;
         }
         catch (\Exception $e)
         {
+            $this->db->transaction_abort();
             error_log('Error updating credential counter: ' . $e->getMessage());
-            return false;
-        }
-    }
-
-    /**
-     * Updates the last_used timestamp for a given credential.
-     * @param string $rawCredentialId Raw binary credential ID
-     * @return bool Success status
-     */
-    private function updateCredentialLastUsed(string $rawCredentialId): bool
-    {
-        // Create a ByteBuffer and use jsonSerialize to get the Base64URL string
-        $buffer = new ByteBuffer($rawCredentialId);
-        // Set to use Base64URL encoding
-        ByteBuffer::$useBase64UrlEncoding = true;
-        $credentialIdBase64Url = $buffer->jsonSerialize();
-
-        try
-        {
-            // Get the account data containing this credential ID
-            $sql = "SELECT account_id, account_data
-                   FROM phpgw_accounts_data 
-                   WHERE account_data @> :search_json::jsonb";
-
-            $stmt = $this->db->prepare($sql);
-            $searchJson = json_encode(['passkeys' => [['credential_id' => $credentialIdBase64Url]]]);
-            $stmt->execute([':search_json' => $searchJson]);
-
-            $row = $stmt->fetch(PDO::FETCH_ASSOC);
-            if ($row)
-            {
-                $account_id = (int)$row['account_id'];
-                $account_data = json_decode($row['account_data'], true);
-
-                // Find the passkey in the array
-                if (isset($account_data['passkeys']) && is_array($account_data['passkeys']))
-                {
-                    foreach ($account_data['passkeys'] as $index => $passkey)
-                    {
-                        if (isset($passkey['credential_id']) && $passkey['credential_id'] === $credentialIdBase64Url)
-                        {
-                            // Update only the last_used field
-                            $account_data['passkeys'][$index]['last_used'] = date('c');
-
-                            // Update the account data in the database
-                            $updateSql = "UPDATE phpgw_accounts_data 
-                                         SET account_data = :account_data
-                                         WHERE account_id = :account_id";
-
-                            $updateStmt = $this->db->prepare($updateSql);
-                            error_log("Updating last_used timestamp for credential ID {$credentialIdBase64Url}");
-                            return $updateStmt->execute([
-                                ':account_data' => json_encode($account_data),
-                                ':account_id' => $account_id
-                            ]);
-                        }
-                    }
-                }
-            }
-
-            error_log("Passkey not found for credential ID {$credentialIdBase64Url}");
-            return false;
-        }
-        catch (\Exception $e)
-        {
-            error_log("Error updating last_used for credential ID {$credentialIdBase64Url}: " . $e->getMessage());
             return false;
         }
     }
@@ -569,68 +602,53 @@ class Auth_Passkeys
      */
     public function remove_passkey(int $account_id, string $credentialIdBase64Url): bool
     {
+        $credentialIdBase64Url = trim($credentialIdBase64Url);
+        if ($credentialIdBase64Url === '')
+        {
+            return false;
+        }
+
         try
         {
-            // Sanitize and validate the credential ID
-            $credentialIdBase64Url = trim($credentialIdBase64Url);
-            if (empty($credentialIdBase64Url))
-            {
-                return false;
-            }
-
-            // Verify this credential belongs to the given account
-            $sql = "SELECT account_data FROM phpgw_accounts_data 
-                   WHERE account_id = :account_id AND 
-                   account_data @> :search_json::jsonb";
-
-            $stmt = $this->db->prepare($sql);
-            $searchJson = json_encode(['passkeys' => [['credential_id' => $credentialIdBase64Url]]]);
-            $stmt->execute([
-                ':account_id' => $account_id,
-                ':search_json' => $searchJson
-            ]);
-
-            // If no match was found, return false
-            if (!$stmt->fetch(PDO::FETCH_ASSOC))
-            {
-                return false;
-            }
-
-            // Fetch the current account data
-            $sql = 'SELECT account_data FROM phpgw_accounts_data WHERE account_id = :account_id';
+            $this->db->transaction_begin();
+            $sql = 'SELECT account_data FROM phpgw_accounts_data WHERE account_id = :account_id FOR UPDATE';
             $stmt = $this->db->prepare($sql);
             $stmt->execute([':account_id' => $account_id]);
             $row = $stmt->fetch(PDO::FETCH_ASSOC);
-
-            $account_data = $row ? json_decode($row['account_data'], true) : [];
-            if (!isset($account_data['passkeys']))
+            $accountData = $row ? json_decode($row['account_data'], true) : null;
+            if (!is_array($accountData) || !isset($accountData['passkeys']) || !is_array($accountData['passkeys']))
             {
-                return false; // No passkeys to remove
+                $this->db->transaction_abort();
+                return false;
             }
 
-            $initialCount = count($account_data['passkeys']);
-            $account_data['passkeys'] = array_values(array_filter(
-                $account_data['passkeys'],
-                fn($item) => $item['credential_id'] !== $credentialIdBase64Url
+            $initialCount = count($accountData['passkeys']);
+            $accountData['passkeys'] = array_values(array_filter(
+                $accountData['passkeys'],
+                fn($item) => !is_array($item) || ($item['credential_id'] ?? null) !== $credentialIdBase64Url
             ));
-            $removed = count($account_data['passkeys']) < $initialCount;
-
-            if ($removed)
+            if (count($accountData['passkeys']) === $initialCount)
             {
-                $sql = 'UPDATE phpgw_accounts_data 
-                       SET account_data = :account_data 
-                       WHERE account_id = :account_id';
-                $stmt = $this->db->prepare($sql);
-                return $stmt->execute([
-                    ':account_data' => json_encode($account_data),
-                    ':account_id' => $account_id
-                ]);
+                $this->db->transaction_abort();
+                return false;
             }
 
-            return false;
+            $sql = 'UPDATE phpgw_accounts_data SET account_data = :account_data WHERE account_id = :account_id';
+            $stmt = $this->db->prepare($sql);
+            $updated = $stmt->execute([
+                ':account_data' => json_encode($accountData),
+                ':account_id' => $account_id
+            ]);
+            if (!$updated)
+            {
+                $this->db->transaction_abort();
+                return false;
+            }
+            return $this->db->transaction_commit();
         }
-        catch (\Exception $e)
+        catch (\Throwable $e)
         {
+            $this->db->transaction_abort();
             error_log('Error removing passkey: ' . $e->getMessage());
             return false;
         }
@@ -650,58 +668,67 @@ class Auth_Passkeys
      */
     private function storeCredentialSource(int $account_id, string $credentialId, string $publicKey, int $signCount, string $deviceName = ''): bool
     {
-        $sql = 'SELECT account_data FROM phpgw_accounts_data WHERE account_id = :account_id';
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute([':account_id' => $account_id]);
-        $row = $stmt->fetch(PDO::FETCH_ASSOC);
-
-        $account_data = $row ? json_decode($row['account_data'], true) : [];
-        if (!isset($account_data['passkeys']))
+        try
         {
-            $account_data['passkeys'] = [];
-        }
+            $this->db->transaction_begin();
+            $sql = 'SELECT account_data FROM phpgw_accounts_data WHERE account_id = :account_id FOR UPDATE';
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([':account_id' => $account_id]);
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        // Encode binary ID to Base64URL for JSON storage
-        $buffer = new ByteBuffer($credentialId);
-        ByteBuffer::$useBase64UrlEncoding = true;
-        $credentialIdBase64Url = $buffer->jsonSerialize();
-
-        // Check if this credential ID already exists for the user (shouldn't happen with excludeCredentials)
-        $exists = false;
-        foreach ($account_data['passkeys'] as $key)
-        {
-            if ($key['credential_id'] === $credentialIdBase64Url)
+            $accountData = $row ? json_decode($row['account_data'], true) : [];
+            if (!is_array($accountData))
             {
-                $exists = true;
-                break;
+                $this->db->transaction_abort();
+                throw new \RuntimeException('Stored account data is invalid.');
             }
-        }
+            if (!isset($accountData['passkeys']) || !is_array($accountData['passkeys']))
+            {
+                $accountData['passkeys'] = [];
+            }
 
-        if (!$exists)
-        {
-            $account_data['passkeys'][] = [
-                'credential_id' => $credentialIdBase64Url, // Store as Base64URL
-                'public_key' => $publicKey, // Store PEM key
-                'sign_count' => $signCount, // Store counter
+            $buffer = new ByteBuffer($credentialId);
+            ByteBuffer::$useBase64UrlEncoding = true;
+            $credentialIdBase64Url = $buffer->jsonSerialize();
+            foreach ($accountData['passkeys'] as $passkey)
+            {
+                if (is_array($passkey) && ($passkey['credential_id'] ?? null) === $credentialIdBase64Url)
+                {
+                    $this->db->transaction_abort();
+                    error_log("Attempted to register existing credential ID {$credentialIdBase64Url} for account {$account_id}");
+                    return false;
+                }
+            }
+
+            $accountData['passkeys'][] = [
+                'credential_id' => $credentialIdBase64Url,
+                'user_handle' => self::base64url_encode($this->getUserHandleForAccount($account_id)),
+                'public_key' => $publicKey,
+                'sign_count' => $signCount,
                 'device_name' => $deviceName,
                 'added' => date('c')
             ];
 
-            $sql = 'UPDATE phpgw_accounts_data SET account_data = :account_data WHERE account_id = :account_id';
-            if (!$row)
-            { // Insert if no row existed
-                $sql = 'INSERT INTO phpgw_accounts_data (account_id, account_data) VALUES (:account_id, :account_data)';
-            }
+            $sql = $row
+                ? 'UPDATE phpgw_accounts_data SET account_data = :account_data WHERE account_id = :account_id'
+                : 'INSERT INTO phpgw_accounts_data (account_id, account_data) VALUES (:account_id, :account_data)';
             $stmt = $this->db->prepare($sql);
-            return $stmt->execute([
-                ':account_data' => json_encode($account_data),
+            $saved = $stmt->execute([
+                ':account_data' => json_encode($accountData),
                 ':account_id' => $account_id
             ]);
+            if (!$saved)
+            {
+                $this->db->transaction_abort();
+                return false;
+            }
+            return $this->db->transaction_commit();
         }
-        else
+        catch (\Throwable $e)
         {
-            error_log("Attempted to register existing credential ID {$credentialIdBase64Url} for account {$account_id}");
-            return false; // Indicate failure or handle as update if needed
+            $this->db->transaction_abort();
+            error_log('Error storing passkey credential: ' . $e->getMessage());
+            return false;
         }
     }
 
@@ -723,7 +750,7 @@ class Auth_Passkeys
 
     /**
      * Retrieves all registered credential IDs (raw binary format) for a user.
-     * Used by getCreateArgs (excludeCredentials) and getGetArgs (allowCredentials).
+     * Used to exclude already registered credentials from new registrations.
      * @param int $account_id
      * @return array<string> Array of raw binary credential IDs
      */
@@ -782,13 +809,25 @@ class Auth_Passkeys
                         return [
                             'account_id' => (int)$row['account_id'],
                             'public_key' => $key['public_key'], // PEM format
-                            'sign_count' => (int)$key['sign_count']
+                            'sign_count' => (int)$key['sign_count'],
+                            'user_handle' => isset($key['user_handle']) ? (string) $key['user_handle'] : null
                         ];
                     }
                 }
             }
         }
         return null;
+    }
+
+    private function getUserHandleForAccount(int $account_id): string
+    {
+        $key = (string) ($this->serverSettings['encryptkey'] ?? '');
+        if ($key === '')
+        {
+            throw new \RuntimeException('A configured encryption key is required to create passkey user handles.');
+        }
+
+        return hash_hmac('sha256', $this->rpId . "\0" . $account_id, $key, true);
     }
 
     /**

@@ -405,6 +405,8 @@ showing items	common	nn	Viser
 shows from	common	nn	Viser fra
 sign in	common	nn	Logg inn
 Sign in faster with a passkey	common	nn	Logg inn raskare med ein passkey
+Passkey sign-in is disabled while external authentication is configured.	common	nn	Passkey-innlogging er deaktivert når ekstern autentisering er konfigurert.
+New passkeys require a discoverable credential. Remove an existing passkey here before registering it again.	common	nn	Nye passkeys krev ein oppdagbar legitimasjon. Fjern ein eksisterande passkey her før du registrerer han på nytt.
 Use your device’s fingerprint, face recognition, or screen lock instead of a password. Only set this up on a device you trust.	common	nn	Bruk fingeravtrykket, ansiktsgjenkjenninga eller skjermlåsen på eininga di i staden for passord. Set berre dette opp på ei eining du stolar på.
 Set up passkey	common	nn	Set opp passkey
 Not now	common	nn	Ikkje no
@@ -497,3 +499,4 @@ email_required	common	nn	E-post er påkrevd
 
 previous	common	nn	Førre
 session_expired_log_in_again	common	nn	Sesjonen din er gått ut. Logg inn på nytt i ei anna fane og prøv igjen.
+Passkeys are unavailable: the server address (webserver_url) must be an HTTPS address with a domain name. http://localhost is allowed for development, IP addresses are not.	common	nn	Passkeys er ikkje tilgjengeleg: serveradressa (webserver_url) må vere ei HTTPS-adresse med domenenamn. http://localhost er tillate for utvikling, IP-adresser er ikkje tillate.

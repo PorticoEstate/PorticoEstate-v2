@@ -101,22 +101,19 @@ class Auth_Passkeys
         return self::getRelyingPartyConfiguration() !== null;
     }
 
+    /**
+     * Auth types where the local PorticoEstate account is authoritative for access.
+     * The SSO types (azure/remoteuser/customsso, incl. OpenID Connect backends) already
+     * fall back to local SQL passwords, so a passkey is never weaker than that path.
+     * Directory-backed types (ldap, ads, ntlm, http, sqlssl, mail, exchange, nis) are
+     * excluded: a passkey would bypass account disabling in the external directory.
+     */
+    private const PASSKEY_AUTH_TYPES = ['sql', 'azure', 'remoteuser', 'customsso'];
+
     public static function isLocalAuthenticationAllowed(): bool
     {
         $serverSettings = Settings::getInstance()->get('server');
-        if (strtolower((string) ($serverSettings['auth_type'] ?? '')) !== 'sql')
-        {
-            return false;
-        }
-
-        $locationId = (new \App\modules\phpgwapi\controllers\Locations())->get_id('admin', 'openid_connect');
-        if (!$locationId)
-        {
-            return true;
-        }
-
-        $openidConfiguration = (new \App\modules\phpgwapi\services\ConfigLocation($locationId))->read();
-        return empty($openidConfiguration['common']['method_backend']);
+        return in_array(strtolower((string) ($serverSettings['auth_type'] ?? '')), self::PASSKEY_AUTH_TYPES, true);
     }
 
     /**

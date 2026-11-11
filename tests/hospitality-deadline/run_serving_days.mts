@@ -16,7 +16,8 @@
  *      Its control: the legacy browser-zone formatting DOES change between those zones, so the
  *      children are able to see a regression;
  *   5. as source patterns: catering-overview.tsx formats no time itself, builds the groups from the
- *      non-cancelled orders, and keeps the heading outline h2 > h3 (day) > h4 (order); the module
+ *      non-cancelled orders, and (design of task 39791) heads each serving «<day> kl. <time> · <place>»
+ *      with no separate day heading: h2 (the card) > h3 (a serving), a second h2 for the price summary; the module
  *      chooses its time zone in exactly one place; the new lang key exists in no, en and nn.
  *
  * What it can NOT do is render the component (the day heading and the order blocks are read as text).
@@ -261,15 +262,24 @@ const count = (pattern: RegExp, text: string): number => (text.match(pattern) ??
 check('control: the toLocale pattern recognises the formatting that was removed', /toLocale|Intl\./.test("new Date(iso).toLocaleString('nb-NO', {})"));
 check('catering-overview.tsx formats no time itself (no toLocale*, no Intl)', !/toLocale|Intl\./.test(overview));
 check('the browser-zone formatServingTime / formatDeadline are gone', !/formatServingTime|formatDeadline\b/.test(overview));
-check('the deadline hints use the venue-time formatter', count(/formatVenueDeadline\(actions\.(change|cancel)\.until\)/g, overview) === 2);
+check('control: a per-order deadline in the overview would be recognised', /formatVenueDeadline/.test('formatVenueDeadline(actions.cancel.until)'));
+check('no deadline is printed per order any more (the rule is stated once, by the Alert)', !/formatVenueDeadline|catering_change_until|cancellation_deadline_info/.test(overview));
 check('the groups are built from the non-cancelled orders, in the UI language, at the current time',
     /groupByServingDay\(orders, i18n\.language, now\)/.test(overview) && /filter\(order => order\.status !== 'cancelled'\)/.test(overview));
-check('the orders are rendered from the groups, not from the API order', /rows\.map\(\(\{order, time, group, groupIndex, indexInGroup\}\)/.test(overview) && !/\borders\.map\(/.test(overview));
-check('outline: one h2 (the card), one h3 (the day), one h4 (the order)',
-    count(/<Heading level=\{2\}/g, overview) === 1 && count(/<Heading level=\{3\}/g, overview) === 1 && count(/<Heading level=\{4\}/g, overview) === 1,
+check('the orders are rendered from the groups, not from the API order', /rows\.map\(\(\{order, time, group\}\)/.test(overview) && !/\borders\.map\(/.test(overview));
+check('control: the API order would be recognised', /\borders\.map\(/.test('orders.map(order => x)'));
+check('each serving carries its day for the tests that read it (data-day)', /data-day=\{group\.dayKey \?\? 'none'\}/.test(overview));
+// Task 40576 (design A): the price summary closes the price surface without a heading of its own; it is a section named by
+// aria-label «Prissammendrag».
+check('outline: h2 for the catering section, the price summary a labelled section, one h3 per serving, no day heading (h3 in the group) and no h4',
+    count(/<Heading level=\{2\}/g, overview) === 1 && /aria-label=\{t\('bookingfrontend\.catering_overview_summary_heading'\)\}/.test(overview)
+    && count(/<Heading level=\{3\}/g, overview) === 1 && count(/<Heading level=\{4\}/g, overview) === 0 && !/catering-day-heading/.test(overview),
     `${count(/<Heading level=\{2\}/g, overview)}/${count(/<Heading level=\{3\}/g, overview)}/${count(/<Heading level=\{4\}/g, overview)}`);
-check('the group without a serving time is headed by the lang key', /group\.heading \?\? t\('bookingfrontend\.catering_no_serving_time'\)/.test(overview));
-check('the serving line shows the time only, «-» without one', /\{t\('bookingfrontend\.serving_time'\)\}: \{time \?\? '-'\}/.test(overview));
+check('a serving without a time is headed by the lang key, then its place', /dayHeading === null \|\| time === null\s*\? t\('bookingfrontend\.catering_no_serving_time'\)/.test(overview)
+    && /\[when, order\.location_name\]\.filter\(Boolean\)\.join\(' · '\)/.test(overview));
+check('the heading is «<day> kl. <time>» from the group\'s day heading and the VENUE time, then · place',
+    /t\('bookingfrontend\.catering_overview_serving_heading'\)\s*\.replace\('%1', \(\) => dayHeading\)\s*\.replace\('%2', \(\) => time\)/.test(overview));
+check('the offer\'s name sits under the heading, smaller', /<Paragraph data-size="sm" className=\{cateringStyles\.offerName\}>\{order\.hospitality_name\}<\/Paragraph>/.test(overview));
 check('control: a second time-zone choice WOULD be counted', count(/timeZone:/g, 'a({timeZone: X}); b({timeZone: Y})') === 2);
 check('catering-venue-time.ts chooses its time zone in exactly one place', count(/timeZone:/g, venue) === 1, `${count(/timeZone:/g, venue)}`);
 check('...and it is the venue zone', /timeZone: VENUE_TIMEZONE/.test(venue));
@@ -279,8 +289,10 @@ const langRow = (key: string): RegExp => new RegExp(`^${key}\\tbookingfrontend\\
 check('control: the lang pattern does NOT match a key that is not there', !langRow('catering_no_serving_time').test('catering_no_serving_time_x\tbookingfrontend\tno\tText'));
 for (const lang of ['no', 'en', 'nn']) {
     const lines = read(join(root, `src/modules/bookingfrontend/setup/phpgw_${lang}.lang`));
-    check(`phpgw_${lang}.lang has bookingfrontend.catering_no_serving_time`,
-        new RegExp(`^catering_no_serving_time\\tbookingfrontend\\t${lang}\\t\\S.*$`, 'm').test(lines));
+    for (const key of ['catering_no_serving_time', 'catering_overview_serving_heading']) {
+        check(`phpgw_${lang}.lang has bookingfrontend.${key}`,
+            new RegExp(`^${key}\\tbookingfrontend\\t${lang}\\t\\S.*$`, 'm').test(lines));
+    }
 }
 
 if (failures.length) {

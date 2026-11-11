@@ -2,7 +2,7 @@
 @import "../../styles/util.module";
 
 .dialogContainer {
-	background-color: $grey-24;
+	background-color: var(--ds-color-neutral-background-default);
 	position: absolute;
 	z-index: 12; /* Above backdrop, below portal */
 
@@ -54,7 +54,7 @@
 
 	.dialogHeader {
 		grid-area: header;
-		background-color: $grey-24;
+		background-color: var(--ds-color-neutral-background-default);
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
@@ -92,7 +92,7 @@
 
 	.dialogFooter {
 		grid-area: footer;
-		background-color: $grey-24;
+		background-color: var(--ds-color-neutral-background-default);
 		padding: 1rem;
 		border-top: 1px solid $grey-40;
 		display: flex;

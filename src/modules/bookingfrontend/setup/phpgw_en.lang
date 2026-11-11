@@ -1223,3 +1223,75 @@ catering_no_serving_time	bookingfrontend	en	No serving time set
 prices_incl_vat	bookingfrontend	en	All prices include VAT
 price_category_shared_help	bookingfrontend	en	The choice applies to all the resources you have chosen.
 price_per_resource	bookingfrontend	en	Choose the price per resource
+hospitality_offer	bookingfrontend	en	Catering offer
+hospitality_offer_locked_help	bookingfrontend	en	To change the offer, cancel the serving and order again.
+edit_hospitality_order	bookingfrontend	en	Edit catering order
+hospitality_dialog_clock_time	bookingfrontend	en	Time
+hospitality_dialog_time_within_application	bookingfrontend	en	Within the application's time, %1–%2
+hospitality_dialog_selected_count	bookingfrontend	en	%1 selected
+hospitality_dialog_incl_vat_short	bookingfrontend	en	incl. VAT
+hospitality_dialog_items	bookingfrontend	en	Items
+hospitality_dialog_sum_ex_vat	bookingfrontend	en	Sum excl. VAT
+hospitality_dialog_vat_rate	bookingfrontend	en	VAT %1 %
+hospitality_dialog_vat	bookingfrontend	en	VAT
+catering_overview_col_item	bookingfrontend	en	Item
+catering_overview_serving_heading	bookingfrontend	en	%1 at %2
+catering_overview_order_total	bookingfrontend	en	Order total incl. VAT
+catering_overview_catering_total	bookingfrontend	en	Hospitality total incl. VAT
+catering_overview_edit_aria	bookingfrontend	en	Edit serving %1
+catering_overview_cancel_aria	bookingfrontend	en	Cancel serving %1
+catering_overview_lead_hours	bookingfrontend	en	%1 hours
+catering_overview_lead_hour	bookingfrontend	en	%1 hour
+catering_overview_lead_days	bookingfrontend	en	%1 days
+catering_overview_lead_day	bookingfrontend	en	%1 day
+catering_overview_lead_weeks	bookingfrontend	en	%1 weeks
+catering_overview_lead_week	bookingfrontend	en	%1 week
+catering_overview_deadline_both	bookingfrontend	en	You can change or cancel a serving up to %1 before it starts.
+catering_overview_deadline_split	bookingfrontend	en	You can change a serving up to %1 before it starts, and cancel it up to %2 before.
+catering_overview_deadline_split_open	bookingfrontend	en	You can change a serving up to %1 before it starts. You can cancel it right up until it starts.
+catering_overview_deadline_none	bookingfrontend	en	You can change or cancel a serving right up until it starts.
+catering_overview_deadline_working_days	bookingfrontend	en	Only the days the kitchen is open are counted.
+catering_overview_cancel_title	bookingfrontend	en	Cancel the serving?
+catering_overview_cancel_body_amount	bookingfrontend	en	The serving is removed from the order, and the total goes down by %1.
+catering_overview_cancel_body	bookingfrontend	en	The serving is removed from the order.
+catering_overview_cancel_others_kept	bookingfrontend	en	The other servings are kept.
+catering_overview_cancel_confirm	bookingfrontend	en	Cancel serving
+catering_overview_summary_heading	bookingfrontend	en	Price summary
+catering_overview_summary_caption	bookingfrontend	en	Amounts incl. VAT
+catering_overview_sum_ex_vat	bookingfrontend	en	Sum excl. VAT
+catering_overview_vat	bookingfrontend	en	VAT
+catering_overview_vat_rate	bookingfrontend	en	VAT %1 %
+catering_overview_total_rental	bookingfrontend	en	Room rental
+catering_overview_total_services	bookingfrontend	en	Equipment and services
+catering_overview_total_catering	bookingfrontend	en	Hospitality (%1 servings)
+catering_overview_total_catering_one	bookingfrontend	en	Hospitality (1 serving)
+catering_overview_col_quantity	bookingfrontend	en	Quantity
+application_rooms	bookingfrontend	en	%1 rooms
+application_rooms_one	bookingfrontend	en	1 room
+application_col_addon	bookingfrontend	en	Add-on
+application_services_total	bookingfrontend	en	Equipment and services total incl. VAT
+application_rental_total	bookingfrontend	en	Room rental total incl. VAT
+application_registered_total	bookingfrontend	en	Registered total incl. VAT
+building_parent_constraint_note	bookingfrontend	en	The main application must be for the same building.
+cannot_delete_yourself	bookingfrontend	en	You cannot remove yourself as a delegate
+delegate_not_available	bookingfrontend	en	The delegate is not available
+delegate_not_found	bookingfrontend	en	Delegate not found
+delete_delegate	bookingfrontend	en	Remove delegate
+no information available	bookingfrontend	en	No information available
+no_activities_match	bookingfrontend	en	No activities match your search
+no_articles_available	bookingfrontend	en	No articles available
+no_contacts_available	bookingfrontend	en	No contacts found
+no_facilities_match	bookingfrontend	en	No facilities match your search
+no_groups_available	bookingfrontend	en	No groups found
+not_available	bookingfrontend	en	Not available
+past	bookingfrontend	en	Past
+searching_across_domains	bookingfrontend	en	Searching across {{count}} domains
+town	bookingfrontend	en	Town
+unknown_error	bookingfrontend	en	Unknown error
+you	bookingfrontend	en	you
+no_valid_owner	bookingfrontend	en	No valid owner account is available
+queue_timeout	bookingfrontend	en	Your booking request timed out in the queue. Please try again.
+booking_outside_horizon	bookingfrontend	en	The time is outside the allowed booking period
+unauthorized	bookingfrontend	en	You are not authorised to do this
+hide price category	bookingfrontend	en	Hide price category in the new client
+hide price category note	bookingfrontend	en	When enabled, the «Who are you applying as?» choice and the «Choose the price per resource» switch are not shown; the applicant chooses a price per resource. Prices and stored data are not changed.

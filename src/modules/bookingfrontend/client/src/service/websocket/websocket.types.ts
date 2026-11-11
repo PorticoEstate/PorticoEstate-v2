@@ -163,7 +163,11 @@ export interface IWSPartialApplicationsResponse extends IWebSocketMessageBase {
     diff?: {
       added?: number[];
       removed?: number[];
-    };
+    } | null;
+    // 'server_push' on an update the server sends unasked; absent on a reply to get_partial_applications
+    source?: string;
+    // Set when error is true
+    message?: string;
   };
 }
 

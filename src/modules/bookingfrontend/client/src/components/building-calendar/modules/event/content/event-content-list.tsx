@@ -70,7 +70,7 @@ const EventContentList: FC<EventContentListProps> = ({eventInfo}) => {
             {((IEventIsAPIEvent(eventData) && eventData.organizer) && !isMobile) && (
                 <div className={`text-small ${styles.organizer}`}>
                     <FontAwesomeIcon className="text-small"
-                                     icon={faUser}/> {eventData?.is_public  ? eventData?.organizer || t('bookingfrontend.not_available') : t('bookingfrontend.private')}
+                                     icon={faUser}/> {eventData?.is_public  ? eventData?.organizer || t('bookingfrontend.not_available') : t('common.private')}
                 </div>)}
             <span className={`${styles.to_time} text-overline`}>
                 <FontAwesomeIcon className="text-label" icon={faClock}/>{formatTimeStamp(actualEnd, true)}

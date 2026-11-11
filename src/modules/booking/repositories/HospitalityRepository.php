@@ -283,7 +283,7 @@ class HospitalityRepository
         $ids = array_map('intval', $resourceIds);
         $placeholders = implode(',', $ids);
 
-        $sql = "SELECT DISTINCT h.id, h.name, h.resource_id, r.name AS resource_name,
+        $sql = "SELECT DISTINCT h.id, h.name, h.description, h.resource_id, r.name AS resource_name,
                        h.remote_serving_enabled, h.allow_on_site_hospitality,
                        h.include_in_checkout_payment,
                        h.order_by_time_value, h.order_by_time_unit, h.open_days,

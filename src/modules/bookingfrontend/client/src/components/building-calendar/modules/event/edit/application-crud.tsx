@@ -30,7 +30,7 @@ import {
 	useCreatePartialApplication, useDeleteApplicationDocument, useDeletePartialApplication,
 	usePartialApplications,
 	useUpdatePartialApplication, useUploadApplicationDocument, useBuildingSchedule,
-	useServerSettings, useResourceArticles
+	useServerSettings, useResourceArticles, useHidePriceCategory
 } from "@/service/hooks/api-hooks";
 import {NewPartialApplication, IUpdatePartialApplication, IApplication, RecurringInfo, RecurringInfoUtils} from "@/service/types/api/application.types";
 import {applicationTimeToLux} from "@/components/layout/header/shopping-cart/shopping-cart-content";
@@ -248,6 +248,9 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 	const [hasExternalChanges, setHasExternalChanges] = useState(false);
 	const {building, buildingResources, audience, agegroups, noAudiences, noAgeGroups, partials, existingApplication} = props;
 	const t = useTrans();
+	// A form error is either a translation key (schema message) or text already translated by setError().
+	// t() of the latter shows "TRANSLATION MISSING FOR ..." on its first render, so translate keys only.
+	const translateIfKey = (message?: string) => message?.startsWith('bookingfrontend.') ? t(message) : message;
 	const [isEditingResources, setIsEditingResources] = useState(false);
 	const createMutation = useCreatePartialApplication();
 	const deleteMutation = useDeletePartialApplication();
@@ -258,6 +261,7 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 	const participantsSectionRef = useRef<HTMLDivElement>(null);
 	const dateSectionRef = useRef<HTMLDivElement>(null);
 	const {data: serverSettings} = useServerSettings();
+	const hidePriceCategory = useHidePriceCategory();
 	const {addToast} = useToast();
 
 	// Mirror the calendar's selection gate (full-calendar-view.tsx): when a building
@@ -730,10 +734,15 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 	// One price category for all the chosen rooms (#1477), when every room with a
 	// choice offers the same ones; otherwise each room keeps its own choice above.
 	// Only the rooms chosen right now take part, so a removed room is never priced.
+	// With the category hidden (config hide_price_category) there is none to share: every
+	// room keeps its own choice, which is what everything below does without a shared one.
 	const chosenResourceArticles = useMemo(() => (resourceArticles ?? []).filter(article =>
 		article.resource_id && selectedResources.includes(String(article.resource_id))
 	), [resourceArticles, selectedResources]);
-	const sharedPriceCategories = useMemo(() => sharedCategories(chosenResourceArticles), [chosenResourceArticles]);
+	const sharedPriceCategories = useMemo(
+		() => hidePriceCategory ? [] : sharedCategories(chosenResourceArticles),
+		[hidePriceCategory, chosenResourceArticles]
+	);
 	const sharedPriceChoice = sharedPriceCategories.length > 0;
 	const sharedPriceChoiceRef = useRef<HTMLSelectElement>(null);
 	// The category every room is priced in right now; null while they differ or one has no price
@@ -1485,7 +1494,7 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 											seasons={props.seasons}
 										/>
 										{errors.end &&
-											<span className={styles.error}>{errors.end.message}</span>}
+											<span className={styles.error}>{translateIfKey(errors.end.message)}</span>}
 									</>
 								)}
 							/>
@@ -1769,7 +1778,7 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 					<div className={`${styles.formGroup} ${styles.wide}`}>
 						{renderResourceList()}
 						{errors.resources?.message && (
-							<span className={styles.error}>{t(errors.resources.message)}</span>
+							<span className={styles.error}>{translateIfKey(errors.resources.message)}</span>
 						)}
 					</div>
 

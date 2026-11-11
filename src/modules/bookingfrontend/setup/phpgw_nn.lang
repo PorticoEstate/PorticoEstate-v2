@@ -1223,3 +1223,75 @@ catering_no_serving_time	bookingfrontend	nn	Utan serveringstid
 prices_incl_vat	bookingfrontend	nn	Alle prisar er oppgjevne inkl. mva
 price_category_shared_help	bookingfrontend	nn	Valet gjeld alle ressursane du har valt.
 price_per_resource	bookingfrontend	nn	Vel pris per ressurs
+hospitality_offer	bookingfrontend	nn	Bevertningstilbod
+hospitality_offer_locked_help	bookingfrontend	nn	Vil du byte tilbod, avbestiller du serveringa og bestiller på nytt.
+edit_hospitality_order	bookingfrontend	nn	Endre bevertning
+hospitality_dialog_clock_time	bookingfrontend	nn	Klokkeslett
+hospitality_dialog_time_within_application	bookingfrontend	nn	Innanfor søknaden sin tid, %1–%2
+hospitality_dialog_selected_count	bookingfrontend	nn	%1 valt
+hospitality_dialog_incl_vat_short	bookingfrontend	nn	inkl. mva
+hospitality_dialog_items	bookingfrontend	nn	Varer
+hospitality_dialog_sum_ex_vat	bookingfrontend	nn	Sum eks. mva.
+hospitality_dialog_vat_rate	bookingfrontend	nn	Mva %1 %
+hospitality_dialog_vat	bookingfrontend	nn	Mva
+catering_overview_col_item	bookingfrontend	nn	Vare
+catering_overview_serving_heading	bookingfrontend	nn	%1 kl. %2
+catering_overview_order_total	bookingfrontend	nn	Ordretotal inkl. mva
+catering_overview_catering_total	bookingfrontend	nn	Bevertning total inkl. mva.
+catering_overview_edit_aria	bookingfrontend	nn	Rediger servering %1
+catering_overview_cancel_aria	bookingfrontend	nn	Avbestill servering %1
+catering_overview_lead_hours	bookingfrontend	nn	%1 timar
+catering_overview_lead_hour	bookingfrontend	nn	%1 time
+catering_overview_lead_days	bookingfrontend	nn	%1 dagar
+catering_overview_lead_day	bookingfrontend	nn	%1 dag
+catering_overview_lead_weeks	bookingfrontend	nn	%1 veker
+catering_overview_lead_week	bookingfrontend	nn	%1 veke
+catering_overview_deadline_both	bookingfrontend	nn	Du kan endre eller avbestille ei servering fram til %1 før ho startar.
+catering_overview_deadline_split	bookingfrontend	nn	Du kan endre ei servering fram til %1 før ho startar, og avbestille ho fram til %2 før.
+catering_overview_deadline_split_open	bookingfrontend	nn	Du kan endre ei servering fram til %1 før ho startar. Du kan avbestille ho heilt fram til ho startar.
+catering_overview_deadline_none	bookingfrontend	nn	Du kan endre eller avbestille ei servering heilt fram til ho startar.
+catering_overview_deadline_working_days	bookingfrontend	nn	Berre dagar kjøkkenet har ope blir rekna med.
+catering_overview_cancel_title	bookingfrontend	nn	Avbestille serveringa?
+catering_overview_cancel_body_amount	bookingfrontend	nn	Serveringa blir fjerna frå bestillinga, og totalen går ned med %1.
+catering_overview_cancel_body	bookingfrontend	nn	Serveringa blir fjerna frå bestillinga.
+catering_overview_cancel_others_kept	bookingfrontend	nn	Dei andre serveringane blir behaldne.
+catering_overview_cancel_confirm	bookingfrontend	nn	Avbestill servering
+catering_overview_summary_heading	bookingfrontend	nn	Prissamandrag
+catering_overview_summary_caption	bookingfrontend	nn	Beløp inkl. mva.
+catering_overview_sum_ex_vat	bookingfrontend	nn	Sum eks. mva.
+catering_overview_vat	bookingfrontend	nn	Mva
+catering_overview_vat_rate	bookingfrontend	nn	Mva %1 %
+catering_overview_total_rental	bookingfrontend	nn	Romleige
+catering_overview_total_services	bookingfrontend	nn	Utstyr og tenester
+catering_overview_total_catering	bookingfrontend	nn	Bevertning (%1 serveringar)
+catering_overview_total_catering_one	bookingfrontend	nn	Bevertning (1 servering)
+catering_overview_col_quantity	bookingfrontend	nn	Antal
+application_rooms	bookingfrontend	nn	%1 rom
+application_rooms_one	bookingfrontend	nn	1 rom
+application_col_addon	bookingfrontend	nn	Tillegg
+application_services_total	bookingfrontend	nn	Utstyr og tenester total inkl. mva.
+application_rental_total	bookingfrontend	nn	Romleige total inkl. mva.
+application_registered_total	bookingfrontend	nn	Registrert total inkl. mva.
+building_parent_constraint_note	bookingfrontend	nn	Hovudsøknaden må gjelde same bygg.
+cannot_delete_yourself	bookingfrontend	nn	Du kan ikkje fjerne deg sjølv som delegat
+delegate_not_available	bookingfrontend	nn	Delegaten er ikkje tilgjengeleg
+delegate_not_found	bookingfrontend	nn	Fann ikkje delegaten
+delete_delegate	bookingfrontend	nn	Fjern delegat
+no information available	bookingfrontend	nn	Ingen informasjon tilgjengeleg
+no_activities_match	bookingfrontend	nn	Ingen aktivitetar samsvarer med søket
+no_articles_available	bookingfrontend	nn	Ingen tilleggstenester tilgjengelege
+no_contacts_available	bookingfrontend	nn	Ingen kontaktar funne
+no_facilities_match	bookingfrontend	nn	Ingen fasilitetar samsvarer med søket
+no_groups_available	bookingfrontend	nn	Ingen grupper funne
+not_available	bookingfrontend	nn	Ikkje tilgjengeleg
+past	bookingfrontend	nn	Passert
+searching_across_domains	bookingfrontend	nn	Søkjer på tvers av {{count}} domene
+town	bookingfrontend	nn	By
+unknown_error	bookingfrontend	nn	Ukjend feil
+you	bookingfrontend	nn	deg
+no_valid_owner	bookingfrontend	nn	Ingen gyldig eigarkonto er tilgjengeleg
+queue_timeout	bookingfrontend	nn	Bestillinga vart tidsavbroten i køen. Prøv igjen.
+booking_outside_horizon	bookingfrontend	nn	Tidspunktet er utanfor tillaten bookingperiode
+unauthorized	bookingfrontend	nn	Du har ikkje tilgang til dette
+hide price category	bookingfrontend	nn	Skjul priskategori i den nye klienten
+hide price category note	bookingfrontend	nn	Når aktiv blir ikkje «Kven søkjer du som?»-valet og brytaren «Vel pris per ressurs» viste; søkjaren vel pris per ressurs. Endrar ikkje prisar eller lagra data.

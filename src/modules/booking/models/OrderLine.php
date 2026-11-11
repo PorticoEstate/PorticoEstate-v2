@@ -97,6 +97,14 @@ class OrderLine
     public $tax;
 
     /**
+     * The VAT % of tax_code (fm_ecomva.percent_), to label the line's VAT. Read-only: it is never stored
+     * (the line's VAT is `tax`, as billed), and NULL (a code with no fm_ecomva row) is not 0 %.
+     * @OA\Property(type="integer", nullable=true)
+     * @Expose
+     */
+    public $tax_percent;
+
+    /**
      * @OA\Property(type="string")
 	 * @EscapeString(mode="default")
      * @Expose

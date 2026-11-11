@@ -98,7 +98,8 @@ export interface IOrderLine {
     article_mapping_id: number;
     /** Article category: 1 = resource (rental), 2 = service (add-on article) */
     article_cat_id: number;
-    quantity: number;
+    /** The API sends a stored quantity as a decimal string ("3.00"); show it through formatQuantity. */
+    quantity: number | string;
     unit_price: number;
     overridden_unit_price: number;
     currency: string;
@@ -106,6 +107,12 @@ export interface IOrderLine {
     unit: string;
     tax_code: number;
     tax: number;
+    /**
+     * The VAT % of tax_code (fm_ecomva.percent_), read-only and only there to LABEL `tax`; the VAT itself is
+     * `tax`, as billed. The server's serializer omits a null, so a code with no fm_ecomva row arrives as an
+     * ABSENT field (or null): either way it is «no percent», NOT 0 %.
+     */
+    tax_percent?: number | null;
     name: string;
     /** The price row a resource line was priced from; absent when no choice was recorded */
     article_price_id?: number | null;

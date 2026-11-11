@@ -20,6 +20,9 @@ import { BookingService } from '../booking/booking.service';
 import { PhpConfigService } from '../../config/php-config.service';
 import { RedisService } from '../notification/redis.service';
 
+/** What a client is told when the partial applications cannot be read; the cause stays in the log. */
+const PARTIAL_APPLICATIONS_UNREADABLE = 'Could not read the partial applications';
+
 @WebSocketGateway({
   cors: { origin: '*' },
   namespace: '/',
@@ -352,9 +355,18 @@ export class PorticoGateway
       return;
     }
 
-    const applications = await this.applicationService.getPartialApplications(
-      session.sessionId,
-    );
+    let applications: any[];
+    try {
+      applications = await this.applicationService.getPartialApplications(session.sessionId);
+    } catch {
+      // Logged by the service. The client falls back to REST on an error.
+      client.emit('message', {
+        type: 'partial_applications_response',
+        data: { error: true, status: 'error', message: PARTIAL_APPLICATIONS_UNREADABLE },
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
 
     client.emit('message', {
       type: 'partial_applications_response',
@@ -429,7 +441,7 @@ export class PorticoGateway
       this.logger.error(`Error in handleGetDeliveredApplications: ${err.message}`);
       client.emit('message', {
         type: 'delivered_applications_response',
-        data: { error: true, message: err.message },
+        data: { error: true, message: 'Could not read the applications' },
         timestamp: new Date().toISOString(),
       });
     }
@@ -509,16 +521,39 @@ export class PorticoGateway
 
   /**
    * Push partial applications update to a session room (called from Redis handler).
+   *
+   * Never rejects: the booking and deletion notifications are chained after it. When the
+   * applications cannot be read, the push says so (error:true, no list), so the client reads the
+   * cart over REST instead of replacing it with an empty one.
    */
   private async sendPartialApplicationsUpdate(
     sessionId: string,
     diff?: { added?: number[]; removed?: number[] },
   ) {
-    const applications =
-      await this.applicationService.getPartialApplications(sessionId);
-
     const seq = Date.now();
     const roomId = this.roomService.sessionRoomId(sessionId);
+
+    let applications: any[];
+    try {
+      applications = await this.applicationService.getPartialApplications(sessionId);
+    } catch {
+      this.server.to(roomId).emit('message', {
+        type: 'partial_applications_response',
+        data: {
+          error: true,
+          status: 'error',
+          message: PARTIAL_APPLICATIONS_UNREADABLE,
+          sessionId: sessionId.substring(0, 8) + '...',
+          source: 'server_push',
+          seq,
+          diff: diff ?? null,
+          timestamp: new Date().toISOString(),
+        },
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
+
     this.server.to(roomId).emit('message', {
       type: 'partial_applications_response',
       data: {
@@ -708,7 +743,7 @@ export class PorticoGateway
           {
             id: `err_${Date.now()}`,
             type: 'error',
-            text: isTranslatable ? err.translationKey : err.message,
+            text: isTranslatable ? `bookingfrontend.${err.translationKey}` : err.message,
             translatable: isTranslatable,
           },
         ],

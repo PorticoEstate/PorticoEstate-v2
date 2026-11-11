@@ -311,6 +311,7 @@ const CalendarResourceFilter: FC<CalendarResourceFilterProps> = ({
 					open={open}
 					onClose={() => setOpen(false)}
 					dialogId={'calendar-resource-toggle'}
+					aria-label={t('bookingfrontend.calendar_resources')}
 					footer={(attemptClose) => (
 						<Button
 							variant="primary"

@@ -1,6 +1,11 @@
 export interface IHospitality {
     id: number;
     name: string;
+    /**
+     * The offer's admin text (bb_hospitality.description), shown with the offer in the order dialog.
+     * Null when the offer has none. The same column as IHospitalityMenu.hospitality_description.
+     */
+    description?: string | null;
     resource_id: number;
     /**
      * Building that owns `resource_id`, resolved server-side via bb_building_resource.

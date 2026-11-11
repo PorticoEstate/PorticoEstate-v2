@@ -2,6 +2,7 @@
 
 namespace App\modules\bookingfrontend\services\applications;
 
+use App\modules\bookingfrontend\helpers\ParentApplicationChoiceException;
 use App\modules\bookingfrontend\helpers\UserHelper;
 use App\modules\bookingfrontend\models\Application;
 use App\modules\booking\models\Document;
@@ -304,9 +305,10 @@ class ApplicationService
             // If legacy parent_id is provided, convert to new format
             if (isset($data['parent_id']) && empty($buildingParentIds)) {
                 // Find the building of the legacy parent_id and use it
+                $legacyParentId = self::applicationIdOrNull($data['parent_id']);
                 foreach ($applications as $app) {
-                    if ($app['id'] == $data['parent_id'] && empty($app['recurring_info'])) {
-                        $buildingParentIds[$app['building_id']] = $data['parent_id'];
+                    if ($legacyParentId !== null && (int)$app['id'] === $legacyParentId && empty($app['recurring_info'])) {
+                        $buildingParentIds[$app['building_id']] = $legacyParentId;
                         break;
                     }
                 }
@@ -596,10 +598,16 @@ class ApplicationService
      * @param string $session_id Current session ID
      * @param array $data Contact and organization information
      * @return array Updated applications
+     * @throws ParentApplicationChoiceException If the choice of parent application is refused; nothing is changed
      * @throws Exception If update fails
      */
     public function checkoutPartials(string $session_id, array $data, ?array $onlyApplicationIds = null, bool $skipContactUpdate = false): array
     {
+        // building_parent_ids maps a building id to the application its applications are combined under
+        if (isset($data['building_parent_ids']) && !is_array($data['building_parent_ids'])) {
+            throw new ParentApplicationChoiceException('Parent application not found');
+        }
+
         try
         {
             $this->db->beginTransaction();
@@ -627,9 +635,10 @@ class ApplicationService
 
             // If legacy parent_id is provided, convert to new format
             if (isset($data['parent_id']) && empty($buildingParentIds)) {
+                $legacyParentId = self::applicationIdOrNull($data['parent_id']);
                 foreach ($updatedApplications as $app) {
-                    if ($app['id'] == $data['parent_id'] && empty($app['recurring_info'])) {
-                        $buildingParentIds[$app['building_id']] = $data['parent_id'];
+                    if ($legacyParentId !== null && (int)$app['id'] === $legacyParentId && empty($app['recurring_info'])) {
+                        $buildingParentIds[$app['building_id']] = $legacyParentId;
                         break;
                     }
                 }
@@ -646,9 +655,9 @@ class ApplicationService
                 }
             }
 
-            // Validate parent_id building constraints
+            // Validate parent_id building constraints; the parent ids written below are the ones checked here
             if (!empty($buildingParentIds)) {
-                $this->validateBuildingParentIdConstraints($updatedApplications, $buildingParentIds);
+                $buildingParentIds = $this->validateBuildingParentIdConstraints($updatedApplications, $buildingParentIds);
             }
             $finalUpdatedApplications = [];
             $skippedApplications = [];
@@ -1771,33 +1780,55 @@ class ApplicationService
     }
 
     /**
+     * An application id as checkout accepts one: an int, or a string of up to ten digits without a leading zero,
+     * from 1 to 2147483647. Anything else gives null.
+     */
+    private static function applicationIdOrNull(mixed $value): ?int
+    {
+        if (is_string($value) && preg_match('/^[1-9][0-9]{0,9}\z/', $value) === 1) {
+            $value = (int)$value;
+        }
+
+        return is_int($value) && $value >= 1 && $value <= 2147483647 ? $value : null;
+    }
+
+    /**
      * Validate that all applications that will get the same parent_id belong to the same building
      * This method handles per-building parent ID assignments
      *
+     * A building's parent must be one of the given applications (the session's own applications in this checkout),
+     * named by its id, and in that building.
+     *
      * @param array $applications List of applications
      * @param array $buildingParentIds Array of building_id => parent_id mappings
-     * @throws Exception If mixed building applications would be combined
+     * @return array The same building_id => parent_id mappings, each parent_id the application id that was checked
+     * @throws ParentApplicationChoiceException If a building's parent is not one of the applications or in another building
      */
-    private function validateBuildingParentIdConstraints(array $applications, array $buildingParentIds): void
+    private function validateBuildingParentIdConstraints(array $applications, array $buildingParentIds): array
     {
+        $checkedParentIds = [];
+
         // Group applications by building and validate each building's parent selection
         foreach ($buildingParentIds as $buildingId => $parentId) {
-            // Get the parent application
+            // Get the parent application: one of the given applications, named by its id
+            $parentId = self::applicationIdOrNull($parentId);
             $parentApplication = null;
-            foreach ($applications as $app) {
-                if ($app['id'] == $parentId) {
-                    $parentApplication = $app;
-                    break;
+            if ($parentId !== null) {
+                foreach ($applications as $app) {
+                    if ((int)$app['id'] === $parentId) {
+                        $parentApplication = $app;
+                        break;
+                    }
                 }
             }
 
             if (!$parentApplication) {
-                throw new Exception("Parent application with ID {$parentId} not found");
+                throw new ParentApplicationChoiceException('Parent application not found');
             }
 
             // Ensure parent belongs to the correct building
             if ($parentApplication['building_id'] != $buildingId) {
-                throw new Exception(
+                throw new ParentApplicationChoiceException(
                     "Invalid parent selection: Parent application #{$parentId} belongs to building '{$parentApplication['building_name']}' " .
                     "but was selected as parent for building ID {$buildingId}."
                 );
@@ -1823,7 +1854,11 @@ class ApplicationService
                 // This validation ensures consistency within each building
                 // All non-recurring applications in a building should be grouped under the same parent
             }
+
+            $checkedParentIds[$buildingId] = $parentId;
         }
+
+        return $checkedParentIds;
     }
 
     /**

@@ -1,0 +1,110 @@
+// The top of the application page (GH #1423), as the Min side design has it: «← Tilbake til søknader», «Søknad 84278 ·
+// Personlig», the title large, then a row of facts in larger text (status, building, date and time, rooms).
+// Heading, Tag and Button are the design system's own; only the layout lives here, and only from its tokens.
+
+$stack-breakpoint: 640px;
+
+.header {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ds-size-3);
+    margin-bottom: var(--ds-size-6);
+}
+
+.backLink {
+    display: inline-flex;
+    align-items: center;
+    align-self: flex-start;
+    gap: var(--ds-size-2);
+    font-size: var(--ds-font-size-2);
+    color: var(--ds-color-accent-base-default);
+    text-decoration: none;
+
+    &:hover {
+        text-decoration: underline;
+    }
+}
+
+.top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: var(--ds-size-4);
+    flex-wrap: wrap;
+}
+
+.titleBlock {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--ds-size-1);
+
+    // The column must claim a full row, or `min-width: 0` lets it shrink to nothing beside the buttons instead
+    // of wrapping them below it (a 68 px title at 390 px, GH #1392).
+    @media (max-width: $stack-breakpoint) {
+        flex-basis: 100%;
+    }
+}
+
+// «Søknad 84278 · Personlig»
+.meta {
+    margin: 0;
+    font-size: var(--ds-font-size-2);
+    color: var(--ds-color-neutral-text-subtle);
+}
+
+// The title: 30 px, 24 px at 375 px, as in the design. A global h1 rule (3.5rem, 2rem margin) outranks the design
+// system's own heading size, so the size is set here.
+.title {
+    margin: 0;
+    font-size: var(--ds-font-size-7);
+    font-weight: var(--ds-font-weight-semibold);
+    line-height: 1.3;
+
+    @media (max-width: $stack-breakpoint) {
+        font-size: var(--ds-font-size-6);
+    }
+}
+
+.actions {
+    display: flex;
+    gap: var(--ds-size-2);
+    flex-shrink: 0;
+}
+
+// The status row: one fact after the other, wrapping; stacked at 375 px.
+.facts {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--ds-size-2) var(--ds-size-5);
+    font-size: var(--ds-font-size-3);
+
+    @media (max-width: $stack-breakpoint) {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
+
+.fact {
+    display: inline-flex;
+    align-items: flex-start;
+    gap: var(--ds-size-2);
+}
+
+// The icon sits beside the FIRST line of a fact that wraps (a long date at 375 px), centred on a 1.5 line (24 px).
+.factIcon {
+    flex: none;
+    margin-top: 3px;
+    color: var(--ds-color-neutral-text-subtle);
+}
+
+// «+2 datoer» after the first date: quieter than the date itself.
+.more {
+    color: var(--ds-color-neutral-text-subtle);
+}

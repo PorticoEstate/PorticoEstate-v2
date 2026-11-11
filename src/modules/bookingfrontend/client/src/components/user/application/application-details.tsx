@@ -37,8 +37,8 @@ import {useTrans, useClientTranslation} from "@/app/i18n/ClientTranslationProvid
 import {getDocumentLink} from "@/service/api/building";
 import ApplicationCrud from "@/components/building-calendar/modules/event/edit/application-crud";
 import {FCallTempEvent, HighlightEntity} from "@/components/building-calendar/building-calendar.types";
-import ArticleTable from "@/components/article-table/article-table";
-import {formatCurrency} from "@/utils/cost-utils";
+import ApplicationHeader from "./application-header";
+import ApplicationPriceLines, {ApplicationPriceLinesTotal} from "./application-price-lines";
 import CateringOverview from "./catering-overview";
 import {ENABLE_COMBINED_APPLICATIONS} from '@/service/feature-flags';
 import {getStatusColor, StatusColor} from './status-utils';
@@ -47,11 +47,8 @@ import {isFutureDate, phpGWLink} from "@/service/util";
 import styles from "./application-details.module.scss";
 import {ElementCommentButton, CommentElementBadge, formatElementTime} from "./element-comment";
 import {
-    ArrowLeftIcon,
-    FilesIcon,
     XMarkOctagonIcon,
     CalendarIcon,
-    PinIcon,
     InformationSquareIcon,
     FileIcon,
     PaperplaneIcon,
@@ -1068,7 +1065,6 @@ const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
     const isRejected = application.status === 'REJECTED';
     const isCancelled = application.status === 'CANCELLED';
     const isOrg = application.application_type === 'organization';
-    const orderTotal = application.orders.reduce((s, o) => s + o.sum, 0);
 
     // A recurring application counts and lists its series. Until the series has loaded no count
     // is shown, rather than the ONE stored date; if it cannot be read, the stored dates as before.
@@ -1130,116 +1126,57 @@ const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
 
     return (
         <MainWrapper>
-            {/* Back link */}
-            {!embedded && (
-                <Link href="/user/applications" className={styles.backLink}>
-                    <ArrowLeftIcon fontSize="1rem"/>
-                    {t('bookingfrontend.back_to_applications')}
-                </Link>
-            )}
-
-            {/* App header */}
-            <div className={styles.appHeader}>
-                <div className={styles.titleBlock}>
-                    <div className={styles.metaLine}>
-                        <span>{application.id_string}</span>
-                        <span>&middot;</span>
-                        <span>{isOrg ? application.customer_organization_name : t('bookingfrontend.personal')}</span>
-                    </div>
-                    {!embedded && (
-                        <Heading level={1} data-size="lg">{application.name}</Heading>
-                    )}
-                    {isParentApplication && (
-                        <Tag data-size="sm" data-color="info">{t('bookingfrontend.combined_application')}</Tag>
-                    )}
-                    <div className={styles.metaRow}>
-                        <Tag data-color={getStatusColor(application.status)} data-size="md">
-                            {t(`bookingfrontend.${application.status.toLowerCase()}`)}
-                        </Tag>
-                        <span className={styles.metaItem}>
-                            <PinIcon fontSize="0.9rem"/>{application.building_name}
-                        </span>
-                        {!seriesLoading && (
-                            <span className={styles.metaItem}>
-                                <CalendarIcon fontSize="0.9rem"/>
-                                {/* `dates` reads "Fra/Til" - a series says "datoer" (num_dates) */}
-                                {dateCount} {dateCount === 1
-                                    ? (t('bookingfrontend.date'))
-                                    : (t(series ? 'bookingfrontend.num_dates' : 'bookingfrontend.dates'))}
-                            </span>
-                        )}
-                        {RecurringInfoUtils.isRecurring(application) && (
-                            <Tag data-size="sm" data-color="neutral">{t('bookingfrontend.recurring_application')}</Tag>
-                        )}
-                        {series && (
-                            <span className={styles.metaItem}>
-                                {series.interval_weeks === 1
-                                    ? t('bookingfrontend.every_week')
-                                    : t('bookingfrontend.every_n_weeks', {n: series.interval_weeks})}
-                            </span>
-                        )}
-                    </div>
-                </div>
-                {/* The whole-application cancel is NOT offered up here (GH #1392): as the first
-                    action it was the one a user reached for when they meant a single time, and
-                    lost the whole series. It lives in its own card at the end of the page. */}
-                <div className={styles.appActions}>
-                    {(isAccepted || isRejected || isCancelled) && (
-                        <Button variant="secondary" data-size="sm" onClick={() => setShowCopyDialog(true)}>
-                            <FilesIcon fontSize="0.9rem"/>
-                            {t('bookingfrontend.copy_application')}
-                        </Button>
-                    )}
-                </div>
-            </div>
-
-            {/* Status banner */}
-            {isPending && (
-                <Alert data-color="warning" style={{marginBottom: 20}}>
-                    <Heading level={3} data-size="xs">
-                        {t('bookingfrontend.application_pending_title')}
-                    </Heading>
-                    <Paragraph>
-                        {t('bookingfrontend.application_pending_description')}
-                    </Paragraph>
-                </Alert>
-            )}
-            {isAccepted && (
-                <Alert data-color="success" style={{marginBottom: 20}}>
-                    <Heading level={3} data-size="xs">
-                        {t('bookingfrontend.application_accepted_title')}
-                    </Heading>
-                    <Paragraph>
-                        {t('bookingfrontend.application_accepted_description')}
-                    </Paragraph>
-                </Alert>
-            )}
-            {isRejected && (
-                <Alert data-color="info" style={{marginBottom: 20}}>
-                    <Heading level={3} data-size="xs">
-                        {t('bookingfrontend.application_rejected_title')}
-                    </Heading>
-                    <Paragraph>
-                        {t('bookingfrontend.application_rejected_description')}
-                    </Paragraph>
-                </Alert>
-            )}
+            <ApplicationHeader
+                application={application}
+                embedded={embedded}
+                isParentApplication={!!isParentApplication}
+                series={series}
+                seriesLoading={seriesLoading}
+                onCopy={isAccepted || isRejected || isCancelled ? () => setShowCopyDialog(true) : undefined}
+            />
 
             {/* Main grid */}
             <div className={styles.detailGrid}>
                 <div className={styles.detailMain}>
-
-                    {/* Saksgang (status timeline) */}
-                    <div className={styles.card}>
-                        <div className={styles.cardHeader}>
-                            <Heading level={2} data-size="sm">
-                                {t('bookingfrontend.case_history')}
+                    {/* Status banner, at the top of the main column so that the sidebar starts beside it */}
+                    {isPending && (
+                        <Alert data-color="warning">
+                            <Heading level={3} data-size="xs">
+                                {t('bookingfrontend.application_pending_title')}
                             </Heading>
-                            <span style={{fontSize: 13, color: 'var(--ds-color-neutral-text-subtle)'}}>
-                                {t('bookingfrontend.updated')} {fmtSqlDateTime(application.modified)}
-                            </span>
-                        </div>
-                        <StatusTimeline application={application} t={t}/>
+                            <Paragraph>
+                                {t('bookingfrontend.application_pending_description')}
+                            </Paragraph>
+                        </Alert>
+                    )}
+                    {isAccepted && (
+                        <Alert data-color="success">
+                            <Heading level={3} data-size="xs">
+                                {t('bookingfrontend.application_accepted_title')}
+                            </Heading>
+                            <Paragraph>
+                                {t('bookingfrontend.application_accepted_description')}
+                            </Paragraph>
+                        </Alert>
+                    )}
+                    {isRejected && (
+                        <Alert data-color="info">
+                            <Heading level={3} data-size="xs">
+                                {t('bookingfrontend.application_rejected_title')}
+                            </Heading>
+                            <Paragraph>
+                                {t('bookingfrontend.application_rejected_description')}
+                            </Paragraph>
+                        </Alert>
+                    )}
+
+                    {/* The application's prices on ONE surface, first under the header (Min side design A, GH #1423):
+                        Romleie / Utstyr og tjenester (the stored order lines, each with its own VAT), Bevertning (what was
+                        ordered, change / cancel while the deadlines allow it) and the application's total last. */}
+                    <div className={`${styles.card} ${styles.priceSurface}`} data-testid="application-prices">
+                        <ApplicationPriceLines application={application}/>
+                        <CateringOverview application={application}/>
+                        <ApplicationPriceLinesTotal application={application}/>
                     </div>
 
                     {/* Tider og lokale */}
@@ -1288,6 +1225,19 @@ const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
                         ) : (
                             <DatesList dates={application.dates}/>
                         )}
+                    </div>
+
+                    {/* Saksgang (status timeline) */}
+                    <div className={styles.card}>
+                        <div className={styles.cardHeader}>
+                            <Heading level={2} data-size="sm">
+                                {t('bookingfrontend.case_history')}
+                            </Heading>
+                            <span style={{fontSize: 13, color: 'var(--ds-color-neutral-text-subtle)'}}>
+                                {t('bookingfrontend.updated')} {fmtSqlDateTime(application.modified)}
+                            </span>
+                        </div>
+                        <StatusTimeline application={application} t={t}/>
                     </div>
 
                     {/* Om arrangementet */}
@@ -1347,33 +1297,6 @@ const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
                             t={t}
                         />
                     </div>
-
-                    {/* Pris og betaling */}
-                    {application.orders && application.orders.length > 0 && (
-                        <Details defaultOpen>
-                            <Details.Summary>
-                                {t('bookingfrontend.orders_articles')} — {formatCurrency(orderTotal)}
-                            </Details.Summary>
-                            <Details.Content>
-                                <ArticleTable
-                                    orders={application.orders}
-                                    mode="orders"
-                                    readOnly={true}
-                                />
-                                <div className={styles.infoNote}>
-                                    <InformationSquareIcon fontSize="0.9rem"/>
-                                    <span>
-                                        {isAccepted
-                                            ? (t('bookingfrontend.invoice_after_event'))
-                                            : (t('bookingfrontend.price_confirmed_on_approval'))}
-                                    </span>
-                                </div>
-                            </Details.Content>
-                        </Details>
-                    )}
-
-                    {/* Bevertning: what was ordered, change / cancel while the deadlines allow it */}
-                    <CateringOverview application={application}/>
 
                     {/* Dokumenter */}
                     <Details>

@@ -1,8 +1,9 @@
 import {DateTime} from 'luxon';
 import {IArticle} from '@/service/types/api/order-articles.types';
-import {IOrderLine} from '@/service/types/api/application.types';
+import {IOrder, IOrderLine} from '@/service/types/api/application.types';
 import {IHospitalityArticle, IHospitalityOrder, IHospitalityOrderLine} from '@/service/types/api/hospitality.types';
 import {formatAmount, formatCurrency} from '@/utils/cost-utils';
+import {cateringBillingNotRuledOut, showsPriceSummary} from '@/utils/catering-status';
 
 /**
  * Articles priced per minute (article mapping unit 'minute').
@@ -87,9 +88,13 @@ export const minuteArticleTotal = (article: Pick<IArticle, 'ex_tax_price' | 'tax
 export const hourlyRateOfMinuteArticle = (article: Pick<IArticle, 'ex_tax_price' | 'tax_percent'>): number =>
     Math.round(toOre(article.ex_tax_price) * MINUTES_PER_HOUR * (100 + Number(article.tax_percent)) / 100) / 100;
 
-/** A stored order line's total incl. VAT in kroner: its amount plus its tax, each already to the øre. */
+/** A stored order line's total incl. VAT in whole øre: its amount plus its tax, each already to the øre. */
+export const orderLineTotalOre = (line: Pick<IOrderLine, 'amount' | 'tax'>): number =>
+    toOre(line.amount) + toOre(line.tax || 0);
+
+/** A stored order line's total incl. VAT in kroner (orderLineTotalOre / 100). */
 export const orderLineTotal = (line: Pick<IOrderLine, 'amount' | 'tax'>): number =>
-    (toOre(line.amount) + toOre(line.tax || 0)) / 100;
+    orderLineTotalOre(line) / 100;
 
 /**
  * The VAT % a stored order line was billed at. OrderLine does not carry it, so it is read back from the
@@ -235,6 +240,22 @@ export const priceLabelForDisplay = (
 export const formatMinutes = (minutes: number, t: Translate): string =>
     `${minutes}${NBSP}${t('bookingfrontend.minutes_short')}`;
 
+const QUANTITY_FORMAT = new Intl.NumberFormat('nb-NO', {maximumFractionDigits: 2, useGrouping: false});
+
+/**
+ * A stored quantity for showing, from the number or the decimal string the API sends ("3.00"): a whole quantity
+ * reads «3», a stored fraction keeps at most two decimals and the comma of the amounts beside it («2,5»). Never
+ * grouped («1800») and never rounded to a whole number. nb-NO whatever the UI language, like formatCurrency, so
+ * «2,5 × 81,25 kr» has one decimal separator. A value with nothing to show (null, undefined, blank, not a
+ * number) is '', never a made-up «0».
+ */
+export const formatQuantity = (value: number | string | null | undefined): string => {
+    if (value === null || value === undefined) return '';
+    if (typeof value === 'string' && value.trim() === '') return '';
+    const quantity = Number(value);
+    return Number.isFinite(quantity) ? QUANTITY_FORMAT.format(quantity) : '';
+};
+
 /**
  * A resource line's quantity with its unit: «1 dag» / «2 dager» for a day line, «1 stk» for an each line
  * (the existing bookingfrontend.day, .days and .each labels, lowercased). Every other unit keeps the bare
@@ -248,4 +269,227 @@ export const formatQuantityWithUnit = (quantity: number, unit: string | null | u
         return `${quantity}${NBSP}${t('bookingfrontend.each').toLowerCase()}`;
     }
     return String(quantity);
+};
+
+/** The existing label key of each article mapping unit code (ArticleMappingController::VALID_UNITS, plus the 'dag' alias). */
+const UNIT_LABEL_KEYS = new Map<string, string>([
+    ['kg', 'bookingfrontend.kg'],
+    ['m', 'bookingfrontend.m'],
+    ['m2', 'bookingfrontend.m2'],
+    ['minute', 'bookingfrontend.minute'],
+    ['hour', 'bookingfrontend.hour'],
+    ['day', 'bookingfrontend.day'],
+    ['dag', 'bookingfrontend.day'],
+]);
+
+/**
+ * A catering article's unit as the applicant reads it, or null for no unit text. Never the raw unit code:
+ * 'each' has none (a price is per piece unless it says otherwise), a known code has its existing label,
+ * lowercased like formatQuantityWithUnit («kg»), and an unknown code has none.
+ */
+export const hospitalityUnitLabel = (unit: string | null | undefined, t: Translate): string | null => {
+    const key = unit ? UNIT_LABEL_KEYS.get(unit) : undefined;
+    return key ? t(key).toLowerCase() : null;
+};
+
+/*
+ * Price summary: the sum ex VAT, the VAT and the total incl. VAT of a set of stored lines, on the SAME basis
+ * as billing: every line is worked out to the øre on its own (never the VAT of a sum), and the totals are
+ * sums of those whole-øre parts, so ex + VAT = incl to the øre by construction.
+ *   - an application order line (IOrderLine) is stored as amount (ex) + tax (the VAT, to the øre);
+ *   - a catering line (IHospitalityOrderLine) is stored ex and gets tax = amount x tax_percent / 100, once
+ *     per line (inclOre), exactly as hospitalityLineTotalOre.
+ * An unknown VAT is null and stays null all the way to the screen («-»): never 0.
+ */
+
+/** One stored line reduced to what a summary needs. */
+export interface PricedLine {
+    /** Ex-VAT amount in whole øre; null when it cannot be read. */
+    exOre: number | null;
+    /** The VAT in whole øre; null when it is not known (never 0 for «unknown»). */
+    vatOre: number | null;
+    /** The VAT % the line was billed at; null when it is not known (the VAT amount may still be). */
+    percent: number | null;
+}
+
+/**
+ * A stored application order line. The VAT AMOUNT is the stored one (`tax`, as billed); the percent only LABELS
+ * it and is the line's `tax_percent` (fm_ecomva.percent_ of its tax code), as the server sends it: nothing is
+ * inferred from tax / amount. fm_ecomva holds the code's rate TODAY while the tax was stored when the line was
+ * billed, so the label is printed only when that rate gives the stored tax back by the billing rule (a 25 % code
+ * on a line with a VAT of 0.00 would read «Mva 25 %: 0 kr»). No percent (a code with no fm_ecomva row, a payload
+ * without the field, or a rate the stored tax contradicts) puts the line's VAT, still summed, under the plain
+ * «Mva» row; it is never labelled 0 %.
+ */
+export const pricedOrderLine = (line: Pick<IOrderLine, 'amount' | 'tax' | 'tax_percent'>): PricedLine => {
+    const exOre = toOre(line.amount);
+    const vatOre = toOre(line.tax || 0);
+    const percent = knownPercent(line.tax_percent);
+    return {exOre, vatOre, percent: percent !== null && inclOre(exOre, percent) - exOre === vatOre ? percent : null};
+};
+
+/** A stored catering line: ex-VAT amount and tax_percent as sent. An unknown percent leaves the VAT null. */
+export const pricedHospitalityLine = (line: Pick<IHospitalityOrderLine, 'amount' | 'tax_percent'>): PricedLine => {
+    const exOre = exOreOrNull(line.amount);
+    const percent = knownPercent(line.tax_percent);
+    return {
+        exOre,
+        percent,
+        vatOre: exOre === null || percent === null ? null : inclOre(exOre, percent) - exOre,
+    };
+};
+
+/** The VAT of one rate in a summary; `percent` null = VAT that is stored but whose percent is not known. */
+export interface PriceSummaryRate {
+    percent: number | null;
+    exOre: number;
+    vatOre: number;
+}
+
+export interface PriceSummary {
+    /** Σ ex-VAT; null if any line's amount is unreadable. */
+    exOre: number | null;
+    /** Σ VAT; null as soon as one line's VAT is unknown. */
+    vatOre: number | null;
+    /** exOre + vatOre; null if either is. */
+    inclOre: number | null;
+    /** VAT per rate, highest first, the one without a percent last; empty while vatOre is null. */
+    rates: PriceSummaryRate[];
+}
+
+/**
+ * Sum a set of lines. Lines that cost nothing (ex 0 and VAT 0) take part in the sums but make no rate row.
+ * The rates are only listed while every VAT is known, so that the rows always add up to `vatOre`.
+ */
+export const summarisePricedLines = (lines: readonly PricedLine[]): PriceSummary => {
+    const exOre = sumOreOrNull(lines.map(line => line.exOre));
+    const vatOre = sumOreOrNull(lines.map(line => line.vatOre));
+
+    const byPercent = new Map<number | null, PriceSummaryRate>();
+    if (exOre !== null && vatOre !== null) {
+        for (const line of lines) {
+            if (line.exOre === 0 && line.vatOre === 0) continue;
+            const rate = byPercent.get(line.percent) ?? {percent: line.percent, exOre: 0, vatOre: 0};
+            rate.exOre += line.exOre ?? 0;
+            rate.vatOre += line.vatOre ?? 0;
+            byPercent.set(line.percent, rate);
+        }
+    }
+    const rates = [...byPercent.values()].sort((a, b) =>
+        a.percent === null ? 1 : b.percent === null ? -1 : b.percent - a.percent);
+
+    return {exOre, vatOre, inclOre: exOre === null || vatOre === null ? null : exOre + vatOre, rates};
+};
+
+/**
+ * The category rows of the application price summary (room rental, equipment and services, catering) without
+ * the ones that are 0 kr: an application with no stored lines has no «Romleie 0 kr». An UNKNOWN amount (null,
+ * shown «-») is not 0 and stays. Only these rows go: the VAT rows and the total are not in this list, so a
+ * non-zero total never loses a VAT row (a real «Mva 0 %: 0 kr» included) or itself.
+ */
+export const withoutZeroParts = <T extends {ore: number | null}>(parts: readonly T[]): T[] =>
+    parts.filter(part => part.ore !== 0);
+
+/** Article category of a stored order line (IOrderLine.article_cat_id): 1 = resource, i.e. the room rental. */
+const ROOM_RENTAL_CATEGORY = 1;
+
+/**
+ * The stored order lines of an application split the way the price summary splits them: the room rental
+ * (resource lines) and the equipment and services (every other line). The page lists them under those two
+ * headings, so the lists and the summary can never disagree about which line is which.
+ */
+export const splitStoredLines = (
+    orders: ReadonlyArray<Pick<IOrder, 'lines'>>
+): {rental: IOrderLine[]; services: IOrderLine[]} => {
+    const lines = orders.flatMap(order => order.lines);
+    return {
+        rental: lines.filter(line => line.article_cat_id === ROOM_RENTAL_CATEGORY),
+        services: lines.filter(line => line.article_cat_id !== ROOM_RENTAL_CATEGORY),
+    };
+};
+
+/** True when every line is known to cost nothing (ex 0 and VAT 0); a list with no line is not «free», it is empty. */
+export const storedLinesAreFree = (lines: ReadonlyArray<Pick<IOrderLine, 'amount' | 'tax' | 'tax_percent'>>): boolean =>
+    lines.length > 0 && lines.every(line => {
+        const priced = pricedOrderLine(line);
+        return priced.exOre === 0 && priced.vatOre === 0;
+    });
+
+/** The total incl. VAT of stored lines in whole øre, as the price summary sums it (VAT per line, as billed). */
+export const storedLinesInclOre = (lines: ReadonlyArray<Pick<IOrderLine, 'amount' | 'tax' | 'tax_percent'>>): number | null =>
+    summarisePricedLines(lines.map(pricedOrderLine)).inclOre;
+
+/**
+ * The application's price in its parts: the room rental (resource lines) and the equipment and services
+ * (every other stored line) from `orders`, the catering from the catering orders, and the whole.
+ */
+export const applicationPriceSummary = (
+    orders: ReadonlyArray<Pick<IOrder, 'lines'>>,
+    cateringOrders: ReadonlyArray<Pick<IHospitalityOrder, 'lines'>>
+): {rental: PriceSummary; services: PriceSummary; catering: PriceSummary; total: PriceSummary} => {
+    const stored = splitStoredLines(orders);
+    const rental = stored.rental.map(pricedOrderLine);
+    const services = stored.services.map(pricedOrderLine);
+    const catering = cateringOrders.flatMap(order => order.lines.map(pricedHospitalityLine));
+    return {
+        rental: summarisePricedLines(rental),
+        services: summarisePricedLines(services),
+        catering: summarisePricedLines(catering),
+        total: summarisePricedLines([...rental, ...services, ...catering]),
+    };
+};
+
+/** What is known of the application's catering: `pending` (its orders are being read), `read` (the orders, possibly none, or catering is off) or `unreadable` (the read failed). */
+export type CateringState = 'pending' | 'read' | 'unreadable';
+
+export interface ClosingTotal {
+    /** `combined`: the application's total, there being no catering. `registered`: every stored line added up, what the application has registered. */
+    kind: 'combined' | 'registered';
+    /** Whole øre incl. VAT; null = unknown («-»). */
+    ore: number | null;
+}
+
+export interface ApplicationTotals {
+    /** The «Utstyr og tjenester» card's own total. */
+    showServicesTotal: boolean;
+    /** The row that closes the price cards, or null. */
+    closing: ClosingTotal | null;
+}
+
+/**
+ * What the application page's price cards (Romleie / Utstyr og tjenester) total, in one place (GH #1423).
+ *
+ *  - The «Utstyr og tjenester» total is shown once billing is settled (the catering is read, or cannot be) and no
+ *    catering order can be a billed one: a billed order is also a stored line (cateringBillingNotRuledOut).
+ *  - The row that closes the cards is the application's total, and it is there exactly when nothing else gives it:
+ *    not the price summary (showsPriceSummary, drawn only for a catering that was read), not the Romleie total (there
+ *    is no add-on line, so that IS the sum) and not the add-ons' own total (when there is no Romleie card). So it
+ *    closes two cards, or one card whose total is withheld because billing cannot be ruled out. It is
+ *      `combined` («Total inkl. mva») when the catering was read and there is none, and
+ *      `registered` («Registrert total inkl. mva.») otherwise, i.e. with catering whose billing cannot be ruled out
+ *      or with a catering that could not be read: every stored line added up, per line in øre, which is what the
+ *      server's `order.sum` adds up and what the old «Pris og betaling» block ended on. It is not called the total
+ *      price: a catering order that is not billed yet is not among the stored lines.
+ *  - While the catering is being read nothing is decided: no total of either kind.
+ */
+export const applicationTotals = (
+    orders: ReadonlyArray<Pick<IOrder, 'lines'>>,
+    cateringOrders: ReadonlyArray<Pick<IHospitalityOrder, 'actions' | 'lines'>>,
+    catering: CateringState
+): ApplicationTotals => {
+    if (catering === 'pending') return {showServicesTotal: false, closing: null};
+    const showServicesTotal = !cateringBillingNotRuledOut(cateringOrders);
+
+    const {rental, services} = splitStoredLines(orders);
+    const showRental = rental.length > 0 && !storedLinesAreFree(rental);
+    // A catering that could not be read is not drawn, whatever an earlier read left in the query's data.
+    const summaryDrawn = catering === 'read' && showsPriceSummary(cateringOrders, applicationPriceSummary(orders, cateringOrders).total.inclOre);
+    const totalIsGiven = summaryDrawn || services.length === 0 || (!showRental && showServicesTotal);
+    if (totalIsGiven) return {showServicesTotal, closing: null};
+
+    const noCatering = catering === 'read' && cateringOrders.length === 0;
+    return {
+        showServicesTotal,
+        closing: {kind: noCatering ? 'combined' : 'registered', ore: storedLinesInclOre(orders.flatMap(order => order.lines))},
+    };
 };

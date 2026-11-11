@@ -33,6 +33,18 @@ const optionCount = (article: IArticle): number => article.price_options?.length
 /** A resource whose price the applicant chooses: it has more than one */
 export const hasPriceChoice = (article: IArticle): boolean => optionCount(article) > 1;
 
+/**
+ * What a price is called where the applicant chooses between prices: its category's
+ * name when it has one, otherwise its remark. With the category hidden (config
+ * hide_price_category) it is called by its remark, as before categories; the category's
+ * name is then only the fallback for a price with no remark, so that no choice is left
+ * a bare amount. Empty when it has neither.
+ */
+export const priceOptionLabel = (option: IPriceOption, hideCategory: boolean): string =>
+	(hideCategory
+		? option.remark?.trim() || option.category_name
+		: option.category_name || option.remark) || '';
+
 /** The resources a shared category has to be found on */
 const participants = (articles: IArticle[]): IArticle[] =>
 	articles.filter(article => optionCount(article) > (COUNT_SINGLE_PRICE_RESOURCES ? 0 : 1));

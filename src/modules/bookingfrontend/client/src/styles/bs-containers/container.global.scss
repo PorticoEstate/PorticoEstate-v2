@@ -32,7 +32,6 @@ $grid-breakpoints: (        // Define your breakpoints
 
 // Mixin to generate container with max-widths at breakpoints
 @mixin make-container-max($max-widths: $container-max-widths) {
-    width: 100%;
     padding-right: $container-padding-x;
     padding-left: $container-padding-x;
     margin-right: auto;
@@ -60,7 +59,6 @@ $grid-breakpoints: (        // Define your breakpoints
 // Fluid container (always 100% width)
 .container-fluid {
     @include desktop {
-        width: 100%;
         padding-right: $container-padding-x;
         padding-left: $container-padding-x;
         margin-right: auto;

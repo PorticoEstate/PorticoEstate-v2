@@ -1268,3 +1268,5 @@ no_valid_owner	bookingfrontend	en	No valid owner account is available
 queue_timeout	bookingfrontend	en	Your booking request timed out in the queue. Please try again.
 booking_outside_horizon	bookingfrontend	en	The time is outside the allowed booking period
 unauthorized	bookingfrontend	en	You are not authorised to do this
+hide price category	bookingfrontend	en	Hide price category in the new client
+hide price category note	bookingfrontend	en	When enabled, the «Who are you applying as?» choice and the «Choose the price per resource» switch are not shown; the applicant chooses a price per resource. Prices and stored data are not changed.

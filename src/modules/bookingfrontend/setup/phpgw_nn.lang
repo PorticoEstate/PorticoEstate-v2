@@ -1268,3 +1268,5 @@ no_valid_owner	bookingfrontend	nn	Ingen gyldig eigarkonto er tilgjengeleg
 queue_timeout	bookingfrontend	nn	Bestillinga vart tidsavbroten i køen. Prøv igjen.
 booking_outside_horizon	bookingfrontend	nn	Tidspunktet er utanfor tillaten bookingperiode
 unauthorized	bookingfrontend	nn	Du har ikkje tilgang til dette
+hide price category	bookingfrontend	nn	Skjul priskategori i den nye klienten
+hide price category note	bookingfrontend	nn	Når aktiv blir ikkje «Kven søkjer du som?»-valet og brytaren «Vel pris per ressurs» viste; søkjaren vel pris per ressurs. Endrar ikkje prisar eller lagra data.

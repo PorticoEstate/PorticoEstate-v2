@@ -2,7 +2,9 @@
 import React, {forwardRef} from 'react';
 import {Field, Label, Paragraph, Select, ValidationMessage} from '@digdir/designsystemet-react';
 import {useTrans} from '@/app/i18n/ClientTranslationProvider';
+import {useHidePriceCategory} from '@/service/hooks/api-hooks';
 import {IPriceOption} from '@/service/types/api/order-articles.types';
+import {priceOptionLabel} from '@/utils/price-category';
 import {formatCurrency} from '@/utils/cost-utils';
 import {
 	formatHourlyRate,
@@ -51,6 +53,7 @@ const PriceChoiceField = forwardRef<HTMLSelectElement, PriceChoiceFieldProps>(({
 	id
 }, ref) => {
 	const t = useTrans();
+	const hideCategory = useHidePriceCategory();
 	const chosen = options.find(option => option.price_id === value);
 
 	const isMinute = isMinuteUnit(unit);
@@ -61,8 +64,7 @@ const PriceChoiceField = forwardRef<HTMLSelectElement, PriceChoiceFieldProps>(({
 		const amount = isMinute
 			? formatHourlyRate(hourlyRateOf(option), t)
 			: formatCurrency(parseFloat(option.price));
-		// A price in a category is called by the category's name, otherwise by its remark
-		const label = option.category_name || option.remark;
+		const label = priceOptionLabel(option, hideCategory);
 		return label ? `${label} – ${amount}` : amount;
 	};
 

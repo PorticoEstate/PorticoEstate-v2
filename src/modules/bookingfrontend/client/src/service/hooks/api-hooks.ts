@@ -1972,6 +1972,16 @@ export function useServerSettings(): UseQueryResult<IServerSettings> {
 	);
 }
 
+/**
+ * Whether an admin has hidden the price category (bookingfrontend config
+ * hide_price_category). Until the settings have loaded, or when they fail to,
+ * the category is shown, as it was before the setting existed.
+ */
+export function useHidePriceCategory(): boolean {
+	const {data: serverSettings} = useServerSettings();
+	return serverSettings?.bookingfrontend_config?.hide_price_category === true;
+}
+
 
 export function useBuildingAudience(building_id?: number): UseQueryResult<IAudience[]> {
 	return useQuery(

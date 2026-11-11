@@ -4,7 +4,7 @@ import {Heading, Paragraph, Table} from '@digdir/designsystemet-react';
 import {useTrans} from '@/app/i18n/ClientTranslationProvider';
 import {IApplication, IOrderLine} from '@/service/types/api/application.types';
 import {ArticleOrder, IArticle} from '@/service/types/api/order-articles.types';
-import {useResourceArticles, useUpdatePartialApplication} from '@/service/hooks/api-hooks';
+import {useHidePriceCategory, useResourceArticles, useUpdatePartialApplication} from '@/service/hooks/api-hooks';
 import {ResourceUsesTimeSlots} from '@/components/building-calendar/util/calender-helpers';
 import PriceChoiceField from '@/components/price-choice/price-choice-field';
 import {formatCurrency} from '@/utils/cost-utils';
@@ -120,6 +120,7 @@ const getArticleLines = (application: IApplication, articles: IArticle[]): Artic
 
 const ArticlesSection: FC<ArticlesSectionProps> = ({applications, showPriceChoiceErrors = false}) => {
     const t = useTrans();
+    const hideCategory = useHidePriceCategory();
     const updateMutation = useUpdatePartialApplication();
 
     const resourceIds = Array.from(new Set(
@@ -181,7 +182,7 @@ const ArticlesSection: FC<ArticlesSectionProps> = ({applications, showPriceChoic
                                     <Table.Row>
                                         <Table.Cell className={styles.lineName}>
                                             {line.name}
-                                            {line.priceLabel && !line.priceChoice && (
+                                            {line.priceLabel && !line.priceChoice && !hideCategory && (
                                                 <Paragraph data-size="sm">
                                                     {t('bookingfrontend.price_category')}: {line.priceLabel}
                                                 </Paragraph>

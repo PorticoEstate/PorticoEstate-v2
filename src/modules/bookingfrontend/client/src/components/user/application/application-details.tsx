@@ -44,6 +44,7 @@ import {ENABLE_COMBINED_APPLICATIONS} from '@/service/feature-flags';
 import {getStatusColor, StatusColor} from './status-utils';
 import {resolveParticipantLimit} from "@/components/building-calendar/util/participant-limit";
 import {isFutureDate, phpGWLink} from "@/service/util";
+import {formatHours} from "@/utils/format-hours";
 import styles from "./application-details.module.scss";
 import {ElementCommentButton, CommentElementBadge, formatElementTime} from "./element-comment";
 import {
@@ -223,6 +224,8 @@ interface DateRowItem {
 }
 
 const DatesList: FC<{ dates: DateRowItem[] }> = ({dates}) => {
+    const t = useTrans();
+    const {i18n} = useClientTranslation();
     const sorted = useMemo(
         () => [...dates].sort((a, b) => DateTime.fromISO(a.from_).toMillis() - DateTime.fromISO(b.from_).toMillis()),
         [dates]
@@ -248,7 +251,7 @@ const DatesList: FC<{ dates: DateRowItem[] }> = ({dates}) => {
                                 kl. {f.time}{sameDay ? `–${to.time}` : ` → ${to.full} kl. ${to.time}`}
                             </div>
                         </div>
-                        <div className={styles.dateDuration}>{hours} t</div>
+                        <div className={styles.dateDuration}>{formatHours(hours, i18n.language, t)}</div>
                     </div>
                 );
             })}
@@ -303,6 +306,7 @@ function seriesRows(occurrences: IRecurringOccurrence[], outsideSeries: IRecurri
 // belongs to no occurrence; it is listed among them by its own date, tagged as outside the series.
 const RecurringSeriesList: FC<{ occurrences: IRecurringOccurrence[]; outsideSeries: IRecurringSeriesElement[]; entities?: ScheduleEntities }> = ({occurrences, outsideSeries, entities}) => {
     const t = useTrans();
+    const {i18n} = useClientTranslation();
     const rows = useMemo(() => seriesRows(occurrences, outsideSeries), [occurrences, outsideSeries]);
 
     return (
@@ -356,7 +360,7 @@ const RecurringSeriesList: FC<{ occurrences: IRecurringOccurrence[]; outsideSeri
                             )}
                         </div>
                         <Tag data-color={status.color} data-size="sm">{t(status.langKey)}</Tag>
-                        <div className={styles.dateDuration}>{hours} t</div>
+                        <div className={styles.dateDuration}>{formatHours(hours, i18n.language, t)}</div>
                     </div>
                 );
             })}
@@ -608,7 +612,7 @@ const ReservedTimesList: FC<{
                             {isHighlighted && (
                                 <Tag data-color="accent" data-size="sm">{t('bookingfrontend.selected')}</Tag>
                             )}
-                            <div className={styles.dateDuration}>{hours} t</div>
+                            <div className={styles.dateDuration}>{formatHours(hours, i18n.language, t)}</div>
                         </div>
                         {hasActions && (
                             <div className={styles.reservedActions}>

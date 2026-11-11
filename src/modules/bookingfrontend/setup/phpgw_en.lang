@@ -1270,3 +1270,4 @@ booking_outside_horizon	bookingfrontend	en	The time is outside the allowed booki
 unauthorized	bookingfrontend	en	You are not authorised to do this
 hide price category	bookingfrontend	en	Hide price category in the new client
 hide price category note	bookingfrontend	en	When enabled, the «Who are you applying as?» choice and the «Choose the price per resource» switch are not shown; the applicant chooses a price per resource. Prices and stored data are not changed.
+hours_short	bookingfrontend	en	h

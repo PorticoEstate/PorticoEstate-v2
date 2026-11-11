@@ -245,12 +245,6 @@ class Passkey_Management_Controller
 			$displayName
 		);
 
-		// Store the challenge in session with a timestamp for expiration
-        $_SESSION['webauthn_challenge'] = [
-            'value' => $this->auth_passkeys->getWebAuthnInstance()->getChallenge()->getBinaryString(),
-            'expires' => time() + 300 // 5 minute expiration
-        ];
-
 		$response->getBody()->write(json_encode($options));
 		return $response->withHeader('Content-Type', 'application/json');
 	}
@@ -280,6 +274,12 @@ class Passkey_Management_Controller
             error_log("[PASSKEY DEBUG] Rate limit exceeded for registration");
             return $this->jsonError($response, 'Too many registration attempts. Please try again later.', 429);
         }
+
+		$challenge = $this->auth_passkeys->consumeRegistrationChallenge();
+		if ($challenge === null)
+		{
+			return $this->jsonError($response, 'Registration challenge is missing, expired, or already used.', 400);
+		}
         
 		// Get device name from query params
 		$queryParams = $request->getQueryParams();
@@ -294,7 +294,13 @@ class Passkey_Management_Controller
 		
 		// Get registration data from request body
 		$params = json_decode($request->getBody()->getContents(), true);
-		if (!$params || !isset($params['id']) || !isset($params['response']))
+		if (
+			!is_array($params)
+			|| !isset($params['id'], $params['response']['clientDataJSON'], $params['response']['attestationObject'])
+			|| !is_string($params['id'])
+			|| !is_string($params['response']['clientDataJSON'])
+			|| !is_string($params['response']['attestationObject'])
+		)
 		{
 		    error_log("[PASSKEY DEBUG] Invalid registration data format: " . json_encode($params));
 			return $this->jsonError($response, 'Invalid registration data format');
@@ -302,16 +308,6 @@ class Passkey_Management_Controller
 		
 		try
 		{
-            // Get challenge value from session
-            $challengeData = $_SESSION['webauthn_challenge'] ?? null;
-            if (!$challengeData) {
-                error_log("[PASSKEY DEBUG] No challenge found in session");
-                return $this->jsonError($response, 'No challenge found in session');
-            }
-            
-            $challenge = $challengeData['value'];
-            error_log("[PASSKEY DEBUG] Challenge retrieved from session: " . substr(bin2hex($challenge), 0, 10) . "...");
-            
 			// Verify with WebAuthn
 			error_log("[PASSKEY DEBUG] Processing registration with clientDataJSON size: " . 
 			    strlen($params['response']['clientDataJSON']) . ", attestationObject size: " . 
@@ -322,15 +318,13 @@ class Passkey_Management_Controller
 				$params['response']['attestationObject'],
 				$params['id'],
 				$this->account_id,
+				$challenge,
 				$deviceName,
 				true
 			);
 
 			if ($success)
 			{
-                // Clear the challenge from session after use
-                unset($_SESSION['webauthn_challenge']);
-                
                 // Record successful operation for audit logging
                 $this->logAuditEvent('passkey_register', 'Registered new passkey: ' . $deviceName);
                 
@@ -494,23 +488,6 @@ class Passkey_Management_Controller
                isset($params['response']) &&
                isset($params['response']['clientDataJSON']) &&
                isset($params['response']['attestationObject']);
-    }
-    
-    /**
-     * Check if the current challenge is valid and not expired
-     * @return bool
-     */
-    private function isValidChallenge(): bool
-    {
-        if (!isset($_SESSION['webauthn_challenge']) || 
-            !is_array($_SESSION['webauthn_challenge']) ||
-            !isset($_SESSION['webauthn_challenge']['value']) ||
-            !isset($_SESSION['webauthn_challenge']['expires'])) {
-            return false;
-        }
-        
-        // Check if challenge has expired
-        return $_SESSION['webauthn_challenge']['expires'] > time();
     }
     
     /**

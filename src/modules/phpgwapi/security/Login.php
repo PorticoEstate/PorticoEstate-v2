@@ -396,6 +396,16 @@ class Login
 		if (empty($_POST['data']))
 		{
 			// Refactored WebAuthn form that uses passkey-client.js
+			$auth_passkeys = new \App\modules\phpgwapi\security\Auth\Auth_Passkeys();
+			$authenticationOptionsJson = json_encode(
+				$auth_passkeys->getAuthenticationArgs(),
+				JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
+			);
+			if ($authenticationOptionsJson === false)
+			{
+				throw new \RuntimeException('Unable to create passkey authentication options.');
+			}
+
 			$html = <<<HTML
 <!DOCTYPE html>
 <html>
@@ -493,20 +503,7 @@ class Login
 				loadingSpinner.style.display = 'block';
 				showStatus('Starting authentication...', 'info');
 				
-				// Generate a random challenge on the client side
-				const challenge = new Uint8Array(32);
-				window.crypto.getRandomValues(challenge);
-				
-				// Create a simplified publicKey request using the same options format
-				// that the prepareRequestOptions function in passkey-client.js expects
-				const publicKeyOptions = {
-					challenge: challenge.buffer,
-					timeout: 60000,
-					userVerification: 'preferred',
-					rpId: window.location.hostname
-				};
-				
-				console.log('Starting WebAuthn authentication with client-side challenge');
+				const publicKeyOptions = prepareRequestOptions({$authenticationOptionsJson});
 				
 				// Start authentication request
 				const credential = await navigator.credentials.get({
@@ -518,9 +515,6 @@ class Login
 				
 				// Prepare response using the utility functions from passkey-client.js
 				const response = prepareAuthenticationResponse(credential);
-				
-				// Add client challenge to the response
-				response.clientChallenge = PasskeyUtils.arrayBufferToBase64url(challenge.buffer);
 				
 				// Submit the form with the response data
 				const form = document.createElement('form');
@@ -557,16 +551,34 @@ HTML;
 			// Process passkey authentication from client
 			try
 			{
+				$auth_passkeys = new \App\modules\phpgwapi\security\Auth\Auth_Passkeys();
+				$challenge = $auth_passkeys->consumeAuthenticationChallenge();
+				if ($challenge === null)
+				{
+					throw new \Exception('Passkey challenge is missing, expired, or already used.');
+				}
+
 				// Parse credential data from POST
 				$response = json_decode($_POST['data'], true);
 
-				if (!$response || !isset($response['id']) || !isset($response['response']))
+				if (
+					!is_array($response)
+					|| !isset(
+						$response['id'],
+						$response['rawId'],
+						$response['response']['clientDataJSON'],
+						$response['response']['authenticatorData'],
+						$response['response']['signature']
+					)
+					|| !is_string($response['id'])
+					|| !is_string($response['rawId'])
+					|| !is_string($response['response']['clientDataJSON'])
+					|| !is_string($response['response']['authenticatorData'])
+					|| !is_string($response['response']['signature'])
+				)
 				{
-					return null; // Invalid data
+					throw new \Exception('Invalid passkey response data.');
 				}
-
-				// Initialize the Auth_Passkeys class
-				$auth_passkeys = new \App\modules\phpgwapi\security\Auth\Auth_Passkeys();
 
 				// Get credential details from the response
 				$clientDataJSON = $response['response']['clientDataJSON'];
@@ -574,14 +586,9 @@ HTML;
 				$signature = $response['response']['signature'];
 				$credentialId = $response['rawId'];
 				$userHandle = $response['response']['userHandle'] ?? null;
-
-				// Skip using the session for challenge - instead set it directly from the client
-				if (isset($response['clientChallenge']))
+				if ($userHandle !== null && !is_string($userHandle))
 				{
-					// Decode the client challenge
-					$clientChallenge = \App\modules\phpgwapi\security\Auth\Auth_Passkeys::base64url_decode($response['clientChallenge']);
-					// Store it in the session for the Auth_Passkeys class to use
-					$_SESSION['webauthn_challenge'] = $clientChallenge;
+					throw new \Exception('Invalid passkey user handle.');
 				}
 
 				try
@@ -593,7 +600,8 @@ HTML;
 						$authenticatorData,
 						$signature,
 						$credentialId,
-						$userHandle
+						$userHandle,
+						$challenge
 					);
 
 					if (!empty($account) && $account['account_status'] === 'A')

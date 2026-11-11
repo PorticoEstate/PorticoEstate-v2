@@ -25,6 +25,7 @@ class Auth_Passkeys
     private WebAuthn $webAuthn;
     private string $appName = 'PorticoEstate'; // Default, consider making configurable
     private string $rpId; // Relying Party ID (domain name)
+    private string $origin;
     private $serverSettings;
 
     public function __construct()
@@ -32,29 +33,27 @@ class Auth_Passkeys
         $this->db = \App\Database\Db::getInstance();
         $this->serverSettings = Settings::getInstance()->get('server');
 
-        // Determine Relying Party ID (usually the domain name without protocol or port)
-        // Ensure this matches the domain the user sees in the browser
-        // Get host from HTTP_HOST or SERVER_NAME, fallback to localhost
-        $host = $_SERVER['HTTP_HOST'] ?? $_SERVER['SERVER_NAME'] ?? 'localhost';
-
-        // Remove port number if present
-        if (strpos($host, ':') !== false)
+        // Bind credentials to the configured browser-facing URL, not request Host or proxy headers.
+        $configuredUrl = trim((string) ($this->serverSettings['webserver_url'] ?? ''));
+        $urlParts = parse_url($configuredUrl);
+        $scheme = is_array($urlParts) ? strtolower((string) ($urlParts['scheme'] ?? '')) : '';
+        $host = is_array($urlParts) ? strtolower(rtrim((string) ($urlParts['host'] ?? ''), '.')) : '';
+        if ($host === '' || !in_array($scheme, ['https', 'http'], true)
+            || ($scheme !== 'https' && $host !== 'localhost'))
         {
-            $host = strtok($host, ':');
+            throw new \RuntimeException('Passkeys require webserver_url to be the browser-visible HTTPS URL (HTTP localhost is allowed).');
         }
 
-        // Always use the full hostname as the rpId
         $this->rpId = $host;
-        error_log("Using full host as rpId: {$this->rpId}");
-
-        // Rather than constructing origins with schemes, let the library handle it
-        // The library will automatically construct the proper allowed origins
-        error_log("WebAuthn configuration - rpId: {$this->rpId}");
+        $port = $urlParts['port'] ?? null;
+        if (($port === 443 && $scheme === 'https') || ($port === 80 && $scheme === 'http'))
+        {
+            $port = null;
+        }
+        $this->origin = $scheme . '://' . $host . ($port ? ':' . $port : '');
 
         try
         {
-            // Pass null as the third parameter to let the library handle allowed origins
-            // Based on the error message, it seems the library has an issue with the format
             $this->webAuthn = new WebAuthn($this->appName, $this->rpId, null);
             // Add root certificate(s) if you want to verify attestation
             // $this->webAuthn->addRootCertificates('path/to/certificates.pem'); 
@@ -96,7 +95,7 @@ class Auth_Passkeys
 
         // Generate and store the challenge (raw binary in session, base64url for client)
         $rawChallenge = $this->webAuthn->getChallenge()->getBinaryString();
-        $_SESSION['webauthn_challenge'] = [
+        $_SESSION['webauthn_registration_challenge'] = [
             'value' => $rawChallenge,
             'expires' => time() + 300 // 5 minute expiration
         ];
@@ -180,66 +179,54 @@ class Auth_Passkeys
     }
 
     /**
-     * Ensure a WebAuthn challenge is properly formatted as base64url
-     * This handles any unusual formats like RFC 1342 encoded strings
-     * 
-     * @param mixed $challenge The challenge to format
-     * @return string Properly formatted base64url string
+     * Generate server-issued authentication options and save their challenge.
      */
-    private function ensureProperChallengeFormat($challenge): string
+    public function getAuthenticationArgs(): \stdClass
     {
-        // Handle ByteBuffer objects from lbuchs/webauthn
-        if (is_object($challenge) && method_exists($challenge, 'getBinaryString'))
+        ByteBuffer::$useBase64UrlEncoding = true;
+        $options = $this->webAuthn->getGetArgs([], 60, true, true, true, true, true, true);
+        $_SESSION['webauthn_login_challenge'] = [
+            'value' => $this->webAuthn->getChallenge()->getBinaryString(),
+            'expires' => time() + 300
+        ];
+
+        return $options->publicKey;
+    }
+
+    /**
+     * Take and consume the current login challenge, even if subsequent verification fails.
+     */
+    public function consumeAuthenticationChallenge(): ?string
+    {
+        $challenge = $_SESSION['webauthn_login_challenge'] ?? null;
+        unset($_SESSION['webauthn_login_challenge']);
+
+        if (!is_array($challenge) || !isset($challenge['value'], $challenge['expires'])
+            || !is_string($challenge['value']) || $challenge['value'] === ''
+            || (int) $challenge['expires'] <= time())
         {
-            // Store raw binary challenge in session for verification
-            $raw = $challenge->getBinaryString();
-            $_SESSION['webauthn_challenge'] = $raw;
-
-            // Log for debugging
-            error_log("WebAuthn challenge stored in session, length: " . strlen($raw));
-
-            // Return base64url encoded challenge for client
-            return self::base64url_encode($raw);
+            return null;
         }
 
-        if (is_string($challenge))
-        {
-            // Handle RFC 1342 encoded format: =?BINARY?B\?(.*?)\?=/', $challenge, $matches))
-            {
-                if (preg_match('/=\?BINARY\?B\\?(.*?)\\?=/', $challenge, $matches))
-                {
-                    $raw = base64_decode($matches[1]);
-                }
-                else
-                {
-                    throw new \Exception('Invalid challenge format: Unable to extract binary data');
-                }
-                $_SESSION['webauthn_challenge'] = $raw;
-                error_log("WebAuthn challenge from RFC 1342 format, length: " . strlen($raw));
-                return self::base64url_encode($raw);
-            }
+        return $challenge['value'];
+    }
 
-            // If it's already base64url encoded, try to decode and re-encode to verify
-            try
-            {
-                $raw = self::base64url_decode($challenge);
-                $_SESSION['webauthn_challenge'] = $raw;
-                error_log("WebAuthn challenge from base64url, length: " . strlen($raw));
-                return self::base64url_encode($raw);
-            }
-            catch (\Exception $e)
-            {
-                error_log("Challenge decode/encode failed: " . $e->getMessage());
-            }
+    /**
+     * Take and consume the current registration challenge, even if verification fails.
+     */
+    public function consumeRegistrationChallenge(): ?string
+    {
+        $challenge = $_SESSION['webauthn_registration_challenge'] ?? null;
+        unset($_SESSION['webauthn_registration_challenge']);
+
+        if (!is_array($challenge) || !isset($challenge['value'], $challenge['expires'])
+            || !is_string($challenge['value']) || $challenge['value'] === ''
+            || (int) $challenge['expires'] <= time())
+        {
+            return null;
         }
 
-        error_log("WebAuthn challenge in unexpected format: " . gettype($challenge));
-        if (is_object($challenge) || is_array($challenge))
-        {
-            error_log("Challenge content: " . json_encode($challenge));
-        }
-
-        throw new \Exception('Invalid challenge format');
+        return $challenge['value'];
     }
 
     /**
@@ -251,13 +238,24 @@ class Auth_Passkeys
      */
     public static function base64url_decode(string $base64url): string
     {
+        if ($base64url === '' || !preg_match('/\A[A-Za-z0-9_-]+\z/', $base64url))
+        {
+            throw new \InvalidArgumentException('Invalid base64url value');
+        }
+
         $base64 = strtr($base64url, '-_', '+/');
         $padding = strlen($base64) % 4;
         if ($padding > 0)
         {
             $base64 .= str_repeat('=', 4 - $padding);
         }
-        return base64_decode($base64);
+        $decoded = base64_decode($base64, true);
+        if ($decoded === false)
+        {
+            throw new \InvalidArgumentException('Invalid base64url value');
+        }
+
+        return $decoded;
     }
 
     /**
@@ -282,7 +280,7 @@ class Auth_Passkeys
      * @param bool $requireResidentKey Whether resident key was required during creation
      * @return bool True if registration was successful
      */
-    public function processRegistration(string $clientDataJSON, string $attestationObject, string $credentialId, int $account_id, string $deviceName = '', bool $requireResidentKey = true): bool
+    public function processRegistration(string $clientDataJSON, string $attestationObject, string $credentialId, int $account_id, string $challenge, string $deviceName = '', bool $requireResidentKey = true): bool
     {
         try
         {
@@ -326,34 +324,15 @@ class Auth_Passkeys
                 throw new \Exception('Failed to decode WebAuthn response data');
             }
 
-            // Extract the challenge value from the session
-            $sessionChallenge = null;
-            if (isset($_SESSION['webauthn_challenge']))
-            {
-                if (is_array($_SESSION['webauthn_challenge']) && isset($_SESSION['webauthn_challenge']['value']))
-                {
-                    // New format with expiration
-                    $sessionChallenge = $_SESSION['webauthn_challenge']['value'];
-                }
-                else
-                {
-                    // Legacy format (direct string)
-                    $sessionChallenge = $_SESSION['webauthn_challenge'];
-                }
-            }
-
-            if (!$sessionChallenge)
-            {
-                throw new \Exception('No valid challenge found in session');
-            }
+            $this->validateClientOrigin($clientDataJSONDecoded);
 
             $credentialData = $this->webAuthn->processCreate(
                 $clientDataJSONDecoded,
                 $attestationObjectDecoded,
-                $sessionChallenge, // Use the extracted challenge value, not the array
+                $challenge,
                 $requireResidentKey, // requireResidentKey
                 true,  // requireUserVerification
-                false // checkOrigin - Already checked by library constructor based on allowedOrigins
+                false // Do not require a trusted attestation root certificate
             );
 
             // Extract the sign count with proper checks
@@ -381,15 +360,11 @@ class Auth_Passkeys
                 $deviceName
             );
 
-            // Clear challenge from session after successful use
-            unset($_SESSION['webauthn_challenge']);
             return true;
         }
         catch (\Exception $e)
         {
             error_log('WebAuthn Registration Processing Error: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
-            // Optionally clear challenge on error? Depends on desired retry behavior.
-            // unset($_SESSION['webauthn_challenge']); 
             return false;
         }
     }
@@ -403,120 +378,53 @@ class Auth_Passkeys
      * @param string|null $userHandle Base64URL encoded userHandle (if available, from resident key)
      * @return array Account information (account_id, account_lid, account_status) or empty array on failure
      */
-    public function processAuthentication(string $clientDataJSON, string $authenticatorData, string $signature, string $credentialId, ?string $userHandle): array
+    public function processAuthentication(string $clientDataJSON, string $authenticatorData, string $signature, string $credentialId, ?string $userHandle, string $challenge): array
     {
         try
         {
-            // Properly decode Base64URL strings to binary
             $clientDataJSONDecoded = self::base64url_decode($clientDataJSON);
             $authenticatorDataDecoded = self::base64url_decode($authenticatorData);
             $signatureDecoded = self::base64url_decode($signature);
             $credentialIdDecoded = self::base64url_decode($credentialId);
-            $userHandleDecoded = $userHandle ? self::base64url_decode($userHandle) : null;
 
-            // Extract client challenge for verification
+            $this->validateClientOrigin($clientDataJSONDecoded);
             $clientDataArray = json_decode($clientDataJSONDecoded, true);
-            if (!$clientDataArray || !isset($clientDataArray['challenge']))
+            if (!$clientDataArray || !isset($clientDataArray['challenge']) || !is_string($clientDataArray['challenge']))
             {
                 throw new \Exception('Invalid client data: challenge not found');
             }
 
-            // Get session challenge
-            if (!$this->isValidSessionChallenge())
+            $clientChallenge = $clientDataArray['challenge'];
+            $sessionChallengeBase64 = self::base64url_encode($challenge);
+            if (!hash_equals($sessionChallengeBase64, $clientChallenge))
             {
-                throw new \Exception('Challenge not found or expired');
+                throw new \Exception('Challenge verification failed');
             }
 
-            // Get the challenge from session with proper structure
-            $sessionChallengeData = $_SESSION['webauthn_challenge'];
-            $sessionChallenge = $sessionChallengeData['value'];
-
-            // Get client challenge
-            $clientChallenge = $clientDataArray['challenge'];
-            $clientChallengeBinary = self::base64url_decode($clientChallenge);
-
-            // Get credential source from database
             $credentialSource = $this->getCredentialSourceById($credentialIdDecoded);
             if (!$credentialSource)
             {
                 throw new \Exception('Credential ID not found');
             }
 
-            // Verify the client challenge matches the session challenge
-            $sessionChallengeBase64 = self::base64url_encode($sessionChallenge);
-            if (!hash_equals($clientChallenge, $sessionChallengeBase64))
+            $this->webAuthn->processGet(
+                $clientDataJSONDecoded,
+                $authenticatorDataDecoded,
+                $signatureDecoded,
+                $credentialSource['public_key'],
+                $challenge,
+                $credentialSource['sign_count'],
+                true
+            );
+
+            $signCount = $this->webAuthn->getSignatureCounter();
+            if ($signCount !== null && $signCount > $credentialSource['sign_count'])
             {
-                throw new \Exception('Challenge verification failed');
+                $this->updateCredentialCounter($credentialIdDecoded, $signCount);
             }
 
-            try
-            {
-                // Verify WebAuthn assertion
-                if ($this->manuallyVerifyWebAuthnAssertion(
-                    $clientDataJSONDecoded,
-                    $authenticatorDataDecoded,
-                    $signatureDecoded,
-                    $credentialSource['public_key'],
-                    $sessionChallenge
-                ))
-                {
-                    // Extract sign count from authenticator data
-                    $newSignCount = 0;
-                    if (strlen($authenticatorDataDecoded) >= 37)
-                    {
-                        $countBytes = substr($authenticatorDataDecoded, 33, 4);
-                        $newSignCount = unpack('N', $countBytes)[1];
-                    }
-
-                    // Update the sign count if needed
-                    if ($newSignCount > $credentialSource['sign_count'])
-                    {
-                        $this->updateCredentialCounter($credentialIdDecoded, $newSignCount);
-                    }
-
-                    // Update last login timestamp
-                    $this->update_lastlogin($credentialSource['account_id'], $_SERVER['REMOTE_ADDR'] ?? '');
-
-                    // Get the account data associated with this credential
-                    $account = $this->getAccountById($credentialSource['account_id']);
-
-                    // Clear challenge from session after successful use
-                    unset($_SESSION['webauthn_challenge']);
-
-                    return $account;
-                }
-
-                // If manual verification fails, try the library with strict challenge checking
-                $signCount = $this->webAuthn->processGet(
-                    $clientDataJSONDecoded,
-                    $authenticatorDataDecoded,
-                    $signatureDecoded,
-                    $credentialSource['public_key'],
-                    $credentialSource['sign_count'],
-                    $sessionChallenge // Use the proper session challenge
-                );
-
-                // Update the sign count if needed
-                if ($signCount > $credentialSource['sign_count'])
-                {
-                    $this->updateCredentialCounter($credentialIdDecoded, $signCount);
-                }
-
-                // Update last login timestamp
-                $this->update_lastlogin($credentialSource['account_id'], $_SERVER['REMOTE_ADDR'] ?? '');
-
-                // Get the account data associated with this credential
-                $account = $this->getAccountById($credentialSource['account_id']);
-
-                // Clear challenge from session after successful use
-                unset($_SESSION['webauthn_challenge']);
-
-                return $account;
-            }
-            catch (\Exception $innerEx)
-            {
-                throw new \Exception('WebAuthn assertion verification failed: ' . $innerEx->getMessage());
-            }
+            $this->update_lastlogin($credentialSource['account_id'], $_SERVER['REMOTE_ADDR'] ?? '');
+            return $this->getAccountById($credentialSource['account_id']);
         }
         catch (\Exception $e)
         {
@@ -524,43 +432,6 @@ class Auth_Passkeys
             error_log('Authentication error: ' . $e->getMessage());
             return [];
         }
-    }
-
-    /**
-     * Check if the current challenge in session is valid and not expired
-     * @return bool
-     */
-    private function isValidSessionChallenge(): bool
-    {
-        if (!isset($_SESSION['webauthn_challenge']))
-        {
-            return false;
-        }
-
-        // Check for new format with expiration
-        if (is_array($_SESSION['webauthn_challenge']))
-        {
-            if (
-                !isset($_SESSION['webauthn_challenge']['value']) ||
-                !isset($_SESSION['webauthn_challenge']['expires'])
-            )
-            {
-                return false;
-            }
-
-            // Check if challenge has expired
-            return $_SESSION['webauthn_challenge']['expires'] > time();
-        }
-
-        // Legacy format (just a string value) - consider valid but migrate to new format
-        // This provides backward compatibility
-        $challenge = $_SESSION['webauthn_challenge'];
-        $_SESSION['webauthn_challenge'] = [
-            'value' => $challenge,
-            'expires' => time() + 300 // 5 minute expiration
-        ];
-
-        return true;
     }
 
     /**
@@ -586,6 +457,16 @@ class Auth_Passkeys
         {
             error_log('Error retrieving account information: ' . $e->getMessage());
             return [];
+        }
+    }
+
+    private function validateClientOrigin(string $clientDataJSON): void
+    {
+        $clientData = json_decode($clientDataJSON);
+        if (!is_object($clientData) || !isset($clientData->origin) || !is_string($clientData->origin)
+            || !hash_equals($this->origin, $clientData->origin) || !empty($clientData->crossOrigin))
+        {
+            throw new \Exception('Invalid WebAuthn origin');
         }
     }
 
@@ -998,84 +879,4 @@ class Auth_Passkeys
         return $this->webAuthn;
     }
 
-    /**
-     * Manually verify a WebAuthn assertion without using the library's challenge validation
-     * 
-     * @param string $clientDataJSON Raw client data JSON
-     * @param string $authenticatorData Raw authenticator data
-     * @param string $signature Raw signature bytes
-     * @param string $publicKey PEM formatted public key
-     * @param string $challenge Expected challenge (binary)
-     * @return bool True if verification succeeds
-     */
-    private function manuallyVerifyWebAuthnAssertion(
-        string $clientDataJSON,
-        string $authenticatorData,
-        string $signature,
-        string $publicKey,
-        string $challenge
-    ): bool
-    {
-        try
-        {
-            // 1. Parse clientDataJSON
-            $clientDataArray = json_decode($clientDataJSON, true);
-            if (!$clientDataArray || !isset($clientDataArray['type']) || !isset($clientDataArray['challenge']))
-            {
-                return false;
-            }
-
-            // 2. Verify that the type is webauthn.get
-            if ($clientDataArray['type'] !== 'webauthn.get')
-            {
-                return false;
-            }
-
-            // 3. Verify challenge matches what we expect (using constant-time comparison)
-            $expectedChallenge = self::base64url_encode($challenge);
-            if (!hash_equals($expectedChallenge, $clientDataArray['challenge']))
-            {
-                return false;
-            }
-
-            // 4. Prepare client data hash
-            $clientDataHash = hash('sha256', $clientDataJSON, true);
-
-            // 5. Prepare the signature base
-            $signatureBase = $authenticatorData . $clientDataHash;
-
-            // 6. Verify the signature
-            $key = openssl_pkey_get_public($publicKey);
-            if (!$key)
-            {
-                return false;
-            }
-
-            // Determine algorithm based on key type
-            $keyDetails = openssl_pkey_get_details($key);
-            if (!$keyDetails)
-            {
-                return false;
-            }
-
-            // Use appropriate verification method based on key type
-            if (isset($keyDetails['ec']))
-            {
-                // EC key (like P-256)
-                return openssl_verify($signatureBase, $signature, $key, OPENSSL_ALGO_SHA256) === 1;
-            }
-            elseif (isset($keyDetails['rsa']))
-            {
-                // RSA key
-                return openssl_verify($signatureBase, $signature, $key, OPENSSL_ALGO_SHA256) === 1;
-            }
-
-            return false;
-        }
-        catch (\Exception $e)
-        {
-            error_log('Manual WebAuthn verification error: ' . $e->getMessage());
-            return false;
-        }
-    }
 }

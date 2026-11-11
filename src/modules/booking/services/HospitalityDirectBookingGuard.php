@@ -55,6 +55,31 @@ final class HospitalityDirectBookingGuard
     // ═══════════════════════════════════════════════════════════════════
 
     /**
+     * THE one reading of a hospitality `active` flag in a request body: 1, 0, or null when the value is
+     * not one of the six spellings the admin UI and the API describe. The controller applies it ONCE and
+     * hands the result to this guard AND to the repository, so the value the guard judges is the value
+     * the row holds.
+     *
+     * It exists because bb_hospitality.active is a smallint that Postgres fills from whatever string it
+     * is bound: a boolean parse reads "01", "+1" and "0001" as OFF (the guard skipped its check), while
+     * Postgres stores them as 1. Nothing else is accepted, so nothing is reinterpreted: "true", "on",
+     * "yes", " 1", "", "abc", 2, 1.0 and arrays are not flags (the controller answers 422).
+     *
+     * @param mixed $value
+     * @return int|null 1 for true, 1, "1"; 0 for false, 0, "0"; null for everything else
+     */
+    public static function normaliseActive($value): ?int
+    {
+        if ($value === true || $value === 1 || $value === '1') {
+            return 1;
+        }
+        if ($value === false || $value === 0 || $value === '0') {
+            return 0;
+        }
+        return null;
+    }
+
+    /**
      * Does this resource row have direct booking? Reads direct_booking ONLY (never simple_booking).
      * null, '', false, 0 and '0' are "not set"; anything else is.
      */
@@ -170,8 +195,10 @@ final class HospitalityDirectBookingGuard
      */
     public function checkHospitalityCreate(array $body): ?array
     {
+        // Absent or null = the column default, 1. A value that is not a flag is checked as ON (fail closed):
+        // the controller refuses it before it gets here, so this is for a caller that skips the controller.
         $after = [
-            'active' => self::truthy($body['active'] ?? 1) ? 1 : 0,
+            'active' => self::normaliseActive($body['active'] ?? 1) ?? 1,
             'resource_id' => (int)($body['resource_id'] ?? 0),
         ];
         return $this->hospitalitySaveRefusal(null, $after, []);
@@ -185,8 +212,9 @@ final class HospitalityDirectBookingGuard
      */
     public function checkHospitalityUpdate(array $existing, array $body): ?array
     {
+        // Absent or null = the stored value stays. A value that is not a flag is checked as ON (fail closed).
         $after = [
-            'active' => array_key_exists('active', $body) ? (self::truthy($body['active']) ? 1 : 0) : (int)$existing['active'],
+            'active' => ($body['active'] ?? null) === null ? (int)$existing['active'] : (self::normaliseActive($body['active']) ?? 1),
             'resource_id' => array_key_exists('resource_id', $body) ? (int)$body['resource_id'] : (int)$existing['resource_id'],
         ];
         $before = ['active' => (int)$existing['active'], 'resource_id' => (int)$existing['resource_id']];
@@ -396,11 +424,5 @@ final class HospitalityDirectBookingGuard
     private static function joinNames(array $names): string
     {
         return implode(', ', $names);
-    }
-
-    /** A JSON/form value as the admin UI sends it: 1/0, true/false, "1"/"0". */
-    private static function truthy($value): bool
-    {
-        return filter_var($value, FILTER_VALIDATE_BOOLEAN);
     }
 }

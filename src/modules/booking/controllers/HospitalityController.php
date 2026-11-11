@@ -48,6 +48,46 @@ class HospitalityController
 	}
 
 	/**
+	 * Reads `active` ONCE, to 0|1, and writes that back into the body, so the guard and the repository
+	 * both get the same value: the guard has to judge what the row will hold. (bb_hospitality.active is
+	 * a smallint, and Postgres stores the raw string "01" or "+1" as 1.) Only true/false, 1/0 and "1"/"0"
+	 * are accepted (HospitalityDirectBookingGuard::normaliseActive); anything else is refused, not guessed.
+	 *
+	 * An absent or null `active` is dropped from the body: create then takes the column default (1) and
+	 * update leaves the column alone, so a rename never switches a hospitality off.
+	 *
+	 * @param array<string, mixed> $body
+	 * @return bool false when `active` is present but is not a flag ($body is then left as it was)
+	 */
+	private function normaliseActive(array &$body): bool
+	{
+		if (($body['active'] ?? null) === null) {
+			unset($body['active']);
+			return true;
+		}
+		$active = HospitalityDirectBookingGuard::normaliseActive($body['active']);
+		if ($active === null) {
+			return false;
+		}
+		$body['active'] = $active;
+		return true;
+	}
+
+	/**
+	 * 422 for an `active` that is not a flag. The generic «Field %1: Invalid format» text, already
+	 * translated in no/nn/en. Its key has spaces, so it cannot take a `booking.` prefix and is looked up
+	 * in the current module, like the legacy forms do.
+	 */
+	private function refuseInvalidActive(Response $response): Response
+	{
+		$response->getBody()->write(json_encode([
+			'code' => 'invalid_active',
+			'error' => lang('Field %1: Invalid format', lang('booking.active')),
+		]));
+		return $response->withHeader('Content-Type', 'application/json')->withStatus(422);
+	}
+
+	/**
 	 * Has the row been modified after the version the client holds (X-If-Modified-Since)?
 	 *
 	 * `modified` is stored as naive UTC, so it is read as UTC here instead of in whatever zone PHP
@@ -133,6 +173,10 @@ class HospitalityController
 			if (empty($body['resource_id']) || empty($body['name'])) {
 				$response->getBody()->write(json_encode(['error' => 'resource_id and name are required']));
 				return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+			}
+
+			if (!$this->normaliseActive($body)) {
+				return $this->refuseInvalidActive($response);
 			}
 
 			// A resource with direct booking cannot be linked to hospitality (operator 2026-11-11).
@@ -253,6 +297,10 @@ class HospitalityController
 			}
 
 			$body = $request->getParsedBody() ?? json_decode($request->getBody()->getContents(), true) ?? [];
+
+			if (!$this->normaliseActive($body)) {
+				return $this->refuseInvalidActive($response);
+			}
 
 			// Moving the hospitality to a resource, or re-activating it, links resources to it again:
 			// refuse when one of them has direct booking. Any other edit (name, deadlines, flags)

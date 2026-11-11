@@ -5,7 +5,8 @@ Mutation check for tests/hospitality-direct-booking-guard/run.php.
   python3 tests/hospitality-direct-booking-guard/mutate.py
 
 A green harness proves nothing until it is shown to go RED. This copies HospitalityDirectBookingGuard,
-breaks ONE rule in the copy, runs the harness against the copy (GUARD_FILE), and requires that:
+breaks ONE rule in the copy, runs the harness against the copy (GUARD_FILE, or CONTROLLER_FILE for a
+mutant of HospitalityController), and requires that:
   1. the mutation text was really found exactly once (a mutation that did not apply would "survive"),
   2. the harness exits 1,
   3. the row(s) that are MEANT to catch this mutant are among the failures.
@@ -20,9 +21,11 @@ import tempfile
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.abspath(os.path.join(HERE, "..", ".."))
 GUARD = os.path.join(ROOT, "src/modules/booking/services/HospitalityDirectBookingGuard.php")
+CONTROLLER = os.path.join(ROOT, "src/modules/booking/controllers/HospitalityController.php")
 PHP = shutil.which("php") or "php"
 
-# (id, description, old text, new text, row-name fragments that MUST fail)
+# (id, description, old text, new text, row-name fragments that MUST fail[, "controller" when the mutant is of
+# HospitalityController instead of the guard])
 MUTANTS = [
     ("M1", "resource side: an OWN link is ignored",
      "        foreach ($linkRows as $row) {\n            if ((int)($row['hospitality_active'] ?? 0) !== 1) {",
@@ -87,12 +90,89 @@ MUTANTS = [
      "        if ($value === null || $value === '' || $value === false) {",
      "        if ($value === null || $value === false) {",
      ["has/empty string", "res/before \"\" (cleared) -> set"]),
+    # ── F1: the hospitality `active` flag ──────────────────────────────────────────────────────
+    ("M15", "active: create reads the flag with a boolean parse again (the F1 defect: \"01\" is skipped)",
+     "'active' => self::normaliseActive($body['active'] ?? 1) ?? 1,",
+     "'active' => filter_var($body['active'] ?? 1, FILTER_VALIDATE_BOOLEAN) ? 1 : 0,",
+     ["active/create guard \"01\"", "active/create guard \"+1\"", "active/create guard \"0001\""]),
+    ("M16", "active: update reads the flag with a boolean parse again (re-activating with \"01\" slips through)",
+     "(self::normaliseActive($body['active']) ?? 1),",
+     "(filter_var($body['active'], FILTER_VALIDATE_BOOLEAN) ? 1 : 0),",
+     ["active/update guard \"01\"", "active/update guard \"+1\"", "active/update guard \"0001\""]),
+    ("M17", "active: create fails OPEN on a value that is not a flag",
+     "'active' => self::normaliseActive($body['active'] ?? 1) ?? 1,",
+     "'active' => self::normaliseActive($body['active'] ?? 1) ?? 0,",
+     ["active/create guard \"abc\"", "active/create guard \"01\""]),
+    ("M18", "active: update fails OPEN on a value that is not a flag",
+     "(self::normaliseActive($body['active']) ?? 1),",
+     "(self::normaliseActive($body['active']) ?? 0),",
+     ["active/update guard \"abc\"", "active/update guard \"01\""]),
+    ("M19", "active: update always overwrites the stored value (an absent key is read as OFF)",
+     "($body['active'] ?? null) === null ? (int)$existing['active'] : ",
+     "false ? (int)$existing['active'] : ",
+     ["active/update: no active key on an INACTIVE hospitality"]),
+    ("M20", "active: a loose == compare reads \"01\", \"+1\", \" 1\" and \"0001\" as 1",
+     "if ($value === true || $value === 1 || $value === '1') {",
+     "if ($value === true || $value === 1 || $value == '1') {",
+     ["active/norm \"01\"", "active/norm \"+1\"", "active/norm \"0001\"", "active/norm \" 1\""]),
+    ("M21", "active: the words true / on / yes are accepted as ON",
+     "if ($value === true || $value === 1 || $value === '1') {",
+     "if ($value === true || $value === 1 || $value === '1' || in_array($value, ['true', 'on', 'yes'], true)) {",
+     ["active/norm \"true\"", "active/norm \"on\"", "active/norm \"yes\""]),
+    ("M22", "active: a value that is not a flag is read as OFF (a typo would de-activate)",
+     "        if ($value === false || $value === 0 || $value === '0') {\n            return 0;\n        }\n        return null;",
+     "        if ($value === false || $value === 0 || $value === '0') {\n            return 0;\n        }\n        return 0;",
+     ["active/norm \"abc\"", "active/norm \"\"", "active/controller hands the repository \"abc\""]),
+    ("M23", "active: any positive int is ON by truthiness (2 would be ON, and Postgres would store 2)",
+     "if ($value === true || $value === 1 || $value === '1') {",
+     "if ($value === true || (is_int($value) && $value > 0) || $value === '1') {",
+     ["active/norm int 2", "active/never stored as 2 int 2"]),
+    ("M24", "active: a boolean false is not a flag",
+     "if ($value === false || $value === 0 || $value === '0') {",
+     "if ($value === 0 || $value === '0') {",
+     ["active/norm false"]),
+    ("M25", "active: a float 1.0 (json \"1.0\") is accepted as ON",
+     "if ($value === true || $value === 1 || $value === '1') {",
+     "if ($value === true || $value === 1 || $value === 1.0 || $value === '1') {",
+     ["active/norm float 1.0"]),
+    ("M26", "controller: the RAW value is passed through to the repository (the normalised one is not written back)",
+     "\t\t$body['active'] = $active;\n\t\treturn true;",
+     "\t\treturn true;",
+     ["active/controller hands the repository true", "active/controller hands the repository \"1\"",
+      "active/controller hands the repository \"0\"", "active/controller hands the repository false"],
+     "controller"),
+    ("M27", "controller: a value that is not a flag is accepted and handed on as it came",
+     "\t\tif ($active === null) {\n\t\t\treturn false;\n\t\t}",
+     "\t\tif ($active === null) {\n\t\t\treturn true;\n\t\t}",
+     ["active/controller hands the repository \"01\"", "active/controller hands the repository \"abc\""],
+     "controller"),
+    ("M28", "controller: store() no longer reads active at all",
+     "\t\t\tif (!$this->normaliseActive($body)) {\n\t\t\t\treturn $this->refuseInvalidActive($response);\n\t\t\t}\n\n\t\t\t// A resource with direct booking",
+     "\t\t\t// A resource with direct booking",
+     ["active/source order: store() reads active before the guard", "active/source order: store() reads active before the repository"],
+     "controller"),
+    ("M29", "controller: update() no longer reads active at all",
+     "\t\t\tif (!$this->normaliseActive($body)) {\n\t\t\t\treturn $this->refuseInvalidActive($response);\n\t\t\t}\n\n\t\t\t// Moving the hospitality",
+     "\t\t\t// Moving the hospitality",
+     ["active/source order: update() reads active before the guard", "active/source order: update() reads active before the repository"],
+     "controller"),
+    ("M30", "controller: an ABSENT active is always set (a plain rename of a hospitality would switch it off)",
+     "\t\tif (($body['active'] ?? null) === null) {\n\t\t\tunset($body['active']);\n\t\t\treturn true;\n\t\t}",
+     "\t\tif (($body['active'] ?? null) === null) {\n\t\t\t$body['active'] = 0;\n\t\t\treturn true;\n\t\t}",
+     ["active/controller: an ABSENT active stays absent", "active/controller: a null active is dropped"],
+     "controller"),
+    ("M31", "controller: a null active is kept in the body (update would write NULL)",
+     "\t\t\tunset($body['active']);\n",
+     "",
+     ["active/controller: a null active is dropped"],
+     "controller"),
 ]
 
 
-def run(guard_file):
+def run(guard_file, controller_file=CONTROLLER):
     env = dict(os.environ)
     env["GUARD_FILE"] = guard_file
+    env["CONTROLLER_FILE"] = controller_file
     p = subprocess.run([PHP, os.path.join(HERE, "run.php")], env=env, capture_output=True, text=True)
     return p.returncode, p.stdout + p.stderr
 
@@ -103,31 +183,38 @@ def main():
     try:
         with open(GUARD, encoding="utf-8") as fh:
             original = fh.read()
+        with open(CONTROLLER, encoding="utf-8") as fh:
+            original_controller = fh.read()
 
         base = os.path.join(tmp, "baseline.php")
         with open(base, "w", encoding="utf-8") as fh:
             fh.write(original)
-        rc, out = run(base)
+        base_controller = os.path.join(tmp, "baselineController.php")
+        with open(base_controller, "w", encoding="utf-8") as fh:
+            fh.write(original_controller)
+        rc, out = run(base, base_controller)
         print(f"baseline rc={rc}  {out.strip().splitlines()[-1]}")
         if rc != 0:
             print("BASELINE IS RED - mutation results would mean nothing")
             return 1
 
-        for mid, desc, old, new, must_fail in MUTANTS:
-            count = original.count(old)
+        for mid, desc, old, new, must_fail, *target in MUTANTS:
+            is_controller = target == ["controller"]
+            source = original_controller if is_controller else original
+            count = source.count(old)
             if count != 1:
                 print(f"{mid:4} NOT APPLIED ({count} matches) - {desc}")
                 bad += 1
                 continue
             path = os.path.join(tmp, f"{mid}.php")
             with open(path, "w", encoding="utf-8") as fh:
-                fh.write(original.replace(old, new))
+                fh.write(source.replace(old, new))
             lint = subprocess.run([PHP, "-l", path], capture_output=True, text=True)
             if lint.returncode != 0:
                 print(f"{mid:4} MUTANT DOES NOT PARSE - {desc}: {lint.stdout.strip()}")
                 bad += 1
                 continue
-            rc, out = run(path)
+            rc, out = run(base, path) if is_controller else run(path, base_controller)
             failed = [l for l in out.splitlines() if l.startswith("FAIL")]
             missing = [m for m in must_fail if not any(m in l for l in failed)]
             if rc != 1:

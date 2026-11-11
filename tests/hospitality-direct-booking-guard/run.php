@@ -12,15 +12,27 @@
  *
  * Plain PHP on purpose: the pe-api image is built --no-dev, so PHPUnit does not exist there.
  *
- * GUARD_FILE (optional) points at an alternative copy of the class — used by mutate.py to prove that
- * each deliberately broken copy turns THIS harness red on the row that is meant to catch it.
+ * It also covers the hospitality `active` flag (F1 of the Opus final): the one reading of it, what the
+ * guard then decides on it (create and update), and what the controller hands the repository.
+ *
+ * GUARD_FILE and CONTROLLER_FILE (optional) point at alternative copies of the guard and of
+ * HospitalityController — used by mutate.py to prove that each deliberately broken copy turns THIS
+ * harness red on the row that is meant to catch it.
+ *
+ *   php tests/hospitality-direct-booking-guard/run.php --pg-oracle | docker exec -i portico_postgres \
+ *       psql -U postgres -d portico_ebe -v ON_ERROR_STOP=1 -f -
+ * prints the `active` table as a self-checking SQL block: Postgres casts every raw value to smallint
+ * (what PDO would store) and the block fails when that disagrees with the normalised value or with the
+ * `pg` column below. Touches no table.
  *
  * Exit code: 0 all pass, 1 any failure. Last line of output is the verdict.
  */
 
 $root = dirname(__DIR__, 2);
 require_once getenv('GUARD_FILE') ?: $root . '/src/modules/booking/services/HospitalityDirectBookingGuard.php';
+require_once getenv('CONTROLLER_FILE') ?: $root . '/src/modules/booking/controllers/HospitalityController.php';
 
+use App\modules\booking\controllers\HospitalityController;
 use App\modules\booking\services\HospitalityDirectBookingGuard as G;
 
 const PAST = 1745413200;       // 2025-04-23, resource 93's real direct_booking
@@ -121,6 +133,169 @@ $expect('remote/re-add an already-active row of an existing conflict: no-op', G:
 $expect('remote/deactivate an existing conflict: the remedy', G::remoteLinkBlocked($active, true, false, $res(PAST)), false);
 $expect('remote/add to an INACTIVE hospitality: not an active link', G::remoteLinkBlocked($inactive, false, true, $res(PAST)), false);
 $expect('remote/toggle a dead row to dead', G::remoteLinkBlocked($active, false, false, $res(PAST)), false);
+
+// ── hospitality `active`: ONE reading, used for the guard AND the repository ─────────────────
+// F1 of the Opus final: the guard read "01" / "+1" as OFF (a boolean parse) and skipped its check,
+// while Postgres stores both as 1 in the smallint column, so a crafted request created or re-activated
+// an ACTIVE hospitality on a direct-booking resource. The rule (pe-ceo 42623): accept ONLY true/false,
+// 1/0 and "1"/"0"; everything else is refused with a 422, never reinterpreted. null / absent = today's
+// default (create: 1; update: the column is left alone).
+//
+// Columns: label | raw value as a request body can carry it | norm = G::normaliseActive (1, 0, or null
+// = not a flag, the controller answers 422) | pg = what Postgres puts in bb_hospitality.active when
+// PDO binds the raw value (an int, 'error' = rejected, nothing stored, null = never bound), measured on
+// PG 15.0 and re-derivable with --pg-oracle | guard = what checkHospitalityCreate/Update do with it:
+// 'checked' = went on to read the resource (so it WOULD refuse a direct-booking one), 'skipped' = returned
+// null without looking. A non-flag is checked (fail closed).
+$activeCases = [
+    // accepted: exactly these six
+    ['int 1', 1, 1, 1, 'checked'],
+    ['int 0', 0, 0, 0, 'skipped'],
+    ['"1"', '1', 1, 1, 'checked'],
+    ['"0"', '0', 0, 0, 'skipped'],
+    ['true', true, 1, 1, 'checked'],
+    ['false', false, 0, 'error', 'skipped'],
+    // F1: Postgres stores these as 1 (the boolean parse said OFF) -> refused, not read
+    ['"01"', '01', null, 1, 'checked'],
+    ['"+1"', '+1', null, 1, 'checked'],
+    ['" 1"', ' 1', null, 1, 'checked'],
+    ['"1 "', '1 ', null, 1, 'checked'],
+    ['"001"', '001', null, 1, 'checked'],
+    ['"0001"', '0001', null, 1, 'checked'],
+    ['"1\n"', "1\n", null, 1, 'checked'],
+    // Postgres stores these as 0
+    ['"00"', '00', null, 0, 'checked'],
+    ['"+0"', '+0', null, 0, 'checked'],
+    ['"-0"', '-0', null, 0, 'checked'],
+    // words: the boolean parse read the first three as ON, Postgres rejects every one of them
+    ['"true"', 'true', null, 'error', 'checked'],
+    ['"TRUE"', 'TRUE', null, 'error', 'checked'],
+    ['" Yes "', ' Yes ', null, 'error', 'checked'],
+    ['"on"', 'on', null, 'error', 'checked'],
+    ['"yes"', 'yes', null, 'error', 'checked'],
+    ['"false"', 'false', null, 'error', 'checked'],
+    ['"off"', 'off', null, 'error', 'checked'],
+    ['"no"', 'no', null, 'error', 'checked'],
+    // not a flag at all
+    ['""', '', null, 'error', 'checked'],
+    ['"   "', '   ', null, 'error', 'checked'],
+    ['"abc"', 'abc', null, 'error', 'checked'],
+    ['"1abc"', '1abc', null, 'error', 'checked'],
+    ['"true1"', 'true1', null, 'error', 'checked'],
+    ['int 2 (Postgres would store 2)', 2, null, 2, 'checked'],
+    ['"2" (Postgres would store 2)', '2', null, 2, 'checked'],
+    ['int -1 (Postgres would store -1)', -1, null, -1, 'checked'],
+    ['"-1"', '-1', null, -1, 'checked'],
+    ['"-01"', '-01', null, -1, 'checked'],
+    ['float 1.0 (json "1.0")', 1.0, null, 1, 'checked'],
+    ['float 0.0', 0.0, null, 0, 'checked'],
+    ['float 0.5', 0.5, null, 'error', 'checked'],
+    ['"1.0"', '1.0', null, 'error', 'checked'],
+    ['"1e0"', '1e0', null, 'error', 'checked'],
+    ['"0x1"', '0x1', null, 'error', 'checked'],
+    ['INF (json 1e999)', INF, null, 'error', 'checked'], // NAN cannot come out of json_decode
+    ['[]', [], null, null, 'checked'],
+    ['["1"]', ['1'], null, null, 'checked'],
+];
+
+if (in_array('--pg-oracle', $argv ?? [], true)) {
+    $quote = static fn(string $s): string => "'" . str_replace("'", "''", $s) . "'";
+    $values = [];
+    foreach ($activeCases as [$label, $raw, $norm, $pg]) {
+        if ($pg === null) {
+            continue; // never reaches Postgres as a value: an array is not bindable
+        }
+        $bound = is_bool($raw) ? ($raw ? '1' : '') : (string)$raw; // what PDO::execute([...]) sends
+        $values[] = sprintf(
+            "(%s, convert_from(decode('%s', 'hex'), 'UTF8'), %s, %s)",
+            $quote($label), bin2hex($bound), $norm === null ? 'NULL::int' : $norm . '::int', $quote((string)$pg)
+        );
+    }
+    echo "DO \$oracle\$\nDECLARE c record; v smallint; got text; bad int := 0; n int := 0;\nBEGIN\n",
+        "  FOR c IN SELECT * FROM (VALUES\n    ", implode(",\n    ", $values), "\n  ) AS t(label, bound, norm, pg) LOOP\n",
+        "    n := n + 1;\n",
+        "    BEGIN v := c.bound::smallint; got := v::text;\n",
+        "    EXCEPTION WHEN invalid_text_representation OR numeric_value_out_of_range THEN v := NULL; got := 'error';\n",
+        "    END;\n",
+        "    IF got IS DISTINCT FROM c.pg THEN RAISE WARNING '% : pg column says %, Postgres gave %', c.label, c.pg, got; bad := bad + 1; END IF;\n",
+        // F1 itself: a value that is read (norm not null) must be the value Postgres would store
+        "    IF c.norm IS NOT NULL AND v IS NOT NULL AND c.norm <> v THEN RAISE WARNING '% : Postgres stores %, but it is read as %', c.label, v, c.norm; bad := bad + 1; END IF;\n",
+        // and a value Postgres would store as anything but 0/1 is never read as a flag
+        "    IF c.norm IS NOT NULL AND v IS NOT NULL AND v NOT IN (0, 1) THEN RAISE WARNING '% : Postgres would store %, but it is read as a flag', c.label, v; bad := bad + 1; END IF;\n",
+        "    RAISE NOTICE '% | postgres: % | normalised: %', rpad(c.label, 34), rpad(got, 6), coalesce(c.norm::text, 'null (422)');\n",
+        "  END LOOP;\n",
+        "  IF bad > 0 THEN RAISE EXCEPTION '% disagreement(s) between Postgres and the normalised value', bad; END IF;\n",
+        "  RAISE NOTICE 'ORACLE OK: % raw values, none is read as a different flag than Postgres would store', n;\n",
+        "END \$oracle\$;\n";
+    exit(0);
+}
+
+// The guard instance has NO database: reaching a lookup throws the typed-property Error, which is how a
+// row sees that the guard went on to check the resource ('checked'). Any other Error is a harness bug.
+$guard = (new ReflectionClass(G::class))->newInstanceWithoutConstructor();
+$decision = static function (callable $call): string {
+    try {
+        return $call() === null ? 'skipped' : 'refused';
+    } catch (Error $e) {
+        if (str_contains($e->getMessage(), 'must not be accessed before initialization') && str_contains($e->getMessage(), '::$db')) {
+            return 'checked';
+        }
+        throw $e;
+    }
+};
+// The controller step: HospitalityController::normaliseActive(&$body) reads `active` once and writes the
+// 0|1 back, which is what the repository then binds. Private, so reached by reflection, no constructor.
+$controller = (new ReflectionClass(HospitalityController::class))->newInstanceWithoutConstructor();
+$normaliseBody = new ReflectionMethod(HospitalityController::class, 'normaliseActive');
+$bodyAfter = static function (array $body) use ($controller, $normaliseBody): array {
+    $ok = $normaliseBody->invokeArgs($controller, [&$body]);
+    return [$ok, $body];
+};
+$inactive = ['id' => 1, 'active' => 0, 'resource_id' => 10]; // the stored hospitality an update re-activates (F1's H2)
+
+foreach ($activeCases as [$label, $raw, $norm, $pg, $guardDecision]) {
+    $expect("active/norm {$label}", G::normaliseActive($raw), $norm);
+    $expect("active/create guard {$label}", $decision(fn() => $guard->checkHospitalityCreate(['resource_id' => 10, 'name' => 'x', 'active' => $raw])), $guardDecision);
+    $expect("active/update guard {$label}", $decision(fn() => $guard->checkHospitalityUpdate($inactive, ['active' => $raw])), $guardDecision);
+    // refused = [false, body unchanged]; accepted = [true, body with the int the repository binds]
+    $expect("active/controller hands the repository {$label}", $bodyAfter(['active' => $raw, 'name' => 'x']),
+        $norm === null ? [false, ['active' => $raw, 'name' => 'x']] : [true, ['active' => $norm, 'name' => 'x']]);
+    // the point of F1: when Postgres would store a 0 or 1, a value that IS read is read as that same flag
+    if ($pg === 0 || $pg === 1) {
+        $expect("active/never read as another flag than Postgres stores {$label}", $norm === null || $norm === $pg, true);
+    }
+    // a value Postgres would store as anything but 0/1 is refused, never stored
+    if (is_int($pg) && $pg !== 0 && $pg !== 1) {
+        $expect("active/never stored as {$pg} {$label}", G::normaliseActive($raw), null);
+    }
+}
+
+// null and absent: today's default (create 1, update leaves the column alone), NOT a refusal and NOT a 0
+$expect('active/controller: an ABSENT active stays absent (a rename must not touch the flag)', $bodyAfter(['name' => 'x']), [true, ['name' => 'x']]);
+$expect('active/controller: a null active is dropped, so create defaults and update leaves it alone', $bodyAfter(['active' => null, 'name' => 'x']), [true, ['name' => 'x']]);
+$expect('active/create: no active key = the column default, ON, checked',
+    $decision(fn() => $guard->checkHospitalityCreate(['resource_id' => 10, 'name' => 'x'])), 'checked');
+$expect('active/create: null active = the column default, ON, checked',
+    $decision(fn() => $guard->checkHospitalityCreate(['resource_id' => 10, 'name' => 'x', 'active' => null])), 'checked');
+$expect('active/update: no active key on an INACTIVE hospitality stays inactive, nothing to check',
+    $decision(fn() => $guard->checkHospitalityUpdate($inactive, ['name' => 'x'])), 'skipped');
+$expect('active/update: null active on an INACTIVE hospitality stays inactive, nothing to check',
+    $decision(fn() => $guard->checkHospitalityUpdate($inactive, ['name' => 'x', 'active' => null])), 'skipped');
+
+// store() and update() need a request, an ACL and a database, so they cannot run here. What can be
+// checked is the part F1 got wrong: that each of them reads `active` BEFORE the guard and BEFORE the
+// repository (a source-order check, labelled as such; the live proof covers the behaviour).
+$methodSource = static function (string $method): string {
+    $m = new ReflectionMethod(HospitalityController::class, $method);
+    return implode('', array_slice(file($m->getFileName()), $m->getStartLine() - 1, $m->getEndLine() - $m->getStartLine() + 1));
+};
+$firstBefore = static fn(string $src, string $first, string $then): bool =>
+    strpos($src, $first) !== false && strpos($src, $then) !== false && strpos($src, $first) < strpos($src, $then);
+foreach ([['store', 'checkHospitalityCreate', 'repository->create('], ['update', 'checkHospitalityUpdate', 'repository->update(']] as [$method, $guardCall, $repoCall]) {
+    $src = $methodSource($method);
+    $expect("active/source order: {$method}() reads active before the guard", $firstBefore($src, '$this->normaliseActive($body)', "directBookingGuard->{$guardCall}("), true);
+    $expect("active/source order: {$method}() reads active before the repository", $firstBefore($src, '$this->normaliseActive($body)', $repoCall), true);
+}
 
 // ── run ─────────────────────────────────────────────────────────────────────────────────────
 $failures = [];

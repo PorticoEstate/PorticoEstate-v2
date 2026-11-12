@@ -413,6 +413,7 @@ class LegacyIMAPWrapper
         }
 
         $fn = 'imap_fetch_overview';
+        // phpcs:ignore PHPCompatibility.Constants.RemovedConstants.ft_uidRemoved -- Native IMAP provides FT_UID via PECL on PHP 8.4+.
         $overview = @$fn($stream, implode(',', $messageNumbers), FT_UID);
         if (!is_array($overview))
         {

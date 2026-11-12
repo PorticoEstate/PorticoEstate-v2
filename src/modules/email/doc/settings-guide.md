@@ -247,6 +247,13 @@ assuming that `Sent`, `Trash`, or `Drafts` exists. Gmail may expose paths under
 copies and application-created copies can duplicate each other; check before
 enabling additional Sent-folder storage.
 
+### Compose Spellchecking
+
+Spellchecking requires the Pspell extension and an Aspell dictionary for the
+user's language. Since PHP 8.4, Pspell is installed through PECL. The supplied
+Docker image includes Pspell and English and Norwegian Aspell dictionaries.
+When the extension or dictionary is unavailable, the spellcheck button is hidden.
+
 ## 4. Microsoft Outlook and Microsoft 365
 
 ### Centralized Microsoft Application Registration

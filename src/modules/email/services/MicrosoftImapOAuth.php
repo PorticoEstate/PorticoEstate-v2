@@ -183,7 +183,6 @@ final class MicrosoftImapOAuth
 		$body = curl_exec($handle);
 		$status = (int) curl_getinfo($handle, CURLINFO_RESPONSE_CODE);
 		$error = curl_error($handle);
-		curl_close($handle);
 		if ($body === false || $status < 200 || $status >= 300)
         {
         	throw new \RuntimeException('Microsoft OAuth token request failed' . ($error !== '' ? ': ' . $error : ''));

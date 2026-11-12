@@ -132,7 +132,7 @@ class mail_dcom_pop3_sock extends mail_dcom_base_sock
 		@function append
 		@abstract unused function in pop3
 		*/
-	function append($stream, $folder = "Sent", $header, $body, $flags = "")
+	function append($stream, $folder, $header, $body, $flags = "")
 	{
 		// N/A for pop3
 		return False;

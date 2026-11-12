@@ -228,7 +228,6 @@ final class GoogleMailOAuth
 		$body = curl_exec($handle);
 		$status = (int) curl_getinfo($handle, CURLINFO_RESPONSE_CODE);
 		$error = curl_error($handle);
-		curl_close($handle);
 		if ($body === false || $status < 200 || $status >= 300)
         {
         	throw new \RuntimeException('Google OAuth token request failed' . ($error !== '' ? ': ' . $error : ''));
@@ -261,7 +260,6 @@ final class GoogleMailOAuth
 		$body = curl_exec($handle);
 		$status = (int) curl_getinfo($handle, CURLINFO_RESPONSE_CODE);
 		$error = curl_error($handle);
-		curl_close($handle);
 		if ($body === false || $status < 200 || $status >= 300)
         {
         	throw new \RuntimeException('Google account verification failed' . ($error !== '' ? ': ' . $error : ''));

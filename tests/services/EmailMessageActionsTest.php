@@ -154,4 +154,67 @@ class EmailMessageActionsTest extends TestCase
 		$this->expectExceptionMessage('Mailbox creation is not permitted');
 		(new EmailMessageActions())->execute($mail, $request);
 	}
+
+	/**
+	 * @dataProvider trashStatusCounts
+	 * @runInSeparateProcess
+	 * @preserveGlobalState disabled
+	 */
+	public function testEmptyTrashChecksStatusAfterSearchFailure(?int $messageCount): void
+	{
+		require_once __DIR__ . '/../../src/modules/email/inc/IMAPManager.php';
+
+		$response = $this->getMockBuilder(\stdClass::class)->addMethods(['validatedData'])->getMock();
+		$response->method('validatedData')->willReturn($messageCount === null ? [] : ['MESSAGES' => $messageCount]);
+		$protocol = $this->getMockBuilder(\stdClass::class)->addMethods(['folderStatus'])->getMock();
+		$protocol->expects($this->once())->method('folderStatus')->with('Trash', ['MESSAGES'])->willReturn($response);
+		$client = $this->getMockBuilder(\stdClass::class)->addMethods(['getConnection'])->getMock();
+		$client->method('getConnection')->willReturn($protocol);
+		$folder = $this->getMockBuilder(\stdClass::class)->addMethods(['query'])->getMock();
+		$folder->expects($this->once())->method('query')->willThrowException(new \RuntimeException('Search failed'));
+		$connections = new \ReflectionProperty(\ModernIMAPWrapper::class, 'connections');
+		$connections->setValue(null, ['empty-trash-test' => ['client' => $client, 'folder' => $folder]]);
+		\IMAPManager::setMode(\IMAPManager::MODE_MODERN);
+
+		$mail = new class
+		{
+			public array $extra_and_default_acounts = [['acctnum' => 0, 'status' => 'enabled']];
+			public object $transport;
+			public function __construct()
+			{
+				$this->transport = new class
+				{
+					public bool $force_msg_uids = true;
+					public function utf7_encode($folder): string { return $folder; }
+				};
+			}
+			public function get_folder_list($account, $refresh): array { return [['folder_long' => 'Trash']]; }
+			public function get_arg_value($key, $account): string
+			{
+				return match ($key)
+				{
+					'verified_trash_folder_long' => 'Trash',
+					'mailsvr_stream' => 'empty-trash-test',
+					'mailsvr_callstr' => '{imap.test}',
+				};
+			}
+			public function ensure_stream_and_folder($message, $operation, $errors): bool { return true; }
+			public function prep_folder_out($folder): string { return $folder; }
+			public function getTransport($account): object { return $this->transport; }
+		};
+		$request = EmailMessageActions::normalize(['action' => 'emptyTrash', 'account' => 0, 'confirmed' => true]);
+		if ($messageCount === null || $messageCount > 0)
+		{
+			$this->expectException(\RuntimeException::class);
+			$this->expectExceptionMessage('Unable to list Trash messages');
+		}
+
+		$result = (new EmailMessageActions())->execute($mail, $request);
+		$this->assertSame(['completed' => [], 'failed' => []], $result);
+	}
+
+	public static function trashStatusCounts(): array
+	{
+		return [[0], [1], [null]];
+	}
 }

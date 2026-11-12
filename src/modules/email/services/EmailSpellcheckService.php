@@ -58,6 +58,7 @@ final class EmailSpellcheckService
                 	continue;
                 }
 				$word = str_replace(['.', ',', '?', ':', ';', '!', '"', '(', ')', '*', '[', ']'], '', $token);
+				// phpcs:ignore PHPCompatibility.FunctionUse.RemovedFunctions.pspell_checkRemoved -- Pspell is available via PECL on PHP 8.4+.
 				if (!$this->shouldCheck($word) || pspell_check($link, $word))
                 {
                 	continue;
@@ -68,6 +69,7 @@ final class EmailSpellcheckService
                 	continue;
                 }
 				$seen[$key] = true;
+				// phpcs:ignore PHPCompatibility.FunctionUse.RemovedFunctions.pspell_suggestRemoved -- Pspell is available via PECL on PHP 8.4+.
 				$suggestions = array_slice((array) pspell_suggest($link, $word), 0, 6);
 				$issues[] = ['word' => $word, 'suggestions' => array_values(array_map('strval', $suggestions))];
 				if (count($issues) >= 100)
@@ -92,6 +94,7 @@ final class EmailSpellcheckService
         	return false;
         }
 		$language = trim($language) !== '' ? $language : 'en';
+		// phpcs:ignore PHPCompatibility.FunctionUse.RemovedFunctions.pspell_newRemoved,PHPCompatibility.Constants.RemovedConstants.pspell_fastRemoved -- Pspell is available via PECL on PHP 8.4+.
 		return @pspell_new($language, '', '', '', defined('PSPELL_FAST') ? PSPELL_FAST : 0);
 	}
 

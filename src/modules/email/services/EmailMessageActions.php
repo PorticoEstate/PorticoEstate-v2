@@ -17,6 +17,8 @@ namespace App\modules\email\services;
 
 final class EmailMessageActions
 {
+	private const IMAP_STATUS_MESSAGES = 1;
+
 	/**
 	 * Validate confirmation, source messages, and destination values for a batch action.
 	 *
@@ -125,8 +127,8 @@ final class EmailMessageActions
 			if ($numbers === false)
 			{
 				$path = $mail->get_arg_value('mailsvr_callstr', $account) . $mail->getTransport($account)->utf7_encode($trash);
-				$status = \IMAPManager::imap_status($stream, $path, SA_MESSAGES);
-				if (!$status || (int) $status->messages !== 0)
+				$status = \IMAPManager::imap_status($stream, $path, self::IMAP_STATUS_MESSAGES);
+				if (!$status || !isset($status->messages) || (int) $status->messages !== 0)
                 {
                 	throw new \RuntimeException('Unable to list Trash messages');
                 }

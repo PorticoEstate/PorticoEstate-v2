@@ -1,16 +1,15 @@
 {
     "name": "datatables.net-autofill-dt",
     "description": "AutoFill for DataTables with styling for [DataTables](https://datatables.net/)",
-    "main": "js/autoFill.dataTables.js",
-    "module": "js/autoFill.dataTables.mjs",
-    "style": "css/autoFill.dataTables.css",
+    "main": "./js/autoFill.dataTables.js",
+    "module": "./js/autoFill.dataTables.mjs",
+    "style": "./css/autoFill.dataTables.css",
     "types": "./types/autoFill.dataTables.d.ts",
-    "version": "3.0.0",
+    "version": "3.1.3",
     "files": [
-        "css/**/*.css",
-        "js/**/*.js",
-        "js/**/*.mjs",
-        "types/**/*.d.ts"
+        "js",
+        "css",
+        "types"
     ],
     "keywords": [
         "AutoFill",
@@ -21,8 +20,8 @@
         "sort"
     ],
     "dependencies": {
-        "datatables.net-autofill": "3.0.0",
-        "datatables.net-dt": "^3"
+        "datatables.net-autofill": "3.1.3",
+        "datatables.net-dt": "^3.1"
     },
     "author": {
         "name": "SpryMedia Ltd",
@@ -34,5 +33,25 @@
     "repository": {
         "type": "git",
         "url": "git+https://github.com/DataTables/AutoFill.git"
-    }
+    },
+    "exports": {
+        ".": {
+            "types": "./types/autoFill.dataTables.d.ts",
+            "style": "./css/autoFill.dataTables.css",
+            "import": "./js/autoFill.dataTables.mjs",
+            "require": "./js/autoFill.dataTables.js",
+            "default": "./js/autoFill.dataTables.mjs"
+        },
+        "./js/*": "./js/*",
+        "./css": {
+            "types": "./types/css.d.ts",
+            "default": "./css/autoFill.dataTables.css"
+        },
+        "./css/*": {
+            "types": "./types/css.d.ts",
+            "default": "./css/*"
+        },
+        "./package.json": "./package.json"
+    },
+    "sideEffects": true
 }

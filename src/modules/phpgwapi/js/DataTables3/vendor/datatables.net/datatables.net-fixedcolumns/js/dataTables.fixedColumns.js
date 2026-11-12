@@ -1,4 +1,4 @@
-/*! FixedColumns 6.0.0 for DataTables
+/*! FixedColumns 6.1.2 for DataTables
  * Copyright (c) SpryMedia Ltd - datatables.net/license
  */
 
@@ -10,13 +10,6 @@
 		});
 	}
 	else if (typeof exports === 'object') {
-		// CommonJS
-		var cjsRequires = function (root) {
-			if (! root.DataTable) {
-				require('datatables.net')(root);
-			}
-		};
-
 		if (typeof window === 'undefined') {
 			module.exports = function (root) {
 				if (! root) {
@@ -24,14 +17,20 @@
 					// root. This will give an error otherwise
 					root = window;
 				}
+				
+				var DataTable = root.DataTable ?
+					root.DataTable :
+					require('datatables.net')(root);
 
-				cjsRequires(root);
-				return factory(root, root.document, root.DataTable);
+				return factory(root, root.document, DataTable);
 			};
 		}
 		else {
-			cjsRequires(window);
-			module.exports = factory(window, window.document, window.DataTable);
+			var DataTable = window.DataTable ?
+				window.DataTable :
+				require('datatables.net');
+
+			module.exports = factory(window, window.document, DataTable);
 		}
 	}
 	else {
@@ -44,14 +43,12 @@
 var Dom = DataTable.Dom;
 var util = DataTable.util;
 
+// Sanity check
+if (!DataTable || !DataTable.versionCheck('3.1')) {
+    throw 'Warning: FixedColumns requires DataTables 3.1 or newer';
+}
 class FixedColumns {
     constructor(settings, opts) {
-        // Check that the required version of DataTables is included
-        if (!DataTable ||
-            !DataTable.versionCheck ||
-            !DataTable.versionCheck('2')) {
-            throw new Error('FixedColumns requires DataTables 2 or newer');
-        }
         let table = new DataTable.Api(settings);
         this.classes = util.object.assignDeep({}, FixedColumns.classes);
         // Get options from user
@@ -401,7 +398,7 @@ class FixedColumns {
         return widths.slice(0, index).reduce((accum, val) => accum + val, 0);
     }
 }
-FixedColumns.version = '6.0.0';
+FixedColumns.version = '6.1.2';
 FixedColumns.classes = {
     bottomBlocker: 'dtfc-bottom-blocker',
     fixedEnd: 'dtfc-fixed-end',
@@ -509,7 +506,7 @@ function _init(settings, options = null) {
 }
 // Attach a listener to the document which listens for DataTables initialisation
 // events so we can automatically initialise
-Dom.s(document).on('plugin-init.dt', function (e, settings) {
+Dom.on('plugin-init.dt', function (e, settings) {
     if (e.namespace !== 'dt') {
         return;
     }

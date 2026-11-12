@@ -120,7 +120,7 @@ declare class FixedColumns {
 }
 
 declare module 'datatables.net' {
-    interface Config {
+    interface Options {
         fixedColumns?: boolean | FixedColumnsConfig;
     }
     interface Defaults {
@@ -161,7 +161,7 @@ declare module 'datatables.net' {
          */
         start?: number;
     }
-    interface FixedColumn<T> extends Api<T> {
+    interface Api<T> {
         /**
         * Namespacing for FixedColumns methods - FixedColumns' methods are available on the returned API instance.
         *

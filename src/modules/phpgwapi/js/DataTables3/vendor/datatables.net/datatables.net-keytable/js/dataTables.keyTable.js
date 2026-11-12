@@ -1,4 +1,4 @@
-/*! KeyTable 3.0.0 for DataTables
+/*! KeyTable 3.1.2 for DataTables
  * Copyright (c) SpryMedia Ltd - datatables.net/license
  */
 
@@ -10,13 +10,6 @@
 		});
 	}
 	else if (typeof exports === 'object') {
-		// CommonJS
-		var cjsRequires = function (root) {
-			if (! root.DataTable) {
-				require('datatables.net')(root);
-			}
-		};
-
 		if (typeof window === 'undefined') {
 			module.exports = function (root) {
 				if (! root) {
@@ -24,14 +17,20 @@
 					// root. This will give an error otherwise
 					root = window;
 				}
+				
+				var DataTable = root.DataTable ?
+					root.DataTable :
+					require('datatables.net')(root);
 
-				cjsRequires(root);
-				return factory(root, root.document, root.DataTable);
+				return factory(root, root.document, DataTable);
 			};
 		}
 		else {
-			cjsRequires(window);
-			module.exports = factory(window, window.document, window.DataTable);
+			var DataTable = window.DataTable ?
+				window.DataTable :
+				require('datatables.net');
+
+			module.exports = factory(window, window.document, DataTable);
 		}
 	}
 	else {
@@ -45,8 +44,8 @@ var Dom = DataTable.Dom;
 var util = DataTable.util;
 
 // Sanity check
-if (!DataTable || !DataTable.versionCheck('3')) {
-    throw 'Warning: KeyTable requires DataTables 3 or newer';
+if (!DataTable || !DataTable.versionCheck('3.1')) {
+    throw 'Warning: KeyTable requires DataTables 3.1 or newer';
 }
 var namespaceCounter = 0;
 var editorNamespaceCounter = 0;
@@ -1090,7 +1089,7 @@ KeyTable.defaults = {
      */
     tabIndex: null
 };
-KeyTable.version = '3.0.0';
+KeyTable.version = '3.1.2';
 
 
 DataTable.KeyTable = KeyTable;
@@ -1154,7 +1153,7 @@ DataTable.ext.selector.cell.push(function (settings, opts, cells) {
 });
 // Attach a listener to the document which listens for DataTables initialisation
 // events so we can automatically initialise
-Dom.s(document).on('preInit.dt.dtk', function (e, settings, json) {
+Dom.on('preInit.dt.dtk', function (e, settings, json) {
     if (e.namespace !== 'dt') {
         return;
     }

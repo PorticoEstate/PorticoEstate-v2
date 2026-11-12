@@ -1,16 +1,15 @@
 {
     "name": "datatables.net-rowgroup-dt",
     "description": "RowGroup for DataTables with styling for [DataTables](https://datatables.net/)",
-    "main": "js/rowGroup.dataTables.js",
-    "module": "js/rowGroup.dataTables.mjs",
-    "style": "css/rowGroup.dataTables.css",
+    "main": "./js/rowGroup.dataTables.js",
+    "module": "./js/rowGroup.dataTables.mjs",
+    "style": "./css/rowGroup.dataTables.css",
     "types": "./types/rowGroup.dataTables.d.ts",
-    "version": "2.0.0",
+    "version": "2.1.1",
     "files": [
-        "css/**/*.css",
-        "js/**/*.js",
-        "js/**/*.mjs",
-        "types/**/*.d.ts"
+        "js",
+        "css",
+        "types"
     ],
     "keywords": [
         "RowGroup",
@@ -21,8 +20,8 @@
         "sort"
     ],
     "dependencies": {
-        "datatables.net-rowgroup": "2.0.0",
-        "datatables.net-dt": "^3"
+        "datatables.net-rowgroup": "2.1.1",
+        "datatables.net-dt": "^3.1"
     },
     "author": {
         "name": "SpryMedia Ltd",
@@ -34,5 +33,25 @@
     "repository": {
         "type": "git",
         "url": "git+https://github.com/DataTables/RowGroup.git"
-    }
+    },
+    "exports": {
+        ".": {
+            "types": "./types/rowGroup.dataTables.d.ts",
+            "style": "./css/rowGroup.dataTables.css",
+            "import": "./js/rowGroup.dataTables.mjs",
+            "require": "./js/rowGroup.dataTables.js",
+            "default": "./js/rowGroup.dataTables.mjs"
+        },
+        "./js/*": "./js/*",
+        "./css": {
+            "types": "./types/css.d.ts",
+            "default": "./css/rowGroup.dataTables.css"
+        },
+        "./css/*": {
+            "types": "./types/css.d.ts",
+            "default": "./css/*"
+        },
+        "./package.json": "./package.json"
+    },
+    "sideEffects": true
 }

@@ -1,12 +1,12 @@
-/*! AutoFill 3.0.0 for DataTables
+/*! AutoFill 3.1.3 for DataTables
  * Copyright (c) SpryMedia Ltd - datatables.net/license
  */
 
 import DataTable, { Dom, util, Api } from 'datatables.net';
 
 
-if (!DataTable || !DataTable.versionCheck || !DataTable.versionCheck('3')) {
-    throw 'Warning: AutoFill requires DataTables 3 or greater';
+if (!DataTable || !DataTable.versionCheck || !DataTable.versionCheck('3.1')) {
+    throw 'Warning: AutoFill requires DataTables 3.1 or greater';
 }
 var _instance = 0;
 class AutoFill {
@@ -167,15 +167,31 @@ class AutoFill {
             handleDim.height = handle.height('outer');
             handleDim.width = handle.width('outer');
         }
-        // Might need to go through multiple offset parents
-        let offset = this._getPosition(node, this.dom.offsetParent);
         this.dom.attachedTo = node;
-        handle
-            .css({
-            top: offset.top + node.offsetHeight - handleDim.height + 'px',
-            left: offset.left + node.offsetWidth - handleDim.width + 'px'
-        })
-            .appendTo(this.dom.offsetParent);
+        if (Dom.s(node).css('position') === 'sticky') {
+            // FixedColumns will set the fixed cells to `sticky`, so we insert
+            // the drag handle into them directly since they are already an
+            // offset parent.
+            handle
+                .css({
+                top: node.offsetHeight - handleDim.height + 'px',
+                left: node.offsetWidth - handleDim.width + 'px'
+            })
+                .appendTo(node);
+        }
+        else {
+            // Might need to go through multiple offset parents
+            let offset = this._getPosition(node, this.dom.offsetParent);
+            handle
+                .css({
+                top: offset.top +
+                    node.offsetHeight -
+                    handleDim.height +
+                    'px',
+                left: offset.left + node.offsetWidth - handleDim.width + 'px'
+            })
+                .appendTo(this.dom.offsetParent);
+        }
     }
     /**
      * Determine can the fill type should be. This can be automatic, or ask the
@@ -271,7 +287,9 @@ class AutoFill {
             column: this.c.horizontal ? Dom.s(target).index() : start.column
         };
         var colIndx = dt.column.index('toData', end.column);
-        var endRow = dt.row(':eq(' + end.row + ')', { page: 'current' }); // Workaround for M581
+        var endRow = dt.row(':eq(' + (end.row >= 0 ? end.row : 0) + ')', {
+            page: 'current'
+        }); // Workaround for M581
         var endCell = Dom.s(dt.cell(endRow.index(), colIndx).node());
         // Be sure that is a DataTables controlled cell
         if (!dt.cell(endCell.get(0)).any()) {
@@ -898,7 +916,7 @@ AutoFill.defaults = {
     horizontal: true
 };
 /** AutoFill version */
-AutoFill.version = '3.0.0';
+AutoFill.version = '3.1.3';
 
 // Doesn't do anything - Not documented
 Api.register('autoFill()', function () {
@@ -924,7 +942,7 @@ Api.register('autoFill().disable()', function () {
 });
 // Attach a listener to the document which listens for DataTables initialisation
 // events so we can automatically initialise
-Dom.s(document).on('preInit.dt.autofill', function (e, settings) {
+Dom.on('preInit.dt.autofill', function (e, settings) {
     if (e.namespace !== 'dt') {
         return;
     }

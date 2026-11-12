@@ -10,6 +10,6 @@
         "types/types.d.ts"
     ],
     "src-repo": "http://github.com/DataTables/KeyTable",
-    "last-tag": "3.0.0",
-    "last-sync": "7e0acf22020676a11cbe3992900d1aa351cc9d98"
+    "last-tag": "3.1.2",
+    "last-sync": "aa2499bfabdb4ffad55cf53234bf787a172df8d9"
 }

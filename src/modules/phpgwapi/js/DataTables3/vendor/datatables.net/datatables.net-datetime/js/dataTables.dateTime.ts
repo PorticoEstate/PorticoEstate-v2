@@ -91,7 +91,7 @@ export class DateTime {
 		yearRange: 25
 	};
 
-	public static version = '2.0.0';
+	public static version = '2.1.3';
 
 	/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 	 * Public methods
@@ -1207,23 +1207,19 @@ export class DateTime {
 		}
 
 		// Show / hide month icons based on min/max
-		if (minDate) {
-			var underMin =
-				minDate >= new Date(Date.UTC(year, month, 1, 0, 0, 0));
+		var underMin = minDate
+			&& minDate >= new Date(Date.UTC(year, month, 1, 0, 0, 0));
 
-			this.dom.title
-				.find('div.' + classPrefix + '-iconLeft')
-				.css('display', underMin ? 'none' : 'block');
-		}
+		this.dom.title
+			.find('div.' + classPrefix + '-iconLeft')
+			.css('display', underMin ? 'none' : 'block');
 
-		if (maxDate) {
-			var overMax =
-				maxDate < new Date(Date.UTC(year, month + 1, 1, 0, 0, 0));
+		var overMax = maxDate
+			&& maxDate < new Date(Date.UTC(year, month + 1, 1, 0, 0, 0));
 
-			this.dom.title
-				.find('div.' + classPrefix + '-iconRight')
-				.css('display', overMax ? 'none' : 'block');
-		}
+		this.dom.title
+			.find('div.' + classPrefix + '-iconRight')
+			.css('display', overMax ? 'none' : 'block');
 
 		return (
 			'<table class="' +
@@ -1938,14 +1934,15 @@ export class DateTime {
 }
 
 // Global export - if no conflicts
-// TODO is this right in the UDM?
-if (!(window as any).DateTime) {
-	(window as any).DateTime = DateTime;
+const win = DataTable.use('win');
+
+if (win && !win.DateTime) {
+	win.DateTime = DateTime;
 }
 
 // Make available via jQuery
-if ((window as any).jQuery) {
-	(window as any).jQuery.fn.dtDateTime = function (options) {
+if (win.jQuery) {
+	win.jQuery.fn.dtDateTime = function (options) {
 		return this.each(function () {
 			new DateTime(this, options);
 		});

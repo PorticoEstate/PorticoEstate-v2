@@ -73,7 +73,7 @@ declare class ColReorder {
 }
 
 declare module 'datatables.net' {
-    interface Config {
+    interface Options {
         /**
          * ColReorder extension options
          */
@@ -104,6 +104,18 @@ declare module 'datatables.net' {
     }
     interface ColumnContext {
         _crOriginalIdx?: number;
+    }
+    interface State {
+        /**
+         * Column ordering position
+         */
+        colReorder?: number[];
+    }
+    interface StateLoad {
+        /**
+         * Column ordering position
+         */
+        colReorder?: number[];
     }
 }
 interface ConfigColReorder {

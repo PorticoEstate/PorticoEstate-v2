@@ -1,4 +1,4 @@
-/*! Select 5.0.0 for DataTables
+/*! FixedHeader 5.1.2 for DataTables
  * Copyright (c) SpryMedia Ltd - datatables.net/license
  */
 
@@ -265,7 +265,8 @@ class FixedHeader {
                 .attr('aria-hidden', 'true')
                 .css({
                 top: '0px',
-                left: '0px'
+                left: '0px',
+                'table-layout': 'fixed'
             })
                 .attrRemove('id');
             itemDom.floatingParent
@@ -342,7 +343,7 @@ class FixedHeader {
             // floating element and clone into the original table. Note that the
             // order is important in Chrome. It must be colgroup, thead, tbody,
             // tfoot. Otherwise a "jitter" when scrolling will occur.
-            itemDom.placeholder.insertAfter(itemDom.host.find(item === 'header' ? 'colgroup' : 'tbody'));
+            itemDom.placeholder.insertAfter(itemDom.host.children(item === 'header' ? 'colgroup' : 'tbody'));
             itemDom.floating.append(itemElement);
             this._widths(itemDom);
             return scrollLeftUpdate;
@@ -454,7 +455,7 @@ class FixedHeader {
             if (itemDom.host) {
                 if (!itemDom.host.contains(tablePart)) {
                     if (item === 'header') {
-                        tablePart.insertAfter(itemDom.host.find('colgroup'));
+                        tablePart.insertAfter(itemDom.host.children('colgroup'));
                     }
                     else {
                         itemDom.host.append(tablePart);
@@ -595,7 +596,7 @@ class FixedHeader {
         var tbody = this.dom.tbody;
         var scrollBody = tableNode.parent();
         position.visible = tableNode.isVisible();
-        position.width = tableNode.width('outer');
+        position.width = tableNode.width('withBorder');
         position.left = tableNode.offset().left;
         position.theadTop = thead.offset().top;
         position.tbodyTop = scrollEnabled
@@ -861,7 +862,7 @@ class FixedHeader {
         // header
         var cols = itemDom.placeholder
             .parent()
-            .find('colgroup')
+            .children('colgroup')
             .clone(true)
             .appendTo(itemDom.floating)
             .find('col');
@@ -888,11 +889,11 @@ FixedHeader.defaults = {
     footerOffset: 0
 };
 /** Version */
-FixedHeader.version = '5.0.0';
+FixedHeader.version = '5.1.2';
 
 
-if (!DataTable || !DataTable.versionCheck('3')) {
-    throw 'Warning: FixedHeader requires DataTables 3 or newer';
+if (!DataTable || !DataTable.versionCheck('3.1')) {
+    throw 'Warning: FixedHeader requires DataTables 3.1 or newer';
 }
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
  * DataTables interfaces
@@ -901,7 +902,7 @@ if (!DataTable || !DataTable.versionCheck('3')) {
 DataTable.FixedHeader = FixedHeader;
 // DataTables creation - check if the FixedHeader option has been defined on the
 // table and if so, initialise
-Dom.s(document).on('init.dt.dtfh', function (e, settings) {
+Dom.on('init.dt.dtfh', function (e, settings) {
     if (e.namespace !== 'dt') {
         return;
     }

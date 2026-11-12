@@ -1,14 +1,13 @@
 {
     "name": "datatables.net-fixedheader",
     "description": "FixedHeader for DataTables",
-    "main": "js/dataTables.fixedHeader.js",
-    "module": "js/dataTables.fixedHeader.mjs",
+    "main": "./js/dataTables.fixedHeader.js",
+    "module": "./js/dataTables.fixedHeader.mjs",
     "types": "./types/types.d.ts",
-    "version": "5.0.0",
+    "version": "5.1.2",
     "files": [
-        "js/**/*.js",
-        "js/**/*.mjs",
-        "types/**/*.d.ts"
+        "js",
+        "types"
     ],
     "keywords": [
         "FixedHeader",
@@ -20,7 +19,7 @@
         "sort"
     ],
     "dependencies": {
-        "datatables.net": "^3"
+        "datatables.net": "^3.1"
     },
     "author": {
         "name": "SpryMedia Ltd",
@@ -32,5 +31,16 @@
     "repository": {
         "type": "git",
         "url": "git+https://github.com/DataTables/FixedHeader.git"
-    }
+    },
+    "exports": {
+        ".": {
+            "types": "./types/types.d.ts",
+            "import": "./js/dataTables.fixedHeader.mjs",
+            "require": "./js/dataTables.fixedHeader.js",
+            "default": "./js/dataTables.fixedHeader.mjs"
+        },
+        "./js/*": "./js/*",
+        "./package.json": "./package.json"
+    },
+    "sideEffects": true
 }

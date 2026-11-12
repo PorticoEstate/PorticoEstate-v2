@@ -1195,7 +1195,9 @@ HTML;
 		{
 			$scriptUrl = htmlspecialchars($this->webserver_url . '/phpgwapi/js/passkey/passkey-suggestion.js' . $cache_refresh_token, ENT_QUOTES, 'UTF-8');
 			$apiUrl = htmlspecialchars(\phpgw::link('/passkey/suggestion'), ENT_QUOTES, 'UTF-8');
-			$js .= '<script src="' . $scriptUrl . '" data-api-url="' . $apiUrl . '"></script>' . "\n";
+			$templateSet = (string) (Settings::getInstance()->get('server')['template_set'] ?? '');
+			$designSystem = $templateSet === 'digdir' ? 'digdir' : 'bootstrap';
+			$js .= '<script src="' . $scriptUrl . '" data-api-url="' . $apiUrl . '" data-design-system="' . $designSystem . '"></script>' . "\n";
 		}
 
 		return $js;

@@ -229,7 +229,7 @@ class Auth_Passkeys
     public function getAuthenticationArgs(): \stdClass
     {
         ByteBuffer::$useBase64UrlEncoding = true;
-        $options = $this->webAuthn->getGetArgs([], 60, true, true, true, true, true, true);
+        $options = $this->webAuthn->getGetArgs([], 120, true, true, true, true, true, true);
         $this->storeChallenge('webauthn_login_challenges', $this->webAuthn->getChallenge()->getBinaryString());
 
         return $options->publicKey;

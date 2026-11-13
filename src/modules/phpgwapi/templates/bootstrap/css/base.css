@@ -285,9 +285,6 @@ label > input[type="search"] {
 {
 	z-index: 9999 !important;
 }
-.select2-container {
-  display: inline-block;
-}
 .ms-n5 {
     margin-left: -40px;
 }
@@ -300,16 +297,4 @@ label > input[type="search"] {
 thead
 {
 background-color: rgb(224, 224, 224);
-}
-.select2-selection__rendered
-{
-    line-height: 33px !important;
-}
-.select2-container .select2-selection--single
-{
-    height: 36px !important;
-}
-.select2-selection__arrow
-{
-    height: 35px !important;
 }

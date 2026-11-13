@@ -1451,7 +1451,7 @@ HTML;
 		//			_debug_array(($findings_options_sum));
 		//			_debug_array(array_values($findings_options_sum));
 		//	_debug_array($header_options);
-		phpgwapi_jquery::load_widget('bootstrap-multiselect');
+		phpgwapi_jquery::load_widget('select2');
 		self::add_javascript('controller', 'base', 'calendar_planner.inspection_history.js');
 
 		Settings::getInstance()->update('flags', ['app_header' => lang('calendar planner') . '::' . lang('inspection history')]);

@@ -291,6 +291,75 @@ label > input[type="search"] {
 	float:right;
 }
 
+/* Select2: shared by all template sets. Colour rules are limited to the default theme
+   so the bootstrap-5 theme is unaffected; --ds-* tokens resolve in Digdir, fallbacks elsewhere. */
 .select2-container {
-  display: inline-block;
+	display: inline-block;
+}
+
+.select2-selection__rendered {
+	line-height: 33px !important;
+}
+
+.select2-container .select2-selection--single {
+	height: 36px !important;
+}
+
+.select2-selection__arrow {
+	height: 35px !important;
+}
+
+.pure-form .select2-container--default .select2-selection--single {
+	height: 2.625em !important;
+	border-color: var(--ds-color-neutral-border-default, #797979);
+	border-radius: var(--ds-border-radius-md, 0.25rem);
+}
+
+.pure-form .select2-container--default .select2-selection--single .select2-selection__rendered {
+	padding-inline: 0.75em 2em;
+	color: var(--ds-color-neutral-text-default, #2b2b2b);
+	line-height: calc(2.625em - 2px) !important;
+}
+
+.pure-form .select2-container--default .select2-selection--single .select2-selection__arrow {
+	height: calc(2.625em - 2px) !important;
+}
+
+.pure-form .select2-container--default.select2-container--focus .select2-selection {
+	outline: 2px solid var(--ds-color-focus-outer, #2b2b2b);
+	outline-offset: 2px;
+}
+
+.select2-container--default .select2-selection--multiple {
+	min-height: 2.625em;
+	border-color: var(--ds-color-neutral-border-default, #797979);
+	border-radius: var(--ds-border-radius-md, 0.25rem);
+}
+
+.select2-container--default.select2-container--focus .select2-selection--multiple {
+	border-color: var(--ds-color-neutral-border-strong, #2b2b2b);
+	outline: 2px solid var(--ds-color-focus-outer, #2b2b2b);
+	outline-offset: 2px;
+}
+
+.select2-container--default .select2-selection--multiple .select2-selection__choice {
+	border-color: var(--ds-color-accent-border-subtle, #b6cde0);
+	border-radius: var(--ds-border-radius-sm, 0.125rem);
+	background-color: var(--ds-color-accent-surface-tinted, #e6eff8);
+	color: var(--ds-color-neutral-text-default, #2b2b2b);
+}
+
+.select2-container--default .select2-results__option--highlighted[aria-selected] {
+	background-color: var(--ds-color-accent-base-default, #0062ba);
+	color: var(--ds-color-accent-base-contrast-default, #fff);
+}
+
+.select2-container--default .select2-dropdown {
+	border-color: var(--ds-color-neutral-border-default, #797979);
+}
+
+.select2-select-all .pure-button {
+	width: auto;
+	padding: 0.25em 0.75em;
+	font-size: 0.875em;
 }

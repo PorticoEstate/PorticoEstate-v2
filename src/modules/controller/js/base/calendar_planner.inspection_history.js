@@ -42,69 +42,55 @@ $(function ()
 	});
 
 
-	$("#part_of_town_id").multiselect({
-		buttonClass: 'form-select',
-		templates: {
-		button: '<button type="button" class="multiselect dropdown-toggle" data-bs-toggle="dropdown"><span class="multiselect-selected-text"></span></button>',
-		},
-//	buttonWidth: 250,
-		includeSelectAllOption: true,
-		enableFiltering: true,
-		enableCaseInsensitiveFiltering: true,
-		onChange: function ($option)
-		{
-			// Check if the filter was used.
-			var query = $("#part_of_town_id").find('li.multiselect-filter input').val();
+	var select2Theme = $('link[href*="select2-bootstrap-5-theme"]').length ? 'bootstrap-5' : 'default';
 
-			if (query)
-			{
-				$("#part_of_town_id").find('li.multiselect-filter input').val('').trigger('keydown');
-			}
-		},
-		onDropdownHidden: function (event)
-		{
-//			console.log(event);
-//			$("#form").submit();
-		}
+	$("#part_of_town_id, #inspector_id").each(function ()
+	{
+		var $select = $(this);
+		$select.select2({
+			theme: select2Theme,
+			language: "no",
+			width: '100%',
+			closeOnSelect: false,
+			allowClear: true,
+			placeholder: $('label[for="' + this.id + '"]').text().trim()
+		});
+		addSelectAllControls($select);
 	});
 
-	$("#inspector_id").multiselect({
-		buttonClass: 'form-select',
-		templates: {
-		button: '<button type="button" class="multiselect dropdown-toggle" data-bs-toggle="dropdown"><span class="multiselect-selected-text"></span></button>',
-		},
-//	buttonWidth: 250,
-		includeSelectAllOption: true,
-		enableFiltering: true,
-		enableCaseInsensitiveFiltering: true,
-		onChange: function ($option)
+	// Digdir/Portico do not load Bootstrap JS, so provide a native toggle for the filter panel.
+	if (typeof bootstrap === 'undefined' || !bootstrap.Collapse)
+	{
+		var $panel = $("#democollapseBtn");
+		var $toggle = $('[data-bs-target="#democollapseBtn"]');
+		$panel.removeClass('collapse').prop('hidden', true);
+		$toggle.removeAttr('data-bs-toggle').on('click', function ()
 		{
-			// Check if the filter was used.
-			var query = $("#inspector_id").find('li.multiselect-filter input').val();
-
-			if (query)
-			{
-				$("#inspector_id").find('li.multiselect-filter input').val('').trigger('keydown');
-			}
-		},
-		onDropdownHidden: function (event)
-		{
-//			console.log(event);
-//			$("#form").submit();
-		}
-	});
-
-//	$("#part_of_town_id").on("change", function ()
-//	{
-//		$("#form").submit();
-//	});
-
-	$(".btn-group").addClass('w-100');
-//	$(".multiselect ").addClass('form-control');
-//	$(".multiselect").removeClass('btn');
-//	$(".multiselect").removeClass('btn-default');
-
+			var expanded = $panel.prop('hidden');
+			$panel.prop('hidden', !expanded);
+			$toggle.attr('aria-expanded', String(expanded));
+		});
+	}
 });
+
+function addSelectAllControls($select)
+{
+	var $controls = $('<div class="select2-select-all mt-1 mb-2"></div>');
+	var $all = $('<button type="button" class="pure-button pure-button-secondary btn btn-sm btn-outline-secondary"></button>')
+		.text('Velg alle')
+		.on('click', function ()
+		{
+			$select.find('option').prop('selected', true);
+			$select.trigger('change');
+		});
+	var $none = $('<button type="button" class="pure-button pure-button-secondary btn btn-sm btn-outline-secondary ms-1"></button>')
+		.text('Fjern alle')
+		.on('click', function ()
+		{
+			$select.val(null).trigger('change');
+		});
+	$controls.append($all, $none).insertAfter($select.next('.select2-container'));
+}
 
 
 

@@ -59,8 +59,13 @@ The active loader uses `digdir-native.css`, not `designsystemet-compat.css`.
 Digdir's `css/base.css` supplies the aligned-form adjustments without changing
 shared XSL templates or the Bootstrap template set:
 
-- Form text, native controls, and single Select2 controls use a consistent scale
-  and the current Designsystemet typography and neutral-color tokens.
+- Form text and native controls use a consistent scale and the current
+  Designsystemet typography and neutral-color tokens.
+- Select2 styling (single and multiple) lives in the shared
+  `phpgwapi/templates/base/css/base.css`, scoped to Select2's `default` theme.
+  It reads `--ds-*` tokens with neutral fallbacks, so Digdir gets Designsystemet
+  colours, Portico gets the fallbacks, and the Bootstrap set's `bootstrap-5`
+  theme is unaffected.
 - Fieldsets may shrink below their contents' intrinsic width. Controls retain
   Pure's fractional widths, capped to leave room for the label column.
 - Standalone one-fifth columns in aligned custom grids use their natural width,

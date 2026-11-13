@@ -1,4 +1,4 @@
-#page_content {
+:where(html:not(.template-bootstrap):not(.template-digdir)) #page_content {
     margin: 2em 1em;
 }
 .clr { clear: both;}

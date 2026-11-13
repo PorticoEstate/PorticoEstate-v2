@@ -31,14 +31,7 @@ class TemplateStylesheetOrderTest extends TestCase
 			if (is_file(__DIR__ . "/../../src/modules/{$module}/templates/base/css/base.css"))
 			{
 				$this->assertSame(1, count(array_keys($stylesheets, $sharedModule, true)));
-				if ($template === 'portico')
-				{
-					$this->assertLessThan(array_search($sharedModule, $stylesheets, true), array_search($templateApi, $stylesheets, true));
-				}
-				elseif ($module !== 'frontend')
-				{
-					$this->assertLessThan(array_search($templateApi, $stylesheets, true), array_search($sharedModule, $stylesheets, true));
-				}
+				$this->assertLessThan(array_search($templateApi, $stylesheets, true), array_search($sharedModule, $stylesheets, true));
 			}
 			else
 			{
@@ -57,6 +50,43 @@ class TemplateStylesheetOrderTest extends TestCase
 				$this->assertNotContains($templateModule, $stylesheets);
 			}
 		}
+	}
+
+	/** @dataProvider multiselectTemplates */
+	public function testBootstrapMultiselectDoesNotLoadGlobalBootstrapIntoModernShells(string $template, bool $loadsBootstrap): void
+	{
+		$process = proc_open(
+			array(PHP_BINARY, __DIR__ . '/../fixtures/bootstrap-multiselect-assets.php', $template),
+			array(array('pipe', 'r'), array('pipe', 'w'), array('pipe', 'w')),
+			$pipes
+		);
+		$this->assertIsResource($process);
+		fclose($pipes[0]);
+		$output = stream_get_contents($pipes[1]);
+		$errors = stream_get_contents($pipes[2]);
+		fclose($pipes[1]);
+		fclose($pipes[2]);
+		$this->assertSame(0, proc_close($process), $errors);
+		$stylesheets = json_decode($output, true, 512, JSON_THROW_ON_ERROR);
+		$bootstrapCss = 'phpgwapi/js/bootstrap5/vendor/twbs/bootstrap/dist/css/bootstrap.min.css';
+		$pluginCss = 'phpgwapi/js/bootstrap-multiselect/css/bootstrap-multiselect.min.css';
+
+		$this->assertSame($loadsBootstrap, in_array($bootstrapCss, $stylesheets, true));
+		$this->assertContains($pluginCss, $stylesheets);
+	}
+
+	public function testPorticoWidgetStylesPrecedeTemplateOverridesAndDataTablesIsNotDuplicated(): void
+	{
+		$headTemplate = file_get_contents(__DIR__ . '/../../src/modules/phpgwapi/templates/portico/head.tpl');
+		$headLoader = file_get_contents(__DIR__ . '/../../src/modules/phpgwapi/templates/portico/head.inc.php');
+		$widgetLoader = file_get_contents(__DIR__ . '/../../src/modules/phpgwapi/inc/class.uicommon_jquery.inc.php');
+
+		$this->assertIsString($headTemplate);
+		$this->assertIsString($headLoader);
+		$this->assertIsString($widgetLoader);
+		$this->assertLessThan(strpos($headTemplate, '<!-- BEGIN stylesheet -->'), strpos($headTemplate, '{css}'));
+		$this->assertStringNotContainsString('DataTables3/vendor/datatables.net/datatables.net-dt/css/dataTables.dataTables.min.css', $headLoader);
+		$this->assertStringContainsString('DataTables3/vendor/datatables.net/datatables.net-dt/css/dataTables.dataTables.min.css', $widgetLoader);
 	}
 
 	/** @dataProvider templatesWithTheme */
@@ -128,6 +158,16 @@ class TemplateStylesheetOrderTest extends TestCase
 			array('bootstrap', 'phpgwapi'),
 			array('digdir', 'property'),
 			array('digdir', 'phpgwapi'),
+		);
+	}
+
+	public static function multiselectTemplates(): array
+	{
+		return array(
+			array('bootstrap', false),
+			array('digdir', false),
+			array('portico', false),
+			array('simple', true),
 		);
 	}
 }

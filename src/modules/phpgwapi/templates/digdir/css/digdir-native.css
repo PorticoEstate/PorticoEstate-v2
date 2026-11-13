@@ -569,22 +569,30 @@ body {
 /* Modal Dialog - See line 1383+ for actual modal styles */
 
 .app-button {
-    padding: 0.5rem 1rem;
-    border-radius: var(--ds-border-radius-medium, 4px);
-    border: none;
-    cursor: pointer;
-    font-size: 1rem;
-    text-decoration: none;
     display: inline-flex;
     align-items: center;
+    padding: var(--ds-spacing-2, 0.5rem) var(--ds-spacing-3, 0.75rem);
+    border: var(--ds-border-width-1, 1px) solid transparent;
+    border-radius: var(--ds-border-radius-lg, 0.375rem);
+    cursor: pointer;
+    font-size: var(--ds-font-size-base, 1rem);
+    font-weight: var(--ds-font-weight-semibold, 600);
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: middle;
+    user-select: none;
+    text-decoration: none;
+    transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out, border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
 }
 
-.app-button-primary {
+.app-button-primary,
+.app-button--primary {
     background-color: var(--ds-color-brand, #0047AB);
     color: white;
 }
 
-.app-button-secondary {
+.app-button-secondary,
+.app-button--secondary {
     background-color: var(--ds-color-bg-subtle, #f5f5f5);
     color: var(--ds-color-text-default, #1e2b3c);
     border: 1px solid var(--ds-color-border-default, #ccc);
@@ -1589,7 +1597,6 @@ dialog.app-modal {
 .app-input-group > .app-form-control { position: relative; flex: 1 1 auto; width: 1%; margin-bottom: 0; }
 
 /* Button utilities */
-.app-button { display: inline-block; padding: var(--ds-spacing-2, 0.5rem) var(--ds-spacing-3, 0.75rem); font-size: var(--ds-font-size-base, 1rem); font-weight: var(--ds-font-weight-semibold, 600); text-align: center; white-space: nowrap; vertical-align: middle; cursor: pointer; user-select: none; border: var(--ds-border-width-1, 1px) solid transparent; border-radius: var(--ds-border-radius-lg, 0.375rem); transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out, border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out; }
 .app-button-outline-secondary { color: var(--ds-color-text-default, #6c757d); border-color: var(--ds-color-border-default, #6c757d); background-color: transparent; }
 .app-button-outline-secondary:hover { color: var(--ds-color-text-default, #212529); border-color: var(--ds-color-border-default, #212529); background-color: var(--ds-color-background-hover, #f8f9fa); }
 .app-bg-white { background-color: #ffffff !important; }

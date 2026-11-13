@@ -33,7 +33,7 @@ a{
   cursor: pointer;	
 }
 
-.row{
+:where(html:not(.template-bootstrap)) .row{
   padding: 0.3em 0;
 }
 h3 {
@@ -384,7 +384,8 @@ h1 em {
   text-decoration: none;
 }*/
 
-#innertoolbar-button, input[type="submit"] {
+#innertoolbar-button,
+input[type="submit"]:not(.pure-button):not(.btn):not(.app-button):not([class*="ds-button"]) {
   background: none repeat scroll 0 0 #4F9AEA;
   border: 1px solid #4685C8;
   border-radius: 4px;
@@ -394,7 +395,9 @@ h1 em {
   padding: 5px 20px;
 }
 
-#innertoolbar-button, input[type="button"], #innertoolbar-button, input[type="submit"] {
+#innertoolbar-button,
+input[type="button"]:not(.pure-button):not(.btn):not(.app-button):not([class*="ds-button"]),
+input[type="submit"]:not(.pure-button):not(.btn):not(.app-button):not([class*="ds-button"]) {
   margin-right: 3px;
   padding: 3px 20px;
 }

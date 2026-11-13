@@ -155,7 +155,7 @@ a{
 	cursor: pointer;
 }
 
-.row{
+:where(html:not(.template-bootstrap):not(.template-digdir)) .row{
 	padding: 0.3em 0;
 }
 h3 {
@@ -163,7 +163,7 @@ h3 {
 	font-weight: bold;
 	margin: 1em 0;
 }
-#page_content {
+:where(html:not(.template-bootstrap):not(.template-digdir)) #page_content {
 	margin: 2em 1em;
 }
 .clr { clear: both;}

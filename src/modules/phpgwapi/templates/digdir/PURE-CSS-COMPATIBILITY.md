@@ -7,17 +7,18 @@ PorticoEstate currently uses **Pure CSS** (from Yahoo) alongside the new **Digdi
 ## CSS Load Order
 
 Bootstrap, Digdir and Portico load the shared `phpgwapi/templates/base/css/base.css`
-and the current module's `templates/base/css/base.css` when present. Each is
-loaded before its corresponding template-set stylesheet. Bootstrap and Digdir
-load the shared module styles before their framework overrides; Portico retains
-its existing framework-then-module order.
+and the current module's `templates/base/css/base.css` when present, before the
+template-set overrides. Optional module and theme files are included only when
+present.
 
 Pure's global, action-bar, form and grid styles are loaded for all three.
-Bootstrap also loads Bootstrap CSS. Digdir loads `digdir-native.css`, its
+Bootstrap loads Bootstrap CSS once. Digdir loads `digdir-native.css`, its
 component and shell styles, then the Designsystemet and admin token assets; the
 Designsystemet assets use CSS cascade layers. Widget styles are emitted before
-these lists in Bootstrap and Digdir, but after them in Portico. Optional theme
-and module-specific files are included only when present.
+the template styles in all three shells. The Bootstrap Multiselect widget does
+not inject Bootstrap's global stylesheet into Digdir or Portico; its dropdown
+uses scoped compatibility styles instead. DataTables styles are registered by
+the widget loader, not duplicated in the Portico head.
 
 The shared phpgwapi stylesheet retains legacy element defaults for older
 templates while Bootstrap and Digdir use their own shell typography. Legacy

@@ -42,7 +42,7 @@ textarea
 	white-space: normal;
 }*/
 
-thead
+:where(html:not(.template-bootstrap):not(.template-digdir)) thead
 {
 	background-color: #d3dce3;
 	font-weight: bold;
@@ -104,29 +104,30 @@ ol.source li
 
 
 
-TD {
+/* Legacy element defaults must not override the Bootstrap or Digdir shells. */
+:where(html:not(.template-bootstrap):not(.template-digdir)) TD {
 	vertical-align: top;
 }
 
-P {
+:where(html:not(.template-bootstrap):not(.template-digdir)) P {
 	line-height: 1.5em;
 	margin: 0.75em 0 0.5em;
 }
 
-H1 {
+:where(html:not(.template-bootstrap):not(.template-digdir)) H1 {
 	color: #C30;
 	/*	font: 1.65em Georgia, "Times New Roman", Times, serif;*/
 	font-weight: normal;
 	letter-spacing: 0.1em;
 	margin: 0 0 0.75em;
 }
-H1 A , /* bookmarks - depricated? */
-H1 A:visited ,
-H1 A:hover {
+:where(html:not(.template-bootstrap):not(.template-digdir)) H1 A , /* bookmarks - depricated? */
+:where(html:not(.template-bootstrap):not(.template-digdir)) H1 A:visited ,
+:where(html:not(.template-bootstrap):not(.template-digdir)) H1 A:hover {
 	color: #C30 !important;
 }
 
-H2 {
+:where(html:not(.template-bootstrap):not(.template-digdir)) H2 {
 	/*	font: 1.3em Georgia, "Times New Roman", Times, serif;*/
 	font-weight: bold;
 	text-transform: uppercase;
@@ -137,7 +138,7 @@ H2 {
 	margin: 0.5em 0 0.75em;
 }
 
-H3 {
+:where(html:not(.template-bootstrap):not(.template-digdir)) H3 {
 	font-size: 1.2em;
 	font-weight: bold;
 	font-style: italic;
@@ -145,21 +146,21 @@ H3 {
 	margin: 0.5em 0 0.75em;
 }
 
-H4 {
+:where(html:not(.template-bootstrap):not(.template-digdir)) H4 {
 	font-size: 1.1em;
 	font-weight: bold;
 	padding-top: 0.5em;
 	margin: 0.5em 0 1em;
 }
 
-BLOCKQUOTE {
+:where(html:not(.template-bootstrap):not(.template-digdir)) BLOCKQUOTE {
 	margin: 1em 0 1em 3em;
 }
-TT { /* used for inline code references */
+:where(html:not(.template-bootstrap):not(.template-digdir)) TT { /* used for inline code references */
 	font-size: 1.1em;
 	font-weight: bold;
 }
-PRE { /* used for code blocks */
+:where(html:not(.template-bootstrap):not(.template-digdir)) PRE { /* used for code blocks */
 	font-size: 1.1em;
 	font-weight: normal;
 	margin: 1em 0;
@@ -167,23 +168,24 @@ PRE { /* used for code blocks */
 	border: 1px solid #CCC;
 	background-color: #F6F6F6;
 }
-PRE I { /* code comment */
+:where(html:not(.template-bootstrap):not(.template-digdir)) PRE I { /* code comment */
 	color: #666;
 	font-style: italic;
 }
 
-STRONG {
+:where(html:not(.template-bootstrap):not(.template-digdir)) STRONG {
 	font-weight: bold;
 	color: #B30;
 }
 
-UL, OL {
+:where(html:not(.template-bootstrap):not(.template-digdir)) UL,
+:where(html:not(.template-bootstrap):not(.template-digdir)) OL {
 	margin-top: 0.5ex;
 	margin-bottom: 1ex;
 	margin-left: 2em;
 	padding: 0;
 }
-LI {
+:where(html:not(.template-bootstrap):not(.template-digdir)) LI {
 	line-height: 1.35em;
 	padding: 0.75ex 0;
 	margin: 0;
@@ -224,7 +226,7 @@ LI {
 */
 
 
-body {
+:where(html:not(.template-bootstrap):not(.template-digdir)) body {
 	font-family: Arial, Helvetica, Verdana, sans-serif;
 	font-size: 12px;
 	background-color: #f9f9f9;
@@ -233,7 +235,7 @@ body {
 
 
 
-H5 {
+:where(html:not(.template-bootstrap):not(.template-digdir)) H5 {
 	font-size: 1em;
 	font-weight: normal;
 	line-height: 1em;

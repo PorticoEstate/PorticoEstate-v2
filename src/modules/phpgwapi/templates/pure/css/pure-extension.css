@@ -40,6 +40,10 @@ https://github.com/yui/pure/blob/master/LICENSE.md
 	font-weight: bold;
 }
 
+:where(html.template-bootstrap, html.template-digdir) .pure-form label {
+	font-size: inherit;
+}
+
 .p0{padding-left: 0px !important;padding-top: 0px !important;padding-bottom: 0px !important;}
 
 .pure-form.pure-form-aligned label h4{margin: 0.66em 0;}

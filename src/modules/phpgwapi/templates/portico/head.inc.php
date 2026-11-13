@@ -80,11 +80,14 @@ if (isset($userSettings['preferences']['common']['theme']))
 {
 	$stylesheets[] = "/phpgwapi/templates/portico/css/{$userSettings['preferences']['common']['theme']}.css";
 }
-$stylesheets[] = "/{$app}/templates/base/css/base.css";
-$stylesheets[] = "/{$app}/templates/portico/css/base.css";
-if (isset($userSettings['preferences']['common']['theme']))
+if ($app != 'phpgwapi')
 {
-	$stylesheets[] = "/{$app}/templates/portico/css/{$userSettings['preferences']['common']['theme']}.css";
+	$stylesheets[] = "/{$app}/templates/base/css/base.css";
+	$stylesheets[] = "/{$app}/templates/portico/css/base.css";
+	if (isset($userSettings['preferences']['common']['theme']))
+	{
+		$stylesheets[] = "/{$app}/templates/portico/css/{$userSettings['preferences']['common']['theme']}.css";
+	}
 }
 
 //	if(isset($userSettings['preferences']['common']['yui_table_nowrap']) && $userSettings['preferences']['common']['yui_table_nowrap'])

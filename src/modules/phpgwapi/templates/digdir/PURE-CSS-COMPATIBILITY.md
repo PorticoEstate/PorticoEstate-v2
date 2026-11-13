@@ -6,33 +6,23 @@ PorticoEstate currently uses **Pure CSS** (from Yahoo) alongside the new **Digdi
 
 ## CSS Load Order
 
-The stylesheets are loaded in this specific order:
+Bootstrap, Digdir and Portico load the shared `phpgwapi/templates/base/css/base.css`
+and the current module's `templates/base/css/base.css` when present. Each is
+loaded before its corresponding template-set stylesheet. Bootstrap and Digdir
+load the shared module styles before their framework overrides; Portico retains
+its existing framework-then-module order.
 
-```
-1. Pure CSS (base layer)
-   - global.css
-   - pure-min.css
-   - pure-extension.css
-   - grids-responsive-min.css
+Pure's global, action-bar, form and grid styles are loaded for all three.
+Bootstrap also loads Bootstrap CSS. Digdir loads `digdir-native.css`, its
+component and shell styles, then the Designsystemet and admin token assets; the
+Designsystemet assets use CSS cascade layers. Widget styles are emitted before
+these lists in Bootstrap and Digdir, but after them in Portico. Optional theme
+and module-specific files are included only when present.
 
-2. Design System Layer
-   - @digdir/designsystemet-css (when template_set = 'digdir')
-   - designsystemet-compat.css (compatibility layer)
-   OR
-   - bootstrap.min.css (when template_set != 'digdir')
-
-3. Icon Fonts
-   - FontAwesome
-   - Flag Icons
-
-4. Template-specific CSS
-   - base.css
-   - sidebar.css
-   - navbar CSS
-
-5. Theme CSS
-   - User's selected theme
-```
+The shared phpgwapi stylesheet retains legacy element defaults for older
+templates while Bootstrap and Digdir use their own shell typography. Legacy
+module button rules do not override Pure or framework buttons in those two
+templates. `designsystemet-compat.css` is not loaded by the Digdir head.
 
 ## Known Conflicts & Solutions
 
@@ -134,14 +124,17 @@ shared XSL templates or the Bootstrap template set:
 <!-- Using component -->
 {% include '@components/button.twig' with {
     content: 'Digdir Button',
-    variant: 'primary'
+    variant: 'primary',
+    is_designsystemet: true
 } %}
 
-<!-- Or using classes -->
-<button class="btn btn-primary">Bootstrap-style</button>
+<!-- Or using the Digdir shell's native classes -->
+<button class="app-button app-button-primary">Primary</button>
 ```
 
-**Solution:** The compatibility layer ensures `.btn` classes work correctly. You can use both styles in the same page.
+The Digdir head does not load `designsystemet-compat.css`, so Bootstrap `.btn`
+classes are not a general Digdir button fallback. Use Pure or the Digdir shell
+classes for buttons in this template.
 
 ### 3. Forms
 

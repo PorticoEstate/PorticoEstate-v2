@@ -380,7 +380,7 @@ a {
   text-decoration: none;
 }
 
-#innertoolbar-button, input[type="submit"] {
+#innertoolbar-button, input[type="submit"]:not(:where(html:is(.template-bootstrap, .template-digdir) :is(.pure-button, .btn, .app-button, .ds-button))) {
   background: none repeat scroll 0 0 #4F9AEA;
   border: 1px solid #4685C8;
   border-radius: 4px;
@@ -390,7 +390,9 @@ a {
   padding: 5px 20px;
 }
 
-#innertoolbar-button, input[type="button"], #innertoolbar-button, input[type="submit"] {
+#innertoolbar-button,
+input[type="button"]:not(:where(html:is(.template-bootstrap, .template-digdir) :is(.pure-button, .btn, .app-button, .ds-button))),
+input[type="submit"]:not(:where(html:is(.template-bootstrap, .template-digdir) :is(.pure-button, .btn, .app-button, .ds-button))) {
   margin-right: 3px;
   padding: 3px 20px;
 }
@@ -864,7 +866,9 @@ ul.row li{
   color: #FFFFFF;
 }
 
-.btn, .btn_m, .btn-sm {
+:where(html:not(.template-bootstrap):not(.template-digdir)) .btn,
+.btn_m,
+:where(html:not(.template-bootstrap):not(.template-digdir)) .btn-sm {
   background: none repeat scroll 0 0 #4F9AEA;
   border: 1px solid #428AD7;
   border-radius: 4px;
@@ -880,18 +884,18 @@ ul.row li{
   font-size: 12px;
 }
 
-.btn-sm {
+:where(html:not(.template-bootstrap):not(.template-digdir)) .btn-sm {
   font-size: 12px;
   padding: 1px 4px;
 }
 
-.btn.cancel, .btn_m.cancel {
+:where(html:not(.template-bootstrap):not(.template-digdir)) .btn.cancel, .btn_m.cancel {
   background: none repeat scroll 0 0 #EEEEEE;
   border: 1px solid #CCCCCC;
   color: #333333;
 }
 
-.btn.focus, .btn_m.focus {
+:where(html:not(.template-bootstrap):not(.template-digdir)) .btn.focus, .btn_m.focus {
   background: none repeat scroll 0 0 #F57056;
   border-color: #EE836F -moz-use-text-color #CB563F;
   border-style: solid none;

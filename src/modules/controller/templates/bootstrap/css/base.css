@@ -25,6 +25,10 @@ label {
   display: inline-block;
 }
 
+.pure-form label {
+  font-size: 13px;
+}
+
 a{
   cursor: pointer;	
 }

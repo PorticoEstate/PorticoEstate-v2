@@ -75,10 +75,12 @@ shared XSL templates or the Bootstrap template set:
   `.pure-custom` scroll inside that wrapper.
 - Action bars use `.sticky-action-bar` and the shared
   `templates/pure/css/action-bar.css`, loaded by the administrative and legacy
-  frontend template sets. Property, Eventplanner, and Addressbook retain their
-  existing action elements and visibility hooks; initially hidden or disabled
-  bars are not activated. The inner `#submitbox` owns the surface styling so
-  hiding it also collapses the bar.
+  frontend template sets. Property ticket add and view actions are inside their
+  sticky bars, with send-order remaining conditional on access and an existing
+  order. Eventplanner and Addressbook retain their existing action elements and
+  visibility hooks; initially hidden or disabled bars are not activated. The
+  inner `#submitbox` owns the surface styling so hiding it also collapses the
+  bar.
 - Digdir's remaining legacy action-bar overrides exclude `.sticky-action-bar`.
 
 ### 1. Grid Systems

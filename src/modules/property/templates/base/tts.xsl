@@ -50,6 +50,40 @@
 	<form class="pure-form pure-form-aligned"  ENCTYPE="multipart/form-data" id="form" name="form" method="post" action="{$form_action}">
 		<div id="tab-content">
 			<xsl:value-of disable-output-escaping="yes" select="tabs"/>
+			<div id="floating-box" class="sticky-action-bar">
+				<div id="submitbox">
+					<input type="hidden" id="save" name="values[save]" value=""/>
+					<input type="hidden" id="apply" name="values[apply]" value=""/>
+					<input type="hidden" id="cancel" name="values[cancel]" value=""/>
+					<table>
+						<tbody>
+							<tr>
+								<td>
+									<input class="pure-button pure-button-primary" type="button" name="save" value="{lang_send}" onClick="confirm_session('save');">
+										<xsl:attribute name="title">
+											<xsl:value-of select="php:function('lang', 'Save the entry and return to list')"/>
+										</xsl:attribute>
+									</input>
+								</td>
+								<td>
+									<input class="pure-button pure-button-primary" type="button" name="apply" value="{lang_save}" onClick="confirm_session('apply');">
+										<xsl:attribute name="title">
+											<xsl:value-of select="php:function('lang', 'Save the ticket')"/>
+										</xsl:attribute>
+									</input>
+								</td>
+								<td>
+									<input class="pure-button pure-button-primary" type="button" name="cancel" value="{lang_cancel}" onClick="confirm_session('cancel');">
+										<xsl:attribute name="title">
+											<xsl:value-of select="php:function('lang', 'Back to the ticket list')"/>
+										</xsl:attribute>
+									</input>
+								</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+			</div>
 			<div id="add">
 				<fieldset>
 					<xsl:for-each select="value_origin">
@@ -293,26 +327,6 @@
 				</div>
 			</div>
 		</div>
-		<div class="proplist-col">
-			<input type="hidden" id="save" name="values[save]" value=""/>
-			<input type="hidden" id="apply" name="values[apply]" value=""/>
-			<input type="hidden" id="cancel" name="values[cancel]" value=""/>
-			<input class="pure-button pure-button-primary" type="button" name="save" value="{lang_send}" onClick="confirm_session('save');">
-				<xsl:attribute name="title">
-					<xsl:value-of select="php:function('lang', 'Save the entry and return to list')"/>
-				</xsl:attribute>
-			</input>
-			<input class="pure-button pure-button-primary" type="button" name="apply" value="{lang_save}" onClick="confirm_session('apply');">
-				<xsl:attribute name="title">
-					<xsl:value-of select="php:function('lang', 'Save the ticket')"/>
-				</xsl:attribute>
-			</input>
-			<input class="pure-button pure-button-primary" type="button" name="cancel" value="{lang_cancel}" onClick="confirm_session('cancel');">
-				<xsl:attribute name="title">
-					<xsl:value-of select="php:function('lang', 'Back to the ticket list')"/>
-				</xsl:attribute>
-			</input>
-		</div>
 	</form>
 </xsl:template>
 
@@ -410,9 +424,9 @@
 			<xsl:value-of disable-output-escaping="yes" select="tabs"/>
 			<div id="floating-box" class="sticky-action-bar">
 				<div id="submitbox">
-					<xsl:if test="not(access_order = 1 and value_order_id != '')">
-						<xsl:attribute name="style">display: none</xsl:attribute>
-					</xsl:if>
+					<input type="hidden" id="save" name="values[save]" value=""/>
+					<input type="hidden" id="apply" name="values[apply]" value=""/>
+					<input type="hidden" id="send_order" name="values[send_order]" value=""/>
 					<table>
 						<tbody>
 							<tr>
@@ -1752,54 +1766,6 @@
 				</xsl:for-each>
 
 			</div>
-		</div>
-		<div class="proplist-col">
-			<input type="hidden" id="save" name="values[save]" value=""/>
-			<input type="hidden" id="apply" name="values[apply]" value=""/>
-			<input class="pure-button pure-button-primary" type="button" name="save" onClick="confirm_session('save');">
-				<xsl:attribute name="value">
-					<xsl:value-of select="php:function('lang', 'save')"/>
-				</xsl:attribute>
-				<xsl:attribute name="title">
-					<xsl:value-of select="php:function('lang', 'Save the entry and return to list')"/>
-				</xsl:attribute>
-			</input>
-			<input type="button" class="pure-button pure-button-primary" name="apply" onClick="confirm_session('apply');">
-				<xsl:attribute name="value">
-					<xsl:value-of select="php:function('lang', 'apply')"/>
-				</xsl:attribute>
-				<xsl:attribute name="title">
-					<xsl:value-of select="php:function('lang', 'save the ticket')"/>
-				</xsl:attribute>
-			</input>
-			<input type="hidden" id="send_order" name="values[send_order]" value=""/>
-			<xsl:choose>
-				<xsl:when test="access_order = 1">
-					<xsl:choose>
-						<xsl:when test="value_order_id!=''">
-							<xsl:variable name="lang_send_order">
-								<xsl:value-of select="php:function('lang', 'send order')"/>
-							</xsl:variable>
-							<input type="button" class="pure-button pure-button-primary" name="send_order" onClick="confirm_session('send_order');">
-								<xsl:attribute name="value">
-									<xsl:value-of select="$lang_send_order"/>
-								</xsl:attribute>
-								<xsl:attribute name="title">
-									<xsl:value-of select="$lang_send_order"/>
-								</xsl:attribute>
-							</input>
-						</xsl:when>
-					</xsl:choose>
-				</xsl:when>
-			</xsl:choose>
-			<xsl:variable name="lang_done">
-				<xsl:value-of select="php:function('lang', 'done')"/>
-			</xsl:variable>
-			<input type="button" class="pure-button pure-button-primary" name="done" value="{$lang_done}" onClick="document.cancel_form.submit();">
-				<xsl:attribute name="title">
-					<xsl:value-of select="php:function('lang', 'Back to the ticket list')"/>
-				</xsl:attribute>
-			</input>
 		</div>
 	</form>
 

@@ -27,7 +27,8 @@ namespace Tests\Controllers
 			$this->assertTrue($fragment->loadXML(
 				'<!DOCTYPE root [<!ENTITY nbsp "&#160;">]><root xmlns:xsl="http://www.w3.org/1999/XSL/Transform">' . $source . '</root>'
 			));
-			$bar = (new DOMXPath($fragment))->query('//*[@id="floating-box"]')->item(0);
+			$bars = (new DOMXPath($fragment))->query('//*[@id="floating-box"]');
+			$bar = $bars->item(strpos($data, '<view>') !== false ? 1 : 0);
 			$this->assertNotNull($bar);
 
 			$stylesheet = new DOMDocument();
@@ -78,16 +79,33 @@ namespace Tests\Controllers
 		public function testTicketBarRespectsOrderAccessAndContainsAllActions(): void
 		{
 			foreach (array(
-				array(1, '123', false),
-				array(1, '', true),
-				array(0, '123', true),
-			) as list($access, $order, $hidden))
+				array(1, '123', true),
+				array(1, '', false),
+				array(0, '123', false),
+			) as list($access, $order, $sendOrderVisible))
 			{
 				$xpath = $this->renderBar('property', 'tts', "<view><access_order>{$access}</access_order><value_order_id>{$order}</value_order_id></view>");
 				$box = $xpath->query('//*[@id="submitbox"]')->item(0);
-				$this->assertSame($hidden, $box->getAttribute('style') === 'display: none');
+				$this->assertSame('', $box->getAttribute('style'));
+				$this->assertCount(1, $xpath->query('//*[@id="submitbox"]//td/input[@name="save" and @onclick="confirm_session(\'save\');"]'));
 				$this->assertCount(1, $xpath->query('//*[@id="submitbox"]//td/input[@name="apply"]'));
-				$this->assertCount($hidden ? 0 : 1, $xpath->query('//*[@id="submitbox"]//input[@id="send_order_button"]'));
+				$this->assertCount($sendOrderVisible ? 1 : 0, $xpath->query('//*[@id="submitbox"]//input[@id="send_order_button"]'));
+				$this->assertCount(1, $xpath->query('//*[@id="submitbox"]//td/input[@name="done" and @onclick="document.cancel_form.submit();"]'));
+				$this->assertCount(1, $xpath->query('//*[@id="submitbox"]//*[@id="save" and @name="values[save]"]'));
+				$this->assertCount(1, $xpath->query('//*[@id="submitbox"]//*[@id="apply" and @name="values[apply]"]'));
+				$this->assertCount(1, $xpath->query('//*[@id="submitbox"]//*[@id="send_order" and @name="values[send_order]"]'));
+			}
+		}
+
+		public function testTicketAddActionsAreInStickyBar(): void
+		{
+			$xpath = $this->renderBar('property', 'tts', '<add><lang_send>Send</lang_send><lang_save>Save</lang_save><lang_cancel>Cancel</lang_cancel></add>');
+			$this->assertCount(1, $xpath->query('//*[@id="floating-box" and contains(@class, "sticky-action-bar")]'));
+
+			foreach (array('save', 'apply', 'cancel') as $action)
+			{
+				$this->assertCount(1, $xpath->query("//*[@id=\"submitbox\"]//input[@type=\"button\" and @name=\"{$action}\" and @onclick=\"confirm_session('{$action}');\"]"));
+				$this->assertCount(1, $xpath->query("//*[@id=\"submitbox\"]//*[@id=\"{$action}\" and @name=\"values[{$action}]\"]"));
 			}
 		}
 

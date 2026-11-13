@@ -100,12 +100,12 @@ body {
 }
 
 /* Some legacy scripts position this toolbar absolutely and animate its margin. */
-.pure-form #floating-box:not(.project-action-bar) {
+.pure-form #floating-box:not(.sticky-action-bar) {
 	background-color: var(--ds-color-neutral-background-default, #fff);
 	border-bottom: 1px solid var(--ds-color-neutral-border-subtle, #ddd);
 }
 
-.pure-form #floating-box:not(.project-action-bar) #submitbox {
+.pure-form #floating-box:not(.sticky-action-bar) #submitbox {
 	position: static !important;
 	margin-top: 0 !important;
 	border: 0 !important;

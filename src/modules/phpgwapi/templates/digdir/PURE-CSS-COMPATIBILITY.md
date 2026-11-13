@@ -71,10 +71,13 @@ shared XSL templates or the Bootstrap template set:
   controls use the available width.
 - DataTables keep their own horizontal scrolling; plain tables directly inside
   `.pure-custom` scroll inside that wrapper.
-- Legacy `#floating-box #submitbox` action bars stay in document flow instead of
-  overlapping fields. The scoped overrides take precedence over script-applied
-  positioning and scroll-animation margins. The project form uses its own shared
-  sticky action bar instead, preserving the existing action and visibility hooks.
+- Action bars use `.sticky-action-bar` and the shared
+  `templates/pure/css/action-bar.css`, loaded by the administrative and legacy
+  frontend template sets. Property, Eventplanner, and Addressbook retain their
+  existing action elements and visibility hooks; initially hidden or disabled
+  bars are not activated. The inner `#submitbox` owns the surface styling so
+  hiding it also collapses the bar.
+- Digdir's remaining legacy action-bar overrides exclude `.sticky-action-bar`.
 
 ### 1. Grid Systems
 

@@ -17,51 +17,6 @@
 <!-- add / edit -->
 <xsl:template xmlns:php="http://php.net/xsl" match="edit">
 	<style type="text/css">
-		#floating-box.project-action-bar {
-			position: sticky;
-			top: 0;
-			z-index: 10;
-		}
-		#floating-box.project-action-bar #submitbox {
-			padding: 0.5rem;
-			background: #fff;
-			border: 1px solid #ddd;
-			border-radius: 0.25rem;
-			box-shadow: 0 0.125rem 0.375rem rgba(0, 0, 0, 0.12);
-		}
-		body.sb-nav-fixed #floating-box.project-action-bar {
-			top: 56px;
-		}
-		body:has(.app-topbar) #floating-box.project-action-bar {
-			top: var(--app-topbar-height, 60px);
-		}
-		#floating-box.project-action-bar #submitbox > table,
-		#floating-box.project-action-bar #submitbox > table > tbody {
-			display: block;
-			width: 100%;
-		}
-		#floating-box.project-action-bar #submitbox > table > tbody > tr {
-			display: flex;
-			flex-wrap: wrap;
-			justify-content: flex-end;
-			gap: 0.5rem;
-		}
-		#floating-box.project-action-bar #submitbox > table > tbody > tr > td {
-			min-width: 0;
-			max-width: 100%;
-			padding: 0;
-		}
-		#floating-box.project-action-bar input[type="button"] {
-			box-sizing: border-box;
-			max-width: 100%;
-			padding-inline: 0.5em;
-			white-space: normal;
-			overflow-wrap: anywhere;
-		}
-		#floating-box.project-action-bar input:focus-visible {
-			outline: 2px solid #005fcc;
-			outline-offset: 2px;
-		}
 		.dataTables_filter label
 		{
 		display: inline !important;
@@ -123,7 +78,7 @@
 		<div id="tab-content">
 			<xsl:value-of disable-output-escaping="yes" select="tabs"/>
 
-			<div id="floating-box" class="project-action-bar">
+			<div id="floating-box" class="project-action-bar sticky-action-bar">
 				<div id="submitbox">
 					<table>
 						<tbody>

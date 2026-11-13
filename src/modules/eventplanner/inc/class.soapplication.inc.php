@@ -35,7 +35,8 @@ phpgw::import_class('phpgwapi.socommon');
 class eventplanner_soapplication extends phpgwapi_socommon
 {
 
-	protected static $so, $cats;
+	protected static $so;
+	protected $cats;
 
 	public function __construct()
 	{

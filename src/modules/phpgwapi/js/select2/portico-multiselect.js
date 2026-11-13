@@ -12,6 +12,9 @@
  *   selectAll     - add "select all"/"clear all" buttons to the dropdown (default true)
  *   selectAllText - label for the select-all button
  *   clearAllText  - label for the clear-all button
+ *   collapse      - show a single "N selected" chip instead of wrapping chips over several lines (default true)
+ *   collapseAfter - selection count that triggers collapsing while the control is hidden and cannot be measured (default 3)
+ *   collapsedText - function (count) returning the summary label
  */
 (function ($)
 {
@@ -22,7 +25,7 @@
 		return;
 	}
 
-	var portico_keys = ['selectAll', 'selectAllText', 'clearAllText'];
+	var portico_keys = ['selectAll', 'selectAllText', 'clearAllText', 'collapse', 'collapseAfter', 'collapsedText'];
 
 	function documentLanguage()
 	{
@@ -111,6 +114,93 @@
 		});
 	}
 
+	function updateCollapsed($select, settings)
+	{
+		var instance = $select.data('select2');
+		if (!instance || !instance.$container)
+		{
+			return;
+		}
+
+		var $container = instance.$container;
+		var $rendered = $container.find('.select2-selection__rendered');
+		$rendered.children('.portico-multiselect-summary').remove();
+		$container.removeClass('portico-multiselect-collapsed');
+
+		var $choices = $rendered.children('.select2-selection__choice');
+		if ($choices.length < 2)
+		{
+			return;
+		}
+
+		var overflowing;
+		if ($container.is(':visible'))
+		{
+			var $items = $rendered.children('li');
+			overflowing = $items.last()[0].offsetTop > $items.first()[0].offsetTop + 2;
+		}
+		else
+		{
+			overflowing = $choices.length > settings.collapseAfter;
+		}
+
+		if (!overflowing)
+		{
+			return;
+		}
+
+		var labels = $choices.map(function ()
+		{
+			return $(this).attr('title') || $(this).text().replace(/^\u00d7/, '').trim();
+		}).get();
+
+		var $summary = $('<li class="select2-selection__choice portico-multiselect-summary"></li>')
+			.text(settings.collapsedText($choices.length))
+			.attr('title', labels.join(', '));
+
+		var $search = $rendered.children('.select2-search--inline');
+		if ($search.length)
+		{
+			$summary.insertBefore($search);
+		}
+		else
+		{
+			$rendered.append($summary);
+		}
+		$container.addClass('portico-multiselect-collapsed');
+	}
+
+	function enableCollapse($select, settings)
+	{
+		var instance = $select.data('select2');
+		var update = function ()
+		{
+			updateCollapsed($select, settings);
+		};
+
+		// Registered after Select2's own listener, so it runs once the chips are rendered.
+		instance.on('selection:update', update);
+		$select.on('select2:open.porticoMultiselect select2:close.porticoMultiselect', update);
+
+		if (window.ResizeObserver)
+		{
+			var lastWidth = -1;
+			var observer = new ResizeObserver(function (entries)
+			{
+				var width = Math.round(entries[0].contentRect.width);
+				if (width !== lastWidth)
+				{
+					lastWidth = width;
+					update();
+				}
+			});
+			observer.observe(instance.$container[0]);
+			$select.data('porticoMultiselectObserver', observer);
+		}
+
+		update();
+	}
+
 	function initialise($select, options)
 	{
 		if ($select.hasClass('select2-hidden-accessible'))
@@ -124,7 +214,13 @@
 		var settings = $.extend({
 			selectAll: true,
 			selectAllText: norwegian ? 'Velg alle' : 'Select all',
-			clearAllText: norwegian ? 'Fjern alle' : 'Clear all'
+			clearAllText: norwegian ? 'Fjern alle' : 'Clear all',
+			collapse: true,
+			collapseAfter: 3,
+			collapsedText: function (count)
+			{
+				return count + (norwegian ? ' valgt' : ' selected');
+			}
 		}, options);
 
 		var config = {
@@ -156,6 +252,11 @@
 		{
 			addSelectAllToolbar($select, settings);
 		}
+
+		if (settings.collapse && $select.prop('multiple'))
+		{
+			enableCollapse($select, settings);
+		}
 	}
 
 	$.fn.porticoMultiselect = function (options)
@@ -183,6 +284,12 @@
 					case 'destroy':
 						if (initialised)
 						{
+							var observer = $select.data('porticoMultiselectObserver');
+							if (observer)
+							{
+								observer.disconnect();
+								$select.removeData('porticoMultiselectObserver');
+							}
 							$select.off('.porticoMultiselect').select2('destroy');
 						}
 						break;

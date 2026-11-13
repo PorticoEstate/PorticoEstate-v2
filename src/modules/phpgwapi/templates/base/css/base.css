@@ -371,3 +371,11 @@ label > input[type="search"] {
 	padding: 0.25em 0.75em;
 	font-size: 0.875em;
 }
+
+.portico-multiselect-collapsed .select2-selection__choice:not(.portico-multiselect-summary) {
+	display: none;
+}
+
+.portico-multiselect-summary {
+	cursor: pointer;
+}

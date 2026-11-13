@@ -48,6 +48,15 @@ viewport widths up to 48rem, and one up to 30rem. Tile links fill their grid cel
 flexible card bodies align the footer rows even when icons or captions differ.
 These styles live in `css/digdir-native.css`; the Bootstrap rendering is unchanged.
 
+### Shared home hook tables
+
+For all template sets, `HomeHelper` encloses module home hooks in
+`#home-hook-content`. The shared `js/core/home.js` wraps each table in a
+keyboard-focusable `.home-table-scroll` container. It also handles tables
+recreated by pagination or filtering, without nesting or leaving empty wrappers.
+The overflow styles live in `templates/pure/css/global.css`, loaded by all three
+template sets. Headings, filters, and pagers remain outside the scroll area.
+
 ### Legacy aligned forms in the Digdir template
 
 The active loader uses `digdir-native.css`, not `designsystemet-compat.css`.

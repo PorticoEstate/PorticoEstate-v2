@@ -46,3 +46,27 @@ div.error, div.warn
 {
 	color: black;
 }
+
+#home-hook-content,
+.home-table-scroll
+{
+	min-width: 0;
+	max-width: 100%;
+}
+
+#home-hook-content
+{
+	max-width: min(100%, calc(100vw - 2rem));
+}
+
+.home-table-scroll
+{
+	width: 100%;
+	overflow-x: auto;
+}
+
+.home-table-scroll:focus-visible
+{
+	outline: 2px solid currentColor;
+	outline-offset: 2px;
+}

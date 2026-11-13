@@ -118,6 +118,7 @@ class HomeHelper
 			\phpgwapi_jquery::load_widget('core');
 			\phpgwapi_jquery::load_widget('autocomplete');
 			\phpgwapi_js::getInstance()->validate_file('jquery', 'common', 'phpgwapi', false, array('combine' => true));
+			\phpgwapi_js::getInstance()->validate_file('core', 'home', 'phpgwapi', false, array('combine' => true));
 			\phpgwapi_js::getInstance()->validate_file('tinybox2', 'packed', 'phpgwapi', false, array('combine' => true));
 			\phpgwapi_css::getInstance()->add_external_file('phpgwapi/js/tinybox2/style.css');
 			$this->phpgwapi_common->phpgw_header();
@@ -368,7 +369,9 @@ HTML;
 			);
 		}
 
+		echo '<div id="home-hook-content">';
 		$this->hooks->process('home', $sorted_apps);
+		echo '</div>';
 
 		$portal_order = Cache::session_get('phpgwapi', 'portal_order');
 

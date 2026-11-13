@@ -53,7 +53,7 @@ class TemplateStylesheetOrderTest extends TestCase
 	}
 
 	/** @dataProvider multiselectTemplates */
-	public function testBootstrapMultiselectDoesNotLoadGlobalBootstrapIntoModernShells(string $template, bool $loadsBootstrap): void
+	public function testDeprecatedBootstrapMultiselectLoadsSelect2WithoutBootstrap(string $template, bool $usesBootstrapTheme): void
 	{
 		$process = proc_open(
 			array(PHP_BINARY, __DIR__ . '/../fixtures/bootstrap-multiselect-assets.php', $template),
@@ -67,12 +67,13 @@ class TemplateStylesheetOrderTest extends TestCase
 		fclose($pipes[1]);
 		fclose($pipes[2]);
 		$this->assertSame(0, proc_close($process), $errors);
-		$stylesheets = json_decode($output, true, 512, JSON_THROW_ON_ERROR);
-		$bootstrapCss = 'phpgwapi/js/bootstrap5/vendor/twbs/bootstrap/dist/css/bootstrap.min.css';
-		$pluginCss = 'phpgwapi/js/bootstrap-multiselect/css/bootstrap-multiselect.min.css';
+		$assets = json_decode($output, true, 512, JSON_THROW_ON_ERROR);
 
-		$this->assertSame($loadsBootstrap, in_array($bootstrapCss, $stylesheets, true));
-		$this->assertContains($pluginCss, $stylesheets);
+		$this->assertNotContains('phpgwapi/js/bootstrap5/vendor/twbs/bootstrap/dist/css/bootstrap.min.css', $assets['css']);
+		$this->assertContains('phpgwapi/js/select2/css/select2.min.css', $assets['css']);
+		$this->assertSame($usesBootstrapTheme, in_array('phpgwapi/js/select2/css/select2-bootstrap-5-theme.min.css', $assets['css'], true));
+		$this->assertContains('select2/portico-multiselect', $assets['js']);
+		$this->assertEmpty(preg_grep('/bootstrap/', $assets['js']));
 	}
 
 	public function testPorticoWidgetStylesPrecedeTemplateOverridesAndDataTablesIsNotDuplicated(): void
@@ -200,10 +201,10 @@ class TemplateStylesheetOrderTest extends TestCase
 	public static function multiselectTemplates(): array
 	{
 		return array(
-			array('bootstrap', false),
+			array('bootstrap', true),
 			array('digdir', false),
 			array('portico', false),
-			array('simple', true),
+			array('simple', false),
 		);
 	}
 }

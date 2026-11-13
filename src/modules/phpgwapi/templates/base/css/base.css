@@ -358,8 +358,16 @@ label > input[type="search"] {
 	border-color: var(--ds-color-neutral-border-default, #797979);
 }
 
-.select2-select-all .pure-button {
+.portico-multiselect-toolbar {
+	display: flex;
+	gap: 0.5em;
+	padding: 0.375em;
+	border-bottom: 1px solid var(--ds-color-neutral-border-subtle, #d4d4d4);
+}
+
+.portico-multiselect-toolbar .pure-button {
 	width: auto;
+	margin: 0;
 	padding: 0.25em 0.75em;
 	font-size: 0.875em;
 }

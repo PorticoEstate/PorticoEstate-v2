@@ -1387,7 +1387,7 @@ JS;
 
 		phpgwapi_jquery::load_widget('core');
 		phpgwapi_jquery::load_widget('autocomplete');
-		phpgwapi_jquery::load_widget('bootstrap-multiselect');
+		phpgwapi_jquery::load_widget('select2');
 		phpgwapi_jquery::formvalidator_generate(array());
 		self::add_javascript($this->currentapp, 'base', 'external_communication.send_sms.js');
 		self::render_template_xsl(array('external_communication'), array(

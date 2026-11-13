@@ -208,40 +208,12 @@ class phpgwapi_jquery
 				$css->add_external_file("phpgwapi/js/jquery/file-upload/css/jquery.fileupload-custom.css");
 				break;
 
+			// Deprecated: bootstrap-multiselect is replaced by Select2 + porticoMultiselect.
 			case 'bootstrap-multiselect':
-				$load = array(
-					//				"js/{$_jquery_core}{$_type}",
-					'bootstrap-multiselect' => array("js/bootstrap-multiselect.min")
-				);
-				$templateSet = $userSettings['preferences']['common']['template_set'];
-				if (! in_array($templateSet, array('bootstrap', 'bookingfrontend', 'mobilefrontend')))
-				{
-					$load['popper']					 = array("popper2.min");
-					$load['bootstrap5']				 = array("vendor/twbs/bootstrap/dist/js/bootstrap.min");
-
-					$load['bootstrap-multiselect']	 = array("js/bootstrap-multiselect.min");
-				}
-				else
-				{
-					unset($load['bootstrap-multiselect']); //to be inserted last
-					//			$load['popper']					 = array("popper2.min");
-					//			$load['bootstrap5']				 = array("vendor/twbs/bootstrap/dist/js/bootstrap.min");
-
-					$load['bootstrap-multiselect']	 = array("js/bootstrap-multiselect.min");
-				}
-
-				if (! in_array($templateSet, array('bootstrap', 'digdir', 'portico')))
-				{
-					phpgwapi_css::getInstance()->add_external_file("phpgwapi/js/bootstrap5/vendor/twbs/bootstrap/dist/css/bootstrap.min.css");
-				}
-
-				phpgwapi_css::getInstance()->add_external_file("phpgwapi/js/bootstrap-multiselect/css/bootstrap-multiselect.min.css");
-
-				break;
 			case 'select2':
 				$load = array(
 					//				"js/{$_jquery_core}{$_type}",
-					'select2' => array("js/select2{$_type}", "js/i18n/{$userSettings['preferences']['common']['lang']}")
+					'select2' => array("js/select2{$_type}", "js/i18n/{$userSettings['preferences']['common']['lang']}", 'portico-multiselect')
 				);
 
 				phpgwapi_css::getInstance()->add_external_file("phpgwapi/js/select2/css/select2{$_type}.css");

@@ -130,7 +130,7 @@ class booking_uibuilding extends booking_uicommon
 		{
 			return $this->query();
 		}
-		phpgwapi_jquery::load_widget('bootstrap-multiselect');
+		phpgwapi_jquery::load_widget('select2');
 
 		$data = array(
 			'datatable_name' => $this->display_name,
@@ -569,7 +569,7 @@ class booking_uibuilding extends booking_uicommon
 		));
 		self::add_javascript('booking', 'base', 'schedule.js');
 		phpgwapi_jquery::load_widget("datepicker");
-		phpgwapi_jquery::load_widget('bootstrap-multiselect');
+		phpgwapi_jquery::load_widget('select2');
 
 		$building['picker_img'] = $this->phpgwapi_common->image('phpgwapi', 'cal');
 

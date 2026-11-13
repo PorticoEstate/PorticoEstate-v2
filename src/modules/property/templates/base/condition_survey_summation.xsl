@@ -181,37 +181,10 @@
 			var api = oTable.api();
 			api.on( 'draw', sum_columns );
 
-			$("#survey_id").multiselect({
-					buttonClass: 'form-select',
-					templates: {
-					button: '<button type="button" class="multiselect dropdown-toggle" data-bs-toggle="dropdown"><span class="multiselect-selected-text"></span></button>',
-					},
-					//	buttonWidth: 250,
-					includeSelectAllOption: true,
-					enableFiltering: true,
-					enableCaseInsensitiveFiltering: true,
-					buttonClass: 'form-control',
-					onChange: function ($option)
-					{
-						// Check if the filter was used.
-						var query = $("#survey_id").find('li.multiselect-filter input').val();
-
-						if (query)
-						{
-							$("#survey_id").find('li.multiselect-filter input').val('').trigger('keydown');
-						}
-					},
-					onDropdownHidden: function (event)
-					{
-			//			console.log(event);
-						$("#form").submit();
-					}
-				});
-
-				$(".btn-group").addClass('w-100');
-				$(".multiselect").addClass('form-control');
-				$(".multiselect").removeClass('btn');
-				$(".multiselect").removeClass('btn-default');
+			$("#survey_id").porticoMultiselect().on('select2:close', function ()
+			{
+				$("#form").submit();
+			});
 
 
 		});

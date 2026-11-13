@@ -1883,7 +1883,7 @@
 			);
 
 			phpgwapi_jquery::load_widget('numberformat');
-			phpgwapi_jquery::load_widget('bootstrap-multiselect');
+			phpgwapi_jquery::load_widget('select2');
 
 			$this->flags['app_header'] = lang('property') . '::' . lang('condition survey');
 			Settings::getInstance()->update('flags', ['app_header' => $this->flags['app_header']]);

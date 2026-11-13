@@ -583,7 +583,7 @@ class booking_uiapplication extends booking_uicommon
 			return $this->query();
 		}
 		phpgwapi_jquery::load_widget('autocomplete');
-		phpgwapi_jquery::load_widget('bootstrap-multiselect');
+		phpgwapi_jquery::load_widget('select2');
 		$jqcal2 = createObject('phpgwapi.jqcal2');
 		$jqcal2->add_listener('filter_from_');
 

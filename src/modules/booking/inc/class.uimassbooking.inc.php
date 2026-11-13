@@ -44,7 +44,7 @@ class booking_uimassbooking extends booking_uicommon
 			return $this->query();
 		}
 
-		phpgwapi_jquery::load_widget('bootstrap-multiselect');
+		phpgwapi_jquery::load_widget('select2');
 
 		$data = array(
 			'datatable_name' => $this->display_name,

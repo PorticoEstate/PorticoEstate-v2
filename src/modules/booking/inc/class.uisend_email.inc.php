@@ -92,7 +92,7 @@ class booking_uisend_email extends booking_uicommon
 			'location',
 			'date', 'security', 'file'
 		));
-		phpgwapi_jquery::load_widget('bootstrap-multiselect');
+		phpgwapi_jquery::load_widget('select2');
 		$this->rich_text_editor(array('field_mailbody'));
 		self::render_template_xsl('email_index', array(
 			'building'		 => $building,

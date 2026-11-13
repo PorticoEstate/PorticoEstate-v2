@@ -42,21 +42,7 @@ $(function ()
 	});
 
 
-	var select2Theme = $('link[href*="select2-bootstrap-5-theme"]').length ? 'bootstrap-5' : 'default';
-
-	$("#part_of_town_id, #inspector_id").each(function ()
-	{
-		var $select = $(this);
-		$select.select2({
-			theme: select2Theme,
-			language: "no",
-			width: '100%',
-			closeOnSelect: false,
-			allowClear: true,
-			placeholder: $('label[for="' + this.id + '"]').text().trim()
-		});
-		addSelectAllControls($select);
-	});
+	$("#part_of_town_id, #inspector_id").porticoMultiselect();
 
 	// Digdir/Portico do not load Bootstrap JS, so provide a native toggle for the filter panel.
 	if (typeof bootstrap === 'undefined' || !bootstrap.Collapse)
@@ -72,25 +58,3 @@ $(function ()
 		});
 	}
 });
-
-function addSelectAllControls($select)
-{
-	var $controls = $('<div class="select2-select-all mt-1 mb-2"></div>');
-	var $all = $('<button type="button" class="pure-button pure-button-secondary btn btn-sm btn-outline-secondary"></button>')
-		.text('Velg alle')
-		.on('click', function ()
-		{
-			$select.find('option').prop('selected', true);
-			$select.trigger('change');
-		});
-	var $none = $('<button type="button" class="pure-button pure-button-secondary btn btn-sm btn-outline-secondary ms-1"></button>')
-		.text('Fjern alle')
-		.on('click', function ()
-		{
-			$select.val(null).trigger('change');
-		});
-	$controls.append($all, $none).insertAfter($select.next('.select2-container'));
-}
-
-
-

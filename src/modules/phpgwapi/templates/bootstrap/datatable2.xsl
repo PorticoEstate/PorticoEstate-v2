@@ -1092,23 +1092,7 @@
 			{
 				try
 				{
-					oControl.multiselect({
-						buttonClass: 'form-select',
-						templates: {
-						button: '<button type="button" class="multiselect dropdown-toggle" data-bs-toggle="dropdown"><span class="multiselect-selected-text"></span></button>',
-						},
-						buttonWidth: 250,
-						includeSelectAllOption: true,
-						enableFiltering: true,
-						enableCaseInsensitiveFiltering: true,
-
-						onDropdownShown : function(event) {
-							setTimeout(function(){
-								oControl.parent().find("button.multiselect-clear-filter").click();
-								oControl.parent().find("input[type='search'].multiselect-search").focus();
-							}, 100);
-						}
-					});
+					oControl.porticoMultiselect({width: '250px'});
 
 				}
 				catch(err)
@@ -1591,9 +1575,6 @@
 				{
 					$(".btn-group").addClass('w-100');
 					$(".dropdown-menu").addClass('w-100');
-					$(".multiselect ").addClass('form-control');
-					$(".multiselect").removeClass('btn');
-					$(".multiselect").removeClass('btn-default');
 
 					if(typeof(initCompleteDatatable) == 'function')
 					{
@@ -2030,12 +2011,11 @@
 					if ($(this).is('[multiple]'))
 					{
 						$(this).find('option').prop('selected', false);
-						if ($.fn && $.fn.multiselect)
+						if ($.fn && $.fn.porticoMultiselect)
 						{
 							try
 							{
-								$(this).multiselect('deselectAll', false);
-								$(this).multiselect('refresh');
+								$(this).porticoMultiselect('refresh');
 							}
 							catch(e)
 							{}
@@ -2086,12 +2066,11 @@
 				if (select.is('select[multiple]'))
 				{
 					select.find('option').prop('selected', false);
-					if ($.fn && $.fn.multiselect)
+					if ($.fn && $.fn.porticoMultiselect)
 					{
 						try
 						{
-							select.multiselect('deselectAll', false);
-							select.multiselect('refresh');
+							select.porticoMultiselect('refresh');
 						}
 						catch(e)
 						{}

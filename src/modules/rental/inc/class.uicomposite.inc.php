@@ -692,7 +692,7 @@ class rental_uicomposite extends rental_uicommon
 			);
 		}
 
-		phpgwapi_jquery::load_widget('bootstrap-multiselect');
+		phpgwapi_jquery::load_widget('select2');
 		//self::add_javascript('rental', 'base', 'party.sync.js');
 		self::render_template_xsl('datatable2', $data);
 	}

@@ -274,7 +274,7 @@ class controller_uicalendar_planner extends phpgwapi_uicommon_jquery
 			'calendar_content2'	 => array('rows' => $calendar_content2)
 		);
 
-		phpgwapi_jquery::load_widget('bootstrap-multiselect');
+		phpgwapi_jquery::load_widget('select2');
 		self::add_javascript('controller', 'base', 'calendar_planner.start.js');
 
 		Settings::getInstance()->update('flags', ['app_header' => 'controller::calendar_planner']);
@@ -1910,7 +1910,7 @@ HTML;
 		);
 
 		phpgwapi_jquery::load_widget('autocomplete');
-		phpgwapi_jquery::load_widget('bootstrap-multiselect');
+		phpgwapi_jquery::load_widget('select2');
 
 		self::add_javascript('controller', 'base', 'calendar_planner.start_inspection.js');
 
@@ -2091,7 +2091,7 @@ HTML;
 		);
 
 		phpgwapi_jquery::load_widget('autocomplete');
-		phpgwapi_jquery::load_widget('bootstrap-multiselect');
+		phpgwapi_jquery::load_widget('select2');
 
 		self::add_javascript('controller', 'base', 'calendar_planner.start_inspection.js');
 

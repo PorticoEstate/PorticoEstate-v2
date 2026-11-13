@@ -15,7 +15,7 @@ namespace App\modules\phpgwapi\services
 		{
 			if ($name === 'user')
 			{
-				return array('preferences' => array('common' => array('template_set' => $_SERVER['argv'][1])));
+				return array('preferences' => array('common' => array('template_set' => $_SERVER['argv'][1], 'lang' => 'no')));
 			}
 			if ($name === 'flags')
 			{
@@ -42,9 +42,12 @@ namespace
 			return self::$instance ?? (self::$instance = new self());
 		}
 
+		public $files = array();
+
 		public function add_url_file($file, $endOfPage = false) {}
 		public function validate_file($package, $file)
 		{
+			$this->files[] = "{$package}/{$file}";
 			return true;
 		}
 	}
@@ -69,5 +72,5 @@ namespace
 
 	require dirname(__DIR__, 2) . '/src/modules/phpgwapi/inc/class.jquery.inc.php';
 	\phpgwapi_jquery::load_widget('bootstrap-multiselect');
-	echo json_encode(\phpgwapi_css::getInstance()->files, JSON_THROW_ON_ERROR);
+	echo json_encode(array('css' => \phpgwapi_css::getInstance()->files, 'js' => \phpgwapi_js::getInstance()->files), JSON_THROW_ON_ERROR);
 }

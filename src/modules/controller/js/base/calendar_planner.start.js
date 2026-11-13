@@ -54,30 +54,9 @@ $(function ()
 	});
 
 
-	$("#part_of_town_id").multiselect({
-		buttonClass: 'form-select',
-		templates: {
-		button: '<button type="button" class="multiselect dropdown-toggle" data-bs-toggle="dropdown"><span class="multiselect-selected-text"></span></button>',
-		},
-//	buttonWidth: 250,
-		includeSelectAllOption: true,
-		enableFiltering: true,
-		enableCaseInsensitiveFiltering: true,
-		onChange: function ($option)
-		{
-			// Check if the filter was used.
-			var query = $("#part_of_town_id").find('li.multiselect-filter input').val();
-
-			if (query)
-			{
-				$("#part_of_town_id").find('li.multiselect-filter input').val('').trigger('keydown');
-			}
-		},
-		onDropdownHidden: function (event)
-		{
-//			console.log(event);
-			$("#form").trigger('submit');
-		}
+	$("#part_of_town_id").porticoMultiselect().on('select2:close', function ()
+	{
+		$("#form").trigger('submit');
 	});
 
 //	$("#part_of_town_id").on("change", function ()
@@ -85,10 +64,6 @@ $(function ()
 //		$("#form").submit();
 //	});
 
-	$(".btn-group").addClass('w-100');
-//	$(".multiselect ").addClass('form-control');
-//	$(".multiselect").removeClass('btn');
-//	$(".multiselect").removeClass('btn-default');
 
 });
 

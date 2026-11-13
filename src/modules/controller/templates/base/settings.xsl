@@ -21,13 +21,7 @@
 <script type="text/javascript">
     $(document).ready(function() {
 
-        $('.user_roles').multiselect({
-			buttonClass: 'form-select',
-            templates: {
-				li: '<li><div style="display:inline;"><a><label></label></a></div></li>',
-				button: '<button type="button" class="multiselect dropdown-toggle" data-bs-toggle="dropdown"><span class="multiselect-selected-text"></span></button>'
-            }
-        });
+        $('.user_roles').porticoMultiselect({width: '250px'});
 
 		$("#control_area_id").change(function ()
 		{

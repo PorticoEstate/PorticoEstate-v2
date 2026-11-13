@@ -701,14 +701,8 @@ check_validation = function (field_name)
 
 	$('.select_' + field_name).each(function ()
 	{
-		if ($(this).val().length === 0)
-		{
-			$(this).parent().find('button').addClass('is-invalid');
-		}
-		else
-		{
-			$(this).parent().find('button').removeClass('is-invalid');
-		}
+		const invalid = ($(this).val() || []).length === 0;
+		$(this).parent().find('button, .select2-selection').toggleClass('is-invalid', invalid);
 	});
 };
 
@@ -762,94 +756,11 @@ set_up_multiselect2 = function (td, field_name)
 
 	$(obj).append(htmlString);
 
-	const positionFloatingMenu = function ($button, $menu)
-	{
-		const offset = $button.offset();
-		if (!offset)
-		{
-			return;
-		}
-
-		const menuWidth = Math.max($button.outerWidth(), 240);
-		$menu.css({
-			position: 'absolute',
-			left: offset.left,
-			top: offset.top + $button.outerHeight(),
-			width: menuWidth,
-			zIndex: 20000,
-			maxHeight: '320px',
-			overflowY: 'auto'
-		});
-	};
-
-	const floatMenuOutsideWrapper = function ($select)
-	{
-		const $group = $select.next('.btn-group');
-		const $button = $group.find('button.multiselect');
-		const $menu = $group.find('ul.multiselect-container, div.multiselect-container, .dropdown-menu').first();
-		if (!$button.length || !$menu.length)
-		{
-			return;
-		}
-
-		const namespace = '.floating_' + currentSelectId;
-		$menu.data('origin-group', $group);
-		$menu.appendTo('body').addClass('floating-multiselect-menu');
-		positionFloatingMenu($button, $menu);
-
-		$menu.off('wheel' + namespace).on('wheel' + namespace, function (e)
-		{
-			const evt = e.originalEvent;
-			const delta = evt ? evt.deltaY : 0;
-			const top = this.scrollTop;
-			const max = this.scrollHeight - this.clientHeight;
-
-			if ((delta < 0 && top > 0) || (delta > 0 && top < max))
-			{
-				e.stopPropagation();
-			}
-		});
-
-		$(window).off('resize' + namespace + ' scroll' + namespace).on('resize' + namespace + ' scroll' + namespace, function ()
-		{
-			positionFloatingMenu($button, $menu);
-		});
-	};
-
-	const restoreMenu = function ($select)
-	{
-		const $group = $select.next('.btn-group');
-		const namespace = '.floating_' + currentSelectId;
-		const $menu = $('body > .multiselect-container.floating-multiselect-menu, body > ul.dropdown-menu.floating-multiselect-menu, body > .dropdown-menu.floating-multiselect-menu');
-
-		$menu.each(function ()
-		{
-			const $thisMenu = $(this);
-			const $origin = $thisMenu.data('origin-group');
-			if ($origin && $origin.length && $origin.is($group))
-			{
-				$thisMenu
-					.removeClass('floating-multiselect-menu')
-					.removeAttr('style')
-					.off('wheel' + namespace)
-					.appendTo($group);
-			}
-		});
-
-		$(window).off('resize' + namespace + ' scroll' + namespace);
-	};
-
 	const $currentSelect = $('#' + currentSelectId);
 
-	$currentSelect.multiselect({
-		buttonClass: 'form-select',
-		widthSynchronizationMode: 'always',
-		buttonWidth: '200px',
-		templates: {
-			li: '<li><div style="display:inline;"><a><label></label></a></div></li>',
-			button: '<button type="button" class="multiselect dropdown-toggle" data-bs-toggle="dropdown"><span class="multiselect-selected-text"></span></button>'
-		},
-		onChange: function (option, checked, select)
+	// Each (de)selection is saved individually, so bulk select-all is not offered here.
+	$currentSelect.porticoMultiselect({width: '200px', selectAll: false, allowClear: false})
+		.on('select2:select select2:unselect', function (e)
 		{
 			let order_id = $('#order_id').val();
 
@@ -860,8 +771,8 @@ set_up_multiselect2 = function (td, field_name)
 				data: {
 					id: order_id + '::' + rowFileName,
 					field_name: field_name,
-					checked: checked === true ? 1 : 0,
-					value: [$(option).val()],
+					checked: e.type === 'select2:select' ? 1 : 0,
+					value: [e.params.data.id],
 					secret: $("#secret").val()
 				},
 				success: function (data)
@@ -873,44 +784,5 @@ set_up_multiselect2 = function (td, field_name)
 					alert('feil');
 				}
 			});
-		},
-		onInitialized: function (select, container)
-		{
-
-
-		}
-	});
-
-	const $currentGroup = $currentSelect.next('.btn-group');
-	const namespace = '.floating_' + currentSelectId;
-	const retryFloat = function ()
-	{
-		window.setTimeout(function ()
-		{
-			floatMenuOutsideWrapper($currentSelect);
-		}, 0);
-		window.setTimeout(function ()
-		{
-			floatMenuOutsideWrapper($currentSelect);
-		}, 60);
-		window.setTimeout(function ()
-		{
-			floatMenuOutsideWrapper($currentSelect);
-		}, 180);
-	};
-
-	$currentGroup.off('shown.bs.dropdown' + namespace).on('shown.bs.dropdown' + namespace, function ()
-	{
-		retryFloat();
-	});
-
-	$currentGroup.find('button.multiselect').off('click' + namespace).on('click' + namespace, function ()
-	{
-		retryFloat();
-	});
-
-	$currentGroup.off('hide.bs.dropdown' + namespace).on('hide.bs.dropdown' + namespace, function ()
-	{
-		restoreMenu($currentSelect);
-	});
+		});
 };

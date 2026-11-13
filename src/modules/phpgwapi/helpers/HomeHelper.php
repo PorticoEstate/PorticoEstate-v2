@@ -143,47 +143,14 @@ class HomeHelper
 		}
 		else if ($template_set == 'digdir')
 		{
-			$grid_envelope = 'app-row mt-4';
-			$grid_element = 'app-col-4 u-mb-4';
+			$grid_envelope = 'app-bookmark-grid';
+			$grid_element = 'app-bookmark-column';
 			$card_class = 'app-card app-card-bordered app-tile app-bookmark-tile';
 			$card_body_class = 'app-card-body app-text-center';
 			$card_footer_class = 'app-tile-footer app-bookmark-tile-footer';
 			$link_class = 'app-tile-link';
 			$icon_class = 'app-tile-icon app-bookmark-tile-icon';
 			$icon_wrap_class = 'app-tile-icon-wrap app-bookmark-tile-icon-wrap';
-
-			$bookmark_style_block = <<<HTML
-	<style>
-		.app-bookmark-tile {
-			border-color: var(--ds-color-border-subtle, #d9dde3);
-			box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-		}
-		.app-bookmark-tile:hover {
-			border-color: var(--ds-color-accent-border-default, #2a6fc1);
-			box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
-		}
-		.app-bookmark-tile-icon-wrap {
-			margin: 0;
-			padding: var(--ds-spacing-6, 1.5rem) var(--ds-spacing-4, 1rem);
-			font-size: 1.5rem;
-			line-height: 1;
-		}
-		.app-bookmark-tile-icon-wrap h1 {
-			margin: 0;
-			font-size: inherit;
-			line-height: 1;
-			font-weight: var(--ds-font-weight-regular, 400);
-		}
-		.app-bookmark-tile-icon {
-			color: var(--ds-color-neutral-text-subtle, #6c757d);
-		}
-		.app-bookmark-tile-footer {
-			font-weight: var(--ds-font-weight-medium, 500);
-			background: var(--ds-color-background-subtle, #f4f6f8);
-			border-top-color: var(--ds-color-border-subtle, #d9dde3);
-		}
-	</style>
-HTML;
 		}
 		else
 		{

@@ -36,6 +36,36 @@ The stylesheets are loaded in this specific order:
 
 ## Known Conflicts & Solutions
 
+### Home cards and bookmark tiles
+
+The Digdir page shell uses `.app-card` / `.app-card-body`, rather than the
+Bootstrap `.card` / `.card-body` classes. The outer `.app-page-card` allows
+overflow so form widgets and focus outlines are not clipped.
+Breadcrumbs and all `.app-card` containers use the same drop shadow.
+
+Home bookmarks use `.app-bookmark-grid` with three equal-width columns, two at
+viewport widths up to 48rem, and one up to 30rem. Tile links fill their grid cells;
+flexible card bodies align the footer rows even when icons or captions differ.
+These styles live in `css/digdir-native.css`; the Bootstrap rendering is unchanged.
+
+### Legacy aligned forms in the Digdir template
+
+The active loader uses `digdir-native.css`, not `designsystemet-compat.css`.
+Digdir's `css/base.css` supplies the aligned-form adjustments without changing
+shared XSL templates or the Bootstrap template set:
+
+- Form text, native controls, and single Select2 controls use a consistent scale
+  and the current Designsystemet typography and neutral-color tokens.
+- Fieldsets may shrink below their contents' intrinsic width. Controls retain
+  Pure's fractional widths, capped to leave room for the label column.
+- At viewport widths up to 48rem, labels stack above controls and fractional
+  controls use the available width.
+- DataTables keep their own horizontal scrolling; plain tables directly inside
+  `.pure-custom` scroll inside that wrapper.
+- Legacy `#floating-box #submitbox` action bars stay in document flow instead of
+  overlapping fields. The scoped overrides take precedence over script-applied
+  positioning and scroll-animation margins.
+
 ### 1. Grid Systems
 
 **Pure CSS Grid:**

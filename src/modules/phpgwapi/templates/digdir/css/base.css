@@ -29,8 +29,111 @@ body {
 	font-size: 12px;
 }
 
-.pure-form select {
-	height: 2.8em;
+.pure-form {
+	font-size: var(--ds-body-sm-font-size, 1rem);
+	line-height: 1.5;
+}
+
+.pure-form fieldset {
+	min-inline-size: 0;
+}
+
+.pure-form :is(input, select, textarea) {
+	max-width: 100%;
+}
+
+.pure-form :is(input:not([type]), input[type="text"], input[type="email"],
+	input[type="password"], input[type="url"], input[type="tel"],
+	input[type="number"], input[type="search"], input[type="date"],
+	input[type="time"], input[type="datetime-local"], input[type="month"],
+	input[type="week"], select, textarea) {
+	padding: 0.5em 0.75em;
+	border: 1px solid var(--ds-color-neutral-border-default, #797979);
+	border-radius: var(--ds-border-radius-md, 0.25rem);
+	background-color: var(--ds-color-neutral-background-default, #fff);
+	color: var(--ds-color-neutral-text-default, #2b2b2b);
+	box-shadow: none;
+	font: inherit;
+}
+
+.pure-form select:not([multiple]) {
+	height: 2.625em;
+}
+
+.pure-form select[multiple] {
+	height: auto;
+}
+
+.pure-form :is(input, textarea)[readonly] {
+	background-color: var(--ds-color-neutral-surface-tinted, #f3f3f3);
+	color: var(--ds-color-neutral-text-subtle, #595959);
+}
+
+.pure-form :is(input[type], input:not([type]), select, textarea):focus-visible {
+	outline: 2px solid var(--ds-color-focus-outer, #2b2b2b);
+	outline-offset: 2px;
+	box-shadow: none;
+}
+
+.pure-form-aligned .pure-control-group {
+	margin-bottom: 0.75em;
+}
+
+.pure-form-aligned .pure-control-group > label {
+	vertical-align: top;
+	padding-top: 0.5em;
+}
+
+/* Leave room for Pure's 10em label and 1em gap, including inline whitespace. */
+.pure-form-aligned .pure-control-group > :is(input:not([type="hidden"]),
+	select, textarea, .pure-custom, [class*="pure-input-"], .select2-container) {
+	max-width: calc(100% - 12em);
+}
+
+.pure-form-aligned .pure-custom:has(> table) {
+	overflow-x: auto;
+}
+
+.pure-form .pure-custom > :is(input:not([type="hidden"]), select) {
+	margin-block: 0.125em;
+	margin-inline-end: 0.375em;
+}
+
+/* Legacy project scripts position this toolbar absolutely and animate its margin. */
+.pure-form #floating-box {
+	background-color: var(--ds-color-neutral-background-default, #fff);
+	border-bottom: 1px solid var(--ds-color-neutral-border-subtle, #ddd);
+}
+
+.pure-form #floating-box #submitbox {
+	position: static !important;
+	margin-top: 0 !important;
+	border: 0 !important;
+	padding: 0.5em 0 !important;
+}
+
+.pure-form #submitbox > table {
+	margin-left: auto;
+}
+
+@media screen and (max-width: 48rem) {
+	.pure-form-aligned .pure-control-group > label {
+		display: block;
+		width: auto;
+		margin: 0 0 0.25em;
+		padding-top: 0;
+		text-align: left;
+	}
+
+	.pure-form-aligned .pure-control-group > :is(input:not([type="hidden"]),
+		select, textarea, .pure-custom, [class*="pure-input-"], .select2-container) {
+		max-width: 100%;
+	}
+
+	.pure-form-aligned .pure-control-group > :is([class*="pure-input-"], .select2-container) {
+		width: 100% !important;
+		float: none !important;
+	}
 }
 
 /*
@@ -338,4 +441,25 @@ thead {
 
 .select2-selection__arrow {
 	height: 35px !important;
+}
+
+.pure-form .select2-container .select2-selection--single {
+	height: 2.625em !important;
+	border-color: var(--ds-color-neutral-border-default, #797979);
+	border-radius: var(--ds-border-radius-md, 0.25rem);
+}
+
+.pure-form .select2-container--default .select2-selection--single .select2-selection__rendered {
+	padding-inline: 0.75em 2em;
+	color: var(--ds-color-neutral-text-default, #2b2b2b);
+	line-height: calc(2.625em - 2px) !important;
+}
+
+.pure-form .select2-container--default .select2-selection--single .select2-selection__arrow {
+	height: calc(2.625em - 2px) !important;
+}
+
+.pure-form .select2-container--focus .select2-selection {
+	outline: 2px solid var(--ds-color-focus-outer, #2b2b2b);
+	outline-offset: 2px;
 }

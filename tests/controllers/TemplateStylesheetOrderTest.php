@@ -89,6 +89,42 @@ class TemplateStylesheetOrderTest extends TestCase
 		$this->assertStringContainsString('DataTables3/vendor/datatables.net/datatables.net-dt/css/dataTables.dataTables.min.css', $widgetLoader);
 	}
 
+	public function testDigdirKeepsResponsivePureWidthsAndPorticoDeclaresViewport(): void
+	{
+		$digdirNative = file_get_contents(__DIR__ . '/../../src/modules/phpgwapi/templates/digdir/css/digdir-native.css');
+		$porticoHead = file_get_contents(__DIR__ . '/../../src/modules/phpgwapi/templates/portico/head.tpl');
+
+		$this->assertIsString($digdirNative);
+		$this->assertIsString($porticoHead);
+		$this->assertDoesNotMatchRegularExpression('/\.pure-u-(?:1|1-2|1-3|2-3|1-4|3-4)\s*\{\s*width\s*:/', $digdirNative);
+		$this->assertStringContainsString('<meta name="viewport" content="width=device-width, initial-scale=1">', $porticoHead);
+	}
+
+	public function testBookingTemplateDoesNotAddMarginsToFullWidthContent(): void
+	{
+		foreach (array('bootstrap', 'digdir') as $template)
+		{
+			$stylesheet = file_get_contents(__DIR__ . "/../../src/modules/booking/templates/{$template}/css/base.css");
+			$this->assertIsString($stylesheet);
+			$this->assertDoesNotMatchRegularExpression('/#page_content\s*\{\s*margin\s*:/', $stylesheet);
+		}
+	}
+
+	public function testSharedModuleDefaultsAreScopedAwayFromModernShells(): void
+	{
+		foreach (array('property', 'controller', 'logistic', 'rental') as $module)
+		{
+			$stylesheet = file_get_contents(__DIR__ . "/../../src/modules/{$module}/templates/base/css/base.css");
+			$this->assertIsString($stylesheet);
+			$this->assertStringContainsString(':where(html:not(.template-bootstrap):not(.template-digdir))', $stylesheet);
+		}
+
+		$bootstrapStyles = file_get_contents(__DIR__ . '/../../src/modules/phpgwapi/templates/bootstrap/css/base.css');
+		$this->assertIsString($bootstrapStyles);
+		$this->assertStringContainsString('#sidebar a:hover', $bootstrapStyles);
+		$this->assertStringContainsString('td a:hover', $bootstrapStyles);
+	}
+
 	/** @dataProvider templatesWithTheme */
 	public function testThemeFollowsTemplateBase(string $template, string $module): void
 	{

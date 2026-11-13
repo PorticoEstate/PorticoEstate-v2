@@ -24,6 +24,11 @@ The shared phpgwapi stylesheet retains legacy element defaults for older
 templates while Bootstrap and Digdir use their own shell typography. Legacy
 module button rules do not override Pure or framework buttons in those two
 templates. `designsystemet-compat.css` is not loaded by the Digdir head.
+Digdir keeps Pure's responsive grid widths from the upstream responsive
+stylesheet; its native styles only provide the flex grid container behavior.
+Legacy module-wide form, label, link, and heading defaults are scoped away from
+Bootstrap and Digdir so they cannot outrank the framework styles. Portico
+includes a viewport declaration for mobile layout.
 
 ## Known Conflicts & Solutions
 

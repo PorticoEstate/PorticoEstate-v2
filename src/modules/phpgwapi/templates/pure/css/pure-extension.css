@@ -85,8 +85,8 @@ https://github.com/yui/pure/blob/master/LICENSE.md
 
 :where(html.template-digdir, html.template-portico) .multiselect-container .dropdown-item:hover,
 :where(html.template-digdir, html.template-portico) .multiselect-container .dropdown-item:focus {
-	background-color: #e9ecef;
-	color: #1e2125;
+	background-color: #e9ecef !important;
+	color: #1e2125 !important;
 }
 
 .p0{padding-left: 0px !important;padding-top: 0px !important;padding-bottom: 0px !important;}

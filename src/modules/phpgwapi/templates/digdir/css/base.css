@@ -432,7 +432,7 @@ label > input[type="search"] {
 	padding: 4px 36px 4px 8px;
 }
 
-thead {
+table:not(.ds-table) thead {
 	background-color: rgb(224, 224, 224);
 }
 

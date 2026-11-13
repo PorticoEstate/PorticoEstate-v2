@@ -7,12 +7,13 @@ body, div, input, p, select, textarea
   font-size: 11px;
 }
 */
-a
+:where(html:not(.template-bootstrap):not(.template-digdir)) a
 {
 	text-decoration: none;
 }
 
-a:hover, a:active
+:where(html:not(.template-bootstrap):not(.template-digdir)) a:hover,
+:where(html:not(.template-bootstrap):not(.template-digdir)) a:active
 {
 	text-decoration: underline;
 }
@@ -33,7 +34,7 @@ br
 	clear: left;
 }
 
-thead
+:where(html:not(.template-bootstrap):not(.template-digdir)) thead
 {
 	background-color: #d3dce3;
 	font-weight: bold;
@@ -135,7 +136,7 @@ fieldset {
 	border:1px solid #1E90FF;*/
 }
 
-legend {
+:where(html:not(.template-bootstrap):not(.template-digdir)) legend {
 	padding: 0.2em 0.5em;
 /*	border:1px solid #1E90FF;*/
 	/*  color:#cccccc;*/
@@ -144,21 +145,21 @@ legend {
 	font-weight: bolder;
 }
 
-label {
+:where(html:not(.template-bootstrap):not(.template-digdir)) label {
 	font-size: 13px;
 	font-weight: bold;
 	margin-right: 5px;
 	display: inline-block;
 }
 
-a{
+:where(html:not(.template-bootstrap):not(.template-digdir)) a{
 	cursor: pointer;
 }
 
 :where(html:not(.template-bootstrap):not(.template-digdir)) .row{
 	padding: 0.3em 0;
 }
-h3 {
+:where(html:not(.template-bootstrap):not(.template-digdir)) h3 {
 	font-size: 1.2em;
 	font-weight: bold;
 	margin: 1em 0;
@@ -488,28 +489,28 @@ h1 img, li img {
 
 /* ==========================================   SELECTORS, IDS AND CLASSES    =========================================== */
 
-input[type="radio"] {
+:where(html:not(.template-bootstrap):not(.template-digdir)) input[type="radio"] {
 	margin: 0 5px 0 2px;
 	padding: 3px 6px;
 }
 
-input[type="checkbox"] {
+:where(html:not(.template-bootstrap):not(.template-digdir)) input[type="checkbox"] {
 	margin: 5px;
 }
 
-input[type="text"] {
+:where(html:not(.template-bootstrap):not(.template-digdir)) input[type="text"] {
 	padding: 5px 5px 2px;
 }
 
-select {
+:where(html:not(.template-bootstrap):not(.template-digdir)) select {
 	padding: 4px;
 }
 
-fieldset {
+:where(html:not(.template-bootstrap):not(.template-digdir)) fieldset {
 	border-bottom:0px solid #ccc;
 }
 
-textarea{
+:where(html:not(.template-bootstrap):not(.template-digdir)) textarea{
 	padding: 4px;
 }
 
@@ -517,7 +518,7 @@ h1 em {
 	font-style:italic;
 }
 
-a {
+:where(html:not(.template-bootstrap):not(.template-digdir)) a {
 	color: #0066CC;
 	text-decoration: none;
 }

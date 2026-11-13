@@ -73,7 +73,8 @@ shared XSL templates or the Bootstrap template set:
   `.pure-custom` scroll inside that wrapper.
 - Legacy `#floating-box #submitbox` action bars stay in document flow instead of
   overlapping fields. The scoped overrides take precedence over script-applied
-  positioning and scroll-animation margins.
+  positioning and scroll-animation margins. The project form uses its own shared
+  sticky action bar instead, preserving the existing action and visibility hooks.
 
 ### 1. Grid Systems
 

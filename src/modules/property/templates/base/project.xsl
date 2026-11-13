@@ -17,12 +17,50 @@
 <!-- add / edit -->
 <xsl:template xmlns:php="http://php.net/xsl" match="edit">
 	<style type="text/css">
-		#floating-box {
-		position: relative;
-		z-index: 10;
+		#floating-box.project-action-bar {
+			position: sticky;
+			top: 0;
+			z-index: 10;
 		}
-		#submitbox {
-		display: none;
+		#floating-box.project-action-bar #submitbox {
+			padding: 0.5rem;
+			background: #fff;
+			border: 1px solid #ddd;
+			border-radius: 0.25rem;
+			box-shadow: 0 0.125rem 0.375rem rgba(0, 0, 0, 0.12);
+		}
+		body.sb-nav-fixed #floating-box.project-action-bar {
+			top: 56px;
+		}
+		body:has(.app-topbar) #floating-box.project-action-bar {
+			top: var(--app-topbar-height, 60px);
+		}
+		#floating-box.project-action-bar #submitbox > table,
+		#floating-box.project-action-bar #submitbox > table > tbody {
+			display: block;
+			width: 100%;
+		}
+		#floating-box.project-action-bar #submitbox > table > tbody > tr {
+			display: flex;
+			flex-wrap: wrap;
+			justify-content: flex-end;
+			gap: 0.5rem;
+		}
+		#floating-box.project-action-bar #submitbox > table > tbody > tr > td {
+			min-width: 0;
+			max-width: 100%;
+			padding: 0;
+		}
+		#floating-box.project-action-bar input[type="button"] {
+			box-sizing: border-box;
+			max-width: 100%;
+			padding-inline: 0.5em;
+			white-space: normal;
+			overflow-wrap: anywhere;
+		}
+		#floating-box.project-action-bar input:focus-visible {
+			outline: 2px solid #005fcc;
+			outline-offset: 2px;
 		}
 		.dataTables_filter label
 		{
@@ -85,7 +123,7 @@
 		<div id="tab-content">
 			<xsl:value-of disable-output-escaping="yes" select="tabs"/>
 
-			<div id="floating-box">
+			<div id="floating-box" class="project-action-bar">
 				<div id="submitbox">
 					<table>
 						<tbody>
@@ -103,7 +141,7 @@
 													</xsl:otherwise>
 												</xsl:choose>
 											</xsl:variable>
-											<input type="button" class="pure-button pure-button-primary" id="add_sub_entry" name="add_sub_entry" value="{$lang_add_sub_entry}" onClick="addSubEntry();">
+											<input type="button" class="pure-button" id="add_sub_entry" name="add_sub_entry" value="{$lang_add_sub_entry}" onClick="addSubEntry();">
 												<xsl:attribute name="title">
 													<xsl:choose>
 														<xsl:when test="project_type_id = '3'">
@@ -149,7 +187,7 @@
 									<xsl:value-of select="php:function('lang', 'done')"/>
 								</xsl:variable>
 								<td>
-									<input type="button" id="cancelform" class="pure-button pure-button-primary" name="done" value="{$lang_done}" onClick="document.done_form.submit();">
+									<input type="button" id="cancelform" class="pure-button" name="done" value="{$lang_done}" onClick="document.done_form.submit();">
 										<xsl:attribute name="title">
 											<xsl:value-of select="php:function('lang', 'Back to the list')"/>
 										</xsl:attribute>

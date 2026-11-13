@@ -340,60 +340,6 @@ $(function ()
 	//	}
 
 
-	// -- buttons--//
-
-	$("#submitbox").css({
-		position: 'absolute',
-		right: '10px',
-		border: '1px solid #B5076D',
-		padding: '0 10px 10px 10px',
-		//		width: $("#submitbox").width() + 'px',
-		"background - color": '#FFF',
-		display: "block"
-	});
-
-	var offset = $("#submitbox").offset();
-	var topPadding = 180;
-
-	if ($("#center_content").length === 1)
-	{
-		$("#center_content").on('scroll', function ()
-		{
-			if ($("#center_content").scrollTop() > offset.top)
-			{
-				$("#submitbox").stop().animate({
-					marginTop: $("#center_content").scrollTop() - offset.top + topPadding
-				}, 100);
-			}
-			else
-			{
-				$("#submitbox").stop().animate({
-					marginTop: 0
-				}, 100);
-			}
-			;
-		});
-	}
-	else
-	{
-		$(window).on('scroll', function ()
-		{
-			if ($(window).scrollTop() > offset.top)
-			{
-				$("#submitbox").stop().animate({
-					marginTop: $(window).scrollTop() - offset.top + topPadding
-				}, 100);
-			}
-			else
-			{
-				$("#submitbox").stop().animate({
-					marginTop: 0
-				}, 100);
-			}
-			;
-		});
-	}
-
 	$("#datatable-container_2 tbody").on('click', 'tr', function ()
 	{
 		var voucher_id = $('td', this).eq(1).text();

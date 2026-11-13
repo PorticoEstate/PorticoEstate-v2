@@ -67,6 +67,8 @@ shared XSL templates or the Bootstrap template set:
   and the current Designsystemet typography and neutral-color tokens.
 - Fieldsets may shrink below their contents' intrinsic width. Controls retain
   Pure's fractional widths, capped to leave room for the label column.
+- Standalone one-fifth columns in aligned custom grids use their natural width,
+  so short location lookup fields do not collapse inside shrink-to-fit wrappers.
 - At viewport widths up to 48rem, labels stack above controls and fractional
   controls use the available width.
 - DataTables keep their own horizontal scrolling; plain tables directly inside

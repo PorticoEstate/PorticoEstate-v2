@@ -99,6 +99,11 @@ body {
 	margin-inline-end: 0.375em;
 }
 
+/* A standalone column must not shrink to 20% of its shrink-to-fit wrapper. */
+.pure-form-aligned .pure-control-group > .pure-g.pure-custom > .pure-u-1-5:only-child {
+	width: auto;
+}
+
 /* Some legacy scripts position this toolbar absolutely and animate its margin. */
 .pure-form #floating-box:not(.sticky-action-bar) {
 	background-color: var(--ds-color-neutral-background-default, #fff);

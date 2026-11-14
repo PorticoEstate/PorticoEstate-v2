@@ -246,13 +246,13 @@
 
 										<input type="hidden" name="case_id" value="{$case_id}"/>
 
-										<div class="form-group">
+										<div class="pure-control-group">
 											<label>
 												<xsl:value-of select="php:function('lang', 'picture')" />
 											</label>
 											<div class="pure-custom" name="picture_container"/>
 										</div>
-										<div id="new_picture" class="form-group">
+										<div id="new_picture" class="pure-control-group">
 											<div class="input-group">
 												<div class="custom-file">
 													<input type="file" name="file" class="custom-file-input" aria-describedby="submit_update_component">
@@ -268,10 +268,10 @@
 									</form>
 									<!-- === QUICK EDIT MENU === -->
 									<div class="quick_menu">
-										<a class="quick_edit_case first btn btn-primary btn-lg me-3" href="#">
+										<a class="quick_edit_case first pure-button btn-primary btn-lg me-3" href="#">
 											endre
 										</a>
-										<a class="close_case btn btn-primary btn-lg me-3">
+										<a class="close_case pure-button btn-primary btn-lg me-3">
 											<xsl:attribute name="href">
 												<xsl:text>index.php?menuaction=controller.uicase.close_case</xsl:text>
 												<xsl:text>&amp;case_id=</xsl:text>
@@ -285,7 +285,7 @@
 										</a>
 										<!--										<xsl:choose>
 											<xsl:when test="location_item_id = 0">
-												<a class="delete_case btn btn-primary btn-lg me-3">
+												<a class="delete_case pure-button btn-primary btn-lg me-3">
 													<xsl:attribute name="href">
 														<xsl:text>index.php?menuaction=controller.uicase.delete_case</xsl:text>
 														<xsl:text>&amp;case_id=</xsl:text>

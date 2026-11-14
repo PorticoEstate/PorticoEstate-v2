@@ -31,11 +31,11 @@
 				<xsl:variable name="action_url">
 					<xsl:value-of select="php:function('get_phpgw_link', '/index.php', 'menuaction:controller.uicheck_list.update_status,phpgw_return_as:json')" />
 				</xsl:variable>
-				<form id="update-check-list-status" class="done form-inline" action="{$action_url}" method="post">
+				<form id="update-check-list-status" class="done pure-form" action="{$action_url}" method="post">
 					<input type="hidden" name="check_list_id" value="{check_list/id}" />
 					<xsl:choose>
 						<xsl:when test="check_list/status = 0">
-							<div class="form-group">
+							<div class="pure-control-group">
 								<label>
 									<xsl:value-of select="php:function('lang', 'check list status')" />:
 								</label>
@@ -51,7 +51,7 @@
 							</input>
 						</xsl:when>
 						<xsl:otherwise>
-							<div class="form-group">
+							<div class="pure-control-group">
 								<label>
 									<xsl:value-of select="php:function('lang', 'check list status')" />:
 								</label>
@@ -75,23 +75,20 @@
 			<div class="pure-menu pure-menu-horizontal pure-menu-scrollable">
 
 				<!-- LOGO -->
-				<a class="navbar-brand" href="#" data-bs-toggle="collapse" data-bs-target="#collapsibleNavbar">
+				<span class="pure-menu-heading">
 					<xsl:value-of select="php:function('lang', 'view case message')"/>
-				</a>
+				</span>
 				<!--
-				<button class="navbar-toggler collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapsibleNavbar" aria-expanded="false">
-					<span class="navbar-toggler-icon"></span>
-				</button>
 				-->
-				<div class="navbar-collapse collapse" id="collapsibleNavbar" style="">
+				<div class="pure-menu pure-menu-horizontal" id="collapsibleNavbar" style="">
 
-					<ul class="navbar-nav">
+					<ul class="pure-menu-list">
 						<xsl:call-template name="check_list_menu" />
 						<xsl:choose>
 							<xsl:when test="type = 'component'">
-								<li class="nav-item">
+								<li class="pure-menu-item">
 
-									<a class="nav-link">
+									<a class="pure-menu-link">
 										<xsl:attribute name="href">
 											<xsl:value-of select="php:function('get_phpgw_link', '/index.php', 'menuaction:controller.uicomponent.index' )" />
 											<xsl:text>&amp;year=</xsl:text>
@@ -112,8 +109,8 @@
 								</li>
 							</xsl:when>
 							<xsl:otherwise>
-								<li class="nav-item">
-									<a class="nav-link">
+								<li class="pure-menu-item">
+									<a class="pure-menu-link">
 										<xsl:attribute name="href">
 											<xsl:value-of select="php:function('get_phpgw_link', '/index.php', 'menuaction:controller.uicalendar.view_calendar_for_year' )" />
 											<xsl:text>&amp;year=</xsl:text>
@@ -126,9 +123,9 @@
 										Kontrollplan for bygg/eiendom (år)
 									</a>
 								</li>
-								<li class="nav-item">
+								<li class="pure-menu-item">
 
-									<a class="nav-link">
+									<a class="pure-menu-link">
 										<xsl:attribute name="href">
 											<xsl:value-of select="php:function('get_phpgw_link', '/index.php', 'menuaction:controller.uicalendar.view_calendar_for_month' )" />
 											<xsl:text>&amp;year=</xsl:text>

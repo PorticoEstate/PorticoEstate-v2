@@ -6,13 +6,13 @@
 	</xsl:variable>
 
 
-	<li class="nav-item">
+	<li class="pure-menu-item">
 		<xsl:choose>
 			<xsl:when test="$active_tab = 'view_details'">
-				<xsl:attribute name="class">nav-item active</xsl:attribute>
+				<xsl:attribute name="class">pure-menu-item active</xsl:attribute>
 			</xsl:when>
 		</xsl:choose>
-		<a class="nav-link">
+		<a class="pure-menu-link">
 			<xsl:attribute name="href">
 				<xsl:text>index.php?menuaction=controller.uicheck_list.edit_check_list</xsl:text>
 				<xsl:text>&amp;check_list_id=</xsl:text>
@@ -24,11 +24,11 @@
 		</a>
 	</li>
 	<!-- ==================  LOADS CASES FOR CHECKLIST  ===================== -->
-	<li class="nav-item">
+	<li class="pure-menu-item">
 		<xsl:if test="$active_tab = 'view_cases'">
-			<xsl:attribute name="class">nav-item active</xsl:attribute>
+			<xsl:attribute name="class">pure-menu-item active</xsl:attribute>
 		</xsl:if>
-		<a class="nav-link">
+		<a class="pure-menu-link">
 			<xsl:attribute name="href">
 				<xsl:text>index.php?menuaction=controller.uicase.view_open_cases</xsl:text>
 				<xsl:text>&amp;check_list_id=</xsl:text>
@@ -45,13 +45,13 @@
 		</a>
 	</li>
 	<!-- ==================  LOADS INFO ABOUT CONTROL  ===================== -->
-	<li class="nav-item">
+	<li class="pure-menu-item">
 		<xsl:choose>
 			<xsl:when test="$active_tab = 'view_control_info'">
-				<xsl:attribute name="class">nav-item active</xsl:attribute>
+				<xsl:attribute name="class">pure-menu-item active</xsl:attribute>
 			</xsl:when>
 		</xsl:choose>
-		<a class="nav-link">
+		<a class="pure-menu-link">
 			<xsl:attribute name="href">
 				<xsl:text>index.php?menuaction=controller.uicheck_list.view_control_info</xsl:text>
 				<xsl:text>&amp;check_list_id=</xsl:text>
@@ -64,11 +64,11 @@
 		</a>
 	</li>
 	<!-- ==================  REGISTER NEW CASE  ===================== -->
-	<li class="nav-item">
+	<li class="pure-menu-item">
 		<xsl:if test="$active_tab = 'add_case'">
-			<xsl:attribute name="class">nav-item active</xsl:attribute>
+			<xsl:attribute name="class">pure-menu-item active</xsl:attribute>
 		</xsl:if>
-		<a class="nav-link">
+		<a class="pure-menu-link">
 			<xsl:attribute name="href">
 				<xsl:text>index.php?menuaction=controller.uicase.add_case</xsl:text>
 				<xsl:text>&amp;check_list_id=</xsl:text>
@@ -81,11 +81,11 @@
 		</a>
 	</li>
 	<!-- ==================  REGISTER NEW MESSAGE  ===================== -->
-	<li class="nav-item">
+	<li class="pure-menu-item">
 		<xsl:if test="$active_tab = 'create_case_message'">
-			<xsl:attribute name="class">nav-item active</xsl:attribute>
+			<xsl:attribute name="class">pure-menu-item active</xsl:attribute>
 		</xsl:if>
-		<a class="nav-link">
+		<a class="pure-menu-link">
 			<xsl:attribute name="href">
 				<xsl:text>index.php?menuaction=controller.uicase.create_case_message</xsl:text>
 				<xsl:text>&amp;check_list_id=</xsl:text>
@@ -98,11 +98,11 @@
 		</a>
 	</li>
 
-	<li class="nav-item">
+	<li class="pure-menu-item">
 		<xsl:if test="$active_tab = 'create_case_message'">
-			<xsl:attribute name="class">nav-item active</xsl:attribute>
+			<xsl:attribute name="class">pure-menu-item active</xsl:attribute>
 		</xsl:if>
-		<a class="nav-link" target="_blank">
+		<a class="pure-menu-link" target="_blank">
 			<xsl:attribute name="href">
 				<xsl:text>index.php?menuaction=controller.uicheck_list.get_report</xsl:text>
 				<xsl:text>&amp;check_list_id=</xsl:text>

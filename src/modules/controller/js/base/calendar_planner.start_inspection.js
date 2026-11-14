@@ -73,3 +73,16 @@ $(function ()
 
 });
 
+
+// Template-independent filter panel toggle (no Bootstrap collapse plugin needed).
+$(function ()
+{
+	var $panel = $("#democollapseBtn");
+	var $toggle = $("#toggle_filter_panel");
+	$toggle.on('click', function ()
+	{
+		var expanded = $panel.prop('hidden');
+		$panel.prop('hidden', !expanded);
+		$toggle.attr('aria-expanded', String(expanded));
+	});
+});

@@ -110,7 +110,27 @@ $(function ()
 		});
 	});
 
-	$('#inspectObject').on('hidden.bs.modal', function (e)
+	// Template-independent modal handling for #inspectObject (no Bootstrap plugin needed).
+	var $inspectModal = $('#inspectObject');
+
+	function hide_inspect_modal()
+	{
+		$inspectModal.css('display', 'none').attr('aria-hidden', 'true');
+		$('#inspectObjectBackdrop').remove();
+		$('body').removeClass('modal-open');
+		$inspectModal.trigger('hidden.bs.modal');
+	}
+
+	$(document).on('click', '#perform_control_on_selected', function ()
+	{
+		$('body').addClass('modal-open')
+			.append('<div class="modal-backdrop show" id="inspectObjectBackdrop"></div>');
+		$inspectModal.css('display', 'block').attr('aria-hidden', 'false');
+	});
+
+	$inspectModal.on('click', '.modal-header .btn-close', hide_inspect_modal);
+
+	$inspectModal.on('hidden.bs.modal', function (e)
 	{
 		if ($("#cache_case_id").val())
 		{

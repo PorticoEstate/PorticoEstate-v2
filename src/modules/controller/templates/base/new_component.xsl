@@ -9,7 +9,7 @@
 <!-- new_component-->
 <xsl:template match="new_component" xmlns:php="http://php.net/xsl">
 
-	<div class="container">
+	<div >
 		<form class="pure-form pure-form-stacked" action="{action}" onsubmit="return submitComponentForm(event, this);">
 			<fieldset>
 
@@ -29,38 +29,14 @@
 				<div class="pure-controls pure-button-group" role="group" aria-label="">
 					<xsl:if test="get_form =1 or get_edit_form = 1">
 						<button id = "submit_component_form" type="submit" class="pure-button pure-button-primary">
-							<xsl:choose>
-								<xsl:when test="template_set = 'bootstrap'">
-									<xsl:attribute name="class">
-										<xsl:text>btn btn-primary btn-sm</xsl:text>
-									</xsl:attribute>
-								</xsl:when>
-								<xsl:otherwise>
-									<xsl:attribute name="class">
-										<xsl:text>pure-button pure-button-primary</xsl:text>
-									</xsl:attribute>
-								</xsl:otherwise>
-							</xsl:choose>
 							<xsl:value-of select="php:function('lang', 'save')" />
 						</button>
-						<button id = "cancel_new_component" type="button"  onclick="remove_component_form(form);">
-							<xsl:choose>
-								<xsl:when test="template_set = 'bootstrap'">
-									<xsl:attribute name="class">
-										<xsl:text>btn btn-primary btn-sm ms-2</xsl:text>
-									</xsl:attribute>
-								</xsl:when>
-								<xsl:otherwise>
-									<xsl:attribute name="class">
-										<xsl:text>pure-button pure-button-primary</xsl:text>
-									</xsl:attribute>
-								</xsl:otherwise>
-							</xsl:choose>
+						<button id = "cancel_new_component" type="button" class="pure-button" onclick="remove_component_form(form);">
 							<xsl:value-of select="php:function('lang', 'cancel')" />
 						</button>
 					</xsl:if>
 					<xsl:if test="get_info =1">
-						<button id = "submit_component_form" type="button" onclick="get_edit_form();">
+						<button id = "submit_component_form" type="button" class="pure-button pure-button-primary" onclick="get_edit_form();">
 							<xsl:choose>
 								<xsl:when test="edit_parent !=1">
 									<xsl:attribute name="onclick">
@@ -73,35 +49,11 @@
 									</xsl:attribute>
 								</xsl:otherwise>
 							</xsl:choose>
-							<xsl:choose>
-								<xsl:when test="template_set = 'bootstrap'">
-									<xsl:attribute name="class">
-										<xsl:text>btn btn-primary btn-sm</xsl:text>
-									</xsl:attribute>
-								</xsl:when>
-								<xsl:otherwise>
-									<xsl:attribute name="class">
-										<xsl:text>pure-button pure-button-primary</xsl:text>
-									</xsl:attribute>
-								</xsl:otherwise>
-							</xsl:choose>
 							<xsl:value-of select="php:function('lang', 'edit')" />
 						</button>
 					</xsl:if>
 					<xsl:if test="get_info =1 and enable_add_case = 1">
-						<button id = "perform_control_on_selected" type="button" data-bs-toggle="modal" data-bs-target="#inspectObject">
-							<xsl:choose>
-								<xsl:when test="template_set = 'bootstrap'">
-									<xsl:attribute name="class">
-										<xsl:text>btn btn-primary btn-sm ms-2</xsl:text>
-									</xsl:attribute>
-								</xsl:when>
-								<xsl:otherwise>
-									<xsl:attribute name="class">
-										<xsl:text>pure-button pure-button-primary</xsl:text>
-									</xsl:attribute>
-								</xsl:otherwise>
-							</xsl:choose>
+						<button id = "perform_control_on_selected" type="button" class="pure-button pure-button-primary ms-2">
 							<xsl:value-of select="php:function('lang', 'perform control on selected')" />
 						</button>
 					</xsl:if>
@@ -110,7 +62,7 @@
 		</form>
 	</div>
 	<xsl:if test="open_cases !=''">
-		<div class="container">
+		<div >
 			<div class="row ms-5 mt-3">
 				<table class="pure-table">
 					<caption>Åpne saker</caption>

@@ -37,31 +37,31 @@
     });
 </script>
 	<section id="tabs">
-		<div class="container">
+		<div >
 			<div class="row">
-				<div id="tab-content" class="col-xs-12 ">
+				<div id="tab-content" class="col-xs-12">
 
 					<xsl:value-of disable-output-escaping="yes" select="tabs"/>
 					<div id="users">
 						<form method="post" id="form" action="{form_action}">
 
 							<div class="row">
-								<div class="mt-5 container">
-									<div class="form-group">
+								<div class="mt-5">
+									<div class="pure-control-group">
 										<fieldset>
 											<legend>Velg kontroll</legend>
 
 											<label for="control_area_id">
 												<xsl:value-of select="php:function('lang', 'control area')"/>
 											</label>
-											<select id="control_area_id" name="control_area_id" class="form-select">
+											<select id="control_area_id" name="control_area_id" >
 												<xsl:apply-templates select="control_area_list/options"/>
 											</select>
 
 											<label for="control_id">
 												<xsl:value-of select="php:function('lang', 'control')"/>
 											</label>
-											<select id="control_id" name="control_id" class="form-select" onchange="this.form.submit()">
+											<select id="control_id" name="control_id"  onchange="this.form.submit()">
 												<xsl:attribute name="title">
 													<xsl:value-of select="php:function('lang', 'select control type')"/>
 												</xsl:attribute>
@@ -70,7 +70,7 @@
 											<label for="part_of_town_id">
 												<xsl:value-of select="php:function('lang', 'part of town')"/>
 											</label>
-											<select id="part_of_town_id" name="part_of_town_id" class="form-select" onchange="this.form.submit()">
+											<select id="part_of_town_id" name="part_of_town_id"  onchange="this.form.submit()">
 												<xsl:attribute name="title">
 													<xsl:value-of select="php:function('lang', 'select')"/>
 												</xsl:attribute>
@@ -83,9 +83,9 @@
 
 						</form>
 						<div class="row">
-							<div class="mt-5 container">
+							<div class="mt-5">
 								<form class="pure-form pure-form-aligned" id="form" name="form" method="post" action="{form_action}">
-									<table border="0" cellspacing="2" cellpadding="2" class="pure-table pure-table-bordered " id='user_table'>
+									<table border="0" cellspacing="2" cellpadding="2" class="pure-table pure-table-bordered" id='user_table'>
 										<thead>
 											<tr>
 												<th>
@@ -158,15 +158,15 @@
 <xsl:template match="edit">
 
 	<section id="tabs">
-		<div class="container">
+		<div >
 			<div class="row">
-				<div id="tab-content" class="col-xs-12 ">
+				<div id="tab-content" class="col-xs-12">
 
 					<xsl:value-of disable-output-escaping="yes" select="tabs"/>
 
 					<div id="category_assignment">
 						<form class="pure-form pure-form-aligned" id="form" name="form" method="post" action="{form_action}">
-							<table border="0" cellspacing="2" cellpadding="2" class="pure-table pure-table-bordered ">
+							<table border="0" cellspacing="2" cellpadding="2" class="pure-table pure-table-bordered">
 								<xsl:apply-templates select="cat_header"/>
 								<xsl:apply-templates select="cat_data"/>
 							</table>

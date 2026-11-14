@@ -248,6 +248,16 @@
 		border:none;
 		}
 
+		/* template-independent replacements for the Bootstrap collapse and table-hover */
+		#democollapseBtn[hidden] {
+		display: none !important;
+		}
+
+		.pure-table.table-hover tbody tr:hover td,
+		.pure-table.table-hover tbody tr:hover th {
+		background-color: #f5f5f5;
+		}
+
 	</style>
 	<xsl:variable name="date_format">
 		<xsl:value-of select="php:function('get_phpgw_info', 'user|preferences|common|dateformat')" />
@@ -256,40 +266,40 @@
 		<xsl:value-of select="current_year"/>
 	</xsl:variable>
 
-	<button class="btn btn-info" type="button" data-bs-toggle="collapse" data-bs-target="#democollapseBtn" aria-expanded="false" aria-controls="democollapseBtn">Filter</button>
+	<button id="toggle_filter_panel" class="pure-button" type="button" aria-expanded="false" aria-controls="democollapseBtn">Filter</button>
 
-	<form method="post" id="form" action="{form_action}">
+	<form method="post" id="form" class="pure-form pure-form-stacked" action="{form_action}">
 
-		<div id="democollapseBtn" class="row collapse">
-			<div class="mt-2 container">
+		<div id="democollapseBtn" class="row" hidden="hidden">
+			<div class="mt-2">
 				<fieldset>
 					<legend>Velg kontroll</legend>
-					<div class="form-group">
+					<div class="pure-control-group">
 
 						<label for="control_area_id">
 							<xsl:value-of select="php:function('lang', 'control types')"/>
 						</label>
-						<select id="control_area_id" name="control_area_id" class="form-select">
+						<select id="control_area_id" name="control_area_id">
 							<xsl:apply-templates select="control_area_list/options"/>
 						</select>
 					</div>
-					<div class="form-group">
+					<div class="pure-control-group">
 
 						<label for="control_id">
 							<xsl:value-of select="php:function('lang', 'control')"/>
 						</label>
-						<select id="control_id" name="control_id" class="form-select" onchange="this.form.submit()">
+						<select id="control_id" name="control_id" onchange="this.form.submit()">
 							<xsl:attribute name="title">
 								<xsl:value-of select="php:function('lang', 'select control type')"/>
 							</xsl:attribute>
 							<xsl:apply-templates select="control_type_list/options"/>
 						</select>
 					</div>
-					<div class="form-group">
+					<div class="pure-control-group">
 						<label for="part_of_town_id">
 							<xsl:value-of select="php:function('lang', 'part of town')"/>
 						</label>
-						<select id="part_of_town_id" name="part_of_town_id[]" class="form-select">
+						<select id="part_of_town_id" name="part_of_town_id[]">
 							<xsl:attribute name="multiple">
 								<xsl:text>true</xsl:text>
 							</xsl:attribute>
@@ -299,11 +309,11 @@
 							<xsl:apply-templates select="part_of_town_list/options"/>
 						</select>
 					</div>
-					<div class="form-group">
+					<div class="pure-control-group">
 						<label for="inspector_id">
 							<xsl:value-of select="php:function('lang', 'performed by')"/>
 						</label>
-						<select id="inspector_id" name="inspector_id[]" class="form-select">
+						<select id="inspector_id" name="inspector_id[]">
 							<xsl:attribute name="multiple">
 								<xsl:text>true</xsl:text>
 							</xsl:attribute>
@@ -314,21 +324,21 @@
 						</select>
 					</div>
 
-					<div class="form-group">
+					<div class="pure-control-group">
 						<label>
 							<xsl:value-of select="php:function('lang', 'search')"/>
 						</label>
-						<input class="form-control" type="text" name="query" value="{query}" placeholder="Fritekstsøk..."/>
+						<input type="text" name="query" value="{query}" placeholder="Fritekstsøk..."/>
 					</div>
-					<div class="form-group">
+					<div class="pure-control-group">
 						<label>
 							<xsl:value-of select="php:function('lang', 'date')"/>
 						</label>
-						<input class="form-control" type="text" id="limit_date" name="limit_date" value="{limit_date}"/>
+						<input type="text" id="limit_date" name="limit_date" value="{limit_date}"/>
 					</div>
-					<div class="form-group form-check">
-						<label class="form-check-label">
-							<input class="form-check-input" type="checkbox" name="deviation" value="1">
+					<div class="pure-control-group">
+						<label class="pure-checkbox">
+							<input type="checkbox" name="deviation" value="1">
 								<xsl:if test="deviation = 1">
 									<xsl:attribute name="checked">
 										<xsl:text>true</xsl:text>
@@ -338,7 +348,7 @@
 							<xsl:value-of select="php:function('lang', 'deviation')"/>
 						</label>
 					</div>
-					<button class="btn btn-primary ms-2" type="submit">
+					<button class="pure-button pure-button-primary" type="submit">
 						<xsl:value-of select="php:function('lang', 'search')"/>
 					</button>
 
@@ -346,7 +356,7 @@
 			</div>
 		</div>
 		<div class="row">
-			<div class="mt-5 container">
+			<div class="mt-5">
 				<h2 class="text-center">Utførte rapporter siden <xsl:value-of select="limit_date"/>
 				</h2>
 				<div class="row">
@@ -354,7 +364,7 @@
 				</div>
 
 				<div class="mt-3 row">
-					<table class="table table-bordered table-hover">
+					<table class="pure-table pure-table-bordered table-hover">
 						<thead>
 							<tr>
 								<th>

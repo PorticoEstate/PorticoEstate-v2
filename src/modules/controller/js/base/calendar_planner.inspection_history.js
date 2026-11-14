@@ -44,17 +44,13 @@ $(function ()
 
 	$("#part_of_town_id, #inspector_id").porticoMultiselect();
 
-	// Digdir/Portico do not load Bootstrap JS, so provide a native toggle for the filter panel.
-	if (typeof bootstrap === 'undefined' || !bootstrap.Collapse)
+	// Template-independent filter panel toggle (no Bootstrap collapse plugin needed).
+	var $panel = $("#democollapseBtn");
+	var $toggle = $("#toggle_filter_panel");
+	$toggle.on('click', function ()
 	{
-		var $panel = $("#democollapseBtn");
-		var $toggle = $('[data-bs-target="#democollapseBtn"]');
-		$panel.removeClass('collapse').prop('hidden', true);
-		$toggle.removeAttr('data-bs-toggle').on('click', function ()
-		{
-			var expanded = $panel.prop('hidden');
-			$panel.prop('hidden', !expanded);
-			$toggle.attr('aria-expanded', String(expanded));
-		});
-	}
+		var expanded = $panel.prop('hidden');
+		$panel.prop('hidden', !expanded);
+		$toggle.attr('aria-expanded', String(expanded));
+	});
 });

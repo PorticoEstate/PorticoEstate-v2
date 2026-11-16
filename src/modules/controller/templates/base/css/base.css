@@ -2688,3 +2688,20 @@ p.no_items_msg {
 :where(html:not(.template-bootstrap)) .target_row .event .card-body p:last-child {
   margin-bottom: 0;
 }
+
+/* Calendar planner result lists: keep the page within the viewport on small screens.
+   The pager wraps with natural-width buttons, and wide result tables scroll inside their own box. */
+.planner-pager ul {
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding-left: 0;
+}
+.planner-pager .pure-button {
+  width: auto;
+  min-width: 0;
+}
+.planner-table-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}

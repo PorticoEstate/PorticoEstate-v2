@@ -279,7 +279,7 @@
 						<label for="control_area_id">
 							<xsl:value-of select="php:function('lang', 'control types')"/>
 						</label>
-						<select id="control_area_id" name="control_area_id">
+						<select id="control_area_id" name="control_area_id" class="pure-input-1">
 							<xsl:apply-templates select="control_area_list/options"/>
 						</select>
 					</div>
@@ -288,7 +288,7 @@
 						<label for="control_id">
 							<xsl:value-of select="php:function('lang', 'control')"/>
 						</label>
-						<select id="control_id" name="control_id" onchange="this.form.submit()">
+						<select id="control_id" name="control_id" class="pure-input-1" onchange="this.form.submit()">
 							<xsl:attribute name="title">
 								<xsl:value-of select="php:function('lang', 'select control type')"/>
 							</xsl:attribute>
@@ -299,7 +299,7 @@
 						<label for="part_of_town_id">
 							<xsl:value-of select="php:function('lang', 'part of town')"/>
 						</label>
-						<select id="part_of_town_id" name="part_of_town_id[]">
+						<select id="part_of_town_id" name="part_of_town_id[]" class="pure-input-1">
 							<xsl:attribute name="multiple">
 								<xsl:text>true</xsl:text>
 							</xsl:attribute>
@@ -313,7 +313,7 @@
 						<label for="inspector_id">
 							<xsl:value-of select="php:function('lang', 'performed by')"/>
 						</label>
-						<select id="inspector_id" name="inspector_id[]">
+						<select id="inspector_id" name="inspector_id[]" class="pure-input-1">
 							<xsl:attribute name="multiple">
 								<xsl:text>true</xsl:text>
 							</xsl:attribute>
@@ -328,13 +328,13 @@
 						<label>
 							<xsl:value-of select="php:function('lang', 'search')"/>
 						</label>
-						<input type="text" name="query" value="{query}" placeholder="Fritekstsøk..."/>
+						<input type="text" id="query" name="query" class="pure-input-1" value="{query}" placeholder="Fritekstsøk..."/>
 					</div>
 					<div class="pure-control-group">
 						<label>
 							<xsl:value-of select="php:function('lang', 'date')"/>
 						</label>
-						<input type="text" id="limit_date" name="limit_date" value="{limit_date}"/>
+						<input type="text" id="limit_date" name="limit_date" class="pure-input-1" value="{limit_date}"/>
 					</div>
 					<div class="pure-control-group">
 						<label class="pure-checkbox">
@@ -359,11 +359,11 @@
 			<div class="mt-5">
 				<h2 class="text-center">Utførte rapporter siden <xsl:value-of select="limit_date"/>
 				</h2>
-				<div class="row">
+				<div class="row planner-pager">
 					<xsl:call-template name="nextmatchs"/>
 				</div>
 
-				<div class="mt-3 row">
+				<div class="mt-3 row planner-table-scroll">
 					<table class="pure-table pure-table-bordered table-hover">
 						<thead>
 							<tr>

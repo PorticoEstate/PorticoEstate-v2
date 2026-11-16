@@ -126,6 +126,10 @@ $(function ()
 		$('body').addClass('modal-open')
 			.append('<div class="modal-backdrop show" id="inspectObjectBackdrop"></div>');
 		$inspectModal.css('display', 'block').attr('aria-hidden', 'false');
+		$inspectModal.find('textarea:visible').each(function ()
+		{
+			autoResizeTextarea(this);
+		});
 	});
 
 	$inspectModal.on('click', '.modal-header .btn-close', hide_inspect_modal);

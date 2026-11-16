@@ -2625,6 +2625,71 @@ p.no_items_msg {
 }
 :where(html:not(.template-bootstrap)) .btn-close::before { content: "\00d7"; }
 
+/* Inspection modal: retain the existing JS hooks while letting form controls shrink. */
+#inspectObject .modal-dialog {
+  width: auto;
+  max-width: 800px;
+  margin: 1rem;
+}
+#inspectObject .modal-content,
+#inspectObject .modal-body,
+#inspectObject .tab_item,
+#inspectObject fieldset {
+  min-width: 0;
+  box-sizing: border-box;
+}
+#inspectObject .tab_item {
+  overflow-wrap: anywhere;
+}
+#inspectObject .frm_register_case .pure-control-group {
+  margin-bottom: 1rem;
+}
+#inspectObject .frm_register_case label {
+  display: block;
+  width: auto;
+  margin: 0 0 0.35rem;
+  text-align: left;
+}
+#inspectObject .frm_register_case :is(select, input[type="text"], textarea) {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  font-size: 1rem;
+}
+#inspectObject .frm_register_case :is(select, input[type="text"], textarea):not(.error):not(.valid) {
+  border-color: #767676;
+}
+#inspectObject .frm_register_case textarea {
+  min-height: 6rem;
+  margin: 0;
+  resize: vertical;
+}
+#inspectObject .frm_register_case a {
+  color: #0056b3;
+  text-decoration: underline;
+}
+#inspectObject .frm_register_case > br {
+  display: none;
+}
+#inspectObject .frm_register_case .pure-button,
+#inspectObject .modal-footer .pure-button {
+  width: auto;
+  max-width: 100%;
+  min-height: 2.75rem;
+  margin: 0.25rem 0.5rem 0.25rem 0;
+  white-space: normal;
+}
+#inspectObject .frm_register_case .pure-button.btn-primary {
+  background-color: #0056b3;
+  border-color: #0056b3;
+  color: #fff;
+}
+@media (min-width: 832px) {
+  #inspectObject .modal-dialog {
+    margin: 1.75rem auto;
+  }
+}
+
 /* ==================================================================================
    TEMPLATE-INDEPENDENT MODULE STYLES (apply in every template set)
    ================================================================================== */

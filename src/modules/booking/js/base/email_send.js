@@ -45,13 +45,7 @@ this.get_email_recipients = function (seasons)
 		}
 	}).done(function ()
 	{
-		$('#email_recipients').multiselect('rebuild');
-
-		setTimeout(function ()
-		{
-			$('#email_recipients').parent().find("button.multiselect").click();
-
-		}, 100);
+		$('#email_recipients').porticoMultiselect('refresh').select2('open');
 	});
 };
 
@@ -80,34 +74,7 @@ $(window).on('load', function ()
 
 	});
 
-	$("#email_recipients").multiselect({
-		buttonClass: 'form-select',
-		templates: {
-			button: '<button type="button" class="multiselect dropdown-toggle" data-bs-toggle="dropdown"><span class="multiselect-selected-text"></span></button>'
-		},
-		includeSelectAllOption: true,
-		enableFiltering: true,
-		enableCaseInsensitiveFiltering: true,
-		buttonClass: 'form-control',
-		onChange: function (option)
-		{
-			// Check if the filter was used.
-			var query = $("#email_recipients").find('li.multiselect-filter input').val();
-
-			if (query)
-			{
-				$("#email_recipients").find('li.multiselect-filter input').val('').trigger('keydown');
-			}
-		},
-		onDropdownHidden: function (event)
-		{
-			console.log(event);
-
-		}
-	});
-
-	$(".btn-group").addClass('w-75');
-	$(".multiselect-container").addClass('w-100');
+	$("#email_recipients").porticoMultiselect();
 
 	$('#email_recipients').on('select2:open', function (e)
 	{

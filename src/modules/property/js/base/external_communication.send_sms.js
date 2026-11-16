@@ -36,14 +36,7 @@ this.get_sms_recipients = function (location_code)
 		}
 	}).done(function ()
 	{
-		$('#sms_recipients').multiselect('rebuild');
-
-		setTimeout(function ()
-		{
-			$('#sms_recipients').parent().find("button.multiselect").trigger('click');
-			$('#sms_recipients').parent().find("input[type='search'].multiselect-search").focus();
-
-		}, 100);
+		$('#sms_recipients').porticoMultiselect('refresh').select2('open');
 	});
 };
 
@@ -91,36 +84,7 @@ $(function ()
 
 init_multiselect = function ()
 {
-	$("#sms_recipients").multiselect({
-		buttonClass: 'form-select',
-		templates: {
-		button: '<button type="button" class="multiselect dropdown-toggle" data-bs-toggle="dropdown"><span class="multiselect-selected-text"></span></button>',
-		},
-//	buttonWidth: 250,
-		includeSelectAllOption: true,
-		enableFiltering: true,
-		enableCaseInsensitiveFiltering: true,
-		buttonClass: 'form-control',
-		onChange: function (option)
-		{
-			// Check if the filter was used.
-			var query = $("#sms_recipients").find('li.multiselect-filter input').val();
-
-			if (query)
-			{
-				$("#sms_recipients").find('li.multiselect-filter input').val('').trigger('keydown');
-			}
-		},
-		onDropdownHidden: function (event)
-		{
-			console.log(event);
-
-		}
-	});
-
-	$(".btn-group").addClass('w-75');
-	$(".multiselect-container").addClass('w-100');
-
+	$("#sms_recipients").porticoMultiselect();
 };
 
 function SmsCountKeyUp(maxChar)

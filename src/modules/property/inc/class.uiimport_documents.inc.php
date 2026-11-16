@@ -1102,7 +1102,6 @@ class property_uiimport_documents extends phpgwapi_uicommon_jquery
 
 		phpgwapi_jquery::load_widget('file-upload-minimum');
 		phpgwapi_jquery::load_widget('select2');
-		phpgwapi_jquery::load_widget('bootstrap-multiselect');
 		self::add_javascript('property', 'base', 'import_documents.js');
 		$this->flags['app_header'] = lang('property') . '::' . lang('import documents');
 		Settings::getInstance()->update('flags', ['app_header' => $this->flags['app_header']]);

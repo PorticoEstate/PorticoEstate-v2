@@ -40,6 +40,10 @@ https://github.com/yui/pure/blob/master/LICENSE.md
 	font-weight: bold;
 }
 
+:where(html.template-bootstrap, html.template-digdir) .pure-form label {
+	font-size: inherit;
+}
+
 .p0{padding-left: 0px !important;padding-top: 0px !important;padding-bottom: 0px !important;}
 
 .pure-form.pure-form-aligned label h4{margin: 0.66em 0;}
@@ -229,4 +233,12 @@ ul#audience {list-style: none;padding-left: 10px;}
         /* Increased bottom padding to make it group with its related input element. */
         padding: 0.2em 0 0.8em;
     }
+}
+
+/* WCAG AA: Pure's default primary blue (#0078e7) gives only 4.34:1 against white text. */
+.pure-button-primary,
+.pure-button-selected,
+a.pure-button-primary,
+a.pure-button-selected {
+    background-color: #0062c4;
 }

@@ -72,26 +72,26 @@
 		<xsl:value-of select="current_year"/>
 	</xsl:variable>
 
-	<button class="btn btn-info" type="button" data-bs-toggle="collapse" data-bs-target="#democollapseBtn" aria-expanded="false" aria-controls="democollapseBtn">Filter</button>
+	<button id="toggle_filter_panel" class="pure-button" type="button" aria-expanded="false" aria-controls="democollapseBtn">Filter</button>
 
 	<form method="post" id="form" action="{form_action}">
 		<div class="row">
-			<div id="democollapseBtn" class="mt-2 container collapse">
-				<div class="form-group">
+			<div id="democollapseBtn" class="mt-2" hidden="hidden">
+				<div class="pure-control-group">
 					<fieldset>
 						<legend>Velg kontroll</legend>
 
 						<label for="control_area_id">
 							<xsl:value-of select="php:function('lang', 'control types')"/>
 						</label>
-						<select id="control_area_id" name="control_area_id" class="form-select">
+						<select id="control_area_id" name="control_area_id" >
 							<xsl:apply-templates select="control_area_list/options"/>
 						</select>
 
 						<label for="control_id">
 							<xsl:value-of select="php:function('lang', 'control')"/>
 						</label>
-						<select id="control_id" name="control_id" class="form-select" onchange="this.form.submit()">
+						<select id="control_id" name="control_id"  onchange="this.form.submit()">
 							<xsl:attribute name="title">
 								<xsl:value-of select="php:function('lang', 'select control type')"/>
 							</xsl:attribute>
@@ -101,7 +101,7 @@
 						<!--						<label for="entity_group_id">
 							<xsl:value-of select="php:function('lang', 'entity group')"/>
 						</label>
-						<select id="entity_group_id" name="entity_group_id" class="form-select" onchange="this.form.submit()">
+						<select id="entity_group_id" name="entity_group_id"  onchange="this.form.submit()">
 							<xsl:attribute name="title">
 								<xsl:value-of select="php:function('lang', 'select')"/>
 							</xsl:attribute>
@@ -111,7 +111,7 @@
 						<label for="part_of_town_id">
 							<xsl:value-of select="php:function('lang', 'part of town')"/>
 						</label>
-						<select id="part_of_town_id" name="part_of_town_id[]" class="form-select">
+						<select id="part_of_town_id" name="part_of_town_id[]" >
 							<xsl:attribute name="multiple">
 								<xsl:text>true</xsl:text>
 							</xsl:attribute>
@@ -127,11 +127,11 @@
 		</div>
 
 		<div class="row">
-			<div class="mt-5 container">
+			<div class="mt-5">
 				<div class="text-center clearfix">
 					<span class="float-start">
 						<a href="#">
-							<button type="submit" name="prev_year" value="1" class="btn btn-secondary">&lt;
+							<button type="submit" name="prev_year" value="1" class="pure-button btn-secondary">&lt;
 								<xsl:value-of select="prev_year"/>
 							</button>
 						</a>
@@ -139,7 +139,7 @@
 
 					<span class="float-end">
 						<a href="#">
-							<button type="submit" name="next_year" value="1" class="btn btn-secondary">
+							<button type="submit" name="next_year" value="1" class="pure-button btn-secondary">
 								<xsl:value-of select="next_year"/>
  &gt;
 							</button>
@@ -153,7 +153,7 @@
 					</span>
 				</div>
 				<div class="mt-3 row datagrid table-responsive">
-					<table class="table table-bordered table-hover-cells">
+					<table class="pure-table pure-table-bordered table-hover-cells">
 						<thead>
 							<tr>
 								<th>
@@ -248,6 +248,16 @@
 		border:none;
 		}
 
+		/* template-independent replacements for the Bootstrap collapse and table-hover */
+		#democollapseBtn[hidden] {
+		display: none !important;
+		}
+
+		.pure-table.table-hover tbody tr:hover td,
+		.pure-table.table-hover tbody tr:hover th {
+		background-color: #f5f5f5;
+		}
+
 	</style>
 	<xsl:variable name="date_format">
 		<xsl:value-of select="php:function('get_phpgw_info', 'user|preferences|common|dateformat')" />
@@ -256,40 +266,40 @@
 		<xsl:value-of select="current_year"/>
 	</xsl:variable>
 
-	<button class="btn btn-info" type="button" data-bs-toggle="collapse" data-bs-target="#democollapseBtn" aria-expanded="false" aria-controls="democollapseBtn">Filter</button>
+	<button id="toggle_filter_panel" class="pure-button" type="button" aria-expanded="false" aria-controls="democollapseBtn">Filter</button>
 
-	<form method="post" id="form" action="{form_action}">
+	<form method="post" id="form" class="pure-form pure-form-stacked" action="{form_action}">
 
-		<div id="democollapseBtn" class="row collapse">
-			<div class="mt-2 container">
+		<div id="democollapseBtn" class="row" hidden="hidden">
+			<div class="mt-2">
 				<fieldset>
 					<legend>Velg kontroll</legend>
-					<div class="form-group">
+					<div class="pure-control-group">
 
 						<label for="control_area_id">
 							<xsl:value-of select="php:function('lang', 'control types')"/>
 						</label>
-						<select id="control_area_id" name="control_area_id" class="form-select">
+						<select id="control_area_id" name="control_area_id" class="pure-input-1">
 							<xsl:apply-templates select="control_area_list/options"/>
 						</select>
 					</div>
-					<div class="form-group">
+					<div class="pure-control-group">
 
 						<label for="control_id">
 							<xsl:value-of select="php:function('lang', 'control')"/>
 						</label>
-						<select id="control_id" name="control_id" class="form-select" onchange="this.form.submit()">
+						<select id="control_id" name="control_id" class="pure-input-1" onchange="this.form.submit()">
 							<xsl:attribute name="title">
 								<xsl:value-of select="php:function('lang', 'select control type')"/>
 							</xsl:attribute>
 							<xsl:apply-templates select="control_type_list/options"/>
 						</select>
 					</div>
-					<div class="form-group">
+					<div class="pure-control-group">
 						<label for="part_of_town_id">
 							<xsl:value-of select="php:function('lang', 'part of town')"/>
 						</label>
-						<select id="part_of_town_id" name="part_of_town_id[]" class="form-select">
+						<select id="part_of_town_id" name="part_of_town_id[]" class="pure-input-1">
 							<xsl:attribute name="multiple">
 								<xsl:text>true</xsl:text>
 							</xsl:attribute>
@@ -299,11 +309,11 @@
 							<xsl:apply-templates select="part_of_town_list/options"/>
 						</select>
 					</div>
-					<div class="form-group">
+					<div class="pure-control-group">
 						<label for="inspector_id">
 							<xsl:value-of select="php:function('lang', 'performed by')"/>
 						</label>
-						<select id="inspector_id" name="inspector_id[]" class="form-select">
+						<select id="inspector_id" name="inspector_id[]" class="pure-input-1">
 							<xsl:attribute name="multiple">
 								<xsl:text>true</xsl:text>
 							</xsl:attribute>
@@ -314,21 +324,21 @@
 						</select>
 					</div>
 
-					<div class="form-group">
+					<div class="pure-control-group">
 						<label>
 							<xsl:value-of select="php:function('lang', 'search')"/>
 						</label>
-						<input class="form-control" type="text" name="query" value="{query}" placeholder="Fritekstsøk..."/>
+						<input type="text" id="query" name="query" class="pure-input-1" value="{query}" placeholder="Fritekstsøk..."/>
 					</div>
-					<div class="form-group">
+					<div class="pure-control-group">
 						<label>
 							<xsl:value-of select="php:function('lang', 'date')"/>
 						</label>
-						<input class="form-control" type="text" id="limit_date" name="limit_date" value="{limit_date}"/>
+						<input type="text" id="limit_date" name="limit_date" class="pure-input-1" value="{limit_date}"/>
 					</div>
-					<div class="form-group form-check">
-						<label class="form-check-label">
-							<input class="form-check-input" type="checkbox" name="deviation" value="1">
+					<div class="pure-control-group">
+						<label class="pure-checkbox">
+							<input type="checkbox" name="deviation" value="1">
 								<xsl:if test="deviation = 1">
 									<xsl:attribute name="checked">
 										<xsl:text>true</xsl:text>
@@ -338,7 +348,7 @@
 							<xsl:value-of select="php:function('lang', 'deviation')"/>
 						</label>
 					</div>
-					<button class="btn btn-primary ms-2" type="submit">
+					<button class="pure-button pure-button-primary" type="submit">
 						<xsl:value-of select="php:function('lang', 'search')"/>
 					</button>
 
@@ -346,15 +356,15 @@
 			</div>
 		</div>
 		<div class="row">
-			<div class="mt-5 container">
+			<div class="mt-5">
 				<h2 class="text-center">Utførte rapporter siden <xsl:value-of select="limit_date"/>
 				</h2>
-				<div class="row">
+				<div class="row planner-pager">
 					<xsl:call-template name="nextmatchs"/>
 				</div>
 
-				<div class="mt-3 row">
-					<table class="table table-bordered table-hover">
+				<div class="mt-3 row planner-table-scroll">
+					<table class="pure-table pure-table-bordered table-hover">
 						<thead>
 							<tr>
 								<th>
@@ -538,7 +548,7 @@
 	<xsl:variable name="date_format">
 		<xsl:value-of select="php:function('get_phpgw_info', 'user|preferences|common|dateformat')" />
 	</xsl:variable>
-	<div class="mt-5 container">
+	<div class="mt-5">
 		<div class="row">
 			<div class="col">
 				<h3>
@@ -569,7 +579,7 @@
 	<div class="text-center clearfix">
 		<span class="float-start">
 			<a href="{prev_month_url}">
-				<button type="button" name="prev_year" value="1" class="btn btn-secondary">&lt;
+				<button type="button" name="prev_year" value="1" class="pure-button btn-secondary">&lt;
 					<xsl:value-of select="prev_month"/>
 				</button>
 			</a>
@@ -577,7 +587,7 @@
 
 		<span class="float-end">
 			<a href="{next_month_url}">
-				<button type="button" name="next_year" value="1" class="btn btn-secondary">
+				<button type="button" name="next_year" value="1" class="pure-button btn-secondary">
 					<xsl:value-of select="next_month"/>
  &gt;
 				</button>
@@ -592,27 +602,27 @@
 		</span>
 	</div>
 
-	<div class="container datagrid table-responsive">
+	<div class="datagrid table-responsive">
 		<xsl:value-of disable-output-escaping="yes" select="calendar"/>
 	</div>
 
 	<!--https://jsfiddle.net/d1wnk1bg/8/-->
 
 
-	<div class="container">
+	<div >
 		<div class="clearfix">
 			<span class="float-start">
 				<a href="{start_url}">
-					<button type="button" class="btn btn-warning">Gå tilbake</button>
+					<button type="button" class="pure-button btn-warning">Gå tilbake</button>
 				</a>
 			</span>
 			<span class="float-end">
 				<a href="{send_notification_url}">
-					<button type="button" class="btn btn-success">Gå til utsending</button>
+					<button type="button" class="pure-button btn-success">Gå til utsending</button>
 				</a>
 			</span>
 			<span class="me-2 float-end">
-				<button type="button" class="btn btn-success" onclick="save_schedule();">Lagre</button>
+				<button type="button" class="pure-button btn-success" onclick="save_schedule();">Lagre</button>
 			</span>
 		</div>
 	</div>
@@ -626,7 +636,7 @@ xmlns:php="http://php.net/xsl">
 </xsl:variable>
 <form method="post" id="send_notification" action="{form_action}" onsubmit="return submitSendNotificationForm(event, this);">
 	<input type="hidden" name="control_id" value="{control_id}"/>
-	<div class="mt-5 container">
+	<div class="mt-5">
 		<div class="row">
 			<div class="col">
 				<h3>Send varsel</h3>
@@ -639,8 +649,8 @@ xmlns:php="http://php.net/xsl">
 			</div>
 		</div>
 
-		<div class="container datagrid table-responsive form-group">
-			<table class="mt-2 table table-hover">
+		<div class="datagrid table-responsive pure-control-group">
+			<table class="mt-2 pure-table table-hover">
 				<thead>
 					<tr>
 						<th>
@@ -683,7 +693,7 @@ xmlns:php="http://php.net/xsl">
 											<i class="far fa-envelope"></i>
 										</div>-->
 									<input type="hidden" name="timestamp[{location_id}_{id}]" value="{timestamp}"/>
-									<input type="text" class="form-control" name="email[{location_id}_{id}]" value="{email}"/>
+									<input type="text"  name="email[{location_id}_{id}]" value="{email}"/>
 								</div>
 							</td>
 							<td>
@@ -696,16 +706,16 @@ xmlns:php="http://php.net/xsl">
 			</table>
 		</div>
 
-		<div class="container">
+		<div >
 			<div class="clearfix">
 				<span class="float-start">
 					<a href="{monthly_url}">
-						<button type="button" class="btn btn-warning">Gå tilbake</button>
+						<button type="button" class="pure-button btn-warning">Gå tilbake</button>
 					</a>
 				</span>
 				<span class="float-end">
 					<a href="">
-						<button type="submit" class="btn btn-success">Send varsel</button>
+						<button type="submit" class="pure-button btn-success">Send varsel</button>
 					</a>
 				</span>
 			</div>
@@ -721,27 +731,27 @@ xmlns:php="http://php.net/xsl">
 	<xsl:value-of select="php:function('get_phpgw_info', 'user|preferences|common|dateformat')" />
 </xsl:variable>
 
-<button class="btn btn-info" type="button" data-bs-toggle="collapse" data-bs-target="#democollapseBtn" aria-expanded="false" aria-controls="democollapseBtn">Filter</button>
+<button id="toggle_filter_panel" class="pure-button" type="button" aria-expanded="false" aria-controls="democollapseBtn">Filter</button>
 
 <form method="post" id="form" action="{form_action}">
 
-	<div id="democollapseBtn" class="row collapse">
-		<div class="mt-2 container">
-			<div class="form-group">
+	<div id="democollapseBtn" class="row" hidden="hidden">
+		<div class="mt-2">
+			<div class="pure-control-group">
 				<fieldset>
 					<legend>Velg kontroll</legend>
 
 					<label for="control_area_id">
 						<xsl:value-of select="php:function('lang', 'control types')"/>
 					</label>
-					<select id="control_area_id" name="control_area_id" class="form-select">
+					<select id="control_area_id" name="control_area_id" >
 						<xsl:apply-templates select="control_area_list/options"/>
 					</select>
 
 					<label for="control_id">
 						<xsl:value-of select="php:function('lang', 'control')"/>
 					</label>
-					<select id="control_id" name="control_id" class="form-select" onchange="this.form.submit()">
+					<select id="control_id" name="control_id"  onchange="this.form.submit()">
 						<xsl:attribute name="title">
 							<xsl:value-of select="php:function('lang', 'select control type')"/>
 						</xsl:attribute>
@@ -752,7 +762,7 @@ xmlns:php="http://php.net/xsl">
 					<label for="part_of_town_id">
 						<xsl:value-of select="php:function('lang', 'part of town')"/>
 					</label>
-					<select id="part_of_town_id" name="part_of_town_id[]" class="form-select">
+					<select id="part_of_town_id" name="part_of_town_id[]" >
 						<xsl:attribute name="multiple">
 							<xsl:text>true</xsl:text>
 						</xsl:attribute>
@@ -768,17 +778,17 @@ xmlns:php="http://php.net/xsl">
 	</div>
 
 	<div class="row mt-2">
-		<div class="container">
+		<div >
 			<h4>Velg blant dagens oppførte kontroller</h4>
 		</div>
 	</div>
 	<div class="row mt-2">
 
-		<div class="container">
+		<div >
 			<div class="text-center clearfix">
 				<span class="float-start">
 					<a href="#">
-						<button type="submit" name="prev_day" value="1" class="btn btn-secondary">&lt;
+						<button type="submit" name="prev_day" value="1" class="pure-button btn-secondary">&lt;
 							<xsl:value-of select="prev_day"/>
 						</button>
 					</a>
@@ -786,7 +796,7 @@ xmlns:php="http://php.net/xsl">
 
 				<span class="float-end">
 					<a href="#">
-						<button type="submit" name="next_day" value="1" class="btn btn-secondary">
+						<button type="submit" name="next_day" value="1" class="pure-button btn-secondary">
 							<xsl:value-of select="next_day"/>
  &gt;
 						</button>
@@ -807,11 +817,11 @@ xmlns:php="http://php.net/xsl">
 				</span>
 			</div>
 			<div class="mt-2">
-				<select id="check_list_id" name="check_list_id" class="form-select">
+				<select id="check_list_id" name="check_list_id" >
 					<xsl:apply-templates select="todo_list/options"/>
 				</select>
 				<div class="float-end mt-2">
-					<button type="button" class="btn btn-success" onClick="start_inspection();">
+					<button type="button" class="pure-button btn-success" onClick="start_inspection();">
 						<xsl:value-of select="php:function('lang', 'next')"/>
 					</button>
 				</div>
@@ -822,7 +832,7 @@ xmlns:php="http://php.net/xsl">
 
 	<xsl:if test="count(completed_list) != 0">
 		<div class="row mt-2">
-			<div class="container">
+			<div >
 				<h5>Fullførte kontroller</h5>
 				<ul>
 					<xsl:for-each select="completed_list">
@@ -844,27 +854,27 @@ xmlns:php="http://php.net/xsl">
 	<xsl:value-of select="php:function('get_phpgw_info', 'user|preferences|common|dateformat')" />
 </xsl:variable>
 
-<button class="btn btn-info" type="button" data-bs-toggle="collapse" data-bs-target="#democollapseBtn" aria-expanded="false" aria-controls="democollapseBtn">Filter</button>
+<button id="toggle_filter_panel" class="pure-button" type="button" aria-expanded="false" aria-controls="democollapseBtn">Filter</button>
 
 <form method="post" id="form" action="{form_action}">
 
-	<div id="democollapseBtn" class="row collapse">
-		<div class="mt-2 container">
-			<div class="form-group">
+	<div id="democollapseBtn" class="row" hidden="hidden">
+		<div class="mt-2">
+			<div class="pure-control-group">
 				<fieldset>
 					<legend>Velg kontroll</legend>
 
 					<label for="control_area_id">
 						<xsl:value-of select="php:function('lang', 'control types')"/>
 					</label>
-					<select id="control_area_id" name="control_area_id" class="form-select">
+					<select id="control_area_id" name="control_area_id" >
 						<xsl:apply-templates select="control_area_list/options"/>
 					</select>
 
 					<label for="control_id">
 						<xsl:value-of select="php:function('lang', 'control')"/>
 					</label>
-					<select id="control_id" name="control_id" class="form-select" onchange="this.form.submit()">
+					<select id="control_id" name="control_id"  onchange="this.form.submit()">
 						<xsl:attribute name="title">
 							<xsl:value-of select="php:function('lang', 'select control type')"/>
 						</xsl:attribute>
@@ -875,7 +885,7 @@ xmlns:php="http://php.net/xsl">
 					<label for="part_of_town_id">
 						<xsl:value-of select="php:function('lang', 'part of town')"/>
 					</label>
-					<select id="part_of_town_id" name="part_of_town_id[]" class="form-select">
+					<select id="part_of_town_id" name="part_of_town_id[]" >
 						<xsl:attribute name="multiple">
 							<xsl:text>true</xsl:text>
 						</xsl:attribute>
@@ -884,13 +894,13 @@ xmlns:php="http://php.net/xsl">
 						</xsl:attribute>
 						<xsl:apply-templates select="part_of_town_list/options"/>
 					</select>
-					<div class="form-group">
+					<div class="pure-control-group">
 						<label>
 							<xsl:value-of select="php:function('lang', 'search')"/>
 						</label>
-						<input class="form-control" type="text" name="query" value="{query}" placeholder="Fritekstsøk..."/>
+						<input  type="text" name="query" value="{query}" placeholder="Fritekstsøk..."/>
 					</div>
-					<button class="btn btn-primary ms-2" type="submit">
+					<button class="pure-button btn-primary ms-2" type="submit">
 						<xsl:value-of select="php:function('lang', 'search')"/>
 					</button>
 				</fieldset>
@@ -908,7 +918,7 @@ xmlns:php="http://php.net/xsl">
 	<div class="text-center clearfix">
 		<span class="float-start">
 			<a href="{prev_month_url}">
-				<button type="button" name="prev_year" value="1" class="btn btn-secondary">&lt;
+				<button type="button" name="prev_year" value="1" class="pure-button btn-secondary">&lt;
 					<xsl:value-of select="prev_month"/>
 				</button>
 			</a>
@@ -916,7 +926,7 @@ xmlns:php="http://php.net/xsl">
 
 		<span class="float-end">
 			<a href="{next_month_url}">
-				<button type="button" name="next_year" value="1" class="btn btn-secondary">
+				<button type="button" name="next_year" value="1" class="pure-button btn-secondary">
 					<xsl:value-of select="next_month"/>
  &gt;
 				</button>
@@ -932,9 +942,9 @@ xmlns:php="http://php.net/xsl">
 	</div>
 	<div class="row mt-2">
 
-		<div class="container">
+		<div >
 			<div class="mt-3 row datagrid table-responsive">
-				<table class="table table-bordered table-hover-cells">
+				<table class="pure-table pure-table-bordered table-hover-cells">
 					<thead>
 						<tr>
 							<th>
@@ -968,28 +978,28 @@ xmlns:php="http://php.net/xsl">
 	<xsl:value-of select="php:function('get_phpgw_info', 'user|preferences|common|dateformat')" />
 </xsl:variable>
 
-<button class="btn btn-info" type="button" data-bs-toggle="collapse" data-bs-target="#democollapseBtn" aria-expanded="false" aria-controls="democollapseBtn">Filter</button>
+<button id="toggle_filter_panel" class="pure-button" type="button" aria-expanded="false" aria-controls="democollapseBtn">Filter</button>
 
 <form method="post" id="form" action="{form_action}">
-	<div class="container">
+	<div >
 
-		<div id="democollapseBtn" class="row collapse">
-			<div class="mt-2 container">
-				<div class="form-group">
+		<div id="democollapseBtn" class="row" hidden="hidden">
+			<div class="mt-2">
+				<div class="pure-control-group">
 					<fieldset>
 						<legend>Velg kontroll</legend>
 
 						<label for="control_area_id">
 							<xsl:value-of select="php:function('lang', 'control types')"/>
 						</label>
-						<select id="control_area_id" name="control_area_id" class="form-select">
+						<select id="control_area_id" name="control_area_id" >
 							<xsl:apply-templates select="control_area_list/options"/>
 						</select>
 
 						<label for="control_id">
 							<xsl:value-of select="php:function('lang', 'control')"/>
 						</label>
-						<select id="control_id" name="control_id" class="form-select" onchange="this.form.submit()">
+						<select id="control_id" name="control_id"  onchange="this.form.submit()">
 							<xsl:attribute name="title">
 								<xsl:value-of select="php:function('lang', 'select control type')"/>
 							</xsl:attribute>
@@ -1000,7 +1010,7 @@ xmlns:php="http://php.net/xsl">
 						<label for="part_of_town_id">
 							<xsl:value-of select="php:function('lang', 'part of town')"/>
 						</label>
-						<select id="part_of_town_id" name="part_of_town_id[]" class="form-select">
+						<select id="part_of_town_id" name="part_of_town_id[]" >
 							<xsl:attribute name="multiple">
 								<xsl:text>true</xsl:text>
 							</xsl:attribute>
@@ -1016,7 +1026,7 @@ xmlns:php="http://php.net/xsl">
 		</div>
 
 		<div class="row mt-2">
-			<div class="container">
+			<div >
 				<h4>Velg blant dagens oppførte kontroller</h4>
 			</div>
 		</div>
@@ -1025,7 +1035,7 @@ xmlns:php="http://php.net/xsl">
 			<div class="text-center clearfix">
 				<span class="float-start">
 					<a href="#">
-						<button type="submit" name="prev_day" value="1" class="btn btn-secondary">&lt;
+						<button type="submit" name="prev_day" value="1" class="pure-button btn-secondary">&lt;
 							<xsl:value-of select="prev_day"/>
 						</button>
 					</a>
@@ -1033,7 +1043,7 @@ xmlns:php="http://php.net/xsl">
 
 				<span class="float-end">
 					<a href="#">
-						<button type="submit" name="next_day" value="1" class="btn btn-secondary">
+						<button type="submit" name="next_day" value="1" class="pure-button btn-secondary">
 							<xsl:value-of select="next_day"/>
  &gt;
 						</button>
@@ -1054,11 +1064,11 @@ xmlns:php="http://php.net/xsl">
 				</span>
 			</div>
 			<div class="mt-2">
-				<select id="check_list_id" name="check_list_id" class="form-select">
+				<select id="check_list_id" name="check_list_id" >
 					<xsl:apply-templates select="todo_list/options"/>
 				</select>
 				<div class="float-end mt-2">
-					<button type="button" class="btn btn-success" onClick="start_inspection();">
+					<button type="button" class="pure-button btn-success" onClick="start_inspection();">
 						<xsl:value-of select="php:function('lang', 'next')"/>
 					</button>
 				</div>
@@ -1067,7 +1077,7 @@ xmlns:php="http://php.net/xsl">
 		</div>
 
 		<div class="mt-3 row datagrid table-responsive">
-			<table class="table table-bordered table-hover-cells">
+			<table class="pure-table pure-table-bordered table-hover-cells">
 				<thead>
 					<tr>
 						<th>

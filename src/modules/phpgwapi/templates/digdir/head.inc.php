@@ -94,13 +94,18 @@ $stylesheets[] = "/phpgwapi/templates/pure/css/version_3/pure-min.css";
 $stylesheets[] = "/phpgwapi/templates/pure/css/pure-extension.css";
 $stylesheets[] = "/phpgwapi/templates/pure/css/version_3/grids-responsive-min.css";
 
-// Load Designsystemet natively
-// Load native Designsystemet CSS (includes Pure CSS compatibility)
-$stylesheets[] = "/phpgwapi/templates/digdir/css/digdir-native.css";
-
 // Icon fonts
 $stylesheets[] = "/phpgwapi/templates/base/css/fontawesome/css/all.min.css";
 $stylesheets[] = "/phpgwapi/templates/base/css/flag-icons.min.css";
+
+$stylesheets[] = "/phpgwapi/templates/base/css/base.css";
+if ($app != 'phpgwapi')
+{
+	$stylesheets[] = "/{$app}/templates/base/css/base.css";
+}
+
+// Load native Designsystemet CSS (includes Pure CSS compatibility)
+$stylesheets[] = "/phpgwapi/templates/digdir/css/digdir-native.css";
 $stylesheets[] = "/phpgwapi/templates/digdir/components/language-selector/language-selector.css";
 $stylesheets[] = "/phpgwapi/templates/digdir/components/user-menu/user-menu.css";
 
@@ -124,10 +129,13 @@ if (isset($userSettings['preferences']['common']['theme']))
 	$stylesheets[] = "/phpgwapi/templates/digdir/css/{$userSettings['preferences']['common']['theme']}.css";
 }
 
-$stylesheets[] = "/{$app}/templates/digdir/css/base.css";
-if (isset($userSettings['preferences']['common']['theme']))
+if ($app != 'phpgwapi')
 {
-	$stylesheets[] = "/{$app}/templates/digdir/css/{$userSettings['preferences']['common']['theme']}.css";
+	$stylesheets[] = "/{$app}/templates/digdir/css/base.css";
+	if (isset($userSettings['preferences']['common']['theme']))
+	{
+		$stylesheets[] = "/{$app}/templates/digdir/css/{$userSettings['preferences']['common']['theme']}.css";
+	}
 }
 
 $cssUris = [];

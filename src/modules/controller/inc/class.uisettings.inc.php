@@ -429,7 +429,7 @@ class controller_uisettings extends phpgwapi_uicommon
 			'tabs'			 => $this->_generate_tabs('users'),
 		);
 
-		phpgwapi_jquery::load_widget('bootstrap-multiselect');
+		phpgwapi_jquery::load_widget('select2');
 		self::render_template_xsl(array('settings'), array('users' => $data));
 	}
 }

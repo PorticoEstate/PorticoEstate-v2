@@ -70,9 +70,13 @@ downloadComponents = function (parent_location_id, parent_id, location_id)
 
 $(function ()
 {
+	var componentMap;
+	var savedPosition = null;
+
 	update_geolocation = function (location_id, component_id)
 	{
-		//	getPosition(null, location_id, component_id); return;
+		showPosition(savedPosition ? savedPosition.latitude : null,
+			savedPosition ? savedPosition.longitude : null, location_id, component_id);
 
 		if (navigator.geolocation)
 		{
@@ -96,10 +100,17 @@ $(function ()
 
 	showPosition = function (latitude, longitude, location_id, component_id)
 	{
-		//reset the map div
-		$("#map").html('<div id="popup" class="ol-popup"><a href="#" id="popup-closer" class="ol-popup-closer"></a><div id="popup-content"></div></div><div id="map" class="map"></div>');
+		var popup = $("#popup").detach();
+		if (componentMap)
+		{
+			componentMap.dispose();
+		}
+		$("#map").empty().append(popup).show();
+		popup.show();
+		$("#popup-content").empty();
 		location_id = location_id || null;
 		component_id = component_id || null;
+		var hasPosition = latitude !== null && longitude !== null;
 
 		var map = new ol.Map({
 			// add fullscreen control
@@ -116,19 +127,20 @@ $(function ()
 				})
 			],
 			view: new ol.View({
-				center: ol.proj.fromLonLat([longitude, latitude]),
-				zoom: 18
+				center: ol.proj.fromLonLat(hasPosition ? [longitude, latitude] : [0, 0]),
+				zoom: hasPosition ? 18 : 2
 			})
 		});
+		componentMap = map;
 
 		var layer = new ol.layer.Vector({
 			source: new ol.source.Vector({
-				features: [
+				features: hasPosition ? [
 					new ol.Feature({
 						geometry: new ol.geom.Point(ol.proj.fromLonLat([
 							longitude, latitude]))
 					})
-				]
+				] : []
 			})
 		});
 
@@ -144,7 +156,7 @@ $(function ()
 		if (component_id)
 		{
 			var text = document.createElement('b');
-			text.appendChild(document.createTextNode('Her står jeg.'));
+			text.appendChild(document.createTextNode('Valgt posisjon.'));
 			content.appendChild(text);
 			content.appendChild(document.createElement('br'));
 
@@ -152,7 +164,10 @@ $(function ()
 			var action = document.createElement('a');
 			// set action onclick
 
-			action.setAttribute('onclick', 'set_geolocation(' + location_id + ',' + component_id + ',' + latitude + ',' + longitude + ')');
+			if (hasPosition)
+			{
+				action.setAttribute('onclick', 'set_geolocation(' + location_id + ',' + component_id + ',' + latitude + ',' + longitude + ')');
+			}
 			action.setAttribute('class', 'btn btn-primary btn-sm');
 			action.innerHTML = 'Oppdater posisjon';
 			content.appendChild(action);
@@ -200,7 +215,10 @@ $(function ()
 
 		}
 
-		overlay.setPosition(ol.proj.fromLonLat([longitude, latitude]));
+		if (hasPosition)
+		{
+			overlay.setPosition(ol.proj.fromLonLat([longitude, latitude]));
+		}
 
 	};
 
@@ -218,18 +236,11 @@ $(function ()
 		content.appendChild(action);
 
 		overlay.setPosition(coordinate);
-		map.removeLayer(layer);
-		layer = new ol.layer.Vector({
-			source: new ol.source.Vector({
-				features: [
-					new ol.Feature({
-						geometry: new ol.geom.Point(ol.proj.fromLonLat([
-							longitude, latitude]))
-					})
-				]
-			})
-		});
-		map.addLayer(layer);
+		var source = layer.getSource();
+		source.clear();
+		source.addFeature(new ol.Feature({
+			geometry: new ol.geom.Point(ol.proj.fromLonLat([longitude, latitude]))
+		}));
 	};
 
 	showError = function (error)
@@ -273,6 +284,7 @@ $(function ()
 					var status = data.status;
 					if (status === 'ok')
 					{
+						savedPosition = {latitude: latitude, longitude: longitude};
 						showPosition(latitude, longitude);
 //						show_parent_component_information(location_id, component_id, true);
 					}
@@ -285,13 +297,22 @@ $(function ()
 		});
 	};
 
-	if (geolocation)
+	if (typeof geolocation !== 'undefined' && geolocation)
 	{
-		$("#map").show();
-		$("#popup").show();
-		latitude = geolocation.split(',')[0];
-		longitude = geolocation.split(',')[1];
-		showPosition(latitude.trim(), longitude.trim());
+		var coordinates = geolocation.split(',');
+		latitude = Number(coordinates[0]);
+		longitude = Number(coordinates[1]);
+		if (coordinates.length === 2 && coordinates[0].trim() !== '' && coordinates[1].trim() !== ''
+			&& Number.isFinite(latitude) && Math.abs(latitude) <= 90
+			&& Number.isFinite(longitude) && Math.abs(longitude) <= 180)
+		{
+			savedPosition = {latitude: latitude, longitude: longitude};
+			showPosition(latitude, longitude);
+		}
+		else
+		{
+			alert("The saved geolocation is invalid.");
+		}
 	}
 
 	// EDIT COMPONENT

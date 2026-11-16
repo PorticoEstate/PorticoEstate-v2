@@ -9,35 +9,35 @@
 .hd img {
   vertical-align: middle;
 }
-fieldset {
+:where(html:not(.template-bootstrap):not(.template-digdir)) fieldset {
   margin-top: 0.5em;	
 }
 
-legend {
+:where(html:not(.template-bootstrap):not(.template-digdir)) legend {
   font-weight: bolder;
   margin-bottom: 0.2em;	
 }
 
-label {
+:where(html:not(.template-bootstrap):not(.template-digdir)) label {
   font-size: 13px;
   font-weight: bold;
   margin-right: 5px;
   display: inline-block;
 }
 
-a{
+:where(html:not(.template-bootstrap):not(.template-digdir)) a{
   cursor: pointer;	
 }
 
-.row{
+:where(html:not(.template-bootstrap):not(.template-digdir)) .row{
   padding: 0.3em 0;
 }
-h3 {
+:where(html:not(.template-bootstrap):not(.template-digdir)) h3 {
   font-size: 1.2em;
   font-weight: bold;
   margin: 1em 0;
 }
-#page_content {
+:where(html:not(.template-bootstrap):not(.template-digdir)) #page_content {
   margin: 2em 1em;
 }
 .clr { clear: both;}
@@ -360,28 +360,28 @@ h1 img, li img {
 
 /* ==========================================   SELECTORS, IDS AND CLASSES    =========================================== */
 
-input[type="radio"] {
+:where(html:not(.template-bootstrap):not(.template-digdir)) input[type="radio"] {
   margin: 0 5px 0 2px;
   padding: 3px 6px;
 }
 
-input[type="checkbox"] {
+:where(html:not(.template-bootstrap):not(.template-digdir)) input[type="checkbox"] {
   margin: 5px;
 }
 
-input[type="text"] {
+:where(html:not(.template-bootstrap):not(.template-digdir)) input[type="text"] {
   padding: 5px 5px 2px;
 }
 
-select {
+:where(html:not(.template-bootstrap):not(.template-digdir)) select {
   padding: 4px;
 }
 
-fieldset {
+:where(html:not(.template-bootstrap):not(.template-digdir)) fieldset {
   border-bottom:0px solid #ccc;
 }
 
-textarea{
+:where(html:not(.template-bootstrap):not(.template-digdir)) textarea{
   padding: 4px;	
 }
 
@@ -389,12 +389,14 @@ h1 em {
   font-style:italic;
 }
 
-a {
+:where(html:not(.template-bootstrap):not(.template-digdir)) a {
   color: #0066CC;
   text-decoration: none;
 }
 
-#innertoolbar-button, input[type="submit"], input[type="button"]{
+#innertoolbar-button,
+input[type="submit"]:not(:where(html:is(.template-bootstrap, .template-digdir) :is(.pure-button, .btn, .app-button, .ds-button))),
+input[type="button"]:not(:where(html:is(.template-bootstrap, .template-digdir) :is(.pure-button, .btn, .app-button, .ds-button))){
     background: none repeat scroll 0 0 #4F9AEA;
     border: 1px solid #4685C8;
     border-radius: 4px 4px 4px 4px;
@@ -403,7 +405,7 @@ a {
     padding: 3px 15px;
 }
 
-input[type="submit"][disabled]
+input[type="submit"][disabled]:not(:where(html:is(.template-bootstrap, .template-digdir) :is(.pure-button, .btn, .app-button, .ds-button)))
 {
     background: none repeat scroll 0 0 #A3D1FF;
 }
@@ -854,7 +856,9 @@ ul.row li{
   color: #FFFFFF;
 }
 
-.btn, .btn_m, .btn-sm {
+:where(html:not(.template-bootstrap):not(.template-digdir)) .btn,
+.btn_m,
+:where(html:not(.template-bootstrap):not(.template-digdir)) .btn-sm {
   background: none repeat scroll 0 0 #4F9AEA;
   border: 1px solid #428AD7;
   border-radius: 4px;
@@ -870,25 +874,27 @@ ul.row li{
   font-size: 12px;
 }
 
-.btn-sm {
+:where(html:not(.template-bootstrap):not(.template-digdir)) .btn-sm {
     font-size: 12px;
     padding: 1px 4px;
     text-align: center;
 }
 
-.btn.cancel, .btn_m.cancel, .btn-sm.cancel {
+:where(html:not(.template-bootstrap):not(.template-digdir)) .btn.cancel,
+.btn_m.cancel,
+:where(html:not(.template-bootstrap):not(.template-digdir)) .btn-sm.cancel {
   background: none repeat scroll 0 0 #EEEEEE;
   border: 1px solid #CCCCCC;
   color: #333333;
 }
 
-.btn.non-focus {
+:where(html:not(.template-bootstrap):not(.template-digdir)) .btn.non-focus {
     background: none repeat scroll 0 0 #A0C8F2;
     border: 1px solid #74B0EF;
     color: #0A3E74;
 }
 
-.btn.focus, .btn_m.focus {
+:where(html:not(.template-bootstrap):not(.template-digdir)) .btn.focus, .btn_m.focus {
     background: none repeat scroll 0 0 #F57056;
     border-color: #EE836F #CB563F #CB563F;
     border-style: solid none;

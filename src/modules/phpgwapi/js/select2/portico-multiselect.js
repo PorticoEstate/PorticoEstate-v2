@@ -8,6 +8,9 @@
  *   $(selector).porticoMultiselect('clear');   // deselect everything and trigger change
  *   $(selector).porticoMultiselect('destroy');
  *
+ * Width: an explicit `width` option wins; otherwise pure-input-* classes on the select are copied to
+ * the Select2 container, and without them the control fills its parent (100%).
+ *
  * Portico options (everything else is passed straight to Select2):
  *   selectAll     - add "select all"/"clear all" buttons to the dropdown (default true)
  *   selectAllText - label for the select-all button
@@ -136,8 +139,7 @@
 		var overflowing;
 		if ($container.is(':visible'))
 		{
-			var $items = $rendered.children('li');
-			overflowing = $items.last()[0].offsetTop > $items.first()[0].offsetTop + 2;
+			overflowing = $choices.last()[0].offsetTop > $choices.first()[0].offsetTop + 2;
 		}
 		else
 		{
@@ -238,6 +240,16 @@
 			config.dropdownParent = $modal;
 		}
 
+		// Keep Pure sizing classes (e.g. pure-input-3-4) so the control lines up with the other inputs.
+		var pureClasses = ($select.attr('class') || '').split(/\s+/).filter(function (cls)
+		{
+			return /^pure-input-/.test(cls);
+		});
+		if (pureClasses.length)
+		{
+			config.width = 'style';
+		}
+
 		$.each(options || {}, function (key, value)
 		{
 			if (portico_keys.indexOf(key) === -1)
@@ -247,6 +259,11 @@
 		});
 
 		$select.select2(config);
+
+		if (pureClasses.length && !(options && options.width))
+		{
+			$select.data('select2').$container.addClass(pureClasses.join(' '));
+		}
 
 		if (settings.selectAll && $select.prop('multiple'))
 		{

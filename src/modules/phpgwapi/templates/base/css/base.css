@@ -301,6 +301,24 @@ label > input[type="search"] {
 	line-height: 33px !important;
 }
 
+/* Pure styles input[type=search] inside .pure-form; the inline Select2 search must stay invisible. */
+.select2-container .select2-search--inline .select2-search__field {
+	box-shadow: none;
+	border-radius: 0;
+}
+
+/* The bootstrap-5 theme targets Select2 4.1 markup, where the search box sits outside the
+   chip list. With the bundled 4.0.x it is a list item, so let it share the row with the chips. */
+.select2-container--bootstrap-5 .select2-selection--multiple .select2-selection__rendered {
+	line-height: 1.5 !important;
+}
+
+.select2-container--bootstrap-5 .select2-selection--multiple .select2-selection__rendered .select2-search--inline {
+	flex: 1 1 2em;
+	width: auto;
+	margin-bottom: 0.375rem;
+}
+
 .select2-container .select2-selection--single {
 	height: 36px !important;
 }
@@ -373,7 +391,7 @@ label > input[type="search"] {
 }
 
 .portico-multiselect-collapsed .select2-selection__choice:not(.portico-multiselect-summary) {
-	display: none;
+	display: none !important;
 }
 
 .portico-multiselect-summary {

@@ -376,6 +376,12 @@ label > input[type="search"] {
 	border-color: var(--ds-color-neutral-border-default, #797979);
 }
 
+/* Select2's default #999 placeholder is 2.85:1 on white; keep it above WCAG AA's 4.5:1. */
+.select2-container--default .select2-selection--single .select2-selection__placeholder,
+.select2-container--default .select2-search--inline .select2-search__field::placeholder {
+	color: var(--ds-color-neutral-text-subtle, #5f6368);
+}
+
 .portico-multiselect-toolbar {
 	display: flex;
 	gap: 0.5em;

@@ -234,3 +234,11 @@ ul#audience {list-style: none;padding-left: 10px;}
         padding: 0.2em 0 0.8em;
     }
 }
+
+/* WCAG AA: Pure's default primary blue (#0078e7) gives only 4.34:1 against white text. */
+.pure-button-primary,
+.pure-button-selected,
+a.pure-button-primary,
+a.pure-button-selected {
+    background-color: #0062c4;
+}

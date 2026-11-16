@@ -133,16 +133,11 @@
 			</xsl:choose>
 		</div>
 		<!-- ==================  CHECKLIST TAB MENU  ===================== -->
-		<!-- differ from bootstrap-->
-		<div class="pure-menu pure-menu-horizontal pure-menu-scrollable">
-			<!-- LOGO -->
-			<span class="pure-menu-heading">
+		<details class="pure-menu checklist-nav" id="collapsibleNavbar" open="open">
+			<summary class="pure-menu-heading">
+				<i class="fa fa-bars" aria-hidden="true"></i>
 				<xsl:value-of select="php:function('lang', $active_tab)"/>
-			</span>
-			<!--			<button class="navbar-toggler collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapsibleNavbar" aria-expanded="false">
-				<span class="navbar-toggler-icon"></span>
-			</button>-->
-			<div class="pure-menu pure-menu-horizontal" id="collapsibleNavbar" style="">
+			</summary>
 				<ul class="pure-menu-list">
 					<xsl:choose>
 						<xsl:when test="count(check_list_type) = 0 or check_list_type != 'add_check_list'">
@@ -159,8 +154,16 @@
 						</xsl:otherwise>
 					</xsl:choose>
 				</ul>
-			</div>
-		</div>
+		</details>
+		<script>
+			(function (nav) {
+				if (nav) {
+					if (window.matchMedia('(max-width: 47.99em)').matches) {
+						nav.open = false;
+					}
+				}
+			})(document.getElementById('collapsibleNavbar'));
+		</script>
 	</div>
 	<xsl:choose>
 		<xsl:when test="buildings_on_property/child::node() and not(component_children/child::node())">

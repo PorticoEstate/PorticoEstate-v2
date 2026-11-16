@@ -99,9 +99,6 @@
 	</li>
 
 	<li class="pure-menu-item">
-		<xsl:if test="$active_tab = 'create_case_message'">
-			<xsl:attribute name="class">pure-menu-item active</xsl:attribute>
-		</xsl:if>
 		<a class="pure-menu-link" target="_blank">
 			<xsl:attribute name="href">
 				<xsl:text>index.php?menuaction=controller.uicheck_list.get_report</xsl:text>

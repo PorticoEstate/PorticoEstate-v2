@@ -31,17 +31,11 @@
 
 			<!-- ==================  CHECKLIST TAB MENU  ===================== -->
 
-			<!-- differ from bootstrap-->
-			<div class="pure-menu pure-menu-horizontal pure-menu-scrollable">
-
-				<!-- LOGO -->
-				<span class="pure-menu-heading">
+			<details class="pure-menu checklist-nav" id="collapsibleNavbar" open="open">
+				<summary class="pure-menu-heading">
+					<i class="fa fa-bars" aria-hidden="true"></i>
 					<xsl:value-of select="php:function('lang', 'create_case_message')"/>
-				</span>
-<!--
--->
-				<div class="pure-menu pure-menu-horizontal" id="collapsibleNavbar" style="">
-
+				</summary>
 					<ul class="pure-menu-list">
 						<xsl:call-template name="check_list_menu" >
 							<xsl:with-param name="active_tab">create_case_message</xsl:with-param>
@@ -106,8 +100,16 @@
 							</xsl:otherwise>
 						</xsl:choose>
 					</ul>
-				</div>
-			</div>
+			</details>
+			<script>
+				(function (nav) {
+					if (nav) {
+						if (window.matchMedia('(max-width: 47.99em)').matches) {
+							nav.open = false;
+						}
+					}
+				})(document.getElementById('collapsibleNavbar'));
+			</script>
 
 		<!-- =======================  INFO ABOUT MESSAGE  ========================= -->
 		<h3 class="box_header ext">Registrer melding</h3>

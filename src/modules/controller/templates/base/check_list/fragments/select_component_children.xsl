@@ -16,7 +16,7 @@
 			<label>
 				<xsl:value-of select="php:function('lang', 'equipment')" />
 			</label>
-			<select id="choose-child-on-component" name = "component" class="pure-input-1-2">
+			<select id="choose-child-on-component" name = "component" class="pure-input-1">
 				<xsl:for-each select="component_children">
 					<option>
 						<xsl:if test="id = //current_child/id">

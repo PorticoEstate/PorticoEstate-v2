@@ -298,3 +298,62 @@ thead
 {
 background-color: rgb(224, 224, 224);
 }
+
+@media (max-width: 1199.98px) {
+	.sb-topnav {
+		flex-wrap: wrap;
+	}
+
+	.sb-topnav .navbar-brand {
+		flex: 1 1 0;
+		min-width: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.sb-topnav .navbar-toggler {
+		flex: 0 0 auto;
+	}
+
+	.sb-topnav .navbar-collapse {
+		flex-basis: 100%;
+		position: absolute;
+		top: 100%;
+		right: 0;
+		left: 0;
+		max-height: calc(100vh - 56px);
+		padding: 0.5rem 1rem;
+		overflow-y: auto;
+		background-color: #212529;
+		box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+	}
+
+	.sb-topnav .navbar-nav {
+		align-items: stretch !important;
+		width: 100%;
+		padding-top: 0.5rem;
+	}
+
+	.sb-topnav .navbar-nav > .nav-item {
+		width: 100%;
+	}
+
+	.sb-topnav .navbar-nav > .nav-item > .nav-link {
+		width: 100%;
+	}
+
+	.sb-topnav .navbar-nav > #template_selector {
+		width: auto;
+		max-width: calc(100% - 1.5rem);
+		margin: 0.25rem 0.75rem;
+	}
+
+	.sb-topnav .navbar-nav .dropdown-menu {
+		position: static;
+		float: none;
+		width: 100%;
+		max-width: calc(100vw - 1rem);
+		margin-top: 0;
+	}
+}

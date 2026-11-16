@@ -473,6 +473,7 @@ HTML;
 	$topmenu = <<<HTML
 
                     <!-- Topbar Navbar -->
+                    <div class="collapse navbar-collapse" id="topbarNavbar">
                     <ul class="navbar-nav ms-auto align-items-center">
 					<li class="nav-item ">
 						<a href="{$home_url}" class="nav-link text-white">{$home_text}</a>
@@ -516,7 +517,7 @@ HTML;
                         </li>
 
                     </ul>
-
+                    </div>
 
 HTML;
 
@@ -580,11 +581,14 @@ HTML;
 		}
 
 		$var['top_panel'] = <<<HTML
-	        <nav class="sb-topnav navbar navbar-expand navbar-dark bg-dark">
+	        <nav class="sb-topnav navbar navbar-expand-xl navbar-dark bg-dark">
 	            <!-- Sidebar Toggle-->
 		        <button class="btn btn-link btn-sm order-0 order-lg-0 me-4 me-lg-0" id="sidebarToggle" ><i class="fas fa-bars"></i></button>
 		        <!--  Brand-->
 				<a class="navbar-brand ps-3" href="#">{$serverSettings['site_title']}</a>
+				<button class="navbar-toggler d-xl-none" type="button" data-bs-toggle="collapse" data-bs-target="#topbarNavbar" aria-controls="topbarNavbar" aria-expanded="false" aria-label="Toggle navigation">
+					<span class="navbar-toggler-icon"></span>
+				</button>
 		        <!-- Navbar-->
 				{$topmenu}
 			</nav>

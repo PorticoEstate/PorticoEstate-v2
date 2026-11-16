@@ -70,7 +70,7 @@
 
 
 </style>
-<button class="btn btn-secondary" onclick="window.print();">Utskrift</button>
+<button class="pure-button btn-secondary" onclick="window.print();">Utskrift</button>
 	<h2>
 		<xsl:value-of select="datatable_name"/>
 	</h2>

@@ -17,7 +17,7 @@ $(function ()
 	$("#choose-child-on-component").select2({
 		placeholder: lang['Select'],
 		language: "no",
-		width: '75%'
+		width: '100%'
 	});
 
 	$('#choose-child-on-component').on('select2:open', function (e)

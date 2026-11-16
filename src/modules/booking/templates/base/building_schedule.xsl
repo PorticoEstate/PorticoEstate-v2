@@ -83,64 +83,18 @@
 		}
 
 
-	$("#resource_id").multiselect({
-		buttonClass: 'form-select',
-		templates: {
-		button: '<button type="button" class="multiselect dropdown-toggle" data-bs-toggle="dropdown"><span class="multiselect-selected-text"></span></button>',
-		},
-		buttonWidth: 250,
-		includeSelectAllOption: true,
-		enableFiltering: true,
-		enableCaseInsensitiveFiltering: true,
-		onChange: function ($option)
+	$("#resource_id").porticoMultiselect({width: '250px'}).on('change.schedule', function ()
+	{
+		var $select = $(this);
+		// An empty selection means "show all resources".
+		if (!$select.find('option:selected').length)
 		{
-			// Check if the filter was used.
-			var query = $("#resource_id").find('li.multiselect-filter input').val();
-
-			if (query)
-			{
-				$("#resource_id").find('li.multiselect-filter input').val('').trigger('keydown');
-			}
-			// Get selected options.
-			var selectedOptions = $("#resource_id option:selected");
-			if (selectedOptions.length === 0)
-			{
-				// No selected options, select all.
-				$("#resource_id option").prop("selected", "selected");
-				selectedOptions = $("#resource_id option:selected");
-			}
-			var resource_ids = [];
-			$(selectedOptions).each(function ()
-			{
-				resource_ids.push($(this).val());
-			});
-			// Update the schedule.
-			schedule.filter_resource(resource_ids);
-			console.log(resource_ids);
-		},
-		onSelectAll: function ()
-		{
-			// Get selected options.
-			var selectedOptions = $("#resource_id option:selected");
-			var resource_ids = [];
-			$(selectedOptions).each(function ()
-			{
-				resource_ids.push($(this).val());
-			});
-			// Update the schedule.
-			schedule.filter_resource(resource_ids);
-		},
-		onDropdownHidden: function (event)
-		{
-//			console.log(event);
-//			$("#form").submit();
+			$select.find('option').prop('selected', true);
+			$select.trigger('change.select2');
 		}
+		var resource_ids = $select.val() || [];
+		schedule.filter_resource(resource_ids);
 	});
-
-
-
-
-
 		});
 	</script>
 </xsl:template>

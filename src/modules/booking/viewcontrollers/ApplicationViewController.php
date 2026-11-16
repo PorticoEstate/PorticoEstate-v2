@@ -2,6 +2,7 @@
 
 namespace App\modules\booking\viewcontrollers;
 
+use App\modules\booking\services\DocumentService;
 use App\modules\phpgwapi\helpers\LegacyViewHelper;
 use App\modules\phpgwapi\helpers\TwigHelper;
 use App\modules\phpgwapi\services\Settings;
@@ -56,6 +57,10 @@ class ApplicationViewController
 				'layout'         => '@views/_bare.twig',
 				'application_id' => $id,
 				'enable_hospitality' => !empty($bookingConfig->enable_hospitality),
+				// The attachment form checks what the server will check.
+				'attachment_max_bytes' => DocumentService::UPLOAD_MAX_BYTES,
+				'attachment_max_mb' => DocumentService::UPLOAD_MAX_BYTES / (1024 * 1024),
+				'attachment_extensions' => DocumentService::UPLOAD_EXTENSIONS,
 			]);
 
 			$html = $this->legacyView->render(

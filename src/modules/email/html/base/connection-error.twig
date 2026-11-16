@@ -1,0 +1,18 @@
+{% autoescape 'html' %}
+<section class="error" role="alert">
+    <p>{{ message }}</p>
+    <p>{{ advice }}</p>
+    <dl>
+        <dt>source</dt>
+        <dd>email class.mail_msg_base.inc.php</dd>
+        <dt>called from</dt>
+        <dd>{{ calledFrom }}</dd>
+        <dt>imap_last_error</dt>
+        <dd>{{ serverError }}</dd>
+        <dt>tried RH bug recovery?</dt>
+        <dd>{{ recoveryAttempted ? '1' : '0' }}</dd>
+    </dl>
+    <p><a href="{{ settingsUrl }}">{{ settingsLabel }}</a></p>
+    <p><a href="{{ homeUrl }}">{{ homeLabel }}</a></p>
+</section>
+{% endautoescape %}

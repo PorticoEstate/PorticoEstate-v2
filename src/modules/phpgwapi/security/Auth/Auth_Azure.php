@@ -102,14 +102,41 @@
 
 		/**
 		 * Ask azure for credential - and return the username
+		 * Direct account lookup supports a full email matching either the full
+		 * account_lid or its local part (before @), preferring full-value matches.
+		 * Incoming username@domain can therefore resolve to an active user stored
+		 * as either username@domain or username. If both exist, the full email wins.
+		 * A short incoming username does not reverse-match a stored full email.
+		 * Future support for this direction would require a reverse lookup by
+		 * local part, accepting exactly one active matching user and rejecting
+		 * ambiguous matches across email domains.
+		 * Mapping and SSN lookups remain separate fallbacks for non-primary calls.
 		 * @return string $usernamer
 		 */
 		public function get_username($primary = false): string
 		{
-			$remote_user_1 = explode('@', \Sanitizer::get_var('OIDC_upn', 'string', 'SERVER'));
+			$remote_user_1 = \Sanitizer::get_var('OIDC_upn', 'string', 'SERVER');
 			$remote_user_2 = \Sanitizer::get_var('OIDC_onpremisessamaccountname', 'string', 'SERVER');
 
-			$_remote_user = $remote_user_2 ? $remote_user_2 : $remote_user_1[0];
+			$_remote_user = $remote_user_2 ? $remote_user_2 : explode('@', $remote_user_1, 2)[0];
+			$remote_user_candidates = [];
+			$remote_user_aliases = [];
+			$add_remote_user_candidates = static function ($remote_user) use (&$remote_user_candidates, &$remote_user_aliases): void
+			{
+				if (!$remote_user)
+				{
+					return;
+				}
+
+				$remote_user_candidates[] = $remote_user;
+				$local_part = explode('@', $remote_user, 2)[0];
+				if ($local_part !== $remote_user)
+				{
+					$remote_user_aliases[] = $local_part;
+				}
+			};
+			$add_remote_user_candidates($remote_user_1);
+			$add_remote_user_candidates($remote_user_2);
 
 			$ssn = Sanitizer::get_var('OIDC_pid', 'string', 'SERVER');
 
@@ -150,9 +177,9 @@
 					else
 					{
 						$remote_user_3 = $OpenIDConnect->get_username();
-						$remote_user_4 = explode('@', $remote_user_3);
+						$add_remote_user_candidates($remote_user_3);
 						//The AD username directly, or the first part of the email address.
-						$_remote_user = !empty($remote_user_4[1]) ? $remote_user_4[0] : $remote_user_3;
+						$_remote_user = explode('@', $remote_user_3, 2)[0];
 					}
 				}
 				else
@@ -163,14 +190,29 @@
 			}
 
 
+			$account_lid = $this->findAccountLid(array_unique(array_merge($remote_user_candidates, $remote_user_aliases)));
+
 			if($primary)
 			{
-				return $_remote_user;
+				return $account_lid ?: $_remote_user;
 			}
 
-			$username = $this->mapping->get_mapping($_remote_user);
+			if ($account_lid)
+			{
+				return $account_lid;
+			}
 
-			if(!$username)
+			$username = '';
+			foreach (array_unique(array_merge($remote_user_candidates, $remote_user_aliases)) as $remote_user_candidate)
+			{
+				$username = $this->mapping->get_mapping($remote_user_candidate);
+				if ($username)
+				{
+					break;
+				}
+			}
+
+			if (!$username && !empty($_SERVER['REMOTE_USER']))
 			{
 				$username = $this->mapping->get_mapping($_SERVER['REMOTE_USER']);
 			}
@@ -205,6 +247,26 @@
 			$username = (string)$this->db->unmarshal($row['account_lid'], 'string');
 
 			return $username;
+		}
+
+		private function findAccountLid(array $usernames): string
+		{
+			$sql = 'SELECT account_lid FROM phpgw_accounts'
+				. " WHERE account_lid = :account_lid AND account_type = 'u'"
+				. " AND account_status = 'A'";
+			$stmt = $this->db->prepare($sql);
+
+			foreach ($usernames as $username)
+			{
+				$stmt->execute([':account_lid' => $username]);
+				$account_lid = $stmt->fetchColumn();
+				if ($account_lid !== false)
+				{
+					return (string) $account_lid;
+				}
+			}
+
+			return '';
 		}
 
 		public function get_groups()

@@ -1,16 +1,15 @@
 {
     "name": "datatables.net-keytable-dt",
     "description": "KeyTable for DataTables with styling for [DataTables](https://datatables.net/)",
-    "main": "js/keyTable.dataTables.js",
-    "module": "js/keyTable.dataTables.mjs",
-    "style": "css/keyTable.dataTables.css",
+    "main": "./js/keyTable.dataTables.js",
+    "module": "./js/keyTable.dataTables.mjs",
+    "style": "./css/keyTable.dataTables.css",
     "types": "./types/keyTable.dataTables.d.ts",
-    "version": "3.0.0",
+    "version": "3.1.2",
     "files": [
-        "css/**/*.css",
-        "js/**/*.js",
-        "js/**/*.mjs",
-        "types/**/*.d.ts"
+        "js",
+        "css",
+        "types"
     ],
     "keywords": [
         "KeyTable",
@@ -23,8 +22,8 @@
         "sort"
     ],
     "dependencies": {
-        "datatables.net-keytable": "3.0.0",
-        "datatables.net-dt": "^3"
+        "datatables.net-keytable": "3.1.2",
+        "datatables.net-dt": "^3.1"
     },
     "author": {
         "name": "SpryMedia Ltd",
@@ -36,5 +35,25 @@
     "repository": {
         "type": "git",
         "url": "git+https://github.com/DataTables/KeyTable.git"
-    }
+    },
+    "exports": {
+        ".": {
+            "types": "./types/keyTable.dataTables.d.ts",
+            "style": "./css/keyTable.dataTables.css",
+            "import": "./js/keyTable.dataTables.mjs",
+            "require": "./js/keyTable.dataTables.js",
+            "default": "./js/keyTable.dataTables.mjs"
+        },
+        "./js/*": "./js/*",
+        "./css": {
+            "types": "./types/css.d.ts",
+            "default": "./css/keyTable.dataTables.css"
+        },
+        "./css/*": {
+            "types": "./types/css.d.ts",
+            "default": "./css/*"
+        },
+        "./package.json": "./package.json"
+    },
+    "sideEffects": true
 }

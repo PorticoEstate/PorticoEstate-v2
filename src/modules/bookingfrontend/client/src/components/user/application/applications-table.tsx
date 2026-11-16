@@ -1,9 +1,9 @@
 'use client'
 import React, {FC, useMemo, useCallback} from 'react';
 import {useTrans} from "@/app/i18n/ClientTranslationProvider";
-import {useApplications} from "@/service/hooks/api-hooks";
+import {useApplications, useApplicationRecurringSeries} from "@/service/hooks/api-hooks";
 import {useWebSocketContext} from "@/service/websocket/websocket-context";
-import {IApplication, IApplicationDate} from "@/service/types/api/application.types";
+import {IApplication, IApplicationDate, RecurringInfoUtils} from "@/service/types/api/application.types";
 import {ColumnDef} from "@/components/gs-table/table.types";
 import {GSTable} from "@/components/gs-table";
 import {DateTime} from "luxon";
@@ -36,6 +36,23 @@ interface FilterCounts {
 }
 
 const FILTER_KEYS: FilterKey[] = ['all', 'new', 'pending', 'accepted', 'rejected', 'cancelled'];
+
+// The "N datoer" of a recurring application's row: its series as the server generates it
+// (GH #1392), never the ONE date it stores. A component of its own rather than a hook in the
+// cell function: the CSV export calls cell functions outside render (gs-table table-export.tsx),
+// and only the rows of the page on show are mounted, so only those ask for their series.
+const RecurringDatesCount: FC<{ applicationId: number }> = ({applicationId}) => {
+    const t = useTrans();
+    const {data: series} = useApplicationRecurringSeries(applicationId);
+
+    if (!series || series.occurrences.length <= 1) return null;
+    return (
+        <>
+            <span>&middot;</span>
+            <span>{series.occurrences.length} {t('bookingfrontend.num_dates')}</span>
+        </>
+    );
+};
 
 const ApplicationsTable: FC<ApplicationsTableProps> = ({initialApplications}) => {
     const t = useTrans();
@@ -127,7 +144,8 @@ const ApplicationsTable: FC<ApplicationsTableProps> = ({initialApplications}) =>
                 const name = info.getValue<string>();
                 const app = info.row.original;
                 const isOrg = app.application_type === 'organization';
-                const isRecurring = !!app.recurring_info;
+                // The detail page's test too: recurring_info '""' is not a series.
+                const isRecurring = RecurringInfoUtils.isRecurring(app);
                 const displayName = name
                     || `${app.building_name} — ${app.resources?.map(r => r.name).join(', ') || app.id_string}`;
                 return (
@@ -150,7 +168,9 @@ const ApplicationsTable: FC<ApplicationsTableProps> = ({initialApplications}) =>
                             <span>{isOrg ? app.customer_organization_name : t('bookingfrontend.personal')}</span>
                             <span>&middot;</span>
                             <span>{app.id_string}</span>
-                            {app.dates.length > 1 && (
+                            {isRecurring ? (
+                                <RecurringDatesCount applicationId={app.id}/>
+                            ) : app.dates.length > 1 && (
                                 <>
                                     <span>&middot;</span>
                                     <span>{app.dates.length} {t('bookingfrontend.num_dates')}</span>

@@ -3,6 +3,7 @@
 namespace App\modules\bookingfrontend\services;
 
 use App\Database\Db;
+use App\modules\booking\repositories\ApplicationChangeRequestRepository;
 use App\modules\bookingfrontend\helpers\UserHelper;
 use App\modules\bookingfrontend\helpers\ApplicationHelper;
 use App\modules\bookingfrontend\repositories\ApplicationRepository;
@@ -76,6 +77,7 @@ class ScheduleEntityService
             $userOrgs = $this->bouser->organizations ? array_column($this->bouser->organizations, 'orgnr') : null;
 
             $results = [];
+            $ownEvents = [];
             foreach ($this->groupByEntity($rows) as $eventGroup) {
                 $event = new Event($eventGroup[0]);
                 $event->resources = array_map([$this, 'formatResource'], $eventGroup);
@@ -86,11 +88,53 @@ class ScheduleEntityService
                 $this->addEditCancelLinks($eventData, $config, 'event', $application);
 
                 $results[] = $eventData;
+                // The secret is exposed to the event's owner only, the one who can ask for a new time
+                if (isset($eventData['secret'])) {
+                    $ownEvents[count($results) - 1] = $eventGroup[0];
+                }
             }
+
+            $this->addPendingChanges($results, $ownEvents);
 
             return $results;
         } catch (Exception $e) {
             throw new Exception("Error fetching events for application {$applicationId}: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Add the time the owner has asked for (an open bb_application_change_request)
+     * to each of the owner's elements, as pending_change {from_, to_} in the same
+     * Europe/Oslo ISO format as from_/to_. A request made from a time the element
+     * no longer has - it was changed after the request - is left out.
+     *
+     * @param array $results serialized elements
+     * @param array<int, array> $ownElements rows of the owner's elements, by index in $results
+     * @param string $elementType 'event' or 'allocation'
+     */
+    private function addPendingChanges(array &$results, array $ownElements, string $elementType = 'event'): void
+    {
+        if (!$ownElements) {
+            return;
+        }
+
+        $requests = (new ApplicationChangeRequestRepository())->findOpenForElements(
+            $elementType,
+            array_map(fn(array $row) => (int)$row['id'], $ownElements)
+        );
+
+        $oslo = new \DateTimeZone('Europe/Oslo');
+        foreach ($ownElements as $index => $row) {
+            $request = $requests[(int)$row['id']] ?? null;
+            if (!$request
+                || strtotime($row['from_']) !== strtotime($request['old_from_'])
+                || strtotime($row['to_']) !== strtotime($request['old_to_'])) {
+                continue;
+            }
+            $results[$index]['pending_change'] = [
+                'from_' => (new DateTime($request['new_from_'], $oslo))->format('c'),
+                'to_' => (new DateTime($request['new_to_'], $oslo))->format('c'),
+            ];
         }
     }
 
@@ -131,7 +175,12 @@ class ScheduleEntityService
             // Load booking configuration
             $config = $this->loadBookingConfig();
 
+            // The time asked for on an allocation is the applicant's, so only a caller who may
+            // open the application sees it - this route itself is public.
+            $isOwner = $this->computeCanViewApplication($applicationId);
+
             $results = [];
+            $ownAllocations = [];
             foreach ($this->groupByEntity($rows) as $allocationGroup) {
                 $allocation = new Allocation($allocationGroup[0]);
                 $allocation->resources = array_map([$this, 'formatResource'], $allocationGroup);
@@ -141,7 +190,12 @@ class ScheduleEntityService
                 $this->addEditCancelLinks($allocationData, $config, 'allocation', $application);
 
                 $results[] = $allocationData;
+                if ($isOwner) {
+                    $ownAllocations[count($results) - 1] = $allocationGroup[0];
+                }
             }
+
+            $this->addPendingChanges($results, $ownAllocations, 'allocation');
 
             return $results;
         } catch (Exception $e) {

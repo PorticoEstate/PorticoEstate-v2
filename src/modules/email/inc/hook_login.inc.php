@@ -9,6 +9,11 @@
 	* @version $Id$
 	*/
 
-	$sql  = 'DELETE FROM phpgw_anglemail ';
-	$sql .= "WHERE account_id='" . intval($GLOBALS['phpgw_info']["user"]["account_id"]) . "'";
-    $GLOBALS['phpgw']->db->query($sql, __LINE__, __FILE__);
+foreach ((array) \App\modules\phpgwapi\services\Cache::session_get('email', 'mail_keys') as $key => $unused)
+{
+	\App\modules\phpgwapi\services\Cache::session_set('email', (string) $key, null);
+}
+	\App\modules\phpgwapi\services\Cache::session_set('email', 'mail_keys', []);
+	\App\modules\phpgwapi\services\Cache::session_set('email', 'mail_state', []);
+	\App\modules\phpgwapi\services\Cache::session_set('email', '0;cached_prefs', null);
+	\App\modules\phpgwapi\services\Cache::session_set('email', 'notification_uid', null);

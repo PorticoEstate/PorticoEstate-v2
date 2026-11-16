@@ -7,70 +7,18 @@
     "content-hash": "cd868a6fc336cada9c8a0d5832d82dcd",
     "packages": [
         {
-            "name": "components/jquery",
-            "version": "4.0.0",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/components/jquery.git",
-                "reference": "594f9dd922c3b12519c8d52bde744b79fd2ca816"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/components/jquery/zipball/594f9dd922c3b12519c8d52bde744b79fd2ca816",
-                "reference": "594f9dd922c3b12519c8d52bde744b79fd2ca816",
-                "shasum": ""
-            },
-            "type": "component",
-            "extra": {
-                "component": {
-                    "files": [
-                        "jquery.min.js",
-                        "jquery.min.map",
-                        "jquery.slim.js",
-                        "jquery.slim.min.js",
-                        "jquery.slim.min.map"
-                    ],
-                    "scripts": [
-                        "jquery.js"
-                    ]
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "JS Foundation and other contributors"
-                }
-            ],
-            "description": "jQuery JavaScript Library",
-            "homepage": "http://jquery.com",
-            "support": {
-                "forum": "http://forum.jquery.com",
-                "irc": "irc://irc.freenode.org/jquery",
-                "issues": "https://github.com/jquery/jquery/issues",
-                "source": "https://github.com/jquery/jquery",
-                "wiki": "http://docs.jquery.com/"
-            },
-            "time": "2026-05-11T18:06:23+00:00"
-        },
-        {
             "name": "datatables.net/datatables.net",
-            "version": "3.0.2",
+            "version": "3.1.4",
             "source": {
                 "type": "git",
                 "url": "https://github.com/DataTables/Dist-DataTables.git",
-                "reference": "7cde4a6ab8f7f54a4d52196d252443b9d42be932"
+                "reference": "d1e0d83340f5cf4ded143e09713897faffc89471"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/DataTables/Dist-DataTables/zipball/7cde4a6ab8f7f54a4d52196d252443b9d42be932",
-                "reference": "7cde4a6ab8f7f54a4d52196d252443b9d42be932",
+                "url": "https://api.github.com/repos/DataTables/Dist-DataTables/zipball/d1e0d83340f5cf4ded143e09713897faffc89471",
+                "reference": "d1e0d83340f5cf4ded143e09713897faffc89471",
                 "shasum": ""
-            },
-            "require": {
-                "components/jquery": ">=1.7"
             },
             "type": "library",
             "notification-url": "https://packagist.org/downloads/",
@@ -83,7 +31,7 @@
                     "homepage": "https://datatables.net"
                 }
             ],
-            "description": "DataTables is a plug-in for the jQuery Javascript library. It is a highly flexible tool, based upon the foundations of progressive enhancement, which will add advanced interaction controls to any HTML table. This is jQuery DataTables",
+            "description": "DataTables - The Javascript table library",
             "homepage": "http://www.datatables.net/",
             "keywords": [
                 "datatables",
@@ -94,24 +42,24 @@
                 "forum": "https://datatables.net/forums",
                 "source": "https://github.com/DataTables/Dist-DataTables"
             },
-            "time": "2026-08-18T10:40:44+00:00"
+            "time": "2026-10-12T21:05:20+00:00"
         },
         {
             "name": "datatables.net/datatables.net-autofill",
-            "version": "3.0.0",
+            "version": "3.1.3",
             "source": {
                 "type": "git",
                 "url": "https://github.com/DataTables/Dist-DataTables-AutoFill.git",
-                "reference": "4f3f32e308cc1d9ab61e016502b7b0a51132b33b"
+                "reference": "9509000f90aab2b0e96f75e39340c924ff65ed01"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/DataTables/Dist-DataTables-AutoFill/zipball/4f3f32e308cc1d9ab61e016502b7b0a51132b33b",
-                "reference": "4f3f32e308cc1d9ab61e016502b7b0a51132b33b",
+                "url": "https://api.github.com/repos/DataTables/Dist-DataTables-AutoFill/zipball/9509000f90aab2b0e96f75e39340c924ff65ed01",
+                "reference": "9509000f90aab2b0e96f75e39340c924ff65ed01",
                 "shasum": ""
             },
             "require": {
-                "datatables.net/datatables.net": ">=1.12.1"
+                "datatables.net/datatables.net": "^3.1"
             },
             "type": "library",
             "notification-url": "https://packagist.org/downloads/",
@@ -124,7 +72,7 @@
                     "homepage": "https://datatables.net"
                 }
             ],
-            "description": "AutoFill adds an Excel like data fill option to DataTables, allowing click and drag over cells, filling in information and incrementing numbers as needed. This is AutoFill for DataTables",
+            "description": "AutoFill for DataTables",
             "homepage": "http://www.datatables.net/",
             "keywords": [
                 "autofill",
@@ -137,25 +85,25 @@
                 "forum": "https://datatables.net/forums",
                 "source": "https://github.com/DataTables/Dist-DataTables-AutoFill"
             },
-            "time": "2026-07-24T08:42:39+00:00"
+            "time": "2026-10-30T14:45:49+00:00"
         },
         {
             "name": "datatables.net/datatables.net-autofill-dt",
-            "version": "3.0.0",
+            "version": "3.1.3",
             "source": {
                 "type": "git",
                 "url": "https://github.com/DataTables/Dist-DataTables-AutoFill-DataTables.git",
-                "reference": "17b3e579aca54e35ebeacca7dcf9f4b65c0308eb"
+                "reference": "22c650cde5f802d227dec9f0a3ccc38fa7b926b4"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/DataTables/Dist-DataTables-AutoFill-DataTables/zipball/17b3e579aca54e35ebeacca7dcf9f4b65c0308eb",
-                "reference": "17b3e579aca54e35ebeacca7dcf9f4b65c0308eb",
+                "url": "https://api.github.com/repos/DataTables/Dist-DataTables-AutoFill-DataTables/zipball/22c650cde5f802d227dec9f0a3ccc38fa7b926b4",
+                "reference": "22c650cde5f802d227dec9f0a3ccc38fa7b926b4",
                 "shasum": ""
             },
             "require": {
-                "datatables.net/datatables.net-autofill": ">=2.4.0",
-                "datatables.net/datatables.net-dt": ">=1.12.1"
+                "datatables.net/datatables.net-autofill": "3.1.3",
+                "datatables.net/datatables.net-dt": "^3.1"
             },
             "type": "library",
             "notification-url": "https://packagist.org/downloads/",
@@ -168,7 +116,7 @@
                     "homepage": "https://datatables.net"
                 }
             ],
-            "description": "AutoFill adds an Excel like data fill option to DataTables, allowing click and drag over cells, filling in information and incrementing numbers as needed. This is AutoFill for DataTables with styling for [DataTables](https://datatables.net/)",
+            "description": "AutoFill for DataTables with styling for DataTables",
             "homepage": "http://www.datatables.net/",
             "keywords": [
                 "autofill",
@@ -181,24 +129,24 @@
                 "forum": "https://datatables.net/forums",
                 "source": "https://github.com/DataTables/Dist-DataTables-AutoFill-DataTables"
             },
-            "time": "2026-07-24T08:43:05+00:00"
+            "time": "2026-10-30T14:46:12+00:00"
         },
         {
             "name": "datatables.net/datatables.net-buttons",
-            "version": "4.0.2",
+            "version": "4.1.3",
             "source": {
                 "type": "git",
                 "url": "https://github.com/DataTables/Dist-DataTables-Buttons.git",
-                "reference": "7de176949f54d1f07921faf771060bbbc475acbd"
+                "reference": "699a19b43caa1cc35fff2de97f6db942e858ecb3"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/DataTables/Dist-DataTables-Buttons/zipball/7de176949f54d1f07921faf771060bbbc475acbd",
-                "reference": "7de176949f54d1f07921faf771060bbbc475acbd",
+                "url": "https://api.github.com/repos/DataTables/Dist-DataTables-Buttons/zipball/699a19b43caa1cc35fff2de97f6db942e858ecb3",
+                "reference": "699a19b43caa1cc35fff2de97f6db942e858ecb3",
                 "shasum": ""
             },
             "require": {
-                "datatables.net/datatables.net": ">=1.12.1"
+                "datatables.net/datatables.net": "^3.1"
             },
             "type": "library",
             "notification-url": "https://packagist.org/downloads/",
@@ -211,7 +159,7 @@
                     "homepage": "https://datatables.net"
                 }
             ],
-            "description": "The Buttons extension for DataTables provides a common set of options, API methods and styling to display buttons on a page that will interact with a DataTable. It also provides plug-ins for file export (HTML5 and Flash), print view and column visibility. Other libraries, such as Editor and Select also provide buttons specific to their use cases. This is Buttons for DataTables",
+            "description": "Buttons for DataTables",
             "homepage": "http://www.datatables.net/",
             "keywords": [
                 "Column Visibility",
@@ -228,25 +176,25 @@
                 "forum": "https://datatables.net/forums",
                 "source": "https://github.com/DataTables/Dist-DataTables-Buttons"
             },
-            "time": "2026-08-18T09:30:16+00:00"
+            "time": "2026-10-30T09:40:31+00:00"
         },
         {
             "name": "datatables.net/datatables.net-buttons-dt",
-            "version": "4.0.2",
+            "version": "4.1.3",
             "source": {
                 "type": "git",
                 "url": "https://github.com/DataTables/Dist-DataTables-Buttons-DataTables.git",
-                "reference": "cb786d3363fa95e6aebad910a9cb294aea14b7c5"
+                "reference": "70ddb4dfdd0f908c685d5928d52f43a6e070b538"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/DataTables/Dist-DataTables-Buttons-DataTables/zipball/cb786d3363fa95e6aebad910a9cb294aea14b7c5",
-                "reference": "cb786d3363fa95e6aebad910a9cb294aea14b7c5",
+                "url": "https://api.github.com/repos/DataTables/Dist-DataTables-Buttons-DataTables/zipball/70ddb4dfdd0f908c685d5928d52f43a6e070b538",
+                "reference": "70ddb4dfdd0f908c685d5928d52f43a6e070b538",
                 "shasum": ""
             },
             "require": {
-                "datatables.net/datatables.net-buttons": ">=2.2.3",
-                "datatables.net/datatables.net-dt": ">=1.12.1"
+                "datatables.net/datatables.net-buttons": "4.1.3",
+                "datatables.net/datatables.net-dt": "^3.1"
             },
             "type": "library",
             "notification-url": "https://packagist.org/downloads/",
@@ -259,7 +207,7 @@
                     "homepage": "https://datatables.net"
                 }
             ],
-            "description": "The Buttons extension for DataTables provides a common set of options, API methods and styling to display buttons on a page that will interact with a DataTable. It also provides plug-ins for file export (HTML5 and Flash), print view and column visibility. Other libraries, such as Editor and Select also provide buttons specific to their use cases. This is Buttons for DataTables with styling for [DataTables](https://datatables.net/)",
+            "description": "Buttons for DataTables with styling for DataTables",
             "homepage": "http://www.datatables.net/",
             "keywords": [
                 "Column Visibility",
@@ -276,24 +224,24 @@
                 "forum": "https://datatables.net/forums",
                 "source": "https://github.com/DataTables/Dist-DataTables-Buttons-DataTables"
             },
-            "time": "2026-08-18T09:30:41+00:00"
+            "time": "2026-10-30T09:41:00+00:00"
         },
         {
             "name": "datatables.net/datatables.net-colreorder",
-            "version": "3.0.1",
+            "version": "3.1.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/DataTables/Dist-DataTables-ColReorder.git",
-                "reference": "b7e52ae668c3e2d4c91df3ce9ed42d4dca825787"
+                "reference": "3af2fe8663434090e509b825323cfffc29d34857"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/DataTables/Dist-DataTables-ColReorder/zipball/b7e52ae668c3e2d4c91df3ce9ed42d4dca825787",
-                "reference": "b7e52ae668c3e2d4c91df3ce9ed42d4dca825787",
+                "url": "https://api.github.com/repos/DataTables/Dist-DataTables-ColReorder/zipball/3af2fe8663434090e509b825323cfffc29d34857",
+                "reference": "3af2fe8663434090e509b825323cfffc29d34857",
                 "shasum": ""
             },
             "require": {
-                "datatables.net/datatables.net": ">=1.12.1"
+                "datatables.net/datatables.net": "^3.1"
             },
             "type": "library",
             "notification-url": "https://packagist.org/downloads/",
@@ -306,7 +254,7 @@
                     "homepage": "https://datatables.net"
                 }
             ],
-            "description": "ColReorder allows the end user to modify the column order of a table through drop-and-drag of column headers. This is ColReorder for DataTables",
+            "description": "ColReorder for DataTables",
             "homepage": "http://www.datatables.net/",
             "keywords": [
                 "colreorder",
@@ -319,25 +267,25 @@
                 "forum": "https://datatables.net/forums",
                 "source": "https://github.com/DataTables/Dist-DataTables-ColReorder"
             },
-            "time": "2026-08-18T10:20:24+00:00"
+            "time": "2026-09-25T11:10:26+00:00"
         },
         {
             "name": "datatables.net/datatables.net-colreorder-dt",
-            "version": "3.0.1",
+            "version": "3.1.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/DataTables/Dist-DataTables-ColReorder-DataTables.git",
-                "reference": "c0571d883f44f276440efcfd6be650acfb622ca0"
+                "reference": "45a56062b2e91e44f7cebc03ad919db10a1c3f02"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/DataTables/Dist-DataTables-ColReorder-DataTables/zipball/c0571d883f44f276440efcfd6be650acfb622ca0",
-                "reference": "c0571d883f44f276440efcfd6be650acfb622ca0",
+                "url": "https://api.github.com/repos/DataTables/Dist-DataTables-ColReorder-DataTables/zipball/45a56062b2e91e44f7cebc03ad919db10a1c3f02",
+                "reference": "45a56062b2e91e44f7cebc03ad919db10a1c3f02",
                 "shasum": ""
             },
             "require": {
-                "datatables.net/datatables.net-colreorder": ">=1.5.6",
-                "datatables.net/datatables.net-dt": ">=1.12.1"
+                "datatables.net/datatables.net-colreorder": "3.1.2",
+                "datatables.net/datatables.net-dt": "^3.1"
             },
             "type": "library",
             "notification-url": "https://packagist.org/downloads/",
@@ -350,7 +298,7 @@
                     "homepage": "https://datatables.net"
                 }
             ],
-            "description": "ColReorder allows the end user to modify the column order of a table through drop-and-drag of column headers. This is ColReorder for DataTables with styling for [DataTables](https://datatables.net/)",
+            "description": "ColReorder for DataTables with styling for DataTables",
             "homepage": "http://www.datatables.net/",
             "keywords": [
                 "colreorder",
@@ -363,20 +311,20 @@
                 "forum": "https://datatables.net/forums",
                 "source": "https://github.com/DataTables/Dist-DataTables-ColReorder-DataTables"
             },
-            "time": "2026-08-18T10:20:48+00:00"
+            "time": "2026-09-25T11:10:51+00:00"
         },
         {
             "name": "datatables.net/datatables.net-datetime",
-            "version": "2.0.0",
+            "version": "2.1.3",
             "source": {
                 "type": "git",
                 "url": "https://github.com/DataTables/DateTime.git",
-                "reference": "28b7c49a8edb80413fe77e929b127a6f30a9ddd8"
+                "reference": "3b99ab816ed308d38375855a9266c81f06c943d4"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/DataTables/DateTime/zipball/28b7c49a8edb80413fe77e929b127a6f30a9ddd8",
-                "reference": "28b7c49a8edb80413fe77e929b127a6f30a9ddd8",
+                "url": "https://api.github.com/repos/DataTables/DateTime/zipball/3b99ab816ed308d38375855a9266c81f06c943d4",
+                "reference": "3b99ab816ed308d38375855a9266c81f06c943d4",
                 "shasum": ""
             },
             "type": "library",
@@ -402,24 +350,24 @@
                 "issues": "https://github.com/DataTables/DateTime/issues",
                 "source": "https://github.com/DataTables/DateTime"
             },
-            "time": "2026-07-22T14:03:33+00:00"
+            "time": "2026-10-30T10:03:51+00:00"
         },
         {
             "name": "datatables.net/datatables.net-dt",
-            "version": "3.0.3",
+            "version": "3.1.5",
             "source": {
                 "type": "git",
                 "url": "https://github.com/DataTables/Dist-DataTables-DataTables.git",
-                "reference": "9c578cd144f93f9395993be24bd24417fa3979b8"
+                "reference": "b6896a75b216b35b2c1532eb0fa9717059d120d4"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/DataTables/Dist-DataTables-DataTables/zipball/9c578cd144f93f9395993be24bd24417fa3979b8",
-                "reference": "9c578cd144f93f9395993be24bd24417fa3979b8",
+                "url": "https://api.github.com/repos/DataTables/Dist-DataTables-DataTables/zipball/b6896a75b216b35b2c1532eb0fa9717059d120d4",
+                "reference": "b6896a75b216b35b2c1532eb0fa9717059d120d4",
                 "shasum": ""
             },
             "require": {
-                "datatables.net/datatables.net": "3.0.2"
+                "datatables.net/datatables.net": "3.1.4"
             },
             "type": "library",
             "notification-url": "https://packagist.org/downloads/",
@@ -432,7 +380,7 @@
                     "homepage": "https://datatables.net"
                 }
             ],
-            "description": "DataTables with styling for [DataTables](https://datatables.net/)",
+            "description": "DataTables with styling for DataTables",
             "homepage": "http://www.datatables.net/",
             "keywords": [
                 "datatables",
@@ -443,24 +391,24 @@
                 "forum": "https://datatables.net/forums",
                 "source": "https://github.com/DataTables/Dist-DataTables-DataTables"
             },
-            "time": "2026-08-31T09:30:47+00:00"
+            "time": "2026-10-30T09:20:45+00:00"
         },
         {
             "name": "datatables.net/datatables.net-fixedcolumns",
-            "version": "6.0.0",
+            "version": "6.1.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/DataTables/Dist-DataTables-FixedColumns.git",
-                "reference": "2557e0d39246a4b06dd898864e645fb4492769bb"
+                "reference": "4b9357ae02749337a1f100a4808e12728142573c"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/DataTables/Dist-DataTables-FixedColumns/zipball/2557e0d39246a4b06dd898864e645fb4492769bb",
-                "reference": "2557e0d39246a4b06dd898864e645fb4492769bb",
+                "url": "https://api.github.com/repos/DataTables/Dist-DataTables-FixedColumns/zipball/4b9357ae02749337a1f100a4808e12728142573c",
+                "reference": "4b9357ae02749337a1f100a4808e12728142573c",
                 "shasum": ""
             },
             "require": {
-                "datatables.net/datatables.net": ">=1.12.1"
+                "datatables.net/datatables.net": "^3.1"
             },
             "type": "library",
             "notification-url": "https://packagist.org/downloads/",
@@ -473,7 +421,7 @@
                     "homepage": "https://datatables.net"
                 }
             ],
-            "description": "FixedColumns provides the ability to fix one or more columns to the left and / or right hand side of a DataTable that scrolls along the x-axis. This can be used if the columns show grouping, index or similar information. This is FixedColumns for DataTables",
+            "description": "FixedColumns for DataTables",
             "homepage": "http://www.datatables.net/",
             "keywords": [
                 "datatables",
@@ -485,25 +433,25 @@
                 "forum": "https://datatables.net/forums",
                 "source": "https://github.com/DataTables/Dist-DataTables-FixedColumns"
             },
-            "time": "2026-07-24T09:10:12+00:00"
+            "time": "2026-10-30T09:50:49+00:00"
         },
         {
             "name": "datatables.net/datatables.net-fixedcolumns-dt",
-            "version": "6.0.0",
+            "version": "6.1.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/DataTables/Dist-DataTables-FixedColumns-DataTables.git",
-                "reference": "9803ee7107735c1a52bdb86e84f5a5470dd41678"
+                "reference": "b3988cb4a3f74fed442860942151cab6645873d5"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/DataTables/Dist-DataTables-FixedColumns-DataTables/zipball/9803ee7107735c1a52bdb86e84f5a5470dd41678",
-                "reference": "9803ee7107735c1a52bdb86e84f5a5470dd41678",
+                "url": "https://api.github.com/repos/DataTables/Dist-DataTables-FixedColumns-DataTables/zipball/b3988cb4a3f74fed442860942151cab6645873d5",
+                "reference": "b3988cb4a3f74fed442860942151cab6645873d5",
                 "shasum": ""
             },
             "require": {
-                "datatables.net/datatables.net-dt": ">=1.12.1",
-                "datatables.net/datatables.net-fixedcolumns": ">=4.1.0"
+                "datatables.net/datatables.net-dt": "^3.1",
+                "datatables.net/datatables.net-fixedcolumns": "6.1.2"
             },
             "type": "library",
             "notification-url": "https://packagist.org/downloads/",
@@ -516,7 +464,7 @@
                     "homepage": "https://datatables.net"
                 }
             ],
-            "description": "FixedColumns provides the ability to fix one or more columns to the left and / or right hand side of a DataTable that scrolls along the x-axis. This can be used if the columns show grouping, index or similar information. This is FixedColumns for DataTables with styling for [DataTables](https://datatables.net/)",
+            "description": "FixedColumns for DataTables with styling for DataTables",
             "homepage": "http://www.datatables.net/",
             "keywords": [
                 "datatables",
@@ -528,24 +476,24 @@
                 "forum": "https://datatables.net/forums",
                 "source": "https://github.com/DataTables/Dist-DataTables-FixedColumns-DataTables"
             },
-            "time": "2026-07-24T09:10:37+00:00"
+            "time": "2026-10-30T09:51:15+00:00"
         },
         {
             "name": "datatables.net/datatables.net-fixedheader",
-            "version": "5.0.0",
+            "version": "5.1.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/DataTables/Dist-DataTables-FixedHeader.git",
-                "reference": "db5b4d16b8b63142d5bf3be11c2b985a49cec44c"
+                "reference": "0eec893acb79370fce897c973a1c55dd6607af79"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/DataTables/Dist-DataTables-FixedHeader/zipball/db5b4d16b8b63142d5bf3be11c2b985a49cec44c",
-                "reference": "db5b4d16b8b63142d5bf3be11c2b985a49cec44c",
+                "url": "https://api.github.com/repos/DataTables/Dist-DataTables-FixedHeader/zipball/0eec893acb79370fce897c973a1c55dd6607af79",
+                "reference": "0eec893acb79370fce897c973a1c55dd6607af79",
                 "shasum": ""
             },
             "require": {
-                "datatables.net/datatables.net": ">=1.12.1"
+                "datatables.net/datatables.net": "^3.1"
             },
             "type": "library",
             "notification-url": "https://packagist.org/downloads/",
@@ -558,7 +506,7 @@
                     "homepage": "https://datatables.net"
                 }
             ],
-            "description": "When displaying large amounts of data in a table, it can often be useful for the end user to have the column titles always visible. This is particularly true if using DataTables with pagination disabled, or the display length is set to a high value. The FixedHeader extension provides this ability. This is FixedHeader for DataTables",
+            "description": "FixedHeader for DataTables",
             "homepage": "http://www.datatables.net/",
             "keywords": [
                 "Fixed Headers",
@@ -572,25 +520,25 @@
                 "forum": "https://datatables.net/forums",
                 "source": "https://github.com/DataTables/Dist-DataTables-FixedHeader"
             },
-            "time": "2026-07-24T09:12:08+00:00"
+            "time": "2026-10-02T14:50:25+00:00"
         },
         {
             "name": "datatables.net/datatables.net-fixedheader-dt",
-            "version": "5.0.0",
+            "version": "5.1.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/DataTables/Dist-DataTables-FixedHeader-DataTables.git",
-                "reference": "19f5898576b54d1303f58672e0fd6d8d63b0b4d5"
+                "reference": "388ebd94873b7e3d72514a93a95dec9f77dae9b1"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/DataTables/Dist-DataTables-FixedHeader-DataTables/zipball/19f5898576b54d1303f58672e0fd6d8d63b0b4d5",
-                "reference": "19f5898576b54d1303f58672e0fd6d8d63b0b4d5",
+                "url": "https://api.github.com/repos/DataTables/Dist-DataTables-FixedHeader-DataTables/zipball/388ebd94873b7e3d72514a93a95dec9f77dae9b1",
+                "reference": "388ebd94873b7e3d72514a93a95dec9f77dae9b1",
                 "shasum": ""
             },
             "require": {
-                "datatables.net/datatables.net-dt": ">=1.12.1",
-                "datatables.net/datatables.net-fixedheader": ">=3.2.4"
+                "datatables.net/datatables.net-dt": "^3.1",
+                "datatables.net/datatables.net-fixedheader": "5.1.2"
             },
             "type": "library",
             "notification-url": "https://packagist.org/downloads/",
@@ -603,7 +551,7 @@
                     "homepage": "https://datatables.net"
                 }
             ],
-            "description": "When displaying large amounts of data in a table, it can often be useful for the end user to have the column titles always visible. This is particularly true if using DataTables with pagination disabled, or the display length is set to a high value. The FixedHeader extension provides this ability. This is FixedHeader for DataTables with styling for [DataTables](https://datatables.net/)",
+            "description": "FixedHeader for DataTables with styling for DataTables",
             "homepage": "http://www.datatables.net/",
             "keywords": [
                 "Fixed Headers",
@@ -617,24 +565,24 @@
                 "forum": "https://datatables.net/forums",
                 "source": "https://github.com/DataTables/Dist-DataTables-FixedHeader-DataTables"
             },
-            "time": "2026-07-24T09:12:32+00:00"
+            "time": "2026-10-02T14:50:50+00:00"
         },
         {
             "name": "datatables.net/datatables.net-keytable",
-            "version": "3.0.0",
+            "version": "3.1.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/DataTables/Dist-DataTables-KeyTable.git",
-                "reference": "fa64be53afed5649c35d00a44c7e03a5b88545e8"
+                "reference": "129a918311938e1b0b8723601ed4b6a14283f440"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/DataTables/Dist-DataTables-KeyTable/zipball/fa64be53afed5649c35d00a44c7e03a5b88545e8",
-                "reference": "fa64be53afed5649c35d00a44c7e03a5b88545e8",
+                "url": "https://api.github.com/repos/DataTables/Dist-DataTables-KeyTable/zipball/129a918311938e1b0b8723601ed4b6a14283f440",
+                "reference": "129a918311938e1b0b8723601ed4b6a14283f440",
                 "shasum": ""
             },
             "require": {
-                "datatables.net/datatables.net": ">=1.12.1"
+                "datatables.net/datatables.net": "^3.1"
             },
             "type": "library",
             "notification-url": "https://packagist.org/downloads/",
@@ -647,7 +595,7 @@
                     "homepage": "https://datatables.net"
                 }
             ],
-            "description": "KeyTable allows you to use keyboard navigation on a DataTables enhanced table, like an Excel spreadsheet - a cell shows a focus outline which can be moved using the keyboard or mouse operations. This can be particularly useful in an editable table that uses Editor allowing end users to update data very quickly. This is KeyTable for DataTables",
+            "description": "KeyTable for DataTables",
             "homepage": "http://www.datatables.net/",
             "keywords": [
                 "datatables",
@@ -662,25 +610,25 @@
                 "forum": "https://datatables.net/forums",
                 "source": "https://github.com/DataTables/Dist-DataTables-KeyTable"
             },
-            "time": "2026-07-24T09:15:12+00:00"
+            "time": "2026-10-30T09:55:50+00:00"
         },
         {
             "name": "datatables.net/datatables.net-keytable-dt",
-            "version": "3.0.0",
+            "version": "3.1.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/DataTables/Dist-DataTables-KeyTable-DataTables.git",
-                "reference": "f5e0391d4b498f658f09b81edbe88c2834766e32"
+                "reference": "e79bc6fc1f924b19e23f764248d6634be49acba4"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/DataTables/Dist-DataTables-KeyTable-DataTables/zipball/f5e0391d4b498f658f09b81edbe88c2834766e32",
-                "reference": "f5e0391d4b498f658f09b81edbe88c2834766e32",
+                "url": "https://api.github.com/repos/DataTables/Dist-DataTables-KeyTable-DataTables/zipball/e79bc6fc1f924b19e23f764248d6634be49acba4",
+                "reference": "e79bc6fc1f924b19e23f764248d6634be49acba4",
                 "shasum": ""
             },
             "require": {
-                "datatables.net/datatables.net-dt": ">=1.12.1",
-                "datatables.net/datatables.net-keytable": ">=2.7.0"
+                "datatables.net/datatables.net-dt": "^3.1",
+                "datatables.net/datatables.net-keytable": "3.1.2"
             },
             "type": "library",
             "notification-url": "https://packagist.org/downloads/",
@@ -693,7 +641,7 @@
                     "homepage": "https://datatables.net"
                 }
             ],
-            "description": "KeyTable allows you to use keyboard navigation on a DataTables enhanced table, like an Excel spreadsheet - a cell shows a focus outline which can be moved using the keyboard or mouse operations. This can be particularly useful in an editable table that uses Editor allowing end users to update data very quickly. This is KeyTable for DataTables with styling for [DataTables](https://datatables.net/)",
+            "description": "KeyTable for DataTables with styling for DataTables",
             "homepage": "http://www.datatables.net/",
             "keywords": [
                 "datatables",
@@ -708,24 +656,24 @@
                 "forum": "https://datatables.net/forums",
                 "source": "https://github.com/DataTables/Dist-DataTables-KeyTable-DataTables"
             },
-            "time": "2026-07-24T09:15:33+00:00"
+            "time": "2026-10-30T09:56:15+00:00"
         },
         {
             "name": "datatables.net/datatables.net-responsive",
-            "version": "4.0.2",
+            "version": "4.1.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/DataTables/Dist-DataTables-Responsive.git",
-                "reference": "82e16aa90592752f57adf64b08947be9d6bfbdf2"
+                "reference": "d876744406e93926d4ef1b9add1ee9c8a2249a83"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/DataTables/Dist-DataTables-Responsive/zipball/82e16aa90592752f57adf64b08947be9d6bfbdf2",
-                "reference": "82e16aa90592752f57adf64b08947be9d6bfbdf2",
+                "url": "https://api.github.com/repos/DataTables/Dist-DataTables-Responsive/zipball/d876744406e93926d4ef1b9add1ee9c8a2249a83",
+                "reference": "d876744406e93926d4ef1b9add1ee9c8a2249a83",
                 "shasum": ""
             },
             "require": {
-                "datatables.net/datatables.net": ">=1.12.1"
+                "datatables.net/datatables.net": "^3.1"
             },
             "type": "library",
             "notification-url": "https://packagist.org/downloads/",
@@ -738,7 +686,7 @@
                     "homepage": "https://datatables.net"
                 }
             ],
-            "description": "In the modern world of responsive web design tables can often cause a particular problem for designers due to their row based layout. Responsive is an extension for DataTables that resolves that problem by optimising the table's layout for different screen sizes through the dynamic insertion and removal of columns from the table. This is Responsive for DataTables",
+            "description": "Responsive for DataTables",
             "homepage": "http://www.datatables.net/",
             "keywords": [
                 "datatables",
@@ -750,25 +698,25 @@
                 "forum": "https://datatables.net/forums",
                 "source": "https://github.com/DataTables/Dist-DataTables-Responsive"
             },
-            "time": "2026-08-18T10:30:26+00:00"
+            "time": "2026-09-25T13:05:27+00:00"
         },
         {
             "name": "datatables.net/datatables.net-responsive-dt",
-            "version": "4.0.3",
+            "version": "4.1.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/DataTables/Dist-DataTables-Responsive-DataTables.git",
-                "reference": "88fa9b579cb0bff0465cac20561751e363c5f328"
+                "reference": "c33afa3063e0d12955bd553bbf59b0a58976d457"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/DataTables/Dist-DataTables-Responsive-DataTables/zipball/88fa9b579cb0bff0465cac20561751e363c5f328",
-                "reference": "88fa9b579cb0bff0465cac20561751e363c5f328",
+                "url": "https://api.github.com/repos/DataTables/Dist-DataTables-Responsive-DataTables/zipball/c33afa3063e0d12955bd553bbf59b0a58976d457",
+                "reference": "c33afa3063e0d12955bd553bbf59b0a58976d457",
                 "shasum": ""
             },
             "require": {
-                "datatables.net/datatables.net-dt": "^3",
-                "datatables.net/datatables.net-responsive": "4.0.2"
+                "datatables.net/datatables.net-dt": "^3.1",
+                "datatables.net/datatables.net-responsive": "4.1.1"
             },
             "type": "library",
             "notification-url": "https://packagist.org/downloads/",
@@ -781,7 +729,7 @@
                     "homepage": "https://datatables.net"
                 }
             ],
-            "description": "Responsive for DataTables with styling for [DataTables](https://datatables.net/)",
+            "description": "Responsive for DataTables with styling for DataTables",
             "homepage": "http://www.datatables.net/",
             "keywords": [
                 "datatables",
@@ -793,24 +741,24 @@
                 "forum": "https://datatables.net/forums",
                 "source": "https://github.com/DataTables/Dist-DataTables-Responsive-DataTables"
             },
-            "time": "2026-09-03T08:20:56+00:00"
+            "time": "2026-09-25T13:05:54+00:00"
         },
         {
             "name": "datatables.net/datatables.net-rowgroup",
-            "version": "2.0.0",
+            "version": "2.1.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/DataTables/Dist-DataTables-RowGroup.git",
-                "reference": "a92289f699dad41bb8e9790cf7b2f8b22f98ea28"
+                "reference": "60f4bcaabfc988e78c3e2ca78bffd34a9c2ac07a"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/DataTables/Dist-DataTables-RowGroup/zipball/a92289f699dad41bb8e9790cf7b2f8b22f98ea28",
-                "reference": "a92289f699dad41bb8e9790cf7b2f8b22f98ea28",
+                "url": "https://api.github.com/repos/DataTables/Dist-DataTables-RowGroup/zipball/60f4bcaabfc988e78c3e2ca78bffd34a9c2ac07a",
+                "reference": "60f4bcaabfc988e78c3e2ca78bffd34a9c2ac07a",
                 "shasum": ""
             },
             "require": {
-                "datatables.net/datatables.net": ">=1.12.1"
+                "datatables.net/datatables.net": "^3.1"
             },
             "type": "library",
             "notification-url": "https://packagist.org/downloads/",
@@ -823,7 +771,7 @@
                     "homepage": "https://datatables.net"
                 }
             ],
-            "description": "RowGroup adds the ability to easily group rows in a DataTable by a given data point. The grouping is shown as an inserted row either before or after the group. This is RowGroup for DataTables",
+            "description": "RowGroup for DataTables",
             "homepage": "http://www.datatables.net/",
             "keywords": [
                 "Row Grouping",
@@ -836,25 +784,25 @@
                 "forum": "https://datatables.net/forums",
                 "source": "https://github.com/DataTables/Dist-DataTables-RowGroup"
             },
-            "time": "2026-07-24T09:50:12+00:00"
+            "time": "2026-09-25T13:08:02+00:00"
         },
         {
             "name": "datatables.net/datatables.net-rowgroup-dt",
-            "version": "2.0.0",
+            "version": "2.1.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/DataTables/Dist-DataTables-RowGroup-DataTables.git",
-                "reference": "acc7251f28fff4e05e9cad16bbd28eac3829ffd2"
+                "reference": "b3197e8c8853144f4cb1f95579c3033bdfc0f899"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/DataTables/Dist-DataTables-RowGroup-DataTables/zipball/acc7251f28fff4e05e9cad16bbd28eac3829ffd2",
-                "reference": "acc7251f28fff4e05e9cad16bbd28eac3829ffd2",
+                "url": "https://api.github.com/repos/DataTables/Dist-DataTables-RowGroup-DataTables/zipball/b3197e8c8853144f4cb1f95579c3033bdfc0f899",
+                "reference": "b3197e8c8853144f4cb1f95579c3033bdfc0f899",
                 "shasum": ""
             },
             "require": {
-                "datatables.net/datatables.net-dt": ">=1.12.1",
-                "datatables.net/datatables.net-rowgroup": ">=1.2.0"
+                "datatables.net/datatables.net-dt": "^3.1",
+                "datatables.net/datatables.net-rowgroup": "2.1.1"
             },
             "type": "library",
             "notification-url": "https://packagist.org/downloads/",
@@ -867,7 +815,7 @@
                     "homepage": "https://datatables.net"
                 }
             ],
-            "description": "RowGroup adds the ability to easily group rows in a DataTable by a given data point. The grouping is shown as an inserted row either before or after the group. This is RowGroup for DataTables with styling for [DataTables](https://datatables.net/)",
+            "description": "RowGroup for DataTables with styling for DataTables",
             "homepage": "http://www.datatables.net/",
             "keywords": [
                 "Row Grouping",
@@ -880,24 +828,24 @@
                 "forum": "https://datatables.net/forums",
                 "source": "https://github.com/DataTables/Dist-DataTables-RowGroup-DataTables"
             },
-            "time": "2026-07-24T09:50:32+00:00"
+            "time": "2026-09-25T13:08:27+00:00"
         },
         {
             "name": "datatables.net/datatables.net-rowreorder",
-            "version": "2.0.0",
+            "version": "2.1.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/DataTables/Dist-DataTables-RowReorder.git",
-                "reference": "d036c4f53fa193f3dfc4073045e30644d2850b18"
+                "reference": "3f33dca9adcf95e90a6fd72fb63b76522c79b802"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/DataTables/Dist-DataTables-RowReorder/zipball/d036c4f53fa193f3dfc4073045e30644d2850b18",
-                "reference": "d036c4f53fa193f3dfc4073045e30644d2850b18",
+                "url": "https://api.github.com/repos/DataTables/Dist-DataTables-RowReorder/zipball/3f33dca9adcf95e90a6fd72fb63b76522c79b802",
+                "reference": "3f33dca9adcf95e90a6fd72fb63b76522c79b802",
                 "shasum": ""
             },
             "require": {
-                "datatables.net/datatables.net": ">=1.12.1"
+                "datatables.net/datatables.net": "^3.1"
             },
             "type": "library",
             "notification-url": "https://packagist.org/downloads/",
@@ -910,7 +858,7 @@
                     "homepage": "https://datatables.net"
                 }
             ],
-            "description": "RowReorder adds end user reordering of rows in a DataTable through click-and-drag mouse and touch operations. RowReorder provides full support for Editor allowing end users to update sequential information in a fast and easy manner. This is RowReorder for DataTables",
+            "description": "RowReorder for DataTables",
             "homepage": "http://www.datatables.net/",
             "keywords": [
                 "Row Reordering",
@@ -923,25 +871,25 @@
                 "forum": "https://datatables.net/forums",
                 "source": "https://github.com/DataTables/Dist-DataTables-RowReorder"
             },
-            "time": "2026-07-24T09:55:12+00:00"
+            "time": "2026-09-25T13:30:26+00:00"
         },
         {
             "name": "datatables.net/datatables.net-rowreorder-dt",
-            "version": "2.0.0",
+            "version": "2.1.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/DataTables/Dist-DataTables-RowReorder-DataTables.git",
-                "reference": "c99c7403b1f5d2ad833bd3967e14e85c9f81122e"
+                "reference": "bc767fee43bc482083dd8a95b438afc410c59534"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/DataTables/Dist-DataTables-RowReorder-DataTables/zipball/c99c7403b1f5d2ad833bd3967e14e85c9f81122e",
-                "reference": "c99c7403b1f5d2ad833bd3967e14e85c9f81122e",
+                "url": "https://api.github.com/repos/DataTables/Dist-DataTables-RowReorder-DataTables/zipball/bc767fee43bc482083dd8a95b438afc410c59534",
+                "reference": "bc767fee43bc482083dd8a95b438afc410c59534",
                 "shasum": ""
             },
             "require": {
-                "datatables.net/datatables.net-dt": ">=1.12.1",
-                "datatables.net/datatables.net-rowreorder": ">=1.2.8"
+                "datatables.net/datatables.net-dt": "^3.1",
+                "datatables.net/datatables.net-rowreorder": "2.1.1"
             },
             "type": "library",
             "notification-url": "https://packagist.org/downloads/",
@@ -954,7 +902,7 @@
                     "homepage": "https://datatables.net"
                 }
             ],
-            "description": "RowReorder adds end user reordering of rows in a DataTable through click-and-drag mouse and touch operations. RowReorder provides full support for Editor allowing end users to update sequential information in a fast and easy manner. This is RowReorder for DataTables with styling for [DataTables](https://datatables.net/)",
+            "description": "RowReorder for DataTables with styling for DataTables",
             "homepage": "http://www.datatables.net/",
             "keywords": [
                 "Row Reordering",
@@ -967,24 +915,24 @@
                 "forum": "https://datatables.net/forums",
                 "source": "https://github.com/DataTables/Dist-DataTables-RowReorder-DataTables"
             },
-            "time": "2026-07-24T09:55:34+00:00"
+            "time": "2026-09-25T13:30:54+00:00"
         },
         {
             "name": "datatables.net/datatables.net-scroller",
-            "version": "3.0.0",
+            "version": "3.1.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/DataTables/Dist-DataTables-Scroller.git",
-                "reference": "29f9c3ba9ea94893c4fb8357175a23a759e8db23"
+                "reference": "5e4a712c845c4de751bbc1d37e359e352a5789ad"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/DataTables/Dist-DataTables-Scroller/zipball/29f9c3ba9ea94893c4fb8357175a23a759e8db23",
-                "reference": "29f9c3ba9ea94893c4fb8357175a23a759e8db23",
+                "url": "https://api.github.com/repos/DataTables/Dist-DataTables-Scroller/zipball/5e4a712c845c4de751bbc1d37e359e352a5789ad",
+                "reference": "5e4a712c845c4de751bbc1d37e359e352a5789ad",
                 "shasum": ""
             },
             "require": {
-                "datatables.net/datatables.net": ">=1.12.1"
+                "datatables.net/datatables.net": "^3.1"
             },
             "type": "library",
             "notification-url": "https://packagist.org/downloads/",
@@ -997,7 +945,7 @@
                     "homepage": "https://datatables.net"
                 }
             ],
-            "description": "Scroller is a virtual rendering plug-in for DataTables which allows large datasets to be drawn on screen very quickly. Virtual rendering means is that only the visible portion of the table is drawn, while the scrolling container gives the visual impression that the whole table is visible, allowing excellent browser performance. This is Scroller for DataTables",
+            "description": "Scroller for DataTables",
             "homepage": "http://www.datatables.net/",
             "keywords": [
                 "Virtual Scrolling",
@@ -1010,25 +958,25 @@
                 "forum": "https://datatables.net/forums",
                 "source": "https://github.com/DataTables/Dist-DataTables-Scroller"
             },
-            "time": "2026-07-24T09:56:56+00:00"
+            "time": "2026-09-25T13:38:22+00:00"
         },
         {
             "name": "datatables.net/datatables.net-scroller-dt",
-            "version": "3.0.0",
+            "version": "3.1.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/DataTables/Dist-DataTables-Scroller-DataTables.git",
-                "reference": "4702aa080521ae7013d325cae8645657ffcab169"
+                "reference": "dcea6f682cb078268b2c0d73d7dfc0273fd96248"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/DataTables/Dist-DataTables-Scroller-DataTables/zipball/4702aa080521ae7013d325cae8645657ffcab169",
-                "reference": "4702aa080521ae7013d325cae8645657ffcab169",
+                "url": "https://api.github.com/repos/DataTables/Dist-DataTables-Scroller-DataTables/zipball/dcea6f682cb078268b2c0d73d7dfc0273fd96248",
+                "reference": "dcea6f682cb078268b2c0d73d7dfc0273fd96248",
                 "shasum": ""
             },
             "require": {
-                "datatables.net/datatables.net-dt": ">=1.12.1",
-                "datatables.net/datatables.net-scroller": ">=2.0.7"
+                "datatables.net/datatables.net-dt": "^3.1",
+                "datatables.net/datatables.net-scroller": "3.1.1"
             },
             "type": "library",
             "notification-url": "https://packagist.org/downloads/",
@@ -1041,7 +989,7 @@
                     "homepage": "https://datatables.net"
                 }
             ],
-            "description": "Scroller is a virtual rendering plug-in for DataTables which allows large datasets to be drawn on screen very quickly. Virtual rendering means is that only the visible portion of the table is drawn, while the scrolling container gives the visual impression that the whole table is visible, allowing excellent browser performance. This is Scroller for DataTables with styling for [DataTables](https://datatables.net/)",
+            "description": "Scroller for DataTables with styling for DataTables",
             "homepage": "http://www.datatables.net/",
             "keywords": [
                 "Virtual Scrolling",
@@ -1054,24 +1002,24 @@
                 "forum": "https://datatables.net/forums",
                 "source": "https://github.com/DataTables/Dist-DataTables-Scroller-DataTables"
             },
-            "time": "2026-07-24T09:57:17+00:00"
+            "time": "2026-09-25T13:38:48+00:00"
         },
         {
             "name": "datatables.net/datatables.net-searchbuilder",
-            "version": "2.0.0",
+            "version": "2.1.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/DataTables/Dist-DataTables-SearchBuilder.git",
-                "reference": "44e82dd7a5ddcd1942a7eaa287a9430bff06fa4f"
+                "reference": "e273505b728cb0af8616ba4cb38893947498eaa6"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/DataTables/Dist-DataTables-SearchBuilder/zipball/44e82dd7a5ddcd1942a7eaa287a9430bff06fa4f",
-                "reference": "44e82dd7a5ddcd1942a7eaa287a9430bff06fa4f",
+                "url": "https://api.github.com/repos/DataTables/Dist-DataTables-SearchBuilder/zipball/e273505b728cb0af8616ba4cb38893947498eaa6",
+                "reference": "e273505b728cb0af8616ba4cb38893947498eaa6",
                 "shasum": ""
             },
             "require": {
-                "datatables.net/datatables.net": ">=1.12.1"
+                "datatables.net/datatables.net": "^3.1"
             },
             "type": "library",
             "notification-url": "https://packagist.org/downloads/",
@@ -1084,7 +1032,7 @@
                     "homepage": "https://datatables.net"
                 }
             ],
-            "description": "SearchBuilder adds user defined complex search to the DataTable with the capability to search the DataTable by creating groups and conditions. This is SearchBuilder for DataTables",
+            "description": "SearchBuilder for DataTables",
             "homepage": "http://www.datatables.net/",
             "keywords": [
                 "datatables",
@@ -1099,25 +1047,25 @@
                 "issues": "https://github.com/DataTables/Dist-DataTables-SearchBuilder/issues",
                 "source": "https://github.com/DataTables/Dist-DataTables-SearchBuilder"
             },
-            "time": "2026-07-24T10:00:26+00:00"
+            "time": "2026-09-25T13:35:28+00:00"
         },
         {
             "name": "datatables.net/datatables.net-searchbuilder-dt",
-            "version": "2.0.0",
+            "version": "2.1.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/DataTables/Dist-DataTables-SearchBuilder-DataTables.git",
-                "reference": "279321530d814fb4482b201d066d62e655f8ef27"
+                "reference": "9bb09522e29ab55aa1641dea2d70e031b9f5c744"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/DataTables/Dist-DataTables-SearchBuilder-DataTables/zipball/279321530d814fb4482b201d066d62e655f8ef27",
-                "reference": "279321530d814fb4482b201d066d62e655f8ef27",
+                "url": "https://api.github.com/repos/DataTables/Dist-DataTables-SearchBuilder-DataTables/zipball/9bb09522e29ab55aa1641dea2d70e031b9f5c744",
+                "reference": "9bb09522e29ab55aa1641dea2d70e031b9f5c744",
                 "shasum": ""
             },
             "require": {
-                "datatables.net/datatables.net-dt": ">=1.12.1",
-                "datatables.net/datatables.net-searchbuilder": ">=1.3.4"
+                "datatables.net/datatables.net-dt": "^3.1",
+                "datatables.net/datatables.net-searchbuilder": "2.1.1"
             },
             "type": "library",
             "notification-url": "https://packagist.org/downloads/",
@@ -1130,7 +1078,7 @@
                     "homepage": "https://datatables.net"
                 }
             ],
-            "description": "SearchBuilder adds user defined complex search to the DataTable with the capability to search the DataTable by creating groups and conditions. This is SearchBuilder for DataTables with styling for [DataTables](https://datatables.net/)",
+            "description": "SearchBuilder for DataTables with styling for DataTables",
             "homepage": "http://www.datatables.net/",
             "keywords": [
                 "datatables",
@@ -1145,24 +1093,24 @@
                 "issues": "https://github.com/DataTables/Dist-DataTables-SearchBuilder-DataTables/issues",
                 "source": "https://github.com/DataTables/Dist-DataTables-SearchBuilder-DataTables"
             },
-            "time": "2026-07-24T10:00:52+00:00"
+            "time": "2026-09-25T13:35:55+00:00"
         },
         {
             "name": "datatables.net/datatables.net-select",
-            "version": "4.0.1",
+            "version": "4.1.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/DataTables/Dist-DataTables-Select.git",
-                "reference": "8efa89da5103e4754aff7a659878c8fea1559c01"
+                "reference": "d1719f2a51802f8e9271dcdb5b2521c636ac86f5"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/DataTables/Dist-DataTables-Select/zipball/8efa89da5103e4754aff7a659878c8fea1559c01",
-                "reference": "8efa89da5103e4754aff7a659878c8fea1559c01",
+                "url": "https://api.github.com/repos/DataTables/Dist-DataTables-Select/zipball/d1719f2a51802f8e9271dcdb5b2521c636ac86f5",
+                "reference": "d1719f2a51802f8e9271dcdb5b2521c636ac86f5",
                 "shasum": ""
             },
             "require": {
-                "datatables.net/datatables.net": ">=1.12.1"
+                "datatables.net/datatables.net": "^3.1"
             },
             "type": "library",
             "notification-url": "https://packagist.org/downloads/",
@@ -1175,7 +1123,7 @@
                     "homepage": "https://datatables.net"
                 }
             ],
-            "description": "Select provides table item selection capabilities - rows, columns and cells can be selected individually or collectively. Complex selection operations such as operating system style selection (ctrl/cmd and shift click) for multiple rows can be enabled with a single option for a DataTable. This is Select for DataTables",
+            "description": "Select for DataTables",
             "homepage": "http://www.datatables.net/",
             "keywords": [
                 "datatables",
@@ -1188,25 +1136,25 @@
                 "forum": "https://datatables.net/forums",
                 "source": "https://github.com/DataTables/Dist-DataTables-Select"
             },
-            "time": "2026-08-18T10:43:16+00:00"
+            "time": "2026-09-25T13:55:13+00:00"
         },
         {
             "name": "datatables.net/datatables.net-select-dt",
-            "version": "4.0.1",
+            "version": "4.1.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/DataTables/Dist-DataTables-Select-DataTables.git",
-                "reference": "fd014306d53c5c0d4790120ccbc2a9f0be3db6c1"
+                "reference": "ddd4e252a3c41b3066cf564031ba31b8b0c4874b"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/DataTables/Dist-DataTables-Select-DataTables/zipball/fd014306d53c5c0d4790120ccbc2a9f0be3db6c1",
-                "reference": "fd014306d53c5c0d4790120ccbc2a9f0be3db6c1",
+                "url": "https://api.github.com/repos/DataTables/Dist-DataTables-Select-DataTables/zipball/ddd4e252a3c41b3066cf564031ba31b8b0c4874b",
+                "reference": "ddd4e252a3c41b3066cf564031ba31b8b0c4874b",
                 "shasum": ""
             },
             "require": {
-                "datatables.net/datatables.net-dt": ">=1.12.1",
-                "datatables.net/datatables.net-select": ">=1.4.0"
+                "datatables.net/datatables.net-dt": "^3.1",
+                "datatables.net/datatables.net-select": "4.1.1"
             },
             "type": "library",
             "notification-url": "https://packagist.org/downloads/",
@@ -1219,7 +1167,7 @@
                     "homepage": "https://datatables.net"
                 }
             ],
-            "description": "Select provides table item selection capabilities - rows, columns and cells can be selected individually or collectively. Complex selection operations such as operating system style selection (ctrl/cmd and shift click) for multiple rows can be enabled with a single option for a DataTable. This is Select for DataTables with styling for [DataTables](https://datatables.net/)",
+            "description": "Select for DataTables with styling for DataTables",
             "homepage": "http://www.datatables.net/",
             "keywords": [
                 "datatables",
@@ -1232,7 +1180,7 @@
                 "forum": "https://datatables.net/forums",
                 "source": "https://github.com/DataTables/Dist-DataTables-Select-DataTables"
             },
-            "time": "2026-08-18T10:43:41+00:00"
+            "time": "2026-09-25T13:55:35+00:00"
         }
     ],
     "packages-dev": [],

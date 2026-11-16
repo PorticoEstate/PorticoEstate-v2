@@ -10,6 +10,8 @@
 	 *  option) any later version.                                              *
 	  \************************************************************************* */
 
+use App\modules\phpgwapi\services\MailerSmtp;
+
 require_once __DIR__ . '/../../email/inc/imap_config.php';
 
 	// Guard-defined IMAP compatibility constants (removed in PHP 8.4)
@@ -104,7 +106,7 @@ class messenger_somessenger extends somessenger_
 	function send_message($message, $global_message = false)
 	{
 		$contacts = CreateObject('phpgwapi.contacts');
-		$mailer = CreateObject('phpgwapi.mailer_smtp');
+		$mailer = new MailerSmtp();
 		if ($global_message)
 		{
 			$this->owner = -1;

@@ -1,4 +1,29 @@
 %1 bookings were updated.	bookingfrontend	nn	%1 interntildelingar vart oppdatert.
+Info skjerm - ressursvelger	bookingfrontend	nn	Info skjerm - ressursveljar
+You can add resources from several buildings. Previous selections are kept when you search for another building.	bookingfrontend	nn	Du kan leggje til ressursar frå fleire bygg. Tidlegare val blir bevarte når du søkjer opp eit anna bygg.
+Selected resources	bookingfrontend	nn	Valde ressursar
+Remove selected resource	bookingfrontend	nn	Fjern vald ressurs
+Searching for buildings	bookingfrontend	nn	Søkjer etter bygg
+No buildings found	bookingfrontend	nn	Ingen bygg funne
+Select a building to see its resources	bookingfrontend	nn	Vel eit bygg for å sjå ressursane
+Loading resources	bookingfrontend	nn	Lastar ressursar
+No active resources found for this building	bookingfrontend	nn	Ingen aktive ressursar funne for dette bygget
+Could not load data. Please try again	bookingfrontend	nn	Klarte ikkje å laste inn data. Prøv igjen
+Link copied	bookingfrontend	nn	Lenkja er kopiert
+Could not copy the link	bookingfrontend	nn	Klarte ikkje å kopiere lenkja
+Choose a building and the resources to show on your information screen. Copy the generated link to save it as a shortcut.	bookingfrontend	nn	Vel eit bygg og ressursane som skal visast på informasjonsskjermen. Kopier lenkja for å lagre henne som ein snarveg.
+Search for a building	bookingfrontend	nn	Søk etter bygg
+Type at least two characters	bookingfrontend	nn	Skriv minst to teikn
+Filter resources	bookingfrontend	nn	Filtrer ressursar
+Search resources	bookingfrontend	nn	Søk i ressursar
+Link to the information screen	bookingfrontend	nn	Lenkje til informasjonsskjermen
+Open information screen	bookingfrontend	nn	Opne informasjonsskjermen
+Copy link	bookingfrontend	nn	Kopier lenkje
+Days to display	bookingfrontend	nn	Dagar som skal visast
+Whole week	bookingfrontend	nn	Heile veka
+Weekdays	bookingfrontend	nn	Ukedagar
+Weekend	bookingfrontend	nn	Helg
+JavaScript is required to configure the information screen	bookingfrontend	nn	JavaScript må vere aktivert for å konfigurere informasjonsskjermen
 %1 bookings will be updated.	bookingfrontend	nn	%1 interntildelingar vil bli oppdatert.
 -- select an activity --	bookingfrontend	nn	Vel ein aktivitet
 1 week	bookingfrontend	nn	1 veke
@@ -1124,3 +1149,149 @@ repeating_direct_booking_warning	bookingfrontend	nn	Denne ressursen har direkte 
 withdraw_timeslot	bookingfrontend	nn	Trekk tilbake
 confirm_withdraw_timeslot_description	bookingfrontend	nn	Er du sikker på at du vil trekkje tilbake denne enkelttimen? Saksbehandlar vil bli varsla om trekkinga.
 withdraw_timeslot_comment_label	bookingfrontend	nn	Kommentar til saksbehandlar (valfritt)
+price_choice_label	bookingfrontend	nn	Kven søkjer du som?
+price_choice_help	bookingfrontend	nn	Prisen er avhengig av kven som leiger — vel kategorien som passar.
+price_choice_placeholder	bookingfrontend	nn	Vel priskategori
+price_choice_required	bookingfrontend	nn	Du må velje priskategori
+price_choice_required_footer	bookingfrontend	nn	Vel priskategori for å lagre søknaden.
+price_choice_required_checkout	bookingfrontend	nn	Vel priskategori før du sender inn.
+price_pending	bookingfrontend	nn	Blir rekna ut når du har valt
+does_not_affect_price	bookingfrontend	nn	Påverkar ikkje prisen.
+price_category	bookingfrontend	nn	Priskategori
+cancel_whole_application	bookingfrontend	nn	Avbestill heile søknaden
+cancel_whole_application_help	bookingfrontend	nn	Avbestiller søknaden og alle reserverte tider i han, ikkje berre tida du valde.
+confirm_cancel_whole_application_description	bookingfrontend	nn	Søknaden vert avbestilt, og alle reserverte tider i han vert frigjorde. Talet på reserverte tider: {{count}}. Dette kan ikkje angrast.
+cancel_whole_application_failed	bookingfrontend	nn	Søknaden kunne ikkje avbestillast. Prøv igjen.
+withdraw_whole_application	bookingfrontend	nn	Trekk heile søknaden
+withdraw_whole_application_help	bookingfrontend	nn	Trekkjer søknaden og alle reserverte tider i han, ikkje berre tida du valde.
+confirm_withdraw_whole_application_description	bookingfrontend	nn	Søknaden vert trekt, og alle reserverte tider i han vert frigjorde. Talet på reserverte tider: {{count}}. Dette kan ikkje angrast.
+withdraw_whole_application_failed	bookingfrontend	nn	Søknaden kunne ikkje trekkjast. Prøv igjen.
+withdraw_whole_application_help_no_selection	bookingfrontend	nn	Trekkjer søknaden og alle reserverte tider i han.
+cancel_whole_application_help_no_selection	bookingfrontend	nn	Avbestiller søknaden og alle reserverte tider i han.
+change_request_pending	bookingfrontend	nn	Ønskt endring til kl. {{time}} ventar på sakshandsaming
+comment_on_time	bookingfrontend	nn	Kommenter
+comment_on_time_heading	bookingfrontend	nn	Kommentar til tidspunktet
+comment_time_removed	bookingfrontend	nn	Tidspunktet er fjerna
+change_time	bookingfrontend	nn	Endre tid
+change_allocation_time_description	bookingfrontend	nn	Vel ny tid på same dag. Ei kortare tid innanfor den tildelte tida blir lagra med ein gong, og prisen blir rekna ut på nytt for dei nye timane. Ei lengre eller flytta tid blir send til saksbehandlar, som godtek eller avslår endringa.
+allocation_time_shortened	bookingfrontend	nn	Tida er endra til kl. {{time}}.
+allocation_change_requested	bookingfrontend	nn	Ønskt ny tid er send til saksbehandlar. Tida er uendra til saksbehandlar har godteke endringa.
+allocation_change_invalid_time	bookingfrontend	nn	Ugyldig tidspunkt.
+allocation_change_other_day	bookingfrontend	nn	Ny tid må vere på same dag som tildelinga.
+allocation_change_unchanged	bookingfrontend	nn	Tida er ikkje endra.
+allocation_change_started	bookingfrontend	nn	Tildelinga har alt starta og kan ikkje endrast.
+allocation_change_inactive	bookingfrontend	nn	Tildelinga er trekt tilbake.
+allocation_change_no_application	bookingfrontend	nn	Tildelinga høyrer ikkje til ein søknad.
+allocation_change_booking_in_removed_time	bookingfrontend	nn	Tida kan ikkje kortast ned: det ligg ei booking i tida som blir fjerna.
+allocation_changed_meanwhile	bookingfrontend	nn	Tildelinga er endra i mellomtida. Last inn sida på nytt.
+allocation_shortened_comment	bookingfrontend	nn	Tildeling #%1 (%2, %3): tida er korta ned frå %4 til %5.
+allocation_change_requested_comment	bookingfrontend	nn	Tildeling #%1 (%2, %3): ønskjer ny tid %5 i staden for %4. Saksbehandlar godtek eller avslår endringa.
+allocation_price_recalculated	bookingfrontend	nn	Prisen er rekna om for den nye tida: %1 → %2. Pris låst etter forkorting.
+allocation_price_unchanged	bookingfrontend	nn	Prisen er uendra.
+allocation_price_kept_locked	bookingfrontend	nn	Pris ikkje rekna om: prisen er sett manuelt av saksbehandlar.
+allocation_price_master_order	bookingfrontend	nn	Pris ikkje rekna om: hovudordren til søknaden.
+allocation_price_not_recalculated	bookingfrontend	nn	Pris ikkje rekna om: saksbehandlar kontrollerer prisen.
+allocation_cost_recalculated_after_shortening	bookingfrontend	nn	Pris rekna om etter forkorting (%1). Pris låst etter forkorting.
+allocation_price_off_rule	bookingfrontend	nn	Pris ikkje rekna om: saksbehandlar har endra tida utan å rekne om prisen.
+
+repeating	bookingfrontend	nn	Gjentakande
+occurrence_awaiting	bookingfrontend	nn	Ventar på sakshandsaming
+occurrence_allocated	bookingfrontend	nn	Tildelt
+occurrence_withdrawn	bookingfrontend	nn	Trekt
+occurrence_not_allocated	bookingfrontend	nn	Ikkje tildelt
+occurrence_outside_series	bookingfrontend	nn	Utanfor serien
+application_not_found	bookingfrontend	nn	Fann ikkje søknaden. Du kan mangle tilgang.
+catering_overview_empty	bookingfrontend	nn	Ingen bevertning er bestilt for denne søknaden.
+catering_order_no_lines	bookingfrontend	nn	Ingen artiklar i denne bestillinga.
+catering_col_article	bookingfrontend	nn	Artikkel
+catering_change_until	bookingfrontend	nn	Kan endrast innan %1
+catering_change_locked	bookingfrontend	nn	Fristen for å endre bevertninga er ute.
+catering_cancel_locked	bookingfrontend	nn	Fristen for å avbestille bevertninga er ute.
+catering_change_cancel_locked	bookingfrontend	nn	Fristane for å endre og avbestille bevertninga er ute.
+catering_contact_officer	bookingfrontend	nn	Kontakt saksbehandlar via kommentarane på denne søknaden.
+catering_kitchen_contact	bookingfrontend	nn	Kontaktinformasjon for kjøkkenet
+catering_cancel_order	bookingfrontend	nn	Avbestill
+catering_confirm_cancel_order	bookingfrontend	nn	Vil du avbestille denne bevertninga?
+catering_order_locked	bookingfrontend	nn	Bestillinga kan ikkje lenger endrast her.
+catering_order_cutoff_passed	bookingfrontend	nn	Fristen for å bestille eller endre bevertning er ute.
+catering_cancellation_deadline_passed	bookingfrontend	nn	Fristen for å endre eller avbestille bevertninga er ute.
+catering_serving_time_passed	bookingfrontend	nn	Serveringstidspunktet er passert.
+catering_application_closed	bookingfrontend	nn	Søknaden er avslutta, så bevertninga kan ikkje endrast.
+kr_per_hour	bookingfrontend	nn	kr/time
+minutes_short	bookingfrontend	nn	min
+catering_no_serving_time	bookingfrontend	nn	Utan serveringstid
+prices_incl_vat	bookingfrontend	nn	Alle prisar er oppgjevne inkl. mva
+price_category_shared_help	bookingfrontend	nn	Valet gjeld alle ressursane du har valt.
+price_per_resource	bookingfrontend	nn	Vel pris per ressurs
+hospitality_offer	bookingfrontend	nn	Bevertningstilbod
+hospitality_offer_locked_help	bookingfrontend	nn	Vil du byte tilbod, avbestiller du serveringa og bestiller på nytt.
+edit_hospitality_order	bookingfrontend	nn	Endre bevertning
+hospitality_dialog_clock_time	bookingfrontend	nn	Klokkeslett
+hospitality_dialog_time_within_application	bookingfrontend	nn	Innanfor søknaden sin tid, %1–%2
+hospitality_dialog_selected_count	bookingfrontend	nn	%1 valt
+hospitality_dialog_incl_vat_short	bookingfrontend	nn	inkl. mva
+hospitality_dialog_items	bookingfrontend	nn	Varer
+hospitality_dialog_sum_ex_vat	bookingfrontend	nn	Sum eks. mva.
+hospitality_dialog_vat_rate	bookingfrontend	nn	Mva %1 %
+hospitality_dialog_vat	bookingfrontend	nn	Mva
+catering_overview_col_item	bookingfrontend	nn	Vare
+catering_overview_serving_heading	bookingfrontend	nn	%1 kl. %2
+catering_overview_order_total	bookingfrontend	nn	Ordretotal inkl. mva
+catering_overview_catering_total	bookingfrontend	nn	Bevertning total inkl. mva.
+catering_overview_edit_aria	bookingfrontend	nn	Rediger servering %1
+catering_overview_cancel_aria	bookingfrontend	nn	Avbestill servering %1
+catering_overview_lead_hours	bookingfrontend	nn	%1 timar
+catering_overview_lead_hour	bookingfrontend	nn	%1 time
+catering_overview_lead_days	bookingfrontend	nn	%1 dagar
+catering_overview_lead_day	bookingfrontend	nn	%1 dag
+catering_overview_lead_weeks	bookingfrontend	nn	%1 veker
+catering_overview_lead_week	bookingfrontend	nn	%1 veke
+catering_overview_deadline_both	bookingfrontend	nn	Du kan endre eller avbestille ei servering fram til %1 før ho startar.
+catering_overview_deadline_split	bookingfrontend	nn	Du kan endre ei servering fram til %1 før ho startar, og avbestille ho fram til %2 før.
+catering_overview_deadline_split_open	bookingfrontend	nn	Du kan endre ei servering fram til %1 før ho startar. Du kan avbestille ho heilt fram til ho startar.
+catering_overview_deadline_none	bookingfrontend	nn	Du kan endre eller avbestille ei servering heilt fram til ho startar.
+catering_overview_deadline_working_days	bookingfrontend	nn	Berre dagar kjøkkenet har ope blir rekna med.
+catering_overview_cancel_title	bookingfrontend	nn	Avbestille serveringa?
+catering_overview_cancel_body_amount	bookingfrontend	nn	Serveringa blir fjerna frå bestillinga, og totalen går ned med %1.
+catering_overview_cancel_body	bookingfrontend	nn	Serveringa blir fjerna frå bestillinga.
+catering_overview_cancel_others_kept	bookingfrontend	nn	Dei andre serveringane blir behaldne.
+catering_overview_cancel_confirm	bookingfrontend	nn	Avbestill servering
+catering_overview_summary_heading	bookingfrontend	nn	Prissamandrag
+catering_overview_summary_caption	bookingfrontend	nn	Beløp inkl. mva.
+catering_overview_sum_ex_vat	bookingfrontend	nn	Sum eks. mva.
+catering_overview_vat	bookingfrontend	nn	Mva
+catering_overview_vat_rate	bookingfrontend	nn	Mva %1 %
+catering_overview_total_rental	bookingfrontend	nn	Romleige
+catering_overview_total_services	bookingfrontend	nn	Utstyr og tenester
+catering_overview_total_catering	bookingfrontend	nn	Bevertning (%1 serveringar)
+catering_overview_total_catering_one	bookingfrontend	nn	Bevertning (1 servering)
+catering_overview_col_quantity	bookingfrontend	nn	Antal
+application_rooms	bookingfrontend	nn	%1 rom
+application_rooms_one	bookingfrontend	nn	1 rom
+application_col_addon	bookingfrontend	nn	Tillegg
+application_services_total	bookingfrontend	nn	Utstyr og tenester total inkl. mva.
+application_rental_total	bookingfrontend	nn	Romleige total inkl. mva.
+application_registered_total	bookingfrontend	nn	Registrert total inkl. mva.
+building_parent_constraint_note	bookingfrontend	nn	Hovudsøknaden må gjelde same bygg.
+cannot_delete_yourself	bookingfrontend	nn	Du kan ikkje fjerne deg sjølv som delegat
+delegate_not_available	bookingfrontend	nn	Delegaten er ikkje tilgjengeleg
+delegate_not_found	bookingfrontend	nn	Fann ikkje delegaten
+delete_delegate	bookingfrontend	nn	Fjern delegat
+no information available	bookingfrontend	nn	Ingen informasjon tilgjengeleg
+no_activities_match	bookingfrontend	nn	Ingen aktivitetar samsvarer med søket
+no_articles_available	bookingfrontend	nn	Ingen tilleggstenester tilgjengelege
+no_contacts_available	bookingfrontend	nn	Ingen kontaktar funne
+no_facilities_match	bookingfrontend	nn	Ingen fasilitetar samsvarer med søket
+no_groups_available	bookingfrontend	nn	Ingen grupper funne
+not_available	bookingfrontend	nn	Ikkje tilgjengeleg
+past	bookingfrontend	nn	Passert
+searching_across_domains	bookingfrontend	nn	Søkjer på tvers av {{count}} domene
+town	bookingfrontend	nn	By
+unknown_error	bookingfrontend	nn	Ukjend feil
+you	bookingfrontend	nn	deg
+no_valid_owner	bookingfrontend	nn	Ingen gyldig eigarkonto er tilgjengeleg
+queue_timeout	bookingfrontend	nn	Bestillinga vart tidsavbroten i køen. Prøv igjen.
+booking_outside_horizon	bookingfrontend	nn	Tidspunktet er utanfor tillaten bookingperiode
+unauthorized	bookingfrontend	nn	Du har ikkje tilgang til dette
+hide price category	bookingfrontend	nn	Skjul priskategori i den nye klienten
+hide price category note	bookingfrontend	nn	Når aktiv blir ikkje «Kven søkjer du som?»-valet og brytaren «Vel pris per ressurs» viste; søkjaren vel pris per ressurs. Endrar ikkje prisar eller lagra data.

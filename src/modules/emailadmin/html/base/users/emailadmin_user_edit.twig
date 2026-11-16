@@ -1,0 +1,44 @@
+{% extends layout|default('@views/_layout.twig') %}
+
+{% block title %}{{ lang('edit email settings') }}{% endblock %}
+
+{% block styles %}
+<style>{{ source('@views/profiles/emailadmin.css') }}</style>
+{% endblock %}
+
+{% block content %}
+<main class="emailadmin-page" id="emailadmin-user-editor"
+	data-api-url="{{ api_url|e('html_attr') }}"
+	data-csrf-name="{{ csrf.name|e('html_attr') }}"
+	data-csrf-value="{{ csrf.value|e('html_attr') }}">
+	<header class="emailadmin-heading">
+		<h1>{{ lang('edit email settings') }}: {{ account_name|e }}</h1>
+		<a class="emailadmin-button" href="{{ back_url|e }}">{{ lang('Back to accounts') }}</a>
+	</header>
+	<div class="emailadmin-alert" id="emailadmin-user-error" role="alert" hidden></div>
+	<div class="emailadmin-notice" id="emailadmin-user-status" role="status" hidden></div>
+	<form id="emailadmin-user-form">
+		<fieldset>
+			<legend>{{ lang('Email account') }}</legend>
+			<div class="emailadmin-grid">
+				<label>{{ lang('Email address') }}<input name="mailLocalAddress" type="text" autocomplete="email"></label>
+				<label>{{ lang('Quota size in MByte') }}<input name="quotaLimit" type="number" min="0" step="any"></label>
+			</div>
+			<label>{{ lang('Alternate email addresses') }}<textarea name="mailAlternateAddress" rows="5" spellcheck="false"></textarea></label>
+			<label>{{ lang('Forward email to') }}<textarea name="mailForwardingAddress" rows="5" spellcheck="false"></textarea></label>
+			<div class="emailadmin-checks">
+				<label><input name="accountActive" type="checkbox"> {{ lang('Email account active') }}</label>
+				<label><input name="forwardOnly" type="checkbox"> {{ lang('Forward only') }}</label>
+			</div>
+		</fieldset>
+		<div class="emailadmin-actions">
+			<button class="emailadmin-button emailadmin-button--primary" type="submit">{{ lang('Save') }}</button>
+			<a class="emailadmin-button" href="{{ back_url|e }}">{{ lang('Cancel') }}</a>
+		</div>
+	</form>
+</main>
+{% endblock %}
+
+{% block scripts %}
+<script>{{ source('@views/users/emailadmin_user_edit.js') }}</script>
+{% endblock %}

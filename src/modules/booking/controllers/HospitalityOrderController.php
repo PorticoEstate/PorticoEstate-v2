@@ -174,6 +174,18 @@ class HospitalityOrderController
 				return (new HospitalityOrder($row))->serialize();
 			}, $orders);
 
+			// When the applicant last changed each order from Min side (GH #1425), so the application
+			// page's catering list can show «Endret av søker» without opening every order.
+			$changes = $this->repository->getLastApplicantChanges(
+				array_map(static fn($row) => (int)$row['id'], $orders)
+			);
+			foreach ($results as &$result) {
+				if (isset($changes[(int)$result['id']])) {
+					$result['last_applicant_change_at'] = $changes[(int)$result['id']];
+				}
+			}
+			unset($result);
+
 			$response->getBody()->write(json_encode($results));
 			return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
 		} catch (Exception $e) {

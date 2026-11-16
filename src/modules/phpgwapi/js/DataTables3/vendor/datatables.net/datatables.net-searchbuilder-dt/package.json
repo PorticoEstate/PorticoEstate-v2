@@ -1,16 +1,15 @@
 {
     "name": "datatables.net-searchbuilder-dt",
     "description": "SearchBuilder for DataTables with styling for [DataTables](https://datatables.net/)",
-    "main": "js/searchBuilder.dataTables.js",
-    "module": "js/searchBuilder.dataTables.mjs",
-    "style": "css/searchBuilder.dataTables.css",
+    "main": "./js/searchBuilder.dataTables.js",
+    "module": "./js/searchBuilder.dataTables.mjs",
+    "style": "./css/searchBuilder.dataTables.css",
     "types": "./types/searchBuilder.dataTables.d.ts",
-    "version": "2.0.0",
+    "version": "2.1.1",
     "files": [
-        "css/**/*.css",
-        "js/**/*.js",
-        "js/**/*.mjs",
-        "types/**/*.d.ts"
+        "js",
+        "css",
+        "types"
     ],
     "keywords": [
         "SearchBuilder",
@@ -22,8 +21,8 @@
         "sort"
     ],
     "dependencies": {
-        "datatables.net-searchbuilder": "2.0.0",
-        "datatables.net-dt": "^3"
+        "datatables.net-searchbuilder": "2.1.1",
+        "datatables.net-dt": "^3.1"
     },
     "author": {
         "name": "SpryMedia Ltd",
@@ -35,5 +34,25 @@
     "repository": {
         "type": "git",
         "url": "git+https://github.com/DataTables/SearchBuilder.git"
-    }
+    },
+    "exports": {
+        ".": {
+            "types": "./types/searchBuilder.dataTables.d.ts",
+            "style": "./css/searchBuilder.dataTables.css",
+            "import": "./js/searchBuilder.dataTables.mjs",
+            "require": "./js/searchBuilder.dataTables.js",
+            "default": "./js/searchBuilder.dataTables.mjs"
+        },
+        "./js/*": "./js/*",
+        "./css": {
+            "types": "./types/css.d.ts",
+            "default": "./css/searchBuilder.dataTables.css"
+        },
+        "./css/*": {
+            "types": "./types/css.d.ts",
+            "default": "./css/*"
+        },
+        "./package.json": "./package.json"
+    },
+    "sideEffects": true
 }

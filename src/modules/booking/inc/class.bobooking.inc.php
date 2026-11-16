@@ -1105,18 +1105,6 @@ phpgw::import_class('booking.bocommon_authorized');
 
 		function split_allocations2( $allocations, $all_bookings )
 		{
-
-			function get_from2( $a )
-			{
-				return $a['from_'];
-			}
-			;
-
-			function get_to2( $a )
-			{
-				return $a['to_'];
-			}
-			;
 			$new_allocations = array();
 			foreach ($allocations as $allocation)
 			{
@@ -1132,8 +1120,8 @@ phpgw::import_class('booking.bocommon_authorized');
 				}
 				$times = array($allocation['from_'], $allocation['to_']);
 
-				$times	 = array_merge(array_map("get_from2", $bookings), $times);
-				$times	 = array_merge(array_map("get_to2", $bookings), $times);
+				$times	 = array_merge(array_column($bookings, 'from_'), $times);
+				$times	 = array_merge(array_column($bookings, 'to_'), $times);
 				$times	 = array_unique($times);
 				sort($times);
 				while (count($times) >= 2)
@@ -1323,6 +1311,8 @@ phpgw::import_class('booking.bocommon_authorized');
 				unset($booking['include_in_list']);
 				unset($booking['agegroups']);
 				unset($booking['audience']);
+				unset($booking['created_by_user_id']);
+				unset($booking['created_by_account_id']);
 			}
 
 			$allocations = $this->split_allocations($allocations, $bookings);
@@ -2194,6 +2184,8 @@ phpgw::import_class('booking.bocommon_authorized');
 				unset($booking['include_in_list']);
 				unset($booking['agegroups']);
 				unset($booking['audience']);
+				unset($booking['created_by_user_id']);
+				unset($booking['created_by_account_id']);
 			}
 
 			$allocations = $this->split_allocations($allocations, $bookings);

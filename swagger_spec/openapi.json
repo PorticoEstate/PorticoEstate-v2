@@ -2175,6 +2175,80 @@
                 }
             }
         },
+        "\/bookingfrontend\/allocations\/{id}\/change-time": {
+            "post": {
+                "tags": [
+                    "Allocations"
+                ],
+                "summary": "Change the time of a single allocation occurrence from Min side",
+                "operationId": "2a2425ee0374a048324bf2e6781781a7",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "secret",
+                        "in": "query",
+                        "description": "The owning application's secret, for a caller authorised by the emailed link",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application\/json": {
+                            "schema": {
+                                "required": [
+                                    "from_",
+                                    "to_"
+                                ],
+                                "properties": {
+                                    "from_": {
+                                        "description": "New start, naive local time, on the occurrence's own date",
+                                        "type": "string",
+                                        "example": "2026-12-10 18:00"
+                                    },
+                                    "to_": {
+                                        "description": "New end, naive local time, on the occurrence's own date",
+                                        "type": "string",
+                                        "example": "2026-12-10 19:00"
+                                    },
+                                    "comment": {
+                                        "description": "Optional message to the case officer, travels into the staff mail",
+                                        "type": "string"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "outcome=shortened: the shorter time and its price are stored; outcome=requested: the case officer decides on the new time"
+                    },
+                    "400": {
+                        "description": "Unusable time, another date, unchanged, or comment too long"
+                    },
+                    "403": {
+                        "description": "Caller may not manage this allocation"
+                    },
+                    "404": {
+                        "description": "No such allocation"
+                    },
+                    "409": {
+                        "description": "Withdrawn, already started, no owning application, changed meanwhile, or a booking lies in the removed time"
+                    }
+                }
+            }
+        },
         "\/bookingfrontend\/bookings\/{id}\/cancel-preview": {
             "post": {
                 "tags": [
@@ -5666,6 +5740,9 @@
                     },
                     "400": {
                         "description": "Invalid input or missing session"
+                    },
+                    "422": {
+                        "description": "Refused price choice: {error, errors, code: price_choice_required|price_choice_invalid, article_mapping_id}"
                     }
                 }
             }
@@ -5815,6 +5892,104 @@
                 }
             }
         },
+        "\/bookingfrontend\/applications\/{id}\/recurring-series": {
+            "get": {
+                "tags": [
+                    "Applications"
+                ],
+                "summary": "Get every occurrence of a recurring application, with its status",
+                "description": "The case officer's recurring preview as the applicant may see it: each occurrence, whether a time is allocated for it, and the application's own elements placed on it. Same access as the application itself.",
+                "operationId": "66983739c0c6f53771503eed14bb2a40",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of the recurring application",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "secret",
+                        "in": "query",
+                        "description": "Secret key that can be used to access the application without authentication",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The series",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "application_id": {
+                                            "type": "integer"
+                                        },
+                                        "interval_weeks": {
+                                            "type": "integer"
+                                        },
+                                        "occurrences": {
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "from_": {
+                                                        "type": "string",
+                                                        "format": "date-time"
+                                                    },
+                                                    "to_": {
+                                                        "type": "string",
+                                                        "format": "date-time"
+                                                    },
+                                                    "status": {
+                                                        "type": "string",
+                                                        "enum": [
+                                                            "allocated",
+                                                            "rejected",
+                                                            "cancelled",
+                                                            "withdrawn",
+                                                            "not_allocated",
+                                                            "awaiting"
+                                                        ]
+                                                    },
+                                                    "elements": {
+                                                        "type": "array",
+                                                        "items": {
+                                                            "$ref": "#\/components\/schemas\/RecurringSeriesElement"
+                                                        }
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        },
+                                        "outside_series": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#\/components\/schemas\/RecurringSeriesElement"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "The application is not recurring, or has no date"
+                    },
+                    "403": {
+                        "description": "Unauthorized to view this application"
+                    },
+                    "404": {
+                        "description": "Application not found"
+                    }
+                }
+            }
+        },
         "\/bookingfrontend\/applications\/partials\/{id}": {
             "put": {
                 "tags": [
@@ -5845,6 +6020,9 @@
                 "responses": {
                     "200": {
                         "description": "Application updated successfully"
+                    },
+                    "422": {
+                        "description": "Refused price choice: {error, errors, code: price_choice_required|price_choice_invalid, article_mapping_id}"
                     }
                 }
             },
@@ -5930,6 +6108,11 @@
                                                     "description": "Optional parent mapping ID for sub-items",
                                                     "type": "integer",
                                                     "nullable": true
+                                                },
+                                                "price_id": {
+                                                    "description": "The resource's chosen price (a price_options[].price_id from \/applications\/articles); only for the resource itself",
+                                                    "type": "integer",
+                                                    "nullable": true
                                                 }
                                             },
                                             "type": "object"
@@ -5982,6 +6165,9 @@
                     },
                     "404": {
                         "description": "Application not found"
+                    },
+                    "422": {
+                        "description": "Refused price choice: {error, errors, code: price_choice_required|price_choice_invalid, article_mapping_id}"
                     }
                 }
             }
@@ -6055,6 +6241,27 @@
                     },
                     "404": {
                         "description": "Application not found"
+                    },
+                    "422": {
+                        "description": "A file was refused (type, size or name); none of the files were stored",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "error": {
+                                            "type": "string"
+                                        },
+                                        "errors": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "string"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
                     }
                 },
                 "security": [
@@ -8252,7 +8459,7 @@
                     "SCIM 2.0 Groups"
                 ],
                 "summary": "Create a provisioned group",
-                "description": "Idempotent by externalId within the configured Entra tenant.",
+                "description": "Idempotent by externalId within the configured Entra tenant. An exact displayName match against a local group account_lid links that existing group instead of creating a new account. Conflicting or disabled SCIM mappings are rejected.",
                 "operationId": "scimCreateGroup",
                 "requestBody": {
                     "required": true,
@@ -8266,7 +8473,7 @@
                 },
                 "responses": {
                     "201": {
-                        "description": "Group created",
+                        "description": "Group created or existing local group linked",
                         "content": {
                             "application\/json": {
                                 "schema": {
@@ -14104,6 +14311,35 @@
                 },
                 "type": "object"
             },
+            "RecurringSeriesElement": {
+                "properties": {
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "allocation",
+                            "event",
+                            "booking"
+                        ]
+                    },
+                    "id": {
+                        "type": "integer"
+                    },
+                    "active": {
+                        "type": "boolean"
+                    },
+                    "from_": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "to_": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
             "Activity": {
                 "title": "Activity",
                 "description": "Activity model",
@@ -14387,6 +14623,22 @@
                     },
                     "lang_unit": {
                         "type": "string"
+                    },
+                    "price_options": {
+                        "description": "The prices the citizen can choose between, for the resource itself only",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#\/components\/schemas\/PriceOption"
+                        }
+                    },
+                    "default_price_id": {
+                        "description": "The option preselected: the only one, or the default. Null when the\ncitizen has to choose or there is no price",
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "price_choice_required": {
+                        "description": "Several prices and no default: the citizen must choose before saving",
+                        "type": "boolean"
                     }
                 },
                 "type": "object"
@@ -15162,6 +15414,37 @@
                             1
                         ],
                         "example": 1
+                    }
+                },
+                "type": "object"
+            },
+            "PriceOption": {
+                "title": "PriceOption",
+                "description": "One of the prices a citizen can choose for a resource: an active price row whose from date has been reached",
+                "properties": {
+                    "price_id": {
+                        "description": "The bb_article_price row; sent back as the article's price_id",
+                        "type": "integer"
+                    },
+                    "remark": {
+                        "description": "What the price is for, as the admin wrote it; may be empty",
+                        "type": "string"
+                    },
+                    "ex_tax_price": {
+                        "description": "Price before tax",
+                        "type": "string"
+                    },
+                    "tax": {
+                        "description": "Tax amount",
+                        "type": "string"
+                    },
+                    "price": {
+                        "description": "Price including tax",
+                        "type": "string"
+                    },
+                    "is_default": {
+                        "description": "Marked as the default price in the admin",
+                        "type": "boolean"
                     }
                 },
                 "type": "object"

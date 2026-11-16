@@ -16,5 +16,5 @@
 		'Composing/Saving/Deleting'	=> 'other.php',
 		'Notes'		=> 'notes.php'
 	);
-// Do not modify below this line
+	// Do not modify below this line
 	display_manual_section($appname,$file);

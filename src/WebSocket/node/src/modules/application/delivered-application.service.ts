@@ -56,6 +56,8 @@ export class DeliveredApplicationService {
    * 3. Secret-based: single application accessed by secret token
    *
    * Mirrors PHP: ApplicationRepository::getApplicationsBySsnAndOrganizations
+   *
+   * Rejects when the applications cannot be read: an empty page would tell the user they have none.
    */
   async getDeliveredApplications(opts: {
     ssn?: string;
@@ -64,11 +66,6 @@ export class DeliveredApplicationService {
     offset?: number;
     limit?: number;
   }): Promise<DeliveredApplicationsPage> {
-    if (!this.db.isConnected()) {
-      this.logger.error('Cannot get delivered applications — DB not connected');
-      return { applications: [], totalCount: 0, offset: 0, limit: 0, hasMore: false };
-    }
-
     const { ssn, includeOrganizations = true, secret, offset = 0, limit = 50 } = opts;
 
     try {
@@ -140,7 +137,7 @@ export class DeliveredApplicationService {
       };
     } catch (err: any) {
       this.logger.error(`Error fetching delivered applications: ${err.message}`);
-      return { applications: [], totalCount: 0, offset, limit, hasMore: false };
+      throw err;
     }
   }
 
@@ -179,10 +176,6 @@ export class DeliveredApplicationService {
     ssn?: string;
     secret?: string;
   }): Promise<{ application: any | null; error?: string }> {
-    if (!this.db.isConnected()) {
-      return { application: null, error: 'Database not connected' };
-    }
-
     const { id, ssn, secret } = opts;
 
     try {
@@ -206,8 +199,9 @@ export class DeliveredApplicationService {
       const applications = await this.hydrateApplications([app], ssn);
       return { application: applications[0] || null };
     } catch (err: any) {
+      // The database's own message stays in the log: it can name hosts and addresses.
       this.logger.error(`Error fetching application ${id}: ${err.message}`);
-      return { application: null, error: err.message };
+      return { application: null, error: 'Could not read the application' };
     }
   }
 
@@ -228,13 +222,20 @@ export class DeliveredApplicationService {
       return true;
     }
 
-    // Organization match — check if user is a delegate for the app's org
-    if (app.customer_organization_number) {
+    // Organization match — what the list shows (getDeliveredApplications) the user can open.
+    // The list tests customer_organization_id IN orgIds and customer_organization_number IN
+    // orgNumbers independently, so this does too: an application can carry an organization id
+    // and no number. The id test also carries the list's status filter.
+    if (app.customer_organization_id != null || app.customer_organization_number) {
       const orgs = await this.getActiveOrganizations(ssn);
-      if (app.customer_organization_id && orgs.orgIds.includes(app.customer_organization_id)) {
+      if (
+        app.status !== 'NEWPARTIAL1'
+        && app.customer_organization_id != null
+        && orgs.orgIds.includes(app.customer_organization_id)
+      ) {
         return true;
       }
-      if (orgs.orgNumbers.includes(app.customer_organization_number)) {
+      if (app.customer_organization_number && orgs.orgNumbers.includes(app.customer_organization_number)) {
         return true;
       }
     }
@@ -287,8 +288,10 @@ export class DeliveredApplicationService {
 
       return { orgIds, orgNumbers };
     } catch (err: any) {
+      // No organizations would quietly leave the user's organization applications out of the
+      // list and refuse access to them, so the caller fails instead.
       this.logger.error(`Error fetching organizations for SSN: ${err.message}`);
-      return { orgIds: [], orgNumbers: [] };
+      throw err;
     }
   }
 
@@ -379,15 +382,20 @@ export class DeliveredApplicationService {
     return rows;
   }
 
+  // `tax_percent`: the VAT % of the line's stored tax_code (fm_ecomva.percent_), read-only and null for a code with
+  // no fm_ecomva row; the join is on the primary key, so the lines are the same ones. `article_cat_id` (1 = the room,
+  // 2 = an add-on) is what Min side splits the room rental from the equipment and services on, as application.service.ts
+  // already sends it.
   private async fetchOrders(applicationId: number): Promise<any[]> {
     const { rows } = await this.db.query(
-      `SELECT po.*, pol.*, am.unit,
+      `SELECT po.*, pol.*, am.unit, am.article_cat_id, ev.percent_ AS tax_percent,
               CASE WHEN r.name IS NULL THEN s.name ELSE r.name END AS name
        FROM bb_purchase_order po
        JOIN bb_purchase_order_line pol ON po.id = pol.order_id
        JOIN bb_article_mapping am ON pol.article_mapping_id = am.id
        LEFT JOIN bb_service s ON (am.article_id = s.id AND am.article_cat_id = 2)
        LEFT JOIN bb_resource r ON (am.article_id = r.id AND am.article_cat_id = 1)
+       LEFT JOIN fm_ecomva ev ON ev.id = pol.tax_code
        WHERE po.cancelled IS NULL AND po.application_id = $1
        ORDER BY pol.id`,
       [applicationId],

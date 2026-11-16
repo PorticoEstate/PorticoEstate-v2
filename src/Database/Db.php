@@ -7,6 +7,7 @@ use Exception;
 use PDOException;
 use ReflectionClass;
 use ReflectionProperty;
+use App\modules\phpgwapi\services\Settings;
 
 class Db
 {
@@ -1128,7 +1129,7 @@ class Db
 
 		if ($num_rows <= 0)
 		{
-			$maxmatches = isset($GLOBALS['phpgw_info']['user']['preferences']['common']['maxmatchs']) ? (int)$GLOBALS['phpgw_info']['user']['preferences']['common']['maxmatchs'] : 15;
+			$maxmatches = (int)Settings::getInstance()->get('user')['preferences']['common']['maxmatchs'] ?? 15;
 			$num_rows = $maxmatches;
 		}
 

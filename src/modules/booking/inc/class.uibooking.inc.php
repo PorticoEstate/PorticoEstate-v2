@@ -522,6 +522,7 @@ class booking_uibooking extends booking_uicommon
 			$booking['completed'] = '0';
 			$booking['reminder'] = '1';
 			$booking['secret'] = $this->generate_secret();
+			$booking['created_by_account_id'] = $this->current_account_id();
 			array_set_default($booking, 'audience', array());
 			array_set_default($booking, 'agegroups', array());
 			array_set_default($_POST, 'resources', array());
@@ -589,12 +590,25 @@ class booking_uibooking extends booking_uicommon
 					if ($application_id)
 					{
 						$allocation['application_id'] = $application_id;
+						$purchase_order = createObject('booking.sopurchase_order')->get_purchase_order($application_id);
+					}
+					else
+					{
+						$purchase_order = null;
 					}
 					$allocation['from_'] = $booking['from_'];
 					$allocation['to_'] = $booking['to_'];
 					$allocation['active'] = '1';
 					$allocation['completed'] = '0';
 					$receipt = $this->allocation_bo->add($allocation);
+					if($application_id && $purchase_order)
+					{
+						$purchase_order['application_id'] = -1;
+						$purchase_order['reservation_type'] = 'allocation';
+						$purchase_order['reservation_id'] = $receipt['id'];
+						createObject('booking.sopurchase_order')->add_purchase_order($purchase_order);
+					}
+
 					$booking['allocation_id'] = $receipt['id'];
 					$booking['secret'] = $this->generate_secret();
 					$receipt = $this->bo->add($booking);
@@ -683,6 +697,11 @@ class booking_uibooking extends booking_uicommon
 								if ($application_id != '0')
 								{
 									$allocation['application_id'] = $application_id;
+									$purchase_order = createObject('booking.sopurchase_order')->get_purchase_order($application_id);
+								}
+								else
+								{
+									$purchase_order = null;
 								}
 								$allocation['from_'] = $booking['from_'];
 								$allocation['to_'] = $booking['to_'];
@@ -690,6 +709,13 @@ class booking_uibooking extends booking_uicommon
 								$allocation['completed'] = '0';
 								$receipt = $this->allocation_bo->add($allocation);
 								$this->allocation_bo->so->update_id_string($receipt['id']);
+								if ($application_id && $purchase_order)
+								{
+									$purchase_order['application_id'] = -1;
+									$purchase_order['reservation_type'] = 'allocation';
+									$purchase_order['reservation_id'] = $receipt['id'];
+									createObject('booking.sopurchase_order')->add_purchase_order($purchase_order);
+								}
 								$booking['allocation_id'] = $receipt['id'];
 								if ($application_id != '0')
 								{
@@ -1220,69 +1246,6 @@ class booking_uibooking extends booking_uicommon
 		}
 	}
 
-	private function send_sms_participants($id, $type = 'booking')
-	{
-		$send_sms = Sanitizer::get_var('send_sms', 'bool');
-		$sms_content = Sanitizer::get_var('sms_content', 'string');
-
-		if ($send_sms && $sms_content)
-		{
-			$soparticipant = createObject('booking.soparticipant');
-			$params = array(
-				'results' => -1,
-				'filters' => array(
-					'reservation_id' => $id,
-					'reservation_type' => $type
-				)
-			);
-
-			$participants = $soparticipant->read($params);
-			if (!$participants['results'])
-			{
-				Cache::message_set(lang('no records found.'), 'error');
-			}
-
-			$sms_service = CreateObject('sms.sms');
-			$sms_recipients = array();
-			foreach ($participants['results'] as $participant)
-			{
-				$sms_recipients[] = $participant['phone'];
-			}
-			$final_recipients = array_unique($sms_recipients);
-
-			$account_id = $this->current_account_id();
-			$log_success = array();
-			$log_error = array();
-			foreach ($final_recipients as $final_recipient)
-			{
-				try
-				{
-					$sms_res = $sms_service->websend2pv($account_id, $final_recipient, $sms_content);
-					if (empty($sms_res[0][0]))
-					{
-						$error_message = 'SMS-melding feilet til ' . $final_recipient;
-						Cache::message_set($error_message, 'error');
-						$log_error[] = $final_recipient;
-					}
-					else
-					{
-						$comment = 'SMS-melding er sendt til ' . $final_recipient;
-						Cache::message_set($comment, 'message');
-						$log_success[] = $final_recipient;
-					}
-				}
-				catch (Exception $ex)
-				{
-					$error_message = 'SMS-melding feilet til ' . $final_recipient;
-					Cache::message_set($error_message, 'error');
-					$log_error[] = $final_recipient;
-				}
-			}
-
-			self::redirect(array('menuaction' => "booking.ui{$type}.show", 'id' => $id));
-		}
-	}
-
 	public function show()
 	{
 		$id = Sanitizer::get_var('id', 'int');
@@ -1291,7 +1254,7 @@ class booking_uibooking extends booking_uicommon
 			phpgw::no_access('booking', lang('missing id'));
 		}
 
-		$this->send_sms_participants($id, 'booking');
+		$this->send_reservation_sms($id, 'booking');
 
 		$booking = $this->bo->read_single($id);
 

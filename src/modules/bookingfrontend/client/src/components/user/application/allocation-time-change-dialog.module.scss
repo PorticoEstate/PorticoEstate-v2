@@ -1,0 +1,13 @@
+// The time fields and the comment stacked with the design system's own spacing;
+// the actions right-aligned like the other dialogs on this page.
+.fields {
+	display: flex;
+	flex-direction: column;
+	gap: var(--ds-size-4);
+}
+
+.actions {
+	display: flex;
+	justify-content: flex-end;
+	gap: var(--ds-size-2);
+}

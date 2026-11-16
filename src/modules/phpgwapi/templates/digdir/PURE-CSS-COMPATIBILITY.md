@@ -36,6 +36,53 @@ The stylesheets are loaded in this specific order:
 
 ## Known Conflicts & Solutions
 
+### Home cards and bookmark tiles
+
+The Digdir page shell uses `.app-card` / `.app-card-body`, rather than the
+Bootstrap `.card` / `.card-body` classes. The outer `.app-page-card` allows
+overflow so form widgets and focus outlines are not clipped.
+Breadcrumbs and all `.app-card` containers use the same drop shadow.
+
+Home bookmarks use `.app-bookmark-grid` with three equal-width columns, two at
+viewport widths up to 48rem, and one up to 30rem. Tile links fill their grid cells;
+flexible card bodies align the footer rows even when icons or captions differ.
+These styles live in `css/digdir-native.css`; the Bootstrap rendering is unchanged.
+
+### Shared home hook tables
+
+For all template sets, `HomeHelper` encloses module home hooks in
+`#home-hook-content`. The shared `js/core/home.js` wraps each table in a
+keyboard-focusable `.home-table-scroll` container. It also handles tables
+recreated by pagination or filtering, without nesting or leaving empty wrappers.
+The overflow styles live in `templates/pure/css/global.css`, loaded by all three
+template sets. Headings, filters, and pagers remain outside the scroll area.
+
+### Legacy aligned forms in the Digdir template
+
+The active loader uses `digdir-native.css`, not `designsystemet-compat.css`.
+Digdir's `css/base.css` supplies the aligned-form adjustments without changing
+shared XSL templates or the Bootstrap template set:
+
+- Form text, native controls, and single Select2 controls use a consistent scale
+  and the current Designsystemet typography and neutral-color tokens.
+- Fieldsets may shrink below their contents' intrinsic width. Controls retain
+  Pure's fractional widths, capped to leave room for the label column.
+- Standalone one-fifth columns in aligned custom grids use their natural width,
+  so short location lookup fields do not collapse inside shrink-to-fit wrappers.
+- At viewport widths up to 48rem, labels stack above controls and fractional
+  controls use the available width.
+- DataTables keep their own horizontal scrolling; plain tables directly inside
+  `.pure-custom` scroll inside that wrapper.
+- Action bars use `.sticky-action-bar` and the shared
+  `templates/pure/css/action-bar.css`, loaded by the administrative and legacy
+  frontend template sets. Property ticket add and view actions are inside their
+  sticky bars, with send-order remaining conditional on access and an existing
+  order. Eventplanner and Addressbook retain their existing action elements and
+  visibility hooks; initially hidden or disabled bars are not activated. The
+  inner `#submitbox` owns the surface styling so hiding it also collapses the
+  bar.
+- Digdir's remaining legacy action-bar overrides exclude `.sticky-action-bar`.
+
 ### 1. Grid Systems
 
 **Pure CSS Grid:**

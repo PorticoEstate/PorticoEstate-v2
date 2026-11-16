@@ -193,7 +193,7 @@ const CartCardWithSeasons: FC<{
 											const lineTotal = Number(line.amount) + Number(line.tax || 0);
 
 											// Check if this is a resource (typically has unit 'hour' or similar resource-based pricing)
-											if (line.unit === 'hour' || line.unit === 'dag' || line.unit === 'day') {
+											if (line.unit === 'hour' || line.unit === 'minute' || line.unit === 'dag' || line.unit === 'day') {
 												resourcesCost += lineTotal;
 											} else {
 												articlesCost += lineTotal;

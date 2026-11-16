@@ -26,6 +26,8 @@ class booking_sobooking extends booking_socommon
 				'season_id' => array('type' => 'int', 'required' => true),
 				'cost' => array('type' => 'decimal', 'required' => true),
 				'sms_total' => array('type' => 'int', 'required' => false),
+				'created_by_user_id' => array('type' => 'int', 'required' => false),
+				'created_by_account_id' => array('type' => 'int', 'required' => false),
 				'completed' => array(
 					'type' => 'int', 'required' => true, 'nullable' => false,
 					'default' => '0'

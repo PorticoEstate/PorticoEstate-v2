@@ -1,0 +1,239 @@
+// The catering section on Min side (GH #1423): each serving on a grey surface, the price summary and the
+// 375 px stack. Text, buttons, the Alert, the Dialog and the Table are the design system's own; only the
+// layout and the one surface colour live here, and only from its tokens.
+
+@use './price-lines' as price;
+
+$stack-breakpoint: price.$stack-breakpoint;
+
+// «Bevertning» and «Legg til bevertning» on one row (stacked at 375 px, below).
+.sectionHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--ds-size-4);
+}
+
+// The kitchen's contact, once per kitchen, under the rule.
+.contacts {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ds-size-3);
+}
+
+.orders {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ds-size-6);
+}
+
+// One serving: on grey, 8 px corners, space between the servings and never a divider line (design A).
+.order {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ds-size-3);
+    padding: var(--ds-size-5) var(--ds-size-5) var(--ds-size-4);
+    background: var(--ds-color-neutral-background-tinted);
+    border-radius: var(--ds-border-radius-lg);
+}
+
+// «Onsdag 23. desember kl. 10:00 · Konferanserom 225»: 18 px semibold, as in the design.
+.orderHeading {
+    font-size: var(--ds-font-size-4);
+    font-weight: var(--ds-font-weight-semibold);
+}
+
+// «Ingen artikler i denne bestillingen.»
+.noLines {
+    color: var(--ds-color-neutral-text-subtle);
+}
+
+.orderHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: var(--ds-size-4);
+    flex-wrap: wrap;
+}
+
+// The offer's name, under the heading.
+.offerName {
+    margin-top: var(--ds-size-1);
+    color: var(--ds-color-neutral-text-subtle);
+}
+
+.orderActions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--ds-size-2);
+
+    // A locked serving has nothing here: no empty row under its heading at 375 px.
+    &:empty {
+        display: none;
+    }
+}
+
+.note {
+    white-space: pre-line;
+}
+
+// «Vare | Antall (N × pris) | Beløp» (price-lines.scss): the head left clear on the grey of the serving.
+.lines {
+    @include price.lines;
+    --dsc-table-header-background: transparent;
+}
+
+// «Ordretotal inkl. mva» under the lines.
+.orderTotal {
+    @include price.total;
+}
+
+// «Bevertning total inkl. mva.» after the servings: one row under a rule (design A).
+.sectionTotal {
+    @include price.total;
+    padding-top: var(--ds-size-4);
+    border-top: 1px solid var(--ds-color-neutral-border-subtle);
+    font-size: var(--ds-font-size-3);
+}
+
+// The block that closes the price surface (design A): a strong rule, the parts, then the total.
+.totals {
+    padding-top: var(--ds-size-4);
+    border-top: 2px solid var(--ds-color-neutral-text-default);
+}
+
+// The price summary: label left, amount right. A row that starts a new part has a rule above it.
+.summary {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ds-size-2);
+    margin: 0;
+}
+
+.summaryRow {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--ds-size-4);
+
+    dt {
+        margin: 0;
+    }
+
+    dd {
+        margin: 0;
+        white-space: nowrap;
+    }
+}
+
+.summaryPart {
+    padding-top: var(--ds-size-3);
+    border-top: 1px solid var(--ds-color-neutral-border-subtle);
+}
+
+.summaryTotal {
+    font-weight: var(--ds-font-weight-semibold);
+    font-size: var(--ds-font-size-lg);
+}
+
+// The application's total (design A): the sum ex VAT and the VAT quieter than the parts, «Totalt» in large type with
+// «Beløp inkl. mva.» under it.
+.summaryGrand .summaryRow:not(.grandTotal) {
+    font-size: var(--ds-font-size-3);
+}
+
+.summaryGrand .summaryDetail {
+    color: var(--ds-color-neutral-text-subtle);
+}
+
+.grandTotal {
+    align-items: baseline;
+    margin-top: var(--ds-size-1);
+    font-size: var(--ds-font-size-6);
+    font-weight: var(--ds-font-weight-semibold);
+
+    @media (max-width: $stack-breakpoint) {
+        font-size: var(--ds-font-size-5);
+    }
+}
+
+.grandCaption {
+    display: block;
+    font-size: var(--ds-font-size-2);
+    font-weight: var(--ds-font-weight-regular);
+    color: var(--ds-color-neutral-text-subtle);
+}
+
+// The catering's own sum ex VAT, VAT and total, when the application's total is not drawn after it.
+.cateringSummary {
+    padding-top: var(--ds-size-4);
+    border-top: 1px solid var(--ds-color-neutral-border-subtle);
+}
+
+// The confirm dialog for a cancellation.
+.dialogTotal {
+    font-weight: var(--ds-font-weight-semibold);
+}
+
+.dialogLines {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ds-size-1);
+    margin: var(--ds-size-3) 0;
+    padding: 0;
+    list-style: none;
+}
+
+.dialogLine {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--ds-size-4);
+}
+
+.dialogActions {
+    display: flex;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: var(--ds-size-3);
+}
+
+// 375 px: the buttons side by side under the heading (the lines stack by price-lines.scss).
+@media (max-width: $stack-breakpoint) {
+    .order {
+        padding: var(--ds-size-4);
+    }
+
+    // «Legg til bevertning» under the heading, full width, as in the design. Every child stretches itself.
+    .sectionHeader {
+        flex-direction: column;
+        align-items: stretch;
+
+        > * {
+            align-self: stretch;
+        }
+
+        button {
+            justify-content: center;
+        }
+    }
+
+    .orderHeader {
+        flex-direction: column;
+    }
+
+    .orderActions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        width: 100%;
+
+        // The status tag is not a button: it gets its own row instead of taking a cell of the button grid.
+        > :not(button) {
+            grid-column: 1 / -1;
+            justify-self: start;
+        }
+    }
+
+    .dialogActions > button {
+        flex: 1 1 100%;
+    }
+}

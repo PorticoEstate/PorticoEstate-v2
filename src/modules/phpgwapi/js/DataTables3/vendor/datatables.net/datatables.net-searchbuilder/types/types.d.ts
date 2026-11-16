@@ -598,8 +598,8 @@ declare class Criteria {
      */
     private _populateValue;
     /**
-     * Provides throttling capabilities to SearchBuilder without having to use dt's _fnThrottle function
-     * This is because that function is not quite suitable for our needs as it runs initially rather than waiting
+     * Provides debounce capabilities to SearchBuilder. Makes use of DataTables'
+     * utility methods.
      *
      * @param args arguments supplied to the throttle function
      * @returns Function that is to be run that implements the throttling
@@ -611,7 +611,7 @@ type DeepPartial<T> = T extends object ? {
     [P in keyof T]?: DeepPartial<T[P]>;
 } : T;
 declare module 'datatables.net' {
-    interface Config {
+    interface Options {
         /**
          * SearchBuilder extension options
          */
@@ -620,7 +620,7 @@ declare module 'datatables.net' {
     interface Defaults {
         searchBuilder?: ConfigSearchBuilder;
     }
-    interface ConfigLanguage {
+    interface Language {
         /**
          * SearchBuilder language options
          */
@@ -666,6 +666,18 @@ declare module 'datatables.net' {
         SearchBuilder: typeof SearchBuilder;
         Group: typeof Group;
         Criteria: typeof Criteria;
+    }
+    interface AjaxData {
+        /** SearchBuilder Ajax information */
+        searchBuilder?: IDetails$1;
+    }
+    interface State {
+        /** SearchBuilder state object */
+        searchBuilder?: IDetails$1;
+    }
+    interface StateLoad {
+        /** SearchBuilder state object */
+        searchBuilder?: IDetails$1;
     }
 }
 interface ConfigSearchBuilder extends Partial<IDefaults> {

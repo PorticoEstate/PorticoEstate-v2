@@ -214,12 +214,23 @@ class sms_sms__
 		return $rcpt;
 	}
 
+	/**
+	 * The text as the sender typed it. Text read with Sanitizer 'string' arrives HTML-encoded, and ; ( ) = -- are encoded
+	 * twice (numeric entity first, then htmlspecialchars), so a single html_entity_decode leaves them as &#40; and so on.
+	 * strtr works in one pass: a sequential str_replace would decode an entity that was itself typed.
+	 */
+	private function sms_text_as_typed($message)
+	{
+		return strtr(html_entity_decode($message), array('&#59;' => ';', '&#40;' => '(', '&#41;' => ')', '&#61;' => '=', '&#8722;&#8722;' => '--'));
+	}
+
 	function websend2pv($username, $sms_to, $message, $sms_type = "text", $unicode = "0")
 	{
 		$datetime_now = $this->datetime_now();
 		$gateway_module_send = $this->gateway_module_send;
 		$uid = (int)$this->account;
 
+		$message = $this->sms_text_as_typed($message);
 		$mobile_sender = $this->username2mobile($username);
 		$max_length = 804;
 		if ($sms_sender = $this->username2sender($username))
@@ -228,10 +239,10 @@ class sms_sms__
 		}
 		if (strlen($message) > $max_length)
 		{
-			$message = substr($message, 0, $max_length - 1);
+			$message = mb_strcut($message, 0, $max_length - 1, 'UTF-8');
 		}
 		//			$sms_msg = str_replace(array("\r","\n", "\""), array("", "", " "), html_entity_decode($message));
-		$sms_msg = str_replace(array("\r", "\""), array("", " "), html_entity_decode($message));
+		$sms_msg = str_replace(array("\r", "\""), array("", " "), $message);
 		$mobile_sender = str_replace(array("\'", "\""), array("", ""), $mobile_sender);
 		$sms_sender = str_replace(array("\'", "\""), array("", ""), $sms_sender);
 		if (is_array($sms_to))
@@ -243,14 +254,22 @@ class sms_sms__
 			$array_sms_to[0] = $sms_to;
 		}
 
+		// the log row gets escaped copies; the gateway below is handed the values as they are
+		$db_gateway_module_send = $this->db->db_addslashes($gateway_module_send);
+		$db_mobile_sender = $this->db->db_addslashes($mobile_sender);
+		$db_sms_sender = $this->db->db_addslashes($sms_sender);
+		$db_message = $this->db->db_addslashes($message);
+		$db_sms_type = $this->db->db_addslashes($sms_type);
+		$db_unicode = $this->db->db_addslashes($unicode);
+
 		for ($i = 0; $i < count($array_sms_to); $i++)
 		{
 			$c_sms_to = str_replace(array("\'", "\"", " "), array("", "", ""), $array_sms_to[$i]);
-			$message = $this->db->db_addslashes($message);
+			$db_sms_to = $this->db->db_addslashes($c_sms_to);
 
 			$db_query = "INSERT INTO phpgw_sms_tblsmsoutgoing
 					(uid,p_gateway,p_src,p_dst,p_footer,p_msg,p_datetime,p_sms_type,unicode)
-					VALUES ('$uid','$gateway_module_send','$mobile_sender','$c_sms_to','$sms_sender','$message','$datetime_now','$sms_type','$unicode')";
+					VALUES ('$uid','$db_gateway_module_send','$db_mobile_sender','$db_sms_to','$db_sms_sender','$db_message','$datetime_now','$db_sms_type','$db_unicode')";
 
 			if ($this->db->get_transaction())
 			{

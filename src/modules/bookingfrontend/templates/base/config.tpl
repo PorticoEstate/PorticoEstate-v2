@@ -201,6 +201,15 @@
 			</td>
 		</tr>
 		<tr>
+			<td>{lang_hide_price_category}:<br/><small>{lang_hide_price_category_note}</small></td>
+			<td>
+				<select name="newsettings[hide_price_category]" class="pure-u-1">
+					<option value="0"{selected_hide_price_category_0}>{lang_No}</option>
+					<option value="1"{selected_hide_price_category_1}>{lang_Yes}</option>
+				</select>
+			</td>
+		</tr>
+		<tr>
 			<td>{lang_allow_old_template}:<br/><small>{lang_allow_old_template_note}</small></td>
 			<td>
 				<select name="newsettings[allow_old_template]" class="pure-u-1">

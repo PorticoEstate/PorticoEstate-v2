@@ -68,7 +68,21 @@
 										<xsl:value-of select="php:function('pretty_timestamp', time)"/>: <xsl:value-of select="author"/>
 									</label>
 									<span>
-										<xsl:value-of select="comment" disable-output-escaping="yes"/>
+										<xsl:for-each select="parts">
+											<xsl:choose>
+												<xsl:when test="k = 'br'">
+													<br/>
+												</xsl:when>
+												<xsl:when test="k = 'a'">
+													<a href="{href}" rel="noopener noreferrer">
+														<xsl:value-of select="v"/>
+													</a>
+												</xsl:when>
+												<xsl:otherwise>
+													<xsl:value-of select="v"/>
+												</xsl:otherwise>
+											</xsl:choose>
+										</xsl:for-each>
 									</span>
 								</div>
 							</xsl:for-each>
@@ -644,11 +658,23 @@
 									<xsl:value-of select="php:function('lang', 'SMS')" />
 								</label>
 								<textarea rows="5" id="field_sms_content" name="sms_content" class="pure-input-1" >
+									<xsl:if test="sms_no_recipients = 1">
+										<xsl:attribute name="disabled">disabled</xsl:attribute>
+									</xsl:if>
 								</textarea>
 							</div>
-							<div id="sms_receipt"></div>
+							<div id="sms_receipt">
+								<xsl:if test="sms_no_recipients = 1">
+									<div class="error">
+										<xsl:value-of select="php:function('lang', 'sms_event_no_participants')" />
+									</div>
+								</xsl:if>
+							</div>
 							<div class="pure-controls">
 								<button type="button" class="pure-button pure-button-primary" onClick="SendSms();">
+									<xsl:if test="sms_no_recipients = 1">
+										<xsl:attribute name="disabled">disabled</xsl:attribute>
+									</xsl:if>
 									<xsl:value-of select="php:function('lang', 'send SMS')" />
 								</button>
 							</div>
@@ -748,7 +774,7 @@
 		$('#field_customer_identifier_type').attr("data-validation","customer_identifier").attr("data-validation-error-msg","<xsl:value-of select="php:function('lang', 'There is set a cost, but no invoice data is filled inn')" />");
 
 		var event_id = <xsl:value-of select="event/id"/>;
-		var lang = <xsl:value-of select="php:function('js_lang','Name', 'phone', 'email', 'Resource Type', 'quantity', 'from', 'to', 'send sms', 'article', 'Select', 'price', 'unit', 'tax', 'unit cost', 'quantity', 'Selected', 'Delete', 'Sum', 'tax code', 'percent')"/>;
+		var lang = <xsl:value-of select="php:function('js_lang','Name', 'phone', 'email', 'Resource Type', 'quantity', 'from', 'to', 'send sms', 'article', 'Select', 'price', 'unit', 'tax', 'unit cost', 'quantity', 'Selected', 'Delete', 'Sum', 'tax code', 'percent', 'sms_send_failed')"/>;
 
 
     <![CDATA[

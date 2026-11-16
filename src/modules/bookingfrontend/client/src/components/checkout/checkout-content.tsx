@@ -1,7 +1,8 @@
 'use client'
 import React, {FC, useState, useMemo, useEffect} from 'react';
 import CartSection from "./cart-section";
-import {useBookingUser, usePartialApplications, useUpdatePartialApplication, useResourceRegulationDocuments} from "@/service/hooks/api-hooks";
+import {useBookingUser, usePartialApplications, useUpdatePartialApplication, useResourceRegulationDocuments, useResourceArticles} from "@/service/hooks/api-hooks";
+import {findPendingPriceChoice, hasPendingPriceChoice, priceChoiceFieldId} from "@/components/checkout/articles/articles-section";
 import { CheckoutEventDetailsData, createCheckoutEventDetailsSchema } from './checkout-event-details-schema';
 import { BillingFormData } from './billing-form-schema';
 import CheckoutEventDetails from "@/components/checkout/checkout-event-details";
@@ -138,6 +139,27 @@ const CheckoutContent: FC = () => {
     // Fetch regulation documents for all resources
     const { data: regulationDocuments, isLoading: docsLoading } = useResourceRegulationDocuments(resources);
 
+    // A room booked through a time slot may still wait for the applicant's price
+    // choice; the applications cannot be submitted until it is made
+    const {data: cartArticles} = useResourceArticles({resourceIds: resources.map(resource => resource.id)});
+    const pendingPriceChoice = findPendingPriceChoice(applications?.list ?? [], cartArticles ?? []);
+    const pendingPriceApplicationIds = useMemo(() => new Set(
+        (applications?.list ?? [])
+            .filter(app => hasPendingPriceChoice(app, cartArticles ?? []))
+            .map(app => app.id)
+    ), [applications?.list, cartArticles]);
+    const [showPriceChoiceErrors, setShowPriceChoiceErrors] = useState(false);
+
+    // Shows the error at the field and by the submit buttons, and moves focus to the field
+    const blockedByPriceChoice = (): boolean => {
+        if (!pendingPriceChoice) {
+            return false;
+        }
+        setShowPriceChoiceErrors(true);
+        document.getElementById(priceChoiceFieldId(pendingPriceChoice.applicationId, pendingPriceChoice.articleMappingId))?.focus();
+        return true;
+    };
+
     // A successful submit clears partialApplications (checkout-hooks.ts
     // onMutate/onSuccess), so this component re-renders with list.length===0
     // right as handleFormSubmit's .then() is navigating to /user/applications.
@@ -219,6 +241,10 @@ const CheckoutContent: FC = () => {
         
         if (!eventDetails || !applications || !billingDetails) {
             console.log('missing Data', eventDetails, billingDetails);
+            return;
+        }
+
+        if (blockedByPriceChoice()) {
             return;
         }
 
@@ -326,6 +352,10 @@ const CheckoutContent: FC = () => {
             return;
         }
 
+        if (blockedByPriceChoice()) {
+            return;
+        }
+
         // Validate organizer field using the schema
         const organizerValidation = createCheckoutEventDetailsSchema(t).safeParse(eventDetails);
         if (!organizerValidation.success) {
@@ -416,6 +446,8 @@ const CheckoutContent: FC = () => {
                 setCurrentApplication={setCurrentApplication}
                 buildingParentIds={buildingParentIds}
                 onBuildingParentIdChange={handleBuildingParentIdChange}
+                showPriceChoiceErrors={showPriceChoiceErrors}
+                pendingPriceApplicationIds={pendingPriceApplicationIds}
             />
 
             {process.env.NODE_ENV === 'development' && (
@@ -461,6 +493,9 @@ const CheckoutContent: FC = () => {
                 areAllDocumentsChecked={areAllDocumentsChecked}
                 showDocumentsError={showDocumentsError}
                 applications={applications?.list || []}
+                submitError={showPriceChoiceErrors && pendingPriceChoice
+                    ? t('bookingfrontend.price_choice_required_checkout')
+                    : undefined}
             />
 
             {currentApplication && (

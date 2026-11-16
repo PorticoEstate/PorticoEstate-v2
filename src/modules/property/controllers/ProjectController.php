@@ -865,8 +865,7 @@ class ProjectController
 			: (string)($input['order_by'] ?? 'voucher_id');
 		$orderDir = strtolower((string)($order[0]['dir'] ?? $input['order_dir'] ?? 'asc')) === 'desc' ? 'DESC' : 'ASC';
 
-		$soinvoice = CreateObject('property.soinvoice');
-		$invoices = $soinvoice->read_invoice_sub_sum(array(
+		$values = $this->bo()->get_vouchers(array(
 			'project_id' => $projectId,
 			'year' => isset($input['year']) ? (int)$input['year'] : 0,
 			'paid' => 'both',
@@ -877,45 +876,7 @@ class ProjectController
 			'allrows' => isset($input['length']) && (int)$input['length'] === -1,
 		));
 
-		$values = array();
-		$invoiceHandler2 = isset($this->bo()->config['invoicehandler']) && $this->bo()->config['invoicehandler'] == 2;
-		$user = Settings::getInstance()->get('user');
-		$user = is_array($user) ? $user : array();
-		$dateFormat = $user['preferences']['common']['dateformat'] ?? 'Y-m-d';
-		foreach ((array)$invoices as $entry)
-		{
-			$voucherId = $invoiceHandler2
-				? (!empty($entry['transfer_time']) ? -1 * (int)$entry['voucher_id'] : (int)$entry['voucher_id'])
-				: ($entry['external_voucher_id'] ?? null);
-
-			$values[] = array(
-				'voucher_id' => $voucherId,
-				'voucher_out_id' => $entry['voucher_out_id'] ?? null,
-				'workorder_id' => $entry['workorder_id'] ?? null,
-				'status' => $entry['status'] ?? '',
-				'period' => $entry['period'] ?? '',
-				'periodization' => $entry['periodization'] ?? '',
-				'periodization_start' => $entry['periodization_start'] ?? '',
-				'invoice_id' => $entry['invoice_id'] ?? '',
-				'budget_account' => $entry['budget_account'] ?? '',
-				'dima' => $entry['dima'] ?? '',
-				'dimb' => $entry['dimb'] ?? '',
-				'dimd' => $entry['dimd'] ?? '',
-				'type' => $entry['type'] ?? '',
-				'amount_ex_tax' => ((float)($entry['amount'] ?? 0)) * 0.8,
-				'amount_tax' => ((float)($entry['amount'] ?? 0)) * 0.2,
-				'amount' => $entry['amount'] ?? 0,
-				'approved_amount' => $entry['approved_amount'] ?? 0,
-				'vendor' => $entry['vendor'] ?? '',
-				'external_project_id' => $entry['project_id'] ?? null,
-				'currency' => $entry['currency'] ?? '',
-				'budget_responsible' => $entry['budget_responsible'] ?? '',
-				'budsjettsigndato' => !empty($entry['budsjettsigndato']) ? (new \phpgwapi_common())->show_date(strtotime($entry['budsjettsigndato']), $dateFormat) : '',
-				'transfer_time' => !empty($entry['transfer_time']) ? (new \phpgwapi_common())->show_date(strtotime($entry['transfer_time']), $dateFormat) : '',
-			);
-		}
-
-		$total = (int)($soinvoice->total_records ?? count($values));
+		$total = (int)$this->bo()->total_records;
 		return $this->datatableResponse($response, $input, $values, $total);
 	}
 

@@ -716,7 +716,15 @@ HTML;
 					$detected .= '<li class="warn">' . $this->setup->lang('Sample configuration not found. using built in defaults') . "</li>\n";
 					$comment_l = '<!-- ';
 					$comment_r = ' -->';
+					$dbtype_options = '';
+					foreach ($supported_db as $db)
+					{
+						$selected = '';
+						$dbtype_options .= <<<HTML
+						<option value="{$db}">$db</option>
 
+HTML;
+					}
 					$domainVars = [
 						'db_domain' => 'default',
 						'db_host' => 'localhost',
@@ -808,7 +816,7 @@ HTML;
 					'domain_selectbox_no' => isset($this->serverSettings['show_domain_selectbox']) && $this->serverSettings['show_domain_selectbox'] ? '' : ' selected',
 					'domain_from_host_yes' => isset($this->serverSettings['domain_from_host']) && $this->serverSettings['domain_from_host'] ? ' selected' : '',
 					'domain_from_host_no' => isset($this->serverSettings['domain_from_host']) && $this->serverSettings['domain_from_host'] ? '' : ' selected',
-					'errors' => $errors,
+					'errors' => $errors ?? '',
 					'comment_l' => $comment_l,
 					'comment_r' => $comment_r,
 					'formend' => ''

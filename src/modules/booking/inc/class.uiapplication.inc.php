@@ -97,7 +97,8 @@ class booking_uiapplication extends booking_uicommon
 
 		// Allow route parameter to disable combined applications
 		$disable_combined = Sanitizer::get_var('disable_combined', 'bool', 'REQUEST', false);
-		if ($disable_combined) {
+		if ($disable_combined)
+		{
 			$this->combine_applications = false;
 		}
 
@@ -293,22 +294,22 @@ class booking_uiapplication extends booking_uicommon
 			{
 				$related_info = $this->bo->so->get_related_applications($application['id']);
 				if (!empty($related_info['application_ids']))
-			{
-				foreach ($related_info['application_ids'] as $related_app_id)
 				{
-					if ($related_app_id != $application['id'])
+					foreach ($related_info['application_ids'] as $related_app_id)
 					{
-						$related_app = $this->bo->read_single($related_app_id);
-						if ($related_app && (!isset($related_app['case_officer_id']) || $related_app['case_officer_id'] != $current_account_id))
+						if ($related_app_id != $application['id'])
 						{
-							$related_app['case_officer_id'] = $current_account_id;
-							$this->add_ownership_change_comment($related_app, sprintf(lang("User '%s' was assigned"), $this->current_account_fullname()));
-							// Also change status from NEW to PENDING for related applications
-							if ($related_app['status'] == 'NEW')
+							$related_app = $this->bo->read_single($related_app_id);
+							if ($related_app && (!isset($related_app['case_officer_id']) || $related_app['case_officer_id'] != $current_account_id))
 							{
-								$related_app['status'] = 'PENDING';
-							}
-							$this->bo->update($related_app);
+								$related_app['case_officer_id'] = $current_account_id;
+								$this->add_ownership_change_comment($related_app, sprintf(lang("User '%s' was assigned"), $this->current_account_fullname()));
+								// Also change status from NEW to PENDING for related applications
+								if ($related_app['status'] == 'NEW')
+								{
+									$related_app['status'] = 'PENDING';
+								}
+								$this->bo->update($related_app);
 							}
 						}
 					}
@@ -335,16 +336,16 @@ class booking_uiapplication extends booking_uicommon
 			{
 				$related_info = $this->bo->so->get_related_applications($application['id']);
 				if (!empty($related_info['application_ids']))
-			{
-				foreach ($related_info['application_ids'] as $related_app_id)
 				{
-					if ($related_app_id != $application['id'])
+					foreach ($related_info['application_ids'] as $related_app_id)
 					{
-						$related_app = $this->bo->read_single($related_app_id);
-						if ($related_app && array_key_exists('case_officer_id', $related_app) && $related_app['case_officer_id'] == $current_account_id)
+						if ($related_app_id != $application['id'])
 						{
-							$related_app['case_officer_id'] = null;
-							$this->add_ownership_change_comment($related_app, sprintf(lang("User '%s' was unassigned"), $this->current_account_fullname()));
+							$related_app = $this->bo->read_single($related_app_id);
+							if ($related_app && array_key_exists('case_officer_id', $related_app) && $related_app['case_officer_id'] == $current_account_id)
+							{
+								$related_app['case_officer_id'] = null;
+								$this->add_ownership_change_comment($related_app, sprintf(lang("User '%s' was unassigned"), $this->current_account_fullname()));
 								$this->bo->update($related_app);
 							}
 						}
@@ -374,22 +375,22 @@ class booking_uiapplication extends booking_uicommon
 			{
 				$related_info = $this->bo->so->get_related_applications($application['id']);
 				if (!empty($related_info['application_ids']))
-			{
-				foreach ($related_info['application_ids'] as $related_app_id)
 				{
-					if ($related_app_id != $application['id'])
+					foreach ($related_info['application_ids'] as $related_app_id)
 					{
-						$related_app = $this->bo->read_single($related_app_id);
-						if ($related_app && (!isset($related_app['case_officer_id']) || $related_app['case_officer_id'] != $account_id))
+						if ($related_app_id != $application['id'])
 						{
-							$related_app['case_officer_id'] = $account_id;
-							$this->add_ownership_change_comment($related_app, sprintf(lang("User '%s' was assigned"), $case_officer_full_name));
-							// Also change status from NEW to PENDING for related applications
-							if ($related_app['status'] == 'NEW')
+							$related_app = $this->bo->read_single($related_app_id);
+							if ($related_app && (!isset($related_app['case_officer_id']) || $related_app['case_officer_id'] != $account_id))
 							{
-								$related_app['status'] = 'PENDING';
-							}
-							$this->bo->update($related_app);
+								$related_app['case_officer_id'] = $account_id;
+								$this->add_ownership_change_comment($related_app, sprintf(lang("User '%s' was assigned"), $case_officer_full_name));
+								// Also change status from NEW to PENDING for related applications
+								if ($related_app['status'] == 'NEW')
+								{
+									$related_app['status'] = 'PENDING';
+								}
+								$this->bo->update($related_app);
 							}
 						}
 					}
@@ -465,7 +466,10 @@ class booking_uiapplication extends booking_uicommon
 			'time' => 'now',
 			'author' => $customer_name ? $customer_name : $this->current_account_fullname(),
 			'comment' => Sanitizer::clean_html($comment),
-			'type' => $type
+			'type' => $type,
+			// A legacy comment is about the whole application (ref #1392).
+			'element_type' => null,
+			'element_id' => null
 		);
 	}
 
@@ -950,11 +954,24 @@ class booking_uiapplication extends booking_uicommon
 				'dir' => $dir
 			));
 		}
+		$sopurchase_order = createObject('booking.sopurchase_order');
 		foreach ($associations['results'] as &$association)
 		{
 			if ($this->flags['currentapp'] == 'bookingfrontend')
 			{
 				unset($association['cost']);
+			}
+			else
+			{
+				$purchase_order = $sopurchase_order->get_purchase_order(0, $association['type'], $association['id']);
+				if ($purchase_order)
+				{
+					$association['cost'] = 0;
+					foreach ($purchase_order['lines'] as $line)
+					{
+						$association['cost'] += ($line['amount'] + $line['tax']);
+					}
+				}
 			}
 			$association['from_'] = pretty_timestamp($association['from_']);
 			$association['to_'] = pretty_timestamp($association['to_']);
@@ -1178,7 +1195,8 @@ class booking_uiapplication extends booking_uicommon
 		$this->extract_customer_identifier($entity);
 
 		// Handle recurring_info - convert empty string to null for JSON field
-		if (isset($entity['recurring_info']) && $entity['recurring_info'] === '') {
+		if (isset($entity['recurring_info']) && $entity['recurring_info'] === '')
+		{
 			$entity['recurring_info'] = null;
 		}
 
@@ -1301,7 +1319,7 @@ class booking_uiapplication extends booking_uicommon
 				'from_'			=> $from_,
 				'to_'			=> $to_
 			);
-				$receipt = $bo_block->add($block);
+			$receipt = $bo_block->add($block);
 			if ($receipt['id'])
 			{
 				$status = 'saved';
@@ -1368,7 +1386,8 @@ class booking_uiapplication extends booking_uicommon
 		$to_ = Sanitizer::get_var('to_', 'string', 'REQUEST');
 
 		// Convert to proper format if needed
-		if ($from_ && $to_) {
+		if ($from_ && $to_)
+		{
 			$from_ = date('Y-m-d H:i:s', phpgwapi_datetime::date_to_timestamp($from_));
 			$to_ = date('Y-m-d H:i:s', phpgwapi_datetime::date_to_timestamp($to_));
 		}
@@ -1378,16 +1397,19 @@ class booking_uiapplication extends booking_uicommon
 		$resources_with_deny_flag = array();
 
 		// Check each resource for deny_application_if_booked flag
-		foreach ($resources as $resource_id) {
+		foreach ($resources as $resource_id)
+		{
 			$resource = $this->resource_bo->so->read_single((int)$resource_id);
 
 			// Only check collision for resources with deny_application_if_booked = 1
-			if ($resource && $resource['deny_application_if_booked'] == 1) {
+			if ($resource && $resource['deny_application_if_booked'] == 1)
+			{
 				$resources_with_deny_flag[] = $resource_id;
 
 				// Check for collision
 				$collision = $this->bo->so->check_collision(array((int)$resource_id), $from_, $to_, $session_id);
-				if ($collision) {
+				if ($collision)
+				{
 					$has_collision = true;
 					break; // No need to check further if we found a collision
 				}
@@ -1401,7 +1423,8 @@ class booking_uiapplication extends booking_uicommon
 		);
 
 		// Return JSON for AJAX calls
-		if (Sanitizer::get_var('phpgw_return_as', 'string', 'REQUEST') == 'json') {
+		if (Sanitizer::get_var('phpgw_return_as', 'string', 'REQUEST') == 'json')
+		{
 			header('Content-Type: application/json');
 			echo json_encode($response);
 			$this->phpgwapi_common->phpgw_exit();
@@ -3067,7 +3090,7 @@ class booking_uiapplication extends booking_uicommon
 			 * TEMPORARY!!
 			 * Bypassing acl on create
 			 */
-				$receipt = CreateObject('booking.soorganization')->add($organization);
+			$receipt = CreateObject('booking.soorganization')->add($organization);
 			//				$receipt = $this->organization_bo->add($organization);
 			$organization['id'] = $receipt['id'];
 		}
@@ -4147,7 +4170,8 @@ class booking_uiapplication extends booking_uicommon
 					foreach ($related_info['application_ids'] as $related_app_id)
 					{
 						$app = $this->bo->read_single($related_app_id);
-						if ($app && isset($app['parent_id']) && $app['parent_id'] == $app['id']) {
+						if ($app && isset($app['parent_id']) && $app['parent_id'] == $app['id'])
+						{
 							// This is the true primary
 							$true_primary_id = $app['id'];
 							$test = $this->assoc_bo->so->read(array('filters' => array('application_id' => $true_primary_id), 'results' => 'all'));
@@ -4206,14 +4230,14 @@ class booking_uiapplication extends booking_uicommon
 								if ($application['id'] == $true_primary_id)
 								{
 									$application = $this->bo->read_single($application['id']);
-								// Restore status from POST (reload from DB loses it)
-								$application['status'] = $new_status;
+									// Restore status from POST (reload from DB loses it)
+									$application['status'] = $new_status;
 								}
 								else if ($application['id'] == $first_approved_child_id)
 								{
 									$application = $this->bo->read_single($application['id']);
-								// Restore status from POST (reload from DB loses it)
-								$application['status'] = $new_status;
+									// Restore status from POST (reload from DB loses it)
+									$application['status'] = $new_status;
 								}
 							}
 						}
@@ -4223,6 +4247,18 @@ class booking_uiapplication extends booking_uicommon
 				if ($application['status'] == 'REJECTED')
 				{
 					$rejection_reason = Sanitizer::get_var('rejection_reason', 'html', 'POST');
+
+					// The reject dialog requires a reason. Its editor posts markup such as
+					// "<p><br></p>" or "<p>&nbsp;</p>" when it shows no text, so only the text
+					// counts. A form without the field (the base template's reject button)
+					// is let through as before.
+					$rejection_text = html_entity_decode(strip_tags((string)$rejection_reason), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+					if (array_key_exists('rejection_reason', $_POST) && preg_replace('/[\s\x{00A0}\x{200B}\x{FEFF}]+/u', '', $rejection_text) === '')
+					{
+						Cache::message_set(lang('Field %1 is required', lang('Reason for rejection')), 'error');
+						self::redirect(array('menuaction' => $this->url_prefix . '.show', 'id' => $application['id']));
+					}
+
 					if ($rejection_reason)
 					{
 						$application['comment'] = $rejection_reason;
@@ -4300,7 +4336,7 @@ class booking_uiapplication extends booking_uicommon
 									// Only approve if the application has created associations
 									if ($has_associations)
 									{
-									$related_app['status'] = 'ACCEPTED';
+										$related_app['status'] = 'ACCEPTED';
 										if ($acceptance_message)
 										{
 											$related_app['comment'] = $acceptance_message;
@@ -4310,7 +4346,7 @@ class booking_uiapplication extends booking_uicommon
 									else
 									{
 										// Reject applications with no allocations/events
-									$related_app['status'] = 'REJECTED';
+										$related_app['status'] = 'REJECTED';
 										$rejection_comment = 'Automatisk avslått: Ingen tildelinger ble opprettet for denne søknaden.';
 										$related_app['comment'] = $rejection_comment;
 										$this->add_comment($related_app, $rejection_comment);
@@ -4318,27 +4354,27 @@ class booking_uiapplication extends booking_uicommon
 									$this->bo->update($related_app);
 								}
 							}
+							else
+							{
+								// Handle the current application (the one being approved from)
+								if (!$has_associations)
+								{
+									$application['status'] = 'REJECTED';
+									$rejection_comment = 'Automatisk avslått: Ingen tildelinger ble opprettet for denne søknaden.';
+									$application['comment'] = $rejection_comment;
+									$this->add_comment($application, $rejection_comment);
+								}
 								else
 								{
-									// Handle the current application (the one being approved from)
-									if (!$has_associations)
+									// Explicitly set status to ACCEPTED for current app with associations
+									$application['status'] = 'ACCEPTED';
+									if ($acceptance_message)
 									{
-										$application['status'] = 'REJECTED';
-										$rejection_comment = 'Automatisk avslått: Ingen tildelinger ble opprettet for denne søknaden.';
-										$application['comment'] = $rejection_comment;
-										$this->add_comment($application, $rejection_comment);
-									}
-									else
-									{
-										// Explicitly set status to ACCEPTED for current app with associations
-										$application['status'] = 'ACCEPTED';
-										if ($acceptance_message)
-										{
-											$application['comment'] = $acceptance_message;
-											$this->add_comment($application, $acceptance_message);
-										}
+										$application['comment'] = $acceptance_message;
+										$this->add_comment($application, $acceptance_message);
 									}
 								}
+							}
 
 							// Set active for all associations of each application (only if they exist)
 							if ($has_associations)
@@ -4386,17 +4422,25 @@ class booking_uiapplication extends booking_uicommon
 				$send_acceptance_checked = Sanitizer::get_var('send_acceptance_email', 'bool', 'POST');
 				$send_rejection_checked = Sanitizer::get_var('send_rejection_email', 'bool', 'POST');
 
-				if ($this->combine_applications && !empty($related_info['application_ids']) && count($related_info['application_ids']) > 1) {
+				if ($this->combine_applications && !empty($related_info['application_ids']) && count($related_info['application_ids']) > 1)
+				{
 					// Combined application: send email if either checkbox is checked
 					// (email will show mixed results - some accepted, some rejected)
 					$notify = $send_acceptance_checked || $send_rejection_checked;
-				} else {
+				}
+				else
+				{
 					// Single application: match checkbox to status
-					if ($application['status'] == 'REJECTED') {
+					if ($application['status'] == 'REJECTED')
+					{
 						$notify = $send_rejection_checked;
-					} else if ($application['status'] == 'ACCEPTED') {
+					}
+					else if ($application['status'] == 'ACCEPTED')
+					{
 						$notify = $send_acceptance_checked;
-					} else {
+					}
+					else
+					{
 						$notify = true;
 					}
 				}
@@ -4475,9 +4519,12 @@ class booking_uiapplication extends booking_uicommon
 				$_application['status'] = Sanitizer::get_var('status', 'string', 'POST');
 
 				// Use group notification for combined applications
-				if ($this->combine_applications && !empty($related_info['application_ids']) && count($related_info['application_ids']) > 1) {
+				if ($this->combine_applications && !empty($related_info['application_ids']) && count($related_info['application_ids']) > 1)
+				{
 					$recipient = $this->sendGroupNotification($related_info['application_ids'], $_application);
-				} else {
+				}
+				else
+				{
 					// Single application notification — pass the comment-reply flag so a
 					// case-officer reply bypasses the PENDING email-skip and renders the comment body.
 					$recipient = $this->bo->send_notification($_application, false, false, $is_comment_reply);
@@ -4739,7 +4786,8 @@ JS;
 		$create_button_count = 0;
 		$has_conflicts = false;
 
-		if (!empty($application['recurring_info'])) {
+		if (!empty($application['recurring_info']))
+		{
 			$show_recurring_button = true;
 
 			// Parse recurring info
@@ -4748,7 +4796,8 @@ JS;
 				: $application['recurring_info'];
 
 			// Generate preview of expected allocations first to check for conflicts
-			if ($recurring_data && !empty($application['dates'])) {
+			if ($recurring_data && !empty($application['dates']))
+			{
 				$recurring_preview = $this->generate_recurring_preview($application, $recurring_data);
 			}
 
@@ -4758,19 +4807,27 @@ JS;
 			$non_conflict_count = 0;
 			$existing_allocations_count = 0;
 
-			if (!empty($recurring_preview)) {
-				foreach ($recurring_preview as $item) {
-					if (isset($item['has_conflict']) && $item['has_conflict']) {
+			if (!empty($recurring_preview))
+			{
+				foreach ($recurring_preview as $item)
+				{
+					// The create button is decided on ANY allocation on the date, active or
+					// deactivated: the allocation wizard does not skip dates that already have
+					// one. $item['exists'] only drives how the row is shown, so a conflict seen on
+					// a date that has a deactivated allocation is ignored here ($has_conflicts too).
+					if (!empty($item['has_any_allocation']))
+					{
+						$existing_allocations_count++;
+					}
+					else if (!empty($item['has_conflict']))
+					{
 						$has_conflicts = true;
 						$conflicts_count++;
-					} else if (!isset($item['exists']) || !$item['exists']) {
+					}
+					else
+					{
 						$non_conflict_count++;
 					}
-
-				// Count existing allocations
-				if (isset($item['exists']) && $item['exists']) {
-					$existing_allocations_count++;
-				}
 				}
 			}
 
@@ -4781,11 +4838,12 @@ JS;
 			);
 
 			// Add skip_conflicts parameter when there are conflicts
-		if ($has_conflicts) {
-			$recurring_params['skip_conflicts'] = 1;
-		}
+			if ($has_conflicts)
+			{
+				$recurring_params['skip_conflicts'] = 1;
+			}
 
-		$recurring_allocation_url = self::link($recurring_params);
+			$recurring_allocation_url = self::link($recurring_params);
 
 			// Determine button text based on conflict status
 			$create_button_text = $has_conflicts ? 'create_non_conflicting_allocations' : 'create_all_allocations';
@@ -4806,7 +4864,8 @@ JS;
 
 		// Add season information for recurring template
 		$season_info = null;
-		if ($template_name === 'application_recurring' && !empty($application['dates'])) {
+		if ($template_name === 'application_recurring' && !empty($application['dates']))
+		{
 			$season_bo = createObject('booking.boseason');
 			$first_date = $application['dates'][0];
 			$app_date = date('Y-m-d', strtotime($first_date['from_']));
@@ -4823,7 +4882,8 @@ JS;
 				'results' => 1
 			));
 
-			if (!empty($seasons['results'][0])) {
+			if (!empty($seasons['results'][0]))
+			{
 				$season = $seasons['results'][0];
 				$season_info = array(
 					'name' => $season['name'],
@@ -4834,45 +4894,49 @@ JS;
 					'end_reason' => ''
 				);
 
-				if (!empty($recurring_data['repeat_until'])) {
+				if (!empty($recurring_data['repeat_until']))
+				{
 					$season_info['end_reason'] = 'Slutter ' . $recurring_data['repeat_until'] . ' (før sesongslutt)';
-				} elseif (!empty($recurring_data['outseason'])) {
+				}
+				elseif (!empty($recurring_data['outseason']))
+				{
 					$season_info['end_reason'] = 'Følger sesongslutt (' . $season_info['to_formatted'] . ')';
-				} else {
+				}
+				else
+				{
 					$season_info['end_reason'] = 'Begrenset periode (ikke til sesongslutt)';
 				}
 			}
-
 		}
-//		_debug_array(array(
-//			'application'		 => $application,
-//			'organization'		 => $organization,
-//			'audience'			 => $audience,
-//			'agegroups'			 => $agegroups,
-//			'num_associations'	 => $num_associations,
-//			'assoc'				 => $from,
-//			'collision'			 => $collision_dates,
-//			'comments'			 => $comments,
-//			'simple'			 => $simple,
-//			'config'			 => $config,
-//			'export_pdf_action'	 => self::link(array('menuaction' => 'booking.uiapplication.export_pdf', 'id' => $application['id'])),
-//			'external_archive'	 => !empty($this->userSettings['preferences']['common']['archive_user_id']) ? $external_archive : '',
-//			'user_list'			 => array('options' => createObject('booking.sopermission_building')->get_user_list()),
-//			'internal_notes'	 => $internal_notes,
-//			'show_edit_selection' => $show_edit_selection,
-//			'related_applications' => $related_applications,
-//			'show_recurring_button' => $show_recurring_button,
-//			'recurring_allocation_url' => $recurring_allocation_url,
-//			'recurring_data' => $recurring_data,
-//			'recurring_preview' => $recurring_preview,
-//			'season_info' => $season_info,
-//			'create_button_text' => $create_button_text,
-//			'create_button_count' => $create_button_count,
-//			'has_conflicts' => $has_conflicts,
-//			'open_approve_modal' => $open_approve_modal,
-//			'show_recurring_summary' => $show_recurring_summary,
-//			'recurring_approval_summary' => $recurring_approval_summary
-//		));
+		//		_debug_array(array(
+		//			'application'		 => $application,
+		//			'organization'		 => $organization,
+		//			'audience'			 => $audience,
+		//			'agegroups'			 => $agegroups,
+		//			'num_associations'	 => $num_associations,
+		//			'assoc'				 => $from,
+		//			'collision'			 => $collision_dates,
+		//			'comments'			 => $comments,
+		//			'simple'			 => $simple,
+		//			'config'			 => $config,
+		//			'export_pdf_action'	 => self::link(array('menuaction' => 'booking.uiapplication.export_pdf', 'id' => $application['id'])),
+		//			'external_archive'	 => !empty($this->userSettings['preferences']['common']['archive_user_id']) ? $external_archive : '',
+		//			'user_list'			 => array('options' => createObject('booking.sopermission_building')->get_user_list()),
+		//			'internal_notes'	 => $internal_notes,
+		//			'show_edit_selection' => $show_edit_selection,
+		//			'related_applications' => $related_applications,
+		//			'show_recurring_button' => $show_recurring_button,
+		//			'recurring_allocation_url' => $recurring_allocation_url,
+		//			'recurring_data' => $recurring_data,
+		//			'recurring_preview' => $recurring_preview,
+		//			'season_info' => $season_info,
+		//			'create_button_text' => $create_button_text,
+		//			'create_button_count' => $create_button_count,
+		//			'has_conflicts' => $has_conflicts,
+		//			'open_approve_modal' => $open_approve_modal,
+		//			'show_recurring_summary' => $show_recurring_summary,
+		//			'recurring_approval_summary' => $recurring_approval_summary
+		//		));
 		$template_data = array(
 			'application'		 => $application,
 			'organization'		 => $organization,
@@ -4911,7 +4975,8 @@ JS;
 	{
 		$preview = array();
 
-		if (empty($application['dates']) || empty($recurring_data)) {
+		if (empty($application['dates']) || empty($recurring_data))
+		{
 			return $preview;
 		}
 
@@ -4947,22 +5012,28 @@ JS;
 			'results' => 1
 		));
 
-		if (!empty($seasons['results'][0])) {
+		if (!empty($seasons['results'][0]))
+		{
 			$season = $seasons['results'][0];
 
 			// If outseason is enabled, use season end date, otherwise use custom repeat_until
-			if (!empty($recurring_data['outseason'])) {
+			if (!empty($recurring_data['outseason']))
+			{
 				// Use season end date when outseason is enabled
 				// Season end - inclusive (allocation wizard: class.uiallocation.inc.php:789)
 				$repeat_until = new DateTime($season['to_']);
 				$bound_is_inclusive = true;
 				$recurring_data['calculated_repeat_until'] = $repeat_until->format('d/m/Y');
-			} else if (!empty($recurring_data['repeat_until'])) {
+			}
+			else if (!empty($recurring_data['repeat_until']))
+			{
 				// Use custom repeat_until date when outseason is not enabled
 				// The date the citizen picked - inclusive (allocation wizard: class.uiallocation.inc.php:783)
 				$repeat_until = new DateTime($recurring_data['repeat_until']);
 				$bound_is_inclusive = true;
-			} else {
+			}
+			else
+			{
 				// Fallback to season end if neither outseason nor repeat_until is set
 				// Season end - inclusive. NOTE: the allocation wizard has no branch of
 				// this shape at all; its recurrence block is gated on
@@ -4973,14 +5044,19 @@ JS;
 				$bound_is_inclusive = true;
 				$recurring_data['calculated_repeat_until'] = $repeat_until->format('d/m/Y');
 			}
-		} else {
+		}
+		else
+		{
 			// Fallback - use custom date or 3 months from first date
-			if (!empty($recurring_data['repeat_until'])) {
+			if (!empty($recurring_data['repeat_until']))
+			{
 				// Same citizen-picked date as above, on the no-season path - inclusive
 				// (allocation wizard: class.uiallocation.inc.php:783)
 				$repeat_until = new DateTime($recurring_data['repeat_until']);
 				$bound_is_inclusive = true;
-			} else {
+			}
+			else
+			{
 				$repeat_until = clone $from_time;
 				$repeat_until->add(new DateInterval('P3M'));
 				// NOT inclusive and NOT bumped - see the comment above the bump below.
@@ -4996,11 +5072,23 @@ JS;
 			'results' => -1
 		));
 
+		// Two views of the same rows. Only an ACTIVE allocation shows the date as created
+		// (badge, Vis link). ANY allocation, active or deactivated, counts as the date
+		// already having one: approval skips it and the create button is gated on it,
+		// because Accept reactivates every allocation of the application.
 		$existing_by_date = array();
-		if (!empty($existing_allocations['results'])) {
-			foreach ($existing_allocations['results'] as $alloc) {
+		$any_allocation_by_date = array();
+		if (!empty($existing_allocations['results']))
+		{
+			foreach ($existing_allocations['results'] as $alloc)
+			{
 				$key = date('Y-m-d H:i', strtotime($alloc['from_'])) . '_' . date('Y-m-d H:i', strtotime($alloc['to_']));
-				$existing_by_date[$key] = $alloc;
+				$any_allocation_by_date[$key] = true;
+				// A deactivated row is left out, so it can never replace the active one on a date
+				if (!empty($alloc['active']))
+				{
+					$existing_by_date[$key] = $alloc;
+				}
 			}
 		}
 
@@ -5016,10 +5104,13 @@ JS;
 		);
 
 		// Add organization data if available, or find it by organization number
-		if (!empty($application['customer_organization_id'])) {
+		if (!empty($application['customer_organization_id']))
+		{
 			$base_allocation['organization_id'] = $application['customer_organization_id'];
 			$base_allocation['organization_name'] = $application['customer_organization_name'];
-		} elseif (!empty($application['customer_organization_number'])) {
+		}
+		elseif (!empty($application['customer_organization_number']))
+		{
 			// Look up organization by number like allocation wizard does
 			$organizations = createObject('booking.soorganization')->read(array(
 				'results' => -1,
@@ -5028,7 +5119,8 @@ JS;
 					'active' => 1
 				)
 			));
-			if (!empty($organizations['results'][0])) {
+			if (!empty($organizations['results'][0]))
+			{
 				$base_allocation['organization_id'] = $organizations['results'][0]['id'];
 				$base_allocation['organization_name'] = $organizations['results'][0]['name'];
 			}
@@ -5038,22 +5130,26 @@ JS;
 		$base_allocation['cost'] = '0';
 
 		// Find and set season_id like allocation wizard does
-		if (!empty($seasons['results'][0])) {
+		if (!empty($seasons['results'][0]))
+		{
 			$base_allocation['season_id'] = $seasons['results'][0]['id'];
 			$base_allocation['season_name'] = $seasons['results'][0]['name'];
 		}
 
 		// Get resource names for display
 		$resource_names = array();
-		if (!empty($application['resources'])) {
+		if (!empty($application['resources']))
+		{
 			$resource_bo = createObject('booking.boresource');
 			$resources = $resource_bo->read(array(
 				'filters' => array('id' => $application['resources']),
 				'sort' => 'name',
 				'results' => -1
 			));
-			if (!empty($resources['results'])) {
-				foreach ($resources['results'] as $resource) {
+			if (!empty($resources['results']))
+			{
+				foreach ($resources['results'] as $resource)
+				{
 					$resource_names[] = $resource['name'];
 				}
 			}
@@ -5101,7 +5197,8 @@ JS;
 		// the branches above are dead. Keep it that way - making the parameter a
 		// reference, or returning it, would put a display date one day past the one the
 		// citizen picked if the bump were applied to the object instead.
-		if ($bound_is_inclusive) {
+		if ($bound_is_inclusive)
+		{
 			$repeat_until_timestamp += 60 * 60 * 24;
 		}
 
@@ -5109,7 +5206,8 @@ JS;
 		$max_iterations = 50; // Safety limit
 
 		// Use allocation wizard's exact loop condition and date calculation
-		while (($max_dato + ($interval_seconds * $i)) <= $repeat_until_timestamp && $i < $max_iterations) {
+		while (($max_dato + ($interval_seconds * $i)) <= $repeat_until_timestamp && $i < $max_iterations)
+		{
 			// Calculate dates using allocation wizard method
 			$fromdate = date('Y-m-d H:i', $from_time->getTimestamp() + ($interval_seconds * $i));
 			$todate = date('Y-m-d H:i', $to_time->getTimestamp() + ($interval_seconds * $i));
@@ -5136,6 +5234,7 @@ JS;
 				'time_display' => $current_from->format('H:i') . ' - ' . $current_to->format('H:i'),
 				'resource_display' => $resource_display,
 				'exists' => false,
+				'has_any_allocation' => false,
 				'allocation_id' => null,
 				'allocation_link' => null,
 				'has_conflict' => false,
@@ -5144,15 +5243,20 @@ JS;
 
 			// Check if allocation exists for this date/time
 			$key = $fromdate . '_' . $todate;
-			if (isset($existing_by_date[$key])) {
+			$preview_item['has_any_allocation'] = isset($any_allocation_by_date[$key]);
+			if (isset($existing_by_date[$key]))
+			{
 				$preview_item['exists'] = true;
 				$preview_item['allocation_id'] = $existing_by_date[$key]['id'];
 				$preview_item['allocation_link'] = self::link(array('menuaction' => 'booking.uiallocation.show', 'id' => $existing_by_date[$key]['id']));
-			} else {
+			}
+			else
+			{
 				// Use direct collision checking like application show page does
 				$collision = $this->bo->so->check_collision($application['resources'], $fromdate, $todate);
 
-				if ($collision) {
+				if ($collision)
+				{
 					$preview_item['has_conflict'] = true;
 
 					// Get detailed conflict information
@@ -5160,7 +5264,8 @@ JS;
 					$conflict_details = array();
 					$conflict_links = array();
 
-					foreach ($conflicts as $conflict) {
+					foreach ($conflicts as $conflict)
+					{
 						$conflict_name = $conflict['name'];
 						$conflict_details[] = $conflict_name;
 						$conflict_links['item_' . count($conflict_links)] = array(
@@ -5175,7 +5280,8 @@ JS;
 					$preview_item['conflict_count'] = count($conflicts);
 
 					// Debug: Force show some test data for debugging
-					if (empty($conflicts)) {
+					if (empty($conflicts))
+					{
 						$preview_item['conflict_details'] = lang('conflict_unknown_detected');
 						$preview_item['conflict_links'] = array(
 							'unknown_item' => array(
@@ -5355,7 +5461,7 @@ JS;
 				$associations = $soassociation->read(array('results' => -1, 'filters' => array('application_id' => $application_id)));
 				foreach ($associations['results'] as $association)
 				{
-					if ($association['active'] === 1 )
+					if ($association['active'] === 1)
 					{
 						$association_object = createObject('booking.so' . $association['type']);
 						$association_item = $association_object->read_single($association['id']);
@@ -5367,10 +5473,10 @@ JS;
 						$association_object->update($association_item);
 					}
 				}
-			
+
 				$application['status'] = 'REJECTED';
 				// add a comment to the application history log
-			
+
 				$this->add_comment($application, $comment);
 				$this->bo->so->update($application);
 				$status = lang('%1 archived as rejected', $application_id);
@@ -5415,7 +5521,6 @@ JS;
 			{
 				$status = lang('%1 already accepted', $application_id);
 			}
-
 		}
 		else
 		{
@@ -5509,7 +5614,8 @@ JS;
 	 */
 	private function sendGroupNotification($application_ids, $primary_application)
 	{
-		try {
+		try
+		{
 			// The case officer's comment is a runtime property (not a DB column).
 			// Prefer the explicit acceptance/rejection message from POST over whatever
 			// ended up on the primary application, because auto-rejection can overwrite
@@ -5521,19 +5627,23 @@ JS;
 
 			// Load all related applications
 			$applications = [];
-			foreach ($application_ids as $app_id) {
+			foreach ($application_ids as $app_id)
+			{
 				$app = $this->bo->read_single($app_id);
-				if ($app) {
-				// Keep the actual status from database (don't override)
-				// Each application may have different status (ACCEPTED, REJECTED, etc.)
-					if ($comment) {
+				if ($app)
+				{
+					// Keep the actual status from database (don't override)
+					// Each application may have different status (ACCEPTED, REJECTED, etc.)
+					if ($comment)
+					{
 						$app['comment'] = $comment;
 					}
 					$applications[] = $app;
 				}
 			}
 
-			if (empty($applications)) {
+			if (empty($applications))
+			{
 				return '';
 			}
 
@@ -5544,8 +5654,9 @@ JS;
 
 			// Return the contact email for logging purposes
 			return $success ? $applications[0]['contact_email'] : '';
-
-		} catch (Exception $e) {
+		}
+		catch (Exception $e)
+		{
 			Cache::message_set("Group notification failed: " . $e->getMessage(), 'error');
 			return '';
 		}
@@ -5559,30 +5670,38 @@ JS;
 	{
 		$conflicts = array();
 
-		if (empty($resources) || !is_array($resources)) {
+		if (empty($resources) || !is_array($resources))
+		{
 			return $conflicts;
 		}
 
 		// Use the new method that returns exact collision details
 		$collision_details = $this->bo->so->get_collision_details($resources, $from_, $to_);
 
-		foreach ($collision_details as $collision) {
+		foreach ($collision_details as $collision)
+		{
 			$time_display = date('H:i', strtotime($collision['from_'])) . ' - ' . date('H:i', strtotime($collision['to_']));
 			$name = $collision['name'];
 
 			// Add specific naming based on type
-			if ($collision['type'] == 'block') {
+			if ($collision['type'] == 'block')
+			{
 				$name = lang('conflict_block') . ' #' . $collision['id'];
-			} elseif ($collision['type'] == 'allocation') {
+			}
+			elseif ($collision['type'] == 'allocation')
+			{
 				// Name is already formatted as "Tildeling (Org Name)" from SQL
 				$name = $collision['name'];
-			} elseif ($collision['type'] == 'event') {
+			}
+			elseif ($collision['type'] == 'event')
+			{
 				$name = ($collision['name'] == lang('conflict_event')) ? lang('conflict_event') . ' #' . $collision['id'] : $collision['name'];
 			}
 
 			// Create appropriate link based on type
 			$link = '';
-			switch ($collision['type']) {
+			switch ($collision['type'])
+			{
 				case 'block':
 					$link = self::link(array('menuaction' => 'booking.uiblock.show', 'id' => $collision['id']));
 					break;
@@ -5617,7 +5736,8 @@ JS;
 			'total_attempted' => 0
 		);
 
-		if (empty($application['recurring_info'])) {
+		if (empty($application['recurring_info']))
+		{
 			return $summary;
 		}
 
@@ -5626,7 +5746,8 @@ JS;
 			? json_decode($application['recurring_info'], true)
 			: $application['recurring_info'];
 
-		if (!$recurring_data || empty($application['dates'])) {
+		if (!$recurring_data || empty($application['dates']))
+		{
 			return $summary;
 		}
 
@@ -5645,15 +5766,18 @@ JS;
 
 		// Get resource names for display
 		$resource_names = array();
-		if (!empty($application['resources'])) {
+		if (!empty($application['resources']))
+		{
 			$resource_bo = createObject('booking.boresource');
 			$resources = $resource_bo->read(array(
 				'filters' => array('id' => $application['resources']),
 				'sort' => 'name',
 				'results' => -1
 			));
-			if (!empty($resources['results'])) {
-				foreach ($resources['results'] as $resource) {
+			if (!empty($resources['results']))
+			{
+				foreach ($resources['results'] as $resource)
+				{
 					$resource_names[] = $resource['name'];
 				}
 			}
@@ -5661,14 +5785,20 @@ JS;
 		$resource_display = implode(', ', $resource_names);
 
 		// Try to create each allocation
-		foreach ($recurring_preview as $preview_item) {
-			// Skip if allocation already exists
-			if ($preview_item['exists']) {
+		foreach ($recurring_preview as $preview_item)
+		{
+			// Skip if the date already has an allocation, active or deactivated. Accept
+			// reactivates the deactivated one, so creating a new row would book the date
+			// twice. This has to stay BEFORE the conflict check below: a date with only a
+			// deactivated allocation can show as a conflict, and must not be listed as failed.
+			if ($preview_item['has_any_allocation'])
+			{
 				continue;
 			}
 
 			// Skip if there are conflicts
-			if ($preview_item['has_conflict']) {
+			if ($preview_item['has_conflict'])
+			{
 				$summary['failed'][] = array(
 					'date' => $preview_item['date_display'],
 					'time' => $preview_item['time_display'],
@@ -5682,9 +5812,12 @@ JS;
 
 			// Resolve organization_id - required field
 			$org_id = null;
-			if (!empty($application['customer_organization_id'])) {
+			if (!empty($application['customer_organization_id']))
+			{
 				$org_id = $application['customer_organization_id'];
-			} elseif (!empty($application['customer_organization_number'])) {
+			}
+			elseif (!empty($application['customer_organization_number']))
+			{
 				$organizations = createObject('booking.soorganization')->read(array(
 					'results' => -1,
 					'filters' => array(
@@ -5692,12 +5825,14 @@ JS;
 						'active' => 1
 					)
 				));
-				if (!empty($organizations['results'][0])) {
+				if (!empty($organizations['results'][0]))
+				{
 					$org_id = $organizations['results'][0]['id'];
 				}
 			}
 
-			if (empty($org_id)) {
+			if (empty($org_id))
+			{
 				$summary['failed'][] = array(
 					'date' => $preview_item['date_display'],
 					'time' => $preview_item['time_display'],
@@ -5739,9 +5874,12 @@ JS;
 				'results' => 1
 			));
 
-			if (!empty($seasons['results'][0])) {
+			if (!empty($seasons['results'][0]))
+			{
 				$allocation['season_id'] = $seasons['results'][0]['id'];
-			} else {
+			}
+			else
+			{
 				// No active season covers this date - skip allocation
 				$summary['failed'][] = array(
 					'date' => $preview_item['date_display'],
@@ -5755,9 +5893,11 @@ JS;
 			}
 
 			// Try to create the allocation
-			try {
+			try
+			{
 				$receipt = $allocation_bo->add($allocation);
-				if ($receipt && !empty($receipt['id'])) {
+				if ($receipt && !empty($receipt['id']))
+				{
 					$summary['created'][] = array(
 						'id' => $receipt['id'],
 						'date' => $preview_item['date_display'],
@@ -5766,7 +5906,9 @@ JS;
 						'from' => $preview_item['from'],
 						'to' => $preview_item['to']
 					);
-				} else {
+				}
+				else
+				{
 					$summary['failed'][] = array(
 						'date' => $preview_item['date_display'],
 						'time' => $preview_item['time_display'],
@@ -5776,7 +5918,9 @@ JS;
 						'to' => $preview_item['to']
 					);
 				}
-			} catch (Exception $e) {
+			}
+			catch (Exception $e)
+			{
 				$summary['failed'][] = array(
 					'date' => $preview_item['date_display'],
 					'time' => $preview_item['time_display'],

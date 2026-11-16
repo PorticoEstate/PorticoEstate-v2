@@ -7,7 +7,7 @@ import {
 	IDocumentCategoryQuery,
 	IDocument
 } from "@/service/types/api.types";
-import {IApplication, GetCommentsResponse, AddCommentRequest, AddCommentResponse, UpdateStatusRequest, UpdateStatusResponse} from "@/service/types/api/application.types";
+import {IApplication, GetCommentsResponse, AddCommentRequest, AddCommentResponse, UpdateStatusRequest, UpdateStatusResponse, IRecurringSeries} from "@/service/types/api/application.types";
 import {getQueryClient} from "@/service/query-client";
 import {ICompletedReservation} from "@/service/types/api/invoices.types";
 import {IEvent, IFreeTimeSlot, IShortEvent, IAPIEvent, IAPIBooking, IAPIAllocation} from "@/service/pecalendar.types";
@@ -24,6 +24,8 @@ import {
 import {IServerMessage} from "@/service/types/api/server-messages.types";
 import {ISearchDataOptimized, ISearchDataTown, ISearchOrganization} from "@/service/types/api/search.types";
 import {IArticle} from "@/service/types/api/order-articles.types";
+import {pendingDeletions} from "@/service/hooks/pending-deletions";
+import {coalesceReads, readPartialApplicationsOverRest} from "@/service/hooks/partial-applications-sync";
 
 
 
@@ -198,6 +200,23 @@ export async function fetchPartialApplications(): Promise<{ list: IApplication[]
     const response = await fetch(url);
     const result = await response.json();
     return result;
+}
+
+const cartReads = new WeakMap<ReturnType<typeof getQueryClient>, () => Promise<void>>();
+
+/**
+ * Reads the cart over REST into the query cache, whatever the WebSocket says. Used after the cart
+ * is changed, and when a WebSocket update cannot be taken as it is (partial-applications-sync.ts).
+ * Calls made while a read is running share one more read (coalesceReads). A failed read leaves the
+ * cart as it is.
+ */
+export function refetchPartialApplicationsViaRest(queryClient: ReturnType<typeof getQueryClient> = getQueryClient()): Promise<void> {
+    let read = cartReads.get(queryClient);
+    if (!read) {
+        read = coalesceReads(() => readPartialApplicationsOverRest(queryClient, fetchPartialApplications, pendingDeletions));
+        cartReads.set(queryClient, read);
+    }
+    return read().catch((error) => console.error('Could not read the cart', error));
 }
 
 
@@ -632,6 +651,41 @@ export async function fetchApplicationScheduleEntities(
 }
 
 /**
+ * Fetch every occurrence of a recurring application, with its status (GH #1392)
+ * @param id The application ID
+ * @param secret Optional secret for external access
+ * @returns The series as the case officer's recurring preview generates it
+ */
+export async function fetchApplicationRecurringSeries(
+    id: number,
+    secret?: string
+): Promise<IRecurringSeries> {
+    const params: Record<string, any> = {};
+
+    if (secret) {
+        params.secret = secret;
+    }
+
+    if (typeof window === 'undefined') {
+        const cookies = require("next/headers").cookies()
+        const sessionCookie = cookies.get('bookingfrontendsession')?.value;
+        if (sessionCookie) {
+            params.bookingfrontendsession = sessionCookie;
+        }
+    }
+
+    const url = phpGWLink(['bookingfrontend', 'applications', id.toString(), 'recurring-series'], params);
+
+    const response = await fetch(url, FetchAuthOptions());
+
+    if (!response.ok) {
+        throw new Error(`Failed to fetch the recurring series of application ${id}`);
+    }
+
+    return response.json();
+}
+
+/**
  * Update the status of an application
  * @param id The application ID
  * @param statusData The status update data
@@ -830,7 +884,6 @@ function deletePartialViaWsStandalone(id: number): Promise<void> {
 }
 
 export async function deletePartialApplication(id: number): Promise<void> {
-    const { pendingDeletions } = require('@/service/hooks/pending-deletions');
     const queryClient = getQueryClient();
     pendingDeletions.add(id);
 
@@ -851,6 +904,7 @@ export async function deletePartialApplication(id: number): Promise<void> {
         try {
             await deletePartialViaWsStandalone(id);
             pendingDeletions.delete(id);
+            refetchPartialApplicationsViaRest(queryClient);
             return;
         } catch {
             // Fall through to REST
@@ -862,7 +916,7 @@ export async function deletePartialApplication(id: number): Promise<void> {
         const result = await response.json();
 
         pendingDeletions.delete(id);
-        queryClient.refetchQueries({queryKey: ['partialApplications']});
+        refetchPartialApplicationsViaRest(queryClient);
         return result;
     } catch (error) {
         pendingDeletions.delete(id);
@@ -870,7 +924,7 @@ export async function deletePartialApplication(id: number): Promise<void> {
         if (currentData) {
             queryClient.setQueryData(['partialApplications'], currentData);
         }
-        queryClient.refetchQueries({queryKey: ['partialApplications']});
+        refetchPartialApplicationsViaRest(queryClient);
         throw error;
     }
 }

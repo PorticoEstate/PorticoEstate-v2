@@ -26,6 +26,11 @@
 	 * @subpackage article
 	 * @version $Id: $
 	 */
+
+	use App\modules\booking\helpers\ArticlePriceInput;
+	use App\modules\booking\repositories\PriceCategoryRepository;
+	use App\modules\phpgwapi\services\Cache;
+
 	phpgw::import_class('phpgwapi.socommon');
 	include_class('booking', 'article_mapping', 'inc/model/');
 
@@ -104,6 +109,7 @@
 			$this->db->transaction_begin();
 
 			$this->set_prizing_defaults($object->get_id());
+			$this->set_prices($object->get_id());
 			$this->set_prizing($object->get_id());
 			parent::update($object);
 
@@ -142,6 +148,163 @@
 
 		}
 
+		/**
+		 * A posted price category (ref #1477): null for none, the id of an
+		 * existing category, or false when it is neither
+		 *
+		 * @return int|null|false
+		 */
+		private function posted_category_id( $posted )
+		{
+			if (!is_string($posted))
+			{
+				return false;
+			}
+			if ($posted === '')
+			{
+				return null;
+			}
+			if (!ctype_digit($posted) || !(new PriceCategoryRepository())->exists((int)$posted))
+			{
+				return false;
+			}
+			return (int)$posted;
+		}
+
+		/**
+		 * Change the price, date, remark and category of prices already
+		 * stored. The page names a field only once it is edited, so only
+		 * edited fields are posted, and a field posted as it already reads is
+		 * left alone. A row with an invalid price, date or category is not
+		 * changed at all.
+		 *
+		 * Runs after set_prizing_defaults(), so a row ticked for deletion is
+		 * gone and its edits are dropped.
+		 */
+		private function set_prices( $article_mapping_id )
+		{
+			$article_prices = Sanitizer::get_var('article_prices');
+
+			if (empty($article_prices) || !is_array($article_prices))
+			{
+				return;
+			}
+
+			// The page only offers a category once the migration that adds them has run
+			$with_categories = PriceCategoryRepository::isInstalled();
+
+			$refused = array();
+			foreach ($article_prices as $price_id => $posted)
+			{
+				$price_id = (int)$price_id;
+				if (!is_array($posted))
+				{
+					continue;
+				}
+
+				$this->db->query('SELECT price, from_, remark' . ($with_categories ? ', category_id' : '') . ' FROM bb_article_price'
+					. " WHERE id = {$price_id} AND article_mapping_id = " . (int)$article_mapping_id, __LINE__, __FILE__);
+
+				if (!$this->db->next_record())
+				{
+					continue;
+				}
+
+				$stored_cents	 = ArticlePriceInput::parseCents((string)$this->db->f('price'));
+				$stored_date	 = substr((string)$this->db->f('from_'), 0, 10);
+				$stored_remark	 = $this->db->f('remark', true);
+				$stored_category = $with_categories && $this->db->f('category_id') !== '' ? (int)$this->db->f('category_id') : null;
+
+				// A field posted as anything but text is no price, date or remark
+				$value_set	 = array();
+				$valid		 = count(array_filter($posted, 'is_string')) === count($posted);
+
+				if (!$valid)
+				{
+					$refused[] = $price_id;
+					continue;
+				}
+
+				if (array_key_exists('price', $posted))
+				{
+					$cents = ArticlePriceInput::parseCents($posted['price']);
+					if ($cents === null)
+					{
+						$valid = false;
+					}
+					else if ($cents !== $stored_cents)
+					{
+						$value_set['price'] = ArticlePriceInput::format($cents);
+					}
+				}
+
+				if (array_key_exists('from_', $posted))
+				{
+					$date = ArticlePriceInput::parseDate($posted['from_']);
+					if ($date === null)
+					{
+						$valid = false;
+					}
+					else if ($date !== $stored_date)
+					{
+						$value_set['from_'] = $date;
+					}
+				}
+
+				// The page shows the remark decoded, and a remark posted back as
+				// shown does not always encode to the bytes it was stored as. So
+				// the post is compared with what was shown, cleaned the way the
+				// post was
+				if (array_key_exists('remark', $posted))
+				{
+					$remark = (string)$posted['remark'];
+					if ($remark !== Sanitizer::clean_value($stored_remark))
+					{
+						$value_set['remark'] = $remark;
+					}
+				}
+
+				if ($with_categories && array_key_exists('category_id', $posted))
+				{
+					$category_id = $this->posted_category_id($posted['category_id']);
+					if ($category_id === false)
+					{
+						$valid = false;
+					}
+					else if ($category_id !== $stored_category)
+					{
+						$value_set['category_id'] = $category_id;
+					}
+				}
+
+				if (!$valid)
+				{
+					$refused[] = $price_id;
+					continue;
+				}
+
+				if (!$value_set)
+				{
+					continue;
+				}
+
+				// Each value goes in as set_prizing() inserts it
+				$set = array();
+				foreach ($value_set as $field => $value)
+				{
+					$set[] = "{$field} = " . $this->db->validate_insert(array($value));
+				}
+
+				$this->db->query('UPDATE bb_article_price SET ' . implode(', ', $set)
+					. " WHERE id = {$price_id} AND article_mapping_id = " . (int)$article_mapping_id, __LINE__, __FILE__);
+			}
+
+			if ($refused)
+			{
+				Cache::message_set(lang('price_row_invalid_not_saved', implode(', ', $refused)), 'error');
+			}
+		}
+
 		private function set_prizing( $article_mapping_id )
 		{
 			$article_prizing = Sanitizer::get_var('article_prizing');
@@ -152,17 +315,39 @@
 			}
 
 			$date_from	 = phpgwapi_datetime::date_to_timestamp($article_prizing['date_from']);
-			$price		 = floatval(str_replace(',', '.', str_replace('.', '', $article_prizing['price'])));
+			$price_cents = ArticlePriceInput::parseCents($article_prizing['price']);
 
-			if (($price || $price == 0) && $date_from)
+			if ($price_cents === null)
+			{
+				Cache::message_set(lang('price_invalid_not_saved'), 'error');
+				return;
+			}
+
+			// The page only offers a category once the migration that adds them has run
+			$category_id = null;
+			if (array_key_exists('category_id', $article_prizing) && PriceCategoryRepository::isInstalled())
+			{
+				$category_id = $this->posted_category_id($article_prizing['category_id']);
+				if ($category_id === false)
+				{
+					Cache::message_set(lang('price_category_unknown_not_saved'), 'error');
+					return;
+				}
+			}
+
+			if ($date_from)
 			{
 				$value_set = array
 					(
 					'article_mapping_id' => $article_mapping_id,
-					'price'				 => $price,
+					'price'				 => ArticlePriceInput::format($price_cents),
 					'from_'				 => date('Y-m-d', $date_from),
 					'remark'			 => $article_prizing['remark'],
 				);
+				if ($category_id !== null)
+				{
+					$value_set['category_id'] = $category_id;
+				}
 
 				$this->db->query('INSERT INTO bb_article_price (' . implode(',', array_keys($value_set)) . ') VALUES ('
 					. $this->db->validate_insert(array_values($value_set)) . ')', __LINE__, __FILE__);
@@ -191,9 +376,29 @@
 					'remark'			 => $this->db->f('remark', true),
 					'active'			 => $this->db->f('active'),
 					'default_'			 => $this->db->f('default_'),
+					// Empty both without a category and before the migration that adds them
+					'category_id'		 => $this->db->f('category_id') !== '' ? (int)$this->db->f('category_id') : null,
 				);
 			}
 			return $pricing;
+		}
+
+		/**
+		 * The VAT rate of every tax code, keyed by code; null where the code
+		 * has no rate
+		 */
+		public function get_tax_percentages()
+		{
+			$percentages = array();
+
+			$this->db->query('SELECT id, percent_ FROM fm_ecomva', __LINE__, __FILE__);
+
+			while ($this->db->next_record())
+			{
+				$percent = $this->db->f('percent_');
+				$percentages[(int)$this->db->f('id')] = ($percent === null || $percent === '') ? null : (int)$percent;
+			}
+			return $percentages;
 		}
 
 		/**

@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="{{ language }}">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>{{ lang('Info skjerm - ressursvelger') }}</title>
+	<style>{{ source('@views/information_screen/bookingfrontend_information_screen.css') }}</style>
+</head>
+<body>
+	<main id="information-screen-picker"
+		data-building-search-url="{{ building_search_url }}"
+		data-resource-list-url="{{ resource_list_url }}"
+		data-information-screen-url="{{ information_screen_url }}"
+		data-searching-buildings="{{ lang('Searching for buildings') }}"
+		data-no-buildings="{{ lang('No buildings found') }}"
+		data-select-building="{{ lang('Select a building to see its resources') }}"
+		data-loading-resources="{{ lang('Loading resources') }}"
+		data-no-resources="{{ lang('No active resources found for this building') }}"
+		data-load-error="{{ lang('Could not load data. Please try again') }}"
+		data-link-copied="{{ lang('Link copied') }}"
+		data-copy-error="{{ lang('Could not copy the link') }}"
+		data-remove-resource="{{ lang('Remove selected resource') }}">
+		<header class="information-screen-picker__header">
+			<h1>{{ lang('Info skjerm - ressursvelger') }}</h1>
+			<p>{{ lang('Choose a building and the resources to show on your information screen. Copy the generated link to save it as a shortcut.') }}</p>
+			<p>{{ lang('You can add resources from several buildings. Previous selections are kept when you search for another building.') }}</p>
+		</header>
+
+		<div class="information-screen-picker__field">
+			<label for="information-screen-building-search">{{ lang('Search for a building') }}</label>
+			<input id="information-screen-building-search" type="search" autocomplete="off" minlength="2" maxlength="200"
+				aria-controls="information-screen-building-results"
+				placeholder="{{ lang('Type at least two characters') }}">
+			<ul id="information-screen-building-results" class="information-screen-picker__results" hidden></ul>
+		</div>
+
+		<section id="information-screen-resource-panel" class="information-screen-picker__resources" aria-labelledby="information-screen-building-name" hidden>
+			<h2 id="information-screen-building-name"></h2>
+			<div class="information-screen-picker__field">
+				<label for="information-screen-resource-search">{{ lang('Filter resources') }}</label>
+				<input id="information-screen-resource-search" type="search" autocomplete="off" placeholder="{{ lang('Search resources') }}">
+			</div>
+			<div id="information-screen-resource-list" class="information-screen-picker__resource-list"></div>
+		</section>
+
+		<section id="information-screen-selection-panel" class="information-screen-picker__selection" aria-labelledby="information-screen-selection-heading" hidden>
+			<h2 id="information-screen-selection-heading">{{ lang('Selected resources') }}</h2>
+			<ul id="information-screen-selection-list"></ul>
+		</section>
+
+		<div class="information-screen-picker__field">
+			<label for="information-screen-days">{{ lang('Days to display') }}</label>
+			<select id="information-screen-days">
+				<option value="2">{{ lang('Whole week') }}</option>
+				<option value="0">{{ lang('Weekdays') }}</option>
+				<option value="1">{{ lang('Weekend') }}</option>
+				<option value="3">{{ lang('Today') }}</option>
+			</select>
+		</div>
+
+		<p id="information-screen-picker-status" class="information-screen-picker__status" role="status">
+			{{ lang('Select a building to see its resources') }}
+		</p>
+
+		<section id="information-screen-link-panel" class="information-screen-picker__link-panel" aria-label="{{ lang('Link to the information screen') }}" hidden>
+			<label for="information-screen-link">{{ lang('Link to the information screen') }}</label>
+			<input id="information-screen-link" type="url" readonly>
+			<div class="information-screen-picker__actions">
+				<a id="information-screen-open-link" class="information-screen-picker__button" target="_blank" rel="noopener" hidden>
+					{{ lang('Open information screen') }}
+				</a>
+				<button id="information-screen-copy-link" class="information-screen-picker__button information-screen-picker__button--secondary" type="button" disabled>
+					{{ lang('Copy link') }}
+				</button>
+			</div>
+		</section>
+		<noscript>{{ lang('JavaScript is required to configure the information screen') }}</noscript>
+	</main>
+	<script>{{ source('@views/information_screen/bookingfrontend_information_screen.js') }}</script>
+</body>
+</html>

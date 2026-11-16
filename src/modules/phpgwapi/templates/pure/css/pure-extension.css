@@ -30,6 +30,18 @@ https://github.com/yui/pure/blob/master/LICENSE.md
 .custom-container {
 	display:inline-block;
 	vertical-align: top;
+	max-width: 100%;
+}
+
+.pure-form-aligned .pure-custom {
+	max-width: 100%;
+}
+
+/* Wrapped around inline .pure-table elements by phpgwapi/js/core/base.js. */
+.pure-table-scroll {
+	max-width: 100%;
+	overflow-x: auto;
+	-webkit-overflow-scrolling: touch;
 }
 
 .custom-label {
@@ -232,6 +244,18 @@ ul#audience {list-style: none;padding-left: 10px;}
         font-size: 0.75em;
         /* Increased bottom padding to make it group with its related input element. */
         padding: 0.2em 0 0.8em;
+    }
+
+    .r-tabs .r-tabs-panel {
+        padding: 0.5em;
+    }
+
+    .pure-form-aligned .pure-control-group {
+        overflow-wrap: anywhere;
+    }
+
+    .pure-table-scroll .pure-table {
+        overflow-wrap: normal;
     }
 }
 

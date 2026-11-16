@@ -440,4 +440,61 @@ document.addEventListener('DOMContentLoaded', function() {
 		autoResizeTextarea(textarea);
 	});
 });
+
+(function ()
+{
+	var unscrollableAncestors = '.pure-table-scroll, .dataTables_wrapper, .dt-container, .table-responsive, #submitbox';
+
+	function wrapPureTable(table)
+	{
+		var parent = table.parentNode;
+		if (!parent || table.parentElement.closest(unscrollableAncestors))
+		{
+			return;
+		}
+
+		// createTable() removes and re-adds tables; reuse the wrapper left behind.
+		var wrapper = Array.prototype.find.call(parent.children, function (child)
+		{
+			return child.classList.contains('pure-table-scroll') && !child.firstChild;
+		});
+		if (!wrapper)
+		{
+			wrapper = document.createElement('div');
+			wrapper.className = 'pure-table-scroll';
+		}
+		parent.insertBefore(wrapper, table);
+		wrapper.appendChild(table);
+	}
+
+	function wrapPureTables(root)
+	{
+		if (root.matches && root.matches('table.pure-table'))
+		{
+			wrapPureTable(root);
+		}
+		if (root.querySelectorAll)
+		{
+			root.querySelectorAll('table.pure-table').forEach(wrapPureTable);
+		}
+	}
+
+	document.addEventListener('DOMContentLoaded', function ()
+	{
+		wrapPureTables(document.body);
+		new MutationObserver(function (mutations)
+		{
+			mutations.forEach(function (mutation)
+			{
+				mutation.addedNodes.forEach(function (node)
+				{
+					if (node.nodeType === Node.ELEMENT_NODE)
+					{
+						wrapPureTables(node);
+					}
+				});
+			});
+		}).observe(document.body, {childList: true, subtree: true});
+	});
+})();
  	

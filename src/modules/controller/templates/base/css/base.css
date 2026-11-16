@@ -2655,3 +2655,14 @@ p.no_items_msg {
 #democollapseBtn[hidden] {
   display: none !important;
 }
+/* Calendar planner month view: Bootstrap's .table top-aligns cells and its flex .card clears
+   the floated day number. Do the same in every template set so cards are not hidden under the
+   number and dropped cards stay at the top of the (often very tall) day cell. */
+.table-hover-cells > tbody > tr.target_row > th,
+.table-hover-cells > tbody > tr.target_row > td {
+  vertical-align: top;
+}
+
+.target_row .event {
+  clear: both;
+}

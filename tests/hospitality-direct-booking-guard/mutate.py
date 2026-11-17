@@ -2,11 +2,14 @@
 """
 Mutation check for tests/hospitality-direct-booking-guard/run.php.
 
-  python3 tests/hospitality-direct-booking-guard/mutate.py
+  python3 tests/hospitality-direct-booking-guard/mutate.py            # one line per mutant
+  python3 tests/hospitality-direct-booking-guard/mutate.py --rows     # ... and, under it, every row that mutant turns RED, by name
+  python3 tests/hospitality-direct-booking-guard/mutate.py --rows M59 M65   # only these mutants (ids as printed)
 
 A green harness proves nothing until it is shown to go RED. This copies HospitalityDirectBookingGuard,
-breaks ONE rule in the copy, runs the harness against the copy (GUARD_FILE, or CONTROLLER_FILE for a
-mutant of HospitalityController), and requires that:
+breaks ONE rule in the copy, runs the harness against the copy (GUARD_FILE, CONTROLLER_FILE for a
+mutant of HospitalityController, MODEL_FILE for the Hospitality model, ORDER_REPOSITORY_FILE for the order
+repository), and requires that:
   1. the mutation text was really found exactly once (a mutation that did not apply would "survive"),
   2. the harness exits 1,
   3. the row(s) that are MEANT to catch this mutant are among the failures.
@@ -23,11 +26,12 @@ ROOT = os.path.abspath(os.path.join(HERE, "..", ".."))
 GUARD = os.path.join(ROOT, "src/modules/booking/services/HospitalityDirectBookingGuard.php")
 CONTROLLER = os.path.join(ROOT, "src/modules/booking/controllers/HospitalityController.php")
 ORDER_REPOSITORY = os.path.join(ROOT, "src/modules/booking/repositories/HospitalityOrderRepository.php")
+MODEL = os.path.join(ROOT, "src/modules/booking/models/Hospitality.php")
 PHP = shutil.which("php") or "php"
 T = "\t"  # the controller is indented with tabs; its mutants spell that out
 
-# (id, description, old text, new text, row-name fragments that MUST fail[, "controller" / "orderrepo" when the mutant is of
-# HospitalityController / HospitalityOrderRepository instead of the guard])
+# (id, description, old text, new text, row-name fragments that MUST fail[, "controller" / "orderrepo" / "model" when the mutant is of
+# HospitalityController / HospitalityOrderRepository / the Hospitality model instead of the guard])
 MUTANTS = [
     ("M1", "resource side: an OWN link is ignored",
      "        foreach ($linkRows as $row) {\n            if ((int)($row['hospitality_active'] ?? 0) !== 1) {",
@@ -271,19 +275,146 @@ MUTANTS = [
     ("M57", "order repository: 'not started yet' is judged in the database session's zone, not as naive UTC",
      "serving_time_iso > (now() AT TIME ZONE 'UTC'))", "serving_time_iso > now())",
      ['q/"open" compares with the current time as naive UTC'], "orderrepo"),
+    ("M58", "order repository: an order is open while its serving time is in the PAST (`<`, mutant OM6 of fact 45960)",
+     "serving_time_iso > (now() AT TIME ZONE 'UTC'))", "serving_time_iso < (now() AT TIME ZONE 'UTC'))",
+     ['q/"open" means the serving time is still AHEAD'], "orderrepo"),
+
+    # ── the offer description: at most 70 Unicode code points (the model), judged by store() and update() (the controller) ─────
+    # The rule is one statement; each mutant replaces it whole.
+    ("M59", "description: bytes instead of code points (`strlen` for `mb_strlen`: ae-oe-aa and an emoji count 2 and 4)",
+     "return is_string($description) && mb_strlen($description, 'UTF-8') > self::DESCRIPTION_MAX_LENGTH;",
+     "return is_string($description) && strlen($description) > self::DESCRIPTION_MAX_LENGTH;",
+     ['desc/update 70 code points of ae-oe-aa (140 bytes)', 'desc/store 70 code points of ae-oe-aa (140 bytes)',
+      'desc/update 70 x emoji (70 code points, 280 bytes)', 'desc/store 70 x emoji (70 code points, 280 bytes)'], "model"),
+    ("M60", "description: `>=` 70, so the 70th code point is already too long",
+     "return is_string($description) && mb_strlen($description, 'UTF-8') > self::DESCRIPTION_MAX_LENGTH;",
+     "return is_string($description) && mb_strlen($description, 'UTF-8') >= self::DESCRIPTION_MAX_LENGTH;",
+     ['desc/update 70 x "a" (the limit)', 'desc/store 70 x "a" (the limit)'], "model"),
+    ("M61", "description: the text is trimmed before it is counted",
+     "return is_string($description) && mb_strlen($description, 'UTF-8') > self::DESCRIPTION_MAX_LENGTH;",
+     "return is_string($description) && mb_strlen(trim($description), 'UTF-8') > self::DESCRIPTION_MAX_LENGTH;",
+     ['desc/update 70 x "a" + a trailing space = 71 (no trim)', 'desc/update a leading space + 70 x "a" = 71 (no trim)',
+      'desc/update 70 x "a" + a trailing newline = 71 (no trim)', 'desc/update 71 spaces (a trim would make it empty)'], "model"),
+    ("M62", "description: graphemes instead of code points (a combining mark does not count on its own)",
+     "return is_string($description) && mb_strlen($description, 'UTF-8') > self::DESCRIPTION_MAX_LENGTH;",
+     "return is_string($description) && preg_match_all('/\\X/u', $description) > self::DESCRIPTION_MAX_LENGTH;",
+     ['desc/update 70 x "a" + a combining acute = 71 code points (70 graphemes)',
+      'desc/update 36 x decomposed e-acute = 72 code points (36 graphemes)'], "model"),
+    ("M63", "description: NULL and the empty string are refused",
+     "return is_string($description) && mb_strlen($description, 'UTF-8') > self::DESCRIPTION_MAX_LENGTH;",
+     "return $description === null || $description === '' || (is_string($description) && mb_strlen($description, 'UTF-8') > self::DESCRIPTION_MAX_LENGTH);",
+     ['desc/update NULL', 'desc/store NULL', 'desc/update the empty string', 'desc/store the empty string'], "model"),
+    ("M64", "description: a non-string, non-null value is refused too (the pinned current behaviour flips)",
+     "return is_string($description) && mb_strlen($description, 'UTF-8') > self::DESCRIPTION_MAX_LENGTH;",
+     "return is_string($description) ? mb_strlen($description, 'UTF-8') > self::DESCRIPTION_MAX_LENGTH : $description !== null;",
+     ['desc/update pinned, see RECORD 45803: a non-string description (int 5)', 'desc/store pinned, see RECORD 45803: a non-string description (int 5)',
+      'desc/update pinned, see RECORD 45803: a non-string description (an empty array)'], "model"),
+    ("M65", "description: update() judges the STORED description when the body does not carry one",
+     T*3 + "if (array_key_exists('resource_id', $body) && !$this->repository->resourceExists($body['resource_id'])) {\n"
+       + T*4 + "return $this->refuseResourceId($response, 'unknown_resource');\n" + T*3 + "}\n\n" + T*3 + "if (self::descriptionRefused($body)) {",
+     T*3 + "if (array_key_exists('resource_id', $body) && !$this->repository->resourceExists($body['resource_id'])) {\n"
+       + T*4 + "return $this->refuseResourceId($response, 'unknown_resource');\n" + T*3 + "}\n\n"
+       + T*3 + "if (self::descriptionRefused($body + ['description' => $existing['description'] ?? null])) {",
+     ['desc/update a name-only PUT on an offer whose STORED description is 128 code points'], "controller"),
+    ("M66", "description: store() does not judge the description at all",
+     T*3 + "if (self::descriptionRefused($body)) {\n" + T*4 + "return $this->refuseDescriptionTooLong($response);\n" + T*3 + "}\n\n"
+       + T*3 + "// A resource with direct booking cannot be linked to hospitality (operator 2026-11-11).",
+     T*3 + "// A resource with direct booking cannot be linked to hospitality (operator 2026-11-11).",
+     ['desc/store 71 x "a" (one over)', 'desc/store 71 x emoji (71 code points)'], "controller"),
+    ("M67", "description: update() does not judge the description at all",
+     T*3 + "if (self::descriptionRefused($body)) {\n" + T*4 + "return $this->refuseDescriptionTooLong($response);\n" + T*3 + "}\n\n"
+       + T*3 + "// Moving the hospitality to a resource, or re-activating it, links resources to it again:",
+     T*3 + "// Moving the hospitality to a resource, or re-activating it, links resources to it again:",
+     ['desc/update 71 x "a" (one over)', 'desc/update 71 x emoji (71 code points)'], "controller"),
+    ("M68", "refusal order swapped: update() judges the description BEFORE reading resource_id",
+     "$body = $request->getParsedBody() ?? json_decode($request->getBody()->getContents(), true) ?? [];\n\n"
+       + T*3 + "// resource_id and active are each read ONCE",
+     "$body = $request->getParsedBody() ?? json_decode($request->getBody()->getContents(), true) ?? [];\n\n"
+       + T*3 + "if (self::descriptionRefused($body)) {\n" + T*4 + "return $this->refuseDescriptionTooLong($response);\n" + T*3 + "}\n\n"
+       + T*3 + "// resource_id and active are each read ONCE",
+     ['combo/update a bad resource_id AND a 71-character description'], "controller"),
+    ("M69", "refusal order swapped: store() judges the description BEFORE reading resource_id",
+     T*4 + "return $response->withHeader('Content-Type', 'application/json')->withStatus(400);\n" + T*3 + "}\n\n"
+       + T*3 + "// resource_id and active are each read ONCE",
+     T*4 + "return $response->withHeader('Content-Type', 'application/json')->withStatus(400);\n" + T*3 + "}\n\n"
+       + T*3 + "if (self::descriptionRefused($body)) {\n" + T*4 + "return $this->refuseDescriptionTooLong($response);\n" + T*3 + "}\n\n"
+       + T*3 + "// resource_id and active are each read ONCE",
+     ['combo/store a bad resource_id AND a 71-character description'], "controller"),
+
+    # ── Q1 and Q2 of the main resource, run through update() ─────────────────────────────────────────────────────────────────
+    ("M70", "Q1/Q2: a refusal is computed and never returned, so the write happens (OM4 of fact 45960)",
+     "if ($refusal !== null) {\n" + T*5 + "return $this->refuse($response, $refusal);",
+     "if ($refusal !== null && false) {\n" + T*5 + "return $this->refuse($response, $refusal);",
+     ['move/Q1 a main move with open orders at the old main', 'move/Q2 a move onto an active delivery location'], "controller"),
+    ("M71", "Q1: the refusal is computed and thrown away, Q2's is still returned",
+     "$this->mainIsRemoteLocationRefusal($existing, $body['resource_id'])\n" + T*5 + "?? $this->openOrdersAtMainRefusal($existing);",
+     "$this->mainIsRemoteLocationRefusal($existing, $body['resource_id']);\n" + T*4 + "$this->openOrdersAtMainRefusal($existing); // computed, not returned",
+     ['move/Q1 a main move with open orders at the old main'], "controller"),
+    ("M72", "Q2 (the new main is an active delivery location) is skipped",
+     "$this->mainIsRemoteLocationRefusal($existing, $body['resource_id'])\n" + T*5 + "?? $this->openOrdersAtMainRefusal($existing);",
+     "$this->openOrdersAtMainRefusal($existing);",
+     ['move/Q2 a move onto an active delivery location', 'move/Q2 wins over Q1 when both apply'], "controller"),
+    ("M73", "Q1 is asked AFTER the write: the move is saved, and the refusal comes back for a row that has already changed",
+     T*4 + "$refusal = $this->mainIsRemoteLocationRefusal($existing, $body['resource_id'])\n" + T*5 + "?? $this->openOrdersAtMainRefusal($existing);\n"
+       + T*4 + "if ($refusal !== null) {\n" + T*5 + "return $this->refuse($response, $refusal);\n" + T*4 + "}\n" + T*3 + "}\n\n"
+       + T*3 + "$accountId = (int)$this->userSettings['account_id'];\n" + T*3 + "$body['modified_by'] = $accountId;\n\n"
+       + T*3 + "$this->repository->update($id, $body);\n",
+     T*4 + "$refusal = $this->mainIsRemoteLocationRefusal($existing, $body['resource_id']);\n"
+       + T*4 + "if ($refusal !== null) {\n" + T*5 + "return $this->refuse($response, $refusal);\n" + T*4 + "}\n" + T*3 + "}\n\n"
+       + T*3 + "$accountId = (int)$this->userSettings['account_id'];\n" + T*3 + "$body['modified_by'] = $accountId;\n\n"
+       + T*3 + "$this->repository->update($id, $body);\n"
+       + T*3 + "if ($mainResourceChanged) {\n" + T*4 + "$refusal = $this->openOrdersAtMainRefusal($existing);\n"
+       + T*4 + "if ($refusal !== null) {\n" + T*5 + "return $this->refuse($response, $refusal);\n" + T*4 + "}\n" + T*3 + "}\n",
+     ['move/Q1 a main move with open orders at the old main'], "controller"),
+    ("M74", "refusal order swapped: Q1 (open orders) is asked before Q2 (delivery location)",
+     "$this->mainIsRemoteLocationRefusal($existing, $body['resource_id'])\n" + T*5 + "?? $this->openOrdersAtMainRefusal($existing);",
+     "$this->openOrdersAtMainRefusal($existing)\n" + T*5 + "?? $this->mainIsRemoteLocationRefusal($existing, $body['resource_id']);",
+     ['move/Q2 wins over Q1 when both apply'], "controller"),
+    ("M75", "Q1 counts the orders at the hospitality's own id instead of the old main resource (OM5 of fact 45960)",
+     "$open = $this->orderRepository->countOpenAtLocation((int)$existing['id'], (int)$existing['resource_id']);",
+     "$open = $this->orderRepository->countOpenAtLocation((int)$existing['id'], (int)$existing['id']);",
+     ['move/Q1 a main move with open orders at the old main', 'move/Q1 counts the open orders of THIS hospitality at the OLD main'], "controller"),
+    ("M76", "Q1 and Q2 are asked BEFORE the direct-booking guard (a move to a direct-booking resource answers with the wrong refusal)",
+     T*3 + "$refusal = $this->directBookingGuard->checkHospitalityUpdate($existing, $body);\n"
+       + T*3 + "if ($refusal !== null) {\n" + T*4 + "return $this->refuseDirectBookingConflict($response, $refusal);\n" + T*3 + "}\n\n"
+       + T*3 + "// A real move of the main resource (the key may also arrive unchanged, from a client that sends the whole\n"
+       + T*3 + "// row). Two rulings by the operator, each in one method: see openOrdersAtMainRefusal() and\n"
+       + T*3 + "// mainIsRemoteLocationRefusal().\n"
+       + T*3 + "$mainResourceChanged = array_key_exists('resource_id', $body) && $body['resource_id'] !== (int)$existing['resource_id'];\n"
+       + T*3 + "if ($mainResourceChanged) {\n"
+       + T*4 + "$refusal = $this->mainIsRemoteLocationRefusal($existing, $body['resource_id'])\n" + T*5 + "?? $this->openOrdersAtMainRefusal($existing);\n"
+       + T*4 + "if ($refusal !== null) {\n" + T*5 + "return $this->refuse($response, $refusal);\n" + T*4 + "}\n" + T*3 + "}\n",
+     T*3 + "$mainResourceChanged = array_key_exists('resource_id', $body) && $body['resource_id'] !== (int)$existing['resource_id'];\n"
+       + T*3 + "if ($mainResourceChanged) {\n"
+       + T*4 + "$refusal = $this->mainIsRemoteLocationRefusal($existing, $body['resource_id'])\n" + T*5 + "?? $this->openOrdersAtMainRefusal($existing);\n"
+       + T*4 + "if ($refusal !== null) {\n" + T*5 + "return $this->refuse($response, $refusal);\n" + T*4 + "}\n" + T*3 + "}\n"
+       + T*3 + "$refusal = $this->directBookingGuard->checkHospitalityUpdate($existing, $body);\n"
+       + T*3 + "if ($refusal !== null) {\n" + T*4 + "return $this->refuseDirectBookingConflict($response, $refusal);\n" + T*3 + "}\n",
+     ['move/the direct-booking guard speaks before Q2 and Q1'], "controller"),
+    ("M77", "a move of the main resource is detected the wrong way round (`===`: a real move is a no-change, a no-change is a move; OM2 of fact 45960)",
+     "$body['resource_id'] !== (int)$existing['resource_id'];", "$body['resource_id'] === (int)$existing['resource_id'];",
+     ['move/Q1 a main move with open orders at the old main', 'move/no main change, the same resource_id (int) sent back with the rest of the row'], "controller"),
 ]
 
 
-def run(guard_file, controller_file=CONTROLLER, order_repository_file=ORDER_REPOSITORY):
+def run(guard_file, controller_file=CONTROLLER, order_repository_file=ORDER_REPOSITORY, model_file=MODEL):
     env = dict(os.environ)
     env["GUARD_FILE"] = guard_file
     env["CONTROLLER_FILE"] = controller_file
     env["ORDER_REPOSITORY_FILE"] = order_repository_file
+    env["MODEL_FILE"] = model_file
     p = subprocess.run([PHP, os.path.join(HERE, "run.php")], env=env, capture_output=True, text=True)
     return p.returncode, p.stdout + p.stderr
 
 
 def main():
+    args = sys.argv[1:]
+    show_rows = "--rows" in args
+    only = {a for a in args if not a.startswith("--")}
+    unknown = only - {m[0] for m in MUTANTS}
+    if unknown:
+        print(f"UNKNOWN MUTANT ID(S) {sorted(unknown)}: nothing was run")
+        return 1
     tmp = tempfile.mkdtemp(prefix="hdbg-mut-")
     bad = 0
     try:
@@ -293,6 +424,8 @@ def main():
             original_controller = fh.read()
         with open(ORDER_REPOSITORY, encoding="utf-8") as fh:
             original_order_repository = fh.read()
+        with open(MODEL, encoding="utf-8") as fh:
+            original_model = fh.read()
 
         base = os.path.join(tmp, "baseline.php")
         with open(base, "w", encoding="utf-8") as fh:
@@ -307,8 +440,10 @@ def main():
             return 1
 
         for mid, desc, old, new, must_fail, *target in MUTANTS:
+            if only and mid not in only:
+                continue
             kind = target[0] if target else "guard"
-            source = {"guard": original, "controller": original_controller, "orderrepo": original_order_repository}[kind]
+            source = {"guard": original, "controller": original_controller, "orderrepo": original_order_repository, "model": original_model}[kind]
             count = source.count(old)
             if count != 1:
                 print(f"{mid:4} NOT APPLIED ({count} matches) - {desc}")
@@ -326,6 +461,8 @@ def main():
                 rc, out = run(base, path)
             elif kind == "orderrepo":
                 rc, out = run(base, base_controller, path)
+            elif kind == "model":
+                rc, out = run(base, base_controller, ORDER_REPOSITORY, path)
             else:
                 rc, out = run(path, base_controller)
             failed = [l for l in out.splitlines() if l.startswith("FAIL")]
@@ -338,6 +475,9 @@ def main():
                 bad += 1
             else:
                 print(f"{mid:4} killed on {len(failed)} row(s), incl. the intended ones - {desc}")
+            if show_rows:
+                for line in failed:
+                    print("       RED  " + line[len("FAIL ["):].split("] got ", 1)[0])
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
 

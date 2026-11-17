@@ -17,7 +17,22 @@
  *
  * GUARD_FILE and CONTROLLER_FILE (optional) point at alternative copies of the guard and of
  * HospitalityController — used by mutate.py to prove that each deliberately broken copy turns THIS
- * harness red on the row that is meant to catch it.
+ * harness red on the row that is meant to catch it. MODEL_FILE does the same for the Hospitality model
+ * (the 70-code-point description rule lives there) and ORDER_REPOSITORY_FILE for the order repository
+ * (read as text only: the controller rows below answer Q1's count from a double).
+ *
+ * The last block drives store() and update() of the REAL controller, guard and model, end to end:
+ *   - the offer description rule (at most 70 Unicode code points, f1998b27b),
+ *   - the two main-resource rulings Q1 (open orders at the old main) and Q2 (the new main is an active
+ *     delivery location), e929f56d8,
+ *   - the order the refusals are asked in.
+ * Doubles stand in ONLY for what reaches outside the process: the two repositories (no database; they
+ * answer from an array and RECORD every write), the guard's database (an in-memory SQLite: the guard's own
+ * lookups run on it), Acl::check(), the WebSocket fork and lang(). Those rows need vendor/ for the Slim
+ * PSR-7 request and response: VENDOR_AUTOLOAD, or
+ * <root>/vendor/autoload.php (an export has no vendor/: ln -s <checkout>/vendor <export>/vendor). The code
+ * under test is loaded from <root>/src through a loader of its own, never from the vendor autoloader's
+ * App\ mapping (in an export that points at the served tree); a control row checks it.
  *
  *   php tests/hospitality-direct-booking-guard/run.php --pg-oracle | docker exec -i portico_postgres \
  *       psql -U postgres -d portico_ebe -v ON_ERROR_STOP=1 -f -
@@ -32,8 +47,13 @@ $root = dirname(__DIR__, 2);
 require_once getenv('GUARD_FILE') ?: $root . '/src/modules/booking/services/HospitalityDirectBookingGuard.php';
 require_once getenv('CONTROLLER_FILE') ?: $root . '/src/modules/booking/controllers/HospitalityController.php';
 
+use App\Database\Db;
 use App\modules\booking\controllers\HospitalityController;
+use App\modules\booking\models\Hospitality;
+use App\modules\booking\repositories\HospitalityOrderRepository;
+use App\modules\booking\repositories\HospitalityRepository;
 use App\modules\booking\services\HospitalityDirectBookingGuard as G;
+use App\modules\phpgwapi\security\Acl;
 
 const PAST = 1745413200;       // 2025-04-23, resource 93's real direct_booking
 const FUTURE = 4102444800;     // 2100-01-01: still in the future for the life of this harness
@@ -489,6 +509,371 @@ $openFn = substr($orderRepositorySource, (int)strpos($orderRepositorySource, 'fu
 $expect('q/the definition of "open" reads the final statuses from the order guard, not a second list', str_contains($openFn, 'HospitalityOrderGuard::FINAL_ORDER_STATUSES') && !str_contains($openFn, "'cancelled'"), true);
 $expect('q/"open" counts an order with NO serving time as open (the safe direction)', str_contains($openFn, 'serving_time_iso IS NULL OR'), true);
 $expect('q/"open" compares with the current time as naive UTC, not the session zone', str_contains($openFn, "now() AT TIME ZONE 'UTC'"), true);
+// The direction cannot be shown by a double (the SQL needs a database), so it is read as text: an order is open while its
+// serving time is still AHEAD. `<` would count only the orders already served (and leave every open one behind a move).
+$expect('q/"open" means the serving time is still AHEAD: `serving_time_iso > (now() ...)`, not `<`',
+    str_contains($openFn, "serving_time_iso > (now() AT TIME ZONE 'UTC')"), true);
+
+// ── the controller itself: store() and update(), run end to end on doubles ───────────────────────
+// Everything above judges one method at a time, or reads the controller as text. This block RUNS it: the real controller, the
+// real guard rules and the real model answer a request, and the doubles below stand in only for what reaches outside the
+// process. A refusal that is computed and not returned, or a check that runs after the write, is a behaviour: only a row that
+// drives update() and then asks "was anything written?" can see it.
+$vendorAutoload = getenv('VENDOR_AUTOLOAD') ?: $root . '/vendor/autoload.php';
+if (!is_file($vendorAutoload)) {
+    fwrite(STDERR, "The controller rows need vendor/ (slim/psr7) and found none at {$vendorAutoload}.\n"
+        . "In an export: ln -s <checkout>/vendor <export>/vendor, or set VENDOR_AUTOLOAD.\n");
+    exit(2);
+}
+require_once $vendorAutoload;
+// The code UNDER TEST comes from <root>/src, through a loader of its own placed FIRST: the vendor autoloader maps App\ to the
+// checkout the vendor/ directory sits in, which for an export (vendor/ linked in) is the SERVED tree.
+spl_autoload_register(static function (string $class) use ($root): void {
+    if (strncmp($class, 'App\\', 4) === 0) {
+        $file = $root . '/src/' . str_replace('\\', '/', substr($class, 4)) . '.php';
+        if (is_file($file)) {
+            require_once $file;
+        }
+    }
+}, true, true);
+$modelFile = getenv('MODEL_FILE') ?: $root . '/src/modules/booking/models/Hospitality.php';
+require_once $modelFile;
+
+/** lang() answers "key|arg|arg": enough to see WHICH text a refusal carries and what it was given, without a translation table. */
+function lang($key, ...$args): string
+{
+    return implode('|', array_merge([$key], array_map('strval', $args)));
+}
+
+/** The WebSocket fork is replaced by a recorder (the real one forks and talks to Redis). */
+final class HarnessWebSocketHelper
+{
+    public static array $sent = [];
+
+    public static function sendEntityNotificationAsync(string $entityType, $entityId, string $message, string $action, array $data = []): bool
+    {
+        self::$sent[] = [$entityType, $entityId, $action, $data['section'] ?? null];
+        return true;
+    }
+}
+class_alias(HarnessWebSocketHelper::class, 'App\modules\bookingfrontend\helpers\WebSocketHelper');
+
+/** What the doubles answer from, and what they RECORD. */
+final class HarnessWorld
+{
+    public array $row = [];          // the stored hospitality row
+    public array $resourceIds = [];  // the ids that exist (resourceExists)
+    public array $open = [];         // hospitality id => [location resource id => number of OPEN orders]
+    public array $writes = [];       // [method, id, data] for every create()/update() the repository was asked for, in order
+    public array $counts = [];       // [hospitality id, location resource id] for every Q1 count
+    public PDO $pdo;                 // the guard's database: bb_resource and bb_hospitality_remote_location
+}
+
+/**
+ * Hospitality 7, main resource 10 (Kjokken); resources 11-13 are free to move to, 20 has direct booking.
+ * $with: 'row' (stored hospitality fields), 'remote' (hospitality id => ids of its ACTIVE delivery locations), 'open' (see HarnessWorld).
+ */
+$newWorld = static function (array $with = []): HarnessWorld {
+    $w = new HarnessWorld();
+    $w->row = array_replace(['id' => 7, 'resource_id' => 10, 'name' => 'Kantina', 'description' => null, 'active' => 1, 'modified' => null, 'open_days' => null], $with['row'] ?? []);
+    $w->open = $with['open'] ?? [];
+    $resources = [10 => ['Kjokken', null], 11 => ['Sal A', null], 12 => ['Sal B', null], 13 => ['Sal C', null], 20 => ['Sal D', FUTURE]];
+    $w->resourceIds = array_keys($resources);
+    $w->pdo = new PDO('sqlite::memory:');
+    $w->pdo->exec('CREATE TABLE bb_resource (id INTEGER PRIMARY KEY, name TEXT, direct_booking INTEGER, simple_booking INTEGER)');
+    $w->pdo->exec('CREATE TABLE bb_hospitality_remote_location (hospitality_id INTEGER, resource_id INTEGER, active INTEGER)');
+    foreach ($resources as $id => [$name, $direct]) {
+        $w->pdo->prepare('INSERT INTO bb_resource (id, name, direct_booking, simple_booking) VALUES (?, ?, ?, NULL)')->execute([$id, $name, $direct]);
+    }
+    foreach ($with['remote'] ?? [] as $hospitalityId => $resourceIds) {
+        foreach ($resourceIds as $resourceId) {
+            $w->pdo->prepare('INSERT INTO bb_hospitality_remote_location (hospitality_id, resource_id, active) VALUES (?, ?, 1)')->execute([$hospitalityId, $resourceId]);
+        }
+    }
+    return $w;
+};
+
+$controllerOn = static function (HarnessWorld $w): HospitalityController {
+    $controller = (new ReflectionClass(HospitalityController::class))->newInstanceWithoutConstructor();
+    $inject = static function (string $property, $value) use ($controller): void {
+        (new ReflectionProperty(HospitalityController::class, $property))->setValue($controller, $value);
+    };
+    $inject('userSettings', ['account_id' => 5]);
+    $inject('acl', new class extends Acl {
+        public function __construct()
+        {
+        }
+
+        public function check($location, $required, $appname = '')
+        {
+            return true;
+        }
+    });
+    $inject('repository', new class($w) extends HospitalityRepository {
+        public function __construct(private HarnessWorld $w)
+        {
+        }
+
+        public function getById(int $id): ?array
+        {
+            return $id === (int)$this->w->row['id'] ? $this->w->row : null;
+        }
+
+        public function resourceExists(int $resourceId): bool
+        {
+            return in_array($resourceId, $this->w->resourceIds, true);
+        }
+
+        public function create(array $data): int
+        {
+            $this->w->writes[] = ['create', null, $data];
+            $this->w->row = array_replace($this->w->row, $data, ['id' => 99]);
+            return 99;
+        }
+
+        public function update(int $id, array $data): bool
+        {
+            $this->w->writes[] = ['update', $id, $data];
+            $this->w->row = array_replace($this->w->row, $data);
+            return true;
+        }
+    });
+    $inject('orderRepository', new class($w) extends HospitalityOrderRepository {
+        public function __construct(private HarnessWorld $w)
+        {
+        }
+
+        public function countOpenAtLocation(int $hospitalityId, int $locationResourceId): int
+        {
+            $this->w->counts[] = [$hospitalityId, $locationResourceId];
+            return $this->w->open[$hospitalityId][$locationResourceId] ?? 0;
+        }
+    });
+    // The guard is the REAL one (it is final, and its own SQL runs): only its database is replaced, by an in-memory SQLite that
+    // holds the world's resource and remote-location rows. Db hands every call on to the PDO it wraps (Db::__call).
+    $inject('directBookingGuard', new G(new class($w->pdo) extends Db {
+        public function __construct(private PDO $pdo)
+        {
+        }
+
+        public function __call($method, $arguments)
+        {
+            return $this->pdo->$method(...$arguments);
+        }
+    }));
+    return $controller;
+};
+
+$requestFactory = new Slim\Psr7\Factory\ServerRequestFactory();
+$responseFactory = new Slim\Psr7\Factory\ResponseFactory();
+$streamFactory = new Slim\Psr7\Factory\StreamFactory();
+
+/**
+ * One request through the controller. $body is what the framework parsed (an array), or a raw JSON string that the controller
+ * then decodes itself. Returns what a client and the database would have seen: the status and body, every repository write
+ * and Q1 count in order, and every WebSocket broadcast. An Error out of the controller (a mutant that breaks it) is returned
+ * as `threw`, so it turns a row red instead of ending the run.
+ */
+$drive = static function (string $action, $body, ?HarnessWorld $world = null) use ($newWorld, $controllerOn, $requestFactory, $responseFactory, $streamFactory): array {
+    $w = $world ?? $newWorld();
+    HarnessWebSocketHelper::$sent = [];
+    $controller = $controllerOn($w);
+    $request = $requestFactory->createServerRequest($action === 'store' ? 'POST' : 'PUT', '/booking/hospitality' . ($action === 'store' ? '' : '/7'));
+    $request = is_array($body) ? $request->withParsedBody($body) : $request->withBody($streamFactory->createStream($body));
+    $previous = error_reporting(E_ALL & ~E_DEPRECATED); // SerializableTrait still calls setAccessible(), deprecated since PHP 8.5
+    try {
+        $response = $responseFactory->createResponse();
+        $response = $action === 'store' ? $controller->store($request, $response) : $controller->update($request, $response, ['id' => '7']);
+        $raw = (string)$response->getBody();
+        return ['status' => $response->getStatusCode(), 'raw' => $raw, 'body' => json_decode($raw, true), 'threw' => null,
+            'writes' => $w->writes, 'counts' => $w->counts, 'broadcasts' => HarnessWebSocketHelper::$sent];
+    } catch (Throwable $e) {
+        return ['status' => 0, 'raw' => '', 'body' => null, 'threw' => get_class($e) . ': ' . $e->getMessage(),
+            'writes' => $w->writes, 'counts' => $w->counts, 'broadcasts' => HarnessWebSocketHelper::$sent];
+    } finally {
+        error_reporting($previous);
+    }
+};
+
+// The code under test really is this tree's (the loader above), and the file a mutant replaced really is the one that runs.
+$loadedFrom = static fn(string $class): string => (string)realpath((string)(new ReflectionClass($class))->getFileName());
+$expect('env/the model that runs is MODEL_FILE or this tree\'s', $loadedFrom(Hospitality::class), (string)realpath($modelFile));
+$expect('env/the controller that runs is CONTROLLER_FILE or this tree\'s', $loadedFrom(HospitalityController::class),
+    (string)realpath(getenv('CONTROLLER_FILE') ?: $root . '/src/modules/booking/controllers/HospitalityController.php'));
+$expect('env/the guard that runs is GUARD_FILE or this tree\'s', $loadedFrom(G::class),
+    (string)realpath(getenv('GUARD_FILE') ?: $root . '/src/modules/booking/services/HospitalityDirectBookingGuard.php'));
+foreach ([HospitalityRepository::class, HospitalityOrderRepository::class, Acl::class] as $class) {
+    $expect("env/{$class} comes from this tree, not from the vendor autoloader's App\\ mapping", str_starts_with($loadedFrom($class), (string)realpath($root) . '/src/'), true);
+}
+
+// ── the offer description: at most 70 Unicode CODE POINTS (f1998b27b, GH #1423) ───────────────────
+// POST and PUT /booking/hospitality refuse a longer one with 422 description_too_long. The count is in code points (not bytes,
+// not UTF-16 units, not graphemes), the string is counted as it will be stored (no trim), NULL and '' are allowed, and PUT
+// judges the description only when the body carries the key (the admin saves one field per request).
+$EMOJI = "\u{1F600}";            // ONE code point; 4 bytes in UTF-8, 2 units in UTF-16
+$ACUTE = "\u{0301}";             // a combining acute accent: a code point of its own, and no width of its own
+$AEOEAA = "\u{E6}\u{F8}\u{E5}";  // 3 code points, 6 bytes
+// [label, value, verdict]; the arithmetic in each label is done by hand, in code points.
+$descriptionCases = [
+    ['70 x "a" (the limit)', str_repeat('a', 70), 'allowed'],
+    ['71 x "a" (one over)', str_repeat('a', 71), 'refused'],
+    ['70 code points of ae-oe-aa (140 bytes)', str_repeat($AEOEAA, 23) . "\u{E6}", 'allowed'],
+    ['71 code points of ae-oe-aa (142 bytes)', str_repeat($AEOEAA, 23) . "\u{E6}\u{F8}", 'refused'],
+    ['one emoji', $EMOJI, 'allowed'],
+    ['70 x emoji (70 code points, 280 bytes)', str_repeat($EMOJI, 70), 'allowed'],
+    ['71 x emoji (71 code points)', str_repeat($EMOJI, 71), 'refused'],
+    ['69 x "a" + an emoji = 70', str_repeat('a', 69) . $EMOJI, 'allowed'],
+    ['70 x "a" + an emoji = 71', str_repeat('a', 70) . $EMOJI, 'refused'],
+    ['69 x "a" + a combining acute = 70 code points', str_repeat('a', 69) . $ACUTE, 'allowed'],
+    ['70 x "a" + a combining acute = 71 code points (70 graphemes)', str_repeat('a', 70) . $ACUTE, 'refused'],
+    ['35 x decomposed e-acute = 70 code points', str_repeat('e' . $ACUTE, 35), 'allowed'],
+    ['36 x decomposed e-acute = 72 code points (36 graphemes)', str_repeat('e' . $ACUTE, 36), 'refused'],
+    ['70 x precomposed e-acute (U+00E9) = 70 code points', str_repeat("\u{E9}", 70), 'allowed'],
+    ['69 x "a" + a trailing space = 70', str_repeat('a', 69) . ' ', 'allowed'],
+    ['70 x "a" + a trailing space = 71 (no trim)', str_repeat('a', 70) . ' ', 'refused'],
+    ['a leading space + 69 x "a" = 70', ' ' . str_repeat('a', 69), 'allowed'],
+    ['a leading space + 70 x "a" = 71 (no trim)', ' ' . str_repeat('a', 70), 'refused'],
+    ['70 x "a" + a trailing newline = 71 (no trim)', str_repeat('a', 70) . "\n", 'refused'],
+    ['70 spaces', str_repeat(' ', 70), 'allowed'],
+    ['71 spaces (a trim would make it empty)', str_repeat(' ', 71), 'refused'],
+    ['NULL', null, 'allowed'],
+    ['the empty string', '', 'allowed'],
+];
+// One line per request, so a row reads as the whole answer: the status, the refusal (code + text), and what was written.
+$descriptionOutcome = static function (array $o, $sent): string {
+    if ($o['threw'] !== null) {
+        return 'THREW ' . $o['threw'];
+    }
+    if ($o['status'] >= 400) {
+        return sprintf('%d %s (%s) | %d write(s)', $o['status'], $o['body']['code'] ?? '-', $o['body']['error'] ?? '-', count($o['writes']));
+    }
+    $write = $o['writes'][0] ?? null;
+    $what = $write === null ? 'NOTHING WRITTEN' : (array_key_exists('description', $write[2])
+        ? ($write[2]['description'] === $sent ? 'description handed on as sent' : 'DESCRIPTION CHANGED')
+        : 'no description key');
+    return sprintf('%d | %d write(s): %s %s', $o['status'], count($o['writes']), $write[0] ?? '-', $what);
+};
+$tooLong = '422 description_too_long (booking.hospitality_description_too_long|70) | 0 write(s)';
+$saved = ['store' => '201 | 1 write(s): create description handed on as sent', 'update' => '200 | 1 write(s): update description handed on as sent'];
+$withDescription = static fn(string $action, $value): array => $action === 'store'
+    ? ['resource_id' => 10, 'name' => 'Kantina', 'description' => $value]
+    : ['description' => $value];
+
+foreach ($descriptionCases as [$label, $value, $verdict]) {
+    foreach (['store', 'update'] as $action) {
+        $expect("desc/{$action} {$label}", $descriptionOutcome($drive($action, $withDescription($action, $value)), $value),
+            $verdict === 'refused' ? $tooLong : $saved[$action]);
+    }
+}
+
+// PINNED CURRENT BEHAVIOUR, not a ruling (RECORD 45803, forum/pe-backlog/45803): Hospitality::descriptionTooLong() answers false
+// for anything that is not a string, so a non-string description is not refused by this rule, and the controller hands it to the
+// repository exactly as it came: the repository double RECEIVES the array, the int, the bool. Where RECORD 45803 expects a 422
+// for a non-string, non-null description, these rows are the ones that go red, deliberately. What the REAL repository then does
+// with the value (the PDO bind; RECORD 45803 reads it as a 500) is not shown here: a double takes anything.
+foreach ([['int 5', 5], ['float 1.5', 1.5], ['true', true], ['false', false], ['an empty array', []],
+    ['an array holding a 500-character string', ['x' => str_repeat('a', 500)]]] as [$label, $value]) {
+    foreach (['store', 'update'] as $action) {
+        $expect("desc/{$action} pinned, see RECORD 45803: a non-string description ({$label}) is not judged, the repository receives it as it came",
+            $descriptionOutcome($drive($action, $withDescription($action, $value)), $value), $saved[$action]);
+    }
+}
+
+// The key is judged only when it is there.
+$storedLong = $newWorld(['row' => ['description' => str_repeat('a', 128)]]); // an offer saved before the limit existed
+$o = $drive('update', ['name' => 'Nytt navn'], $storedLong);
+$expect('desc/update a name-only PUT on an offer whose STORED description is 128 code points: not judged, saves, the text is left alone',
+    [$o['status'], $o['writes'], mb_strlen((string)($o['body']['description'] ?? ''), 'UTF-8')],
+    [200, [['update', 7, ['name' => 'Nytt navn', 'modified_by' => 5]]], 128]);
+$o = $drive('update', ['name' => 'Nytt navn', 'description' => str_repeat('a', 70)], $newWorld(['row' => ['description' => str_repeat('a', 128)]]));
+$expect('desc/update that same offer, the description itself edited to 70: saves',
+    [$o['status'], $o['writes']], [200, [['update', 7, ['name' => 'Nytt navn', 'description' => str_repeat('a', 70), 'modified_by' => 5]]]]);
+$o = $drive('update', ['name' => 'Nytt navn', 'description' => str_repeat('a', 71)], $newWorld(['row' => ['description' => str_repeat('a', 128)]]));
+$expect('desc/update that same offer, the description itself edited to 71: refused, nothing written (the other fields are not saved either)',
+    [$o['status'], $o['body']['code'] ?? null, $o['writes']], [422, 'description_too_long', []]);
+$o = $drive('store', ['resource_id' => 10, 'name' => 'Kantina']);
+$expect('desc/store no description key at all: created without one',
+    [$o['status'], $o['writes']], [201, [['create', null, ['resource_id' => 10, 'name' => 'Kantina', 'created_by' => 5]]]]);
+
+// Over the wire: the controller decodes the JSON itself when the framework parsed nothing, and a JSON emoji is a surrogate pair.
+$json70 = json_encode(['description' => str_repeat($EMOJI, 70)]);
+$surrogatePair = chr(92) . 'ud83d' . chr(92) . 'ude00'; // backslash, u, d83d, backslash, u, de00: spelled out so no editor or tool turns it into the emoji
+$expect('desc/wire control: the JSON body really spells the emoji as a surrogate-pair escape, not as the character', str_contains($json70, $surrogatePair), true);
+$expect('desc/update over the wire, 70 emoji as surrogate pairs (280 bytes of text, 140 UTF-16 units): saves',
+    $descriptionOutcome($drive('update', $json70), str_repeat($EMOJI, 70)), $saved['update']);
+$expect('desc/update over the wire, 71 emoji as surrogate pairs: refused',
+    $descriptionOutcome($drive('update', json_encode(['description' => str_repeat($EMOJI, 71)])), str_repeat($EMOJI, 71)), $tooLong);
+
+// ── the refusals that come BEFORE the description ─────────────────────────────────────────────────
+// One request that is wrong twice answers once: invalid_resource_id (read first), and the description is never looked at.
+foreach (['update', 'store'] as $action) {
+    $body = ['resource_id' => '0x5D', 'name' => 'Kantina', 'description' => str_repeat('a', 71)];
+    $o = $drive($action, $body);
+    $expect("combo/{$action} a bad resource_id AND a 71-character description: exactly one 422, invalid_resource_id, nothing written",
+        [$o['status'], $o['body']['code'] ?? null, substr_count($o['raw'], '"code"'), $o['writes']], [422, 'invalid_resource_id', 1, []]);
+}
+
+// ── Q1 and Q2: moving the main resource of hospitality 7 (main 10) ────────────────────────────────
+// What a client and the database see, and nothing else: status, refusal, every write, every broadcast.
+$move = static fn(array $o): array => [
+    'status' => $o['threw'] ?? $o['status'],
+    'code' => $o['body']['code'] ?? null,
+    'order_count' => $o['body']['order_count'] ?? null,
+    'resource_ids' => $o['body']['resource_ids'] ?? null,
+    'error' => $o['body']['error'] ?? null,
+    'writes' => $o['writes'],
+    'broadcasts' => $o['broadcasts'],
+];
+$refusedMove = static fn(string $code, string $error, array $extra = []): array =>
+    array_replace(['status' => 422, 'code' => $code, 'order_count' => null, 'resource_ids' => null, 'error' => $error, 'writes' => [], 'broadcasts' => []], $extra);
+
+// Q1: two open orders are served at the current main (10).
+$w = $newWorld(['open' => [7 => [10 => 2]]]);
+$o = $drive('update', ['resource_id' => 11], $w);
+$expect('move/Q1 a main move with open orders at the old main: 422 main_resource_has_open_orders, order_count 2, NO repository write, no broadcast',
+    $move($o), $refusedMove('main_resource_has_open_orders', 'booking.main_resource_has_open_orders|2', ['order_count' => 2]));
+$expect('move/Q1 counts the open orders of THIS hospitality at the OLD main (7 at 10), once', $o['counts'], [[7, 10]]);
+$expect('move/Q1 the same refusal when the id arrives as the string "11"',
+    $move($drive('update', ['resource_id' => '11'], $newWorld(['open' => [7 => [10 => 2]]])))['code'], 'main_resource_has_open_orders');
+
+// Q2: 12 is an ACTIVE delivery location of hospitality 7; nothing is open at 10.
+$o = $drive('update', ['resource_id' => 12], $newWorld(['remote' => [7 => [12]]]));
+$expect('move/Q2 a move onto an active delivery location: 422 main_resource_is_remote_location, resource_ids [12], NO repository write, no broadcast',
+    $move($o), $refusedMove('main_resource_is_remote_location', 'booking.main_resource_is_remote_location|Sal B', ['resource_ids' => [12]]));
+
+// Q2 wins over Q1: both apply.
+$o = $drive('update', ['resource_id' => 12], $newWorld(['remote' => [7 => [12]], 'open' => [7 => [10 => 2]]]));
+$expect('move/Q2 wins over Q1 when both apply: main_resource_is_remote_location, NO repository write',
+    $move($o), $refusedMove('main_resource_is_remote_location', 'booking.main_resource_is_remote_location|Sal B', ['resource_ids' => [12]]));
+
+// The direct-booking guard speaks first: 20 has direct booking, is an active delivery location, and orders are open at 10.
+$o = $drive('update', ['resource_id' => 20], $newWorld(['remote' => [7 => [20]], 'open' => [7 => [10 => 2]]]));
+$expect('move/the direct-booking guard speaks before Q2 and Q1: resource_has_direct_booking, NO repository write',
+    [$o['status'], $o['body']['code'] ?? null, $o['body']['resource_ids'] ?? null, $o['writes'], $o['counts']], [422, 'resource_has_direct_booking', [20], [], []]);
+
+// No move: neither refusal fires. Both are ARMED here (orders are open at 10 and 10 is also listed as an active delivery location).
+$armed = static fn(): HarnessWorld => $newWorld(['open' => [7 => [10 => 2]], 'remote' => [7 => [10]]]);
+$saved200 = static fn(array $data, string $section): array => ['status' => 200, 'code' => null, 'order_count' => null, 'resource_ids' => null, 'error' => null,
+    'writes' => [['update', 7, $data]], 'broadcasts' => [['hospitality', 7, 'updated', $section]]];
+$expect('move/no main change, the same resource_id (int) sent back with the rest of the row: saves, neither refusal',
+    $move($drive('update', ['resource_id' => 10, 'name' => 'Nytt navn'], $armed())), $saved200(['resource_id' => 10, 'name' => 'Nytt navn', 'modified_by' => 5], 'details'));
+$expect('move/no main change, the same resource_id as the string "10": saves, neither refusal',
+    $move($drive('update', ['resource_id' => '10', 'name' => 'Nytt navn'], $armed())), $saved200(['resource_id' => 10, 'name' => 'Nytt navn', 'modified_by' => 5], 'details'));
+$expect('move/no main change, no resource_id at all (a rename): saves, neither refusal',
+    $move($drive('update', ['name' => 'Nytt navn'], $armed())), $saved200(['name' => 'Nytt navn', 'modified_by' => 5], 'details'));
+
+// A valid move: nothing open at 10, 12 is a delivery location (not the one moved to), and the NEW main has open orders, which Q1 must not mind.
+$w = $newWorld(['remote' => [7 => [12]], 'open' => [7 => [11 => 5]]]);
+$o = $drive('update', ['resource_id' => '11'], $w);
+$expect('move/a valid move: saves, ONE repository update with resource_id 11 as an int, the other admins told to rebuild the Resources tab',
+    $move($o), $saved200(['resource_id' => 11, 'modified_by' => 5], 'main_resource'));
+$expect('move/a valid move: Q1 counted the OLD main (7 at 10), not the new one and not the hospitality id', $o['counts'], [[7, 10]]);
+
+// The doubles are meant to leave nothing to the real database. Db::getInstance() would create the singleton (in a CLI with no
+// configuration that is a silent in-memory SQLite, which answers every query with nothing), so a path that reached for it
+// would pass its rows for the wrong reason: the singleton must still be unset after every request above.
+$expect('env/no request above reached for the database singleton (Db::$instance is still unset)',
+    (new ReflectionProperty(Db::class, 'instance'))->getValue() === null, true);
 
 // ── run ─────────────────────────────────────────────────────────────────────────────────────
 $failures = [];

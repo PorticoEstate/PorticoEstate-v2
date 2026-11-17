@@ -63,4 +63,19 @@ console.log(data);
 }
 }
 });
+});
+
+/* On narrow screens the open sidenav overlays the content; close it when
+   clicking outside instead of requiring a second click on the hamburger. */
+$(document).on('click', function (e) {
+if (window.innerWidth >= 992) {
+return;
+}
+if (!document.body.classList.contains('sb-sidenav-toggled')) {
+return;
+}
+if (e.target.closest('#layoutSidenav_nav, #sidebarToggle')) {
+return;
+}
+$('#sidebarToggle').trigger('click');
 });</script></body></html>

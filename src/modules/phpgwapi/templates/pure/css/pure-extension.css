@@ -254,7 +254,10 @@ ul#audience {list-style: none;padding-left: 10px;}
         overflow-wrap: anywhere;
     }
 
-    .pure-table-scroll .pure-table {
+    /* Tables handle overflow via their own horizontal scrolling
+       (.pure-table-scroll / DataTables' .dt-scroll-body); mid-word
+       wrapping would shrink them to fit and disable that scroll. */
+    .pure-form-aligned .pure-control-group table {
         overflow-wrap: normal;
     }
 }

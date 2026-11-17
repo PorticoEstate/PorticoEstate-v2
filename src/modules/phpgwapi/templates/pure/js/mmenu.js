@@ -77,10 +77,10 @@ $(function ()
 //		);
 });
 
-$(document).ready(function ()
+$(function ()
 {
 
-	$('input[name="update_bookmark_menu"]').click(function (e)
+	$('input[name="update_bookmark_menu"]').on('click', function (e)
 	{
 		e.preventDefault();
 		var id = $(this).attr('id');
@@ -115,7 +115,7 @@ $(document).ready(function ()
 	});
 
 
-	$("#template_selector").change(function ()
+	$("#template_selector").on('change', function ()
 	{
 
 		var template = $(this).val();
@@ -131,12 +131,12 @@ $(document).ready(function ()
 			success: function (data)
 			{
 				console.log(data);
-				location.reload(true);
+				location.reload();
 			}
 		});
 	});
 
-	$(window).resize(function ()
+	$(window).on('resize', function ()
 	{
 		var width = $(window).width();
 		if (width < 620)
@@ -172,7 +172,7 @@ $(document).ready(function ()
 //
 //		}
 
-	}).resize();//trigger the resize event on page load.
+	}).trigger('resize');//trigger the resize event on page load.
 
 });
 

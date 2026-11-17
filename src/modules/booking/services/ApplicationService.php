@@ -1399,6 +1399,9 @@ class ApplicationService
 		$db->transaction_begin();
 		try {
 			$allocationReceipt = $allocationBo->add($allocation);
+
+			$this->attachPurchaseOrder($allocationReceipt['id'], $appId, $this->currentFullName());
+
 			$booking['allocation_id'] = (int) $allocationReceipt['id'];
 			$bookingReceipt = $bookingBo->add($booking);
 			$db->transaction_commit();

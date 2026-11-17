@@ -85,18 +85,26 @@ $(document).ready(function ()
 		e.preventDefault();
 		var id = $(this).attr('id');
 		var checked = $(this).is(':checked');
-		var oArgs = {menuaction: 'phpgwapi.menu.update_bookmark_menu', bookmark_candidate: $(this).val()};
+		var anchor = $(this).closest('a');
+		var oArgs = {menuaction: 'phpgwapi.menu.update_bookmark_menu'};
 		var requestUrl = phpGWLink('index.php', oArgs, true);
 
 		$.ajax({
 			type: 'POST',
 			url: requestUrl,
 			dataType: 'json',
+			data: {
+				bookmark_candidate: $(this).val(),
+				text: anchor.text().trim(),
+				href: anchor.attr('href'),
+				icon: anchor.attr('icon') || ''
+			},
 			success: function (data)
 			{
 				if (data)
 				{
 					alert(data.status);
+					location.reload();
 				}
 			}
 		});
@@ -167,23 +175,4 @@ $(document).ready(function ()
 	}).resize();//trigger the resize event on page load.
 
 });
-
-function update_bookmark_menu(bookmark_candidate)
-{
-	var oArgs = {menuaction: 'phpgwapi.menu.update_bookmark_menu', bookmark_candidate: bookmark_candidate};
-	var requestUrl = phpGWLink('index.php', oArgs, true);
-
-	$.ajax({
-		type: 'POST',
-		url: requestUrl,
-		dataType: 'json',
-		success: function (data)
-		{
-			if (data)
-			{
-				alert(data.status);
-			}
-		}
-	});
-}
 

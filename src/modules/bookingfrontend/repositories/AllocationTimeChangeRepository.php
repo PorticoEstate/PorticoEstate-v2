@@ -143,4 +143,17 @@ class AllocationTimeChangeRepository
 		$stmt = $this->db->prepare("UPDATE bb_allocation SET price_locked = 1 WHERE id = :id");
 		$stmt->execute([':id' => $allocationId]);
 	}
+
+	/**
+	 * Put the application back on its case officer's Skrivebord. The officer can
+	 * hide it "until a new event", and a change from the applicant is one. An
+	 * application with no case officer is on nobody's Skrivebord: it is left as is.
+	 */
+	public function showOnDashboard(int $applicationId): void
+	{
+		$stmt = $this->db->prepare(
+			"UPDATE bb_application SET display_in_dashboard = 1 WHERE id = :id AND case_officer_id IS NOT NULL"
+		);
+		$stmt->execute([':id' => $applicationId]);
+	}
 }

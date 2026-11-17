@@ -153,6 +153,7 @@ class AllocationTimeChangeService
 			throw $e;
 		}
 
+		$this->showOnDashboard($applicationId);
 		$this->afterCommit($allocation);
 
 		return [
@@ -205,6 +206,7 @@ class AllocationTimeChangeService
 			throw $e;
 		}
 
+		$this->showOnDashboard($applicationId);
 		$this->flushNotifications($allocationId);
 
 		return [
@@ -413,6 +415,20 @@ class AllocationTimeChangeService
 			(new WebhookNotifier())->notifyChange('allocation', 'updated', (int) $allocation['id'], array_map('intval', $allocation['resources'] ?? []));
 		} catch (Throwable $e) {
 			error_log('AllocationTimeChangeService: webhook notification failed for allocation ' . (int) $allocation['id'] . ': ' . $e->getMessage());
+		}
+	}
+
+	/**
+	 * The application is back on the case officer's Skrivebord, as a comment from
+	 * the applicant does it (bookingfrontend's uiapplication). Once committed, a
+	 * failure here may not turn a stored change into an error.
+	 */
+	private function showOnDashboard(int $applicationId): void
+	{
+		try {
+			$this->repository->showOnDashboard($applicationId);
+		} catch (Throwable $e) {
+			error_log('AllocationTimeChangeService: could not show application ' . $applicationId . ' on the dashboard: ' . $e->getMessage());
 		}
 	}
 

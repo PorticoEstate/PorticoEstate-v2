@@ -23,7 +23,10 @@
 
 		<div class="form-group">
 			<label class="app-label" for="field-description">{{ lang('common.description') }}</label>
-			<textarea id="field-description" class="ds-input" rows="3"></textarea>
+			<div class="hospitality-create__field">
+				<textarea id="field-description" class="ds-input" rows="3"></textarea>
+				<div id="description-error" class="ds-validation-message" data-color="danger" data-size="sm" role="alert" hidden></div>
+			</div>
 		</div>
 
 		<div class="form-group">
@@ -61,14 +64,20 @@
 		apiUrl: '/booking/hospitality',
 		buildingsUrl: '/booking/buildings',
 		showBaseUrl: '/booking/view/hospitality/',
+		descriptionMaxLength: {{ constant('App\\modules\\booking\\models\\Hospitality::DESCRIPTION_MAX_LENGTH') }},
 		lang: {
 			name: '{{ lang('common.name')|e('js') }}',
 			select_resource: '{{ lang('booking.select_resource')|e('js') }}',
 			error: '{{ lang('common.error')|e('js') }}',
-			loading: '{{ lang('common.loading')|e('js') }}'
+			loading: '{{ lang('common.loading')|e('js') }}',
+			description_counter_under: '{{ lang('booking.hospitality_description_counter_under', '%1')|e('js') }}',
+			description_counter_over: '{{ lang('booking.hospitality_description_counter_over', '%1')|e('js') }}',
+			description_max_hint: '{{ lang('booking.hospitality_description_max_hint', '%1')|e('js') }}',
+			description_too_long: '{{ lang('booking.hospitality_description_too_long', '%1')|e('js') }}'
 		}
 	};
 </script>
 <script src="{{ modules_url }}/booking/js/base/building-select.js"></script>
+<script>{{ source('@base_views/components/char_counter/char_counter.js') }}</script>
 <script>{{ source('@views/hospitality/create/hospitality_create.js') }}</script>
 {% endblock %}

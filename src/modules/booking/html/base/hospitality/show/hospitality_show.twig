@@ -32,6 +32,12 @@
 	 data-lang-hospitality="{{ lang('booking.hospitality') }}"
 	 data-lang-name="{{ lang('booking.name') }}"
 	 data-lang-description="{{ lang('common.description') }}"
+	 {# The counter's texts carry a %1 filled client-side: '%1' as the arg keeps it through server-side lang() #}
+	 data-description-max-length="{{ constant('App\\modules\\booking\\models\\Hospitality::DESCRIPTION_MAX_LENGTH') }}"
+	 data-lang-description-counter-under="{{ lang('booking.hospitality_description_counter_under', '%1') }}"
+	 data-lang-description-counter-over="{{ lang('booking.hospitality_description_counter_over', '%1') }}"
+	 data-lang-description-max-hint="{{ lang('booking.hospitality_description_max_hint', '%1') }}"
+	 data-lang-description-too-long="{{ lang('booking.hospitality_description_too_long', '%1') }}"
 	 data-lang-active="{{ lang('booking.active') }}"
 	 data-lang-inactive="{{ lang('booking.inactive') }}"
 	 data-lang-hidden-from-frontend="{{ lang('booking.hidden_from_frontend') }}"
@@ -222,6 +228,7 @@
 <script src="{{ modules_url }}/booking/js/base/building-select.js"></script>
 <script>{{ source('@base_views/components/hospitality_order_list/hospitality_order_list.js') }}</script>
 <script>{{ source('@base_views/components/hospitality_order_modal/hospitality_order_modal.js') }}</script>
+<script>{{ source('@base_views/components/char_counter/char_counter.js') }}</script>
 <script>{{ source('@views/hospitality/show/hospitality_show.js') }}</script>
 <script>
 (function initHospCollab() {

@@ -3,7 +3,6 @@ import {FC, useEffect, useMemo, useRef, useState} from 'react';
 import {
     Alert,
     Button,
-    Card,
     Details,
     Field,
     Fieldset,
@@ -13,6 +12,7 @@ import {
     Radio,
     Select,
     Textarea,
+    Textfield,
     Tooltip,
 } from '@digdir/designsystemet-react';
 import {MinusCircleIcon, PlusCircleIcon, ChatElipsisIcon} from '@navikt/aksel-icons';
@@ -489,13 +489,16 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
         if (!cancelBy) return null;
 
         if (Date.now() > cancelBy.getTime()) {
-            return t('bookingfrontend.cancellation_deadline_passed_warning');
+            return {isPastDeadline: true, text: t('bookingfrontend.cancellation_deadline_passed_warning')};
         }
-        return t('bookingfrontend.cancellation_deadline_info')
-            .replace('%1', cancelBy.toLocaleDateString('nb-NO', {
-                day: '2-digit', month: 'short', year: 'numeric',
-                hour: '2-digit', minute: '2-digit'
-            }));
+        return {
+            isPastDeadline: false,
+            text: t('bookingfrontend.cancellation_deadline_info')
+                .replace('%1', cancelBy.toLocaleDateString('nb-NO', {
+                    day: '2-digit', month: 'short', year: 'numeric',
+                    hour: '2-digit', minute: '2-digit'
+                })),
+        };
     }, [selectedDateOption, hospitality, t]);
 
     // Initialize state on open / edit
@@ -844,18 +847,24 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
                 group is not unmounted under the applicant's finger (or arrow keys) when the offer is switched. */}
             {hospitality ? (
                 <div className={styles.modalContent}>
-                    {/* Offer: a locked card when editing, radio boxes when there is a choice, the same card otherwise.
-                        The card is neutral: a bare Card takes the accent and would read as a selected radio box. */}
-                    {existingOrder ? (
-                        <Fieldset>
-                            <Fieldset.Legend>{t('bookingfrontend.hospitality_offer')}</Fieldset.Legend>
-                            <Fieldset.Description>{t('bookingfrontend.hospitality_offer_locked_help')}</Fieldset.Description>
-                            <Card data-color="neutral" className={styles.offerText}>
-                                <span className={styles.offerName}>{hospitality.name}</span>
-                                {offerDescription && <span className={styles.offerDescription}>{offerDescription}</span>}
-                            </Card>
-                        </Fieldset>
-                    ) : hospitalities.length > 1 ? (
+                    {/* Offer: radio boxes, one under the other, when there is a choice (#1502). When it cannot be
+                        changed (an order being edited, or the only offer) it is a read-only field: focusable and read
+                        out, with Digdir's lock on the label, unlike a disabled one. */}
+                    {existingOrder || hospitalities.length <= 1 ? (
+                        <Textfield
+                            label={t('bookingfrontend.hospitality_offer')}
+                            description={(offerDescription || existingOrder) ? (
+                                <>
+                                    {offerDescription && <span className={styles.offerDescription}>{offerDescription}</span>}
+                                    {/* A space between the two, so a screen reader does not run them together */}
+                                    {offerDescription && existingOrder && ' '}
+                                    {existingOrder && <span className={styles.offerDescription}>{t('bookingfrontend.hospitality_offer_locked_help')}</span>}
+                                </>
+                            ) : undefined}
+                            value={hospitality.name}
+                            readOnly
+                        />
+                    ) : (
                         <Fieldset>
                             <Fieldset.Legend>{t('bookingfrontend.hospitality_offer')}</Fieldset.Legend>
                             <div className={styles.offerBoxes}>
@@ -880,20 +889,12 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
                                 ))}
                             </div>
                         </Fieldset>
-                    ) : (
-                        <Fieldset>
-                            <Fieldset.Legend>{t('bookingfrontend.hospitality_offer')}</Fieldset.Legend>
-                            <Card data-color="neutral" className={styles.offerText}>
-                                <span className={styles.offerName}>{hospitality.name}</span>
-                                {offerDescription && <span className={styles.offerDescription}>{offerDescription}</span>}
-                            </Card>
-                        </Fieldset>
                     )}
 
-                    {/* Day | Place | Time: one row above the dialog's mobile breakpoint, a single column below it */}
+                    {/* Day, Place, Time: one under the other at every width (#1502) */}
                     <div className={styles.topRow}>
                         {/* Day */}
-                        <Field className={styles.topRowField}>
+                        <Field>
                             <Label>{t('bookingfrontend.day')}</Label>
                             <Select
                                 value={selectedDateKey}
@@ -937,12 +938,16 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
                             )}
                         </Field>
 
-                        {/* Place: a dropdown, or plain text when there is only one room to choose */}
-                        <Field className={styles.topRowField}>
-                            <Label>{t('bookingfrontend.delivery_location')}</Label>
-                            {singleLocation ? (
-                                <div className={styles.fieldText}>{locationLabel(singleLocation)}</div>
-                            ) : (
+                        {/* Place: a dropdown, or a read-only field when there is only one room to choose */}
+                        {singleLocation ? (
+                            <Textfield
+                                label={t('bookingfrontend.delivery_location')}
+                                value={locationLabel(singleLocation)}
+                                readOnly
+                            />
+                        ) : (
+                            <Field>
+                                <Label>{t('bookingfrontend.delivery_location')}</Label>
                                 <Select
                                     value={String(locationId)}
                                     onChange={(e) => setLocationId(parseInt(e.target.value))}
@@ -952,11 +957,11 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
                                         <option key={loc.id} value={String(loc.id)}>{locationLabel(loc)}</option>
                                     ))}
                                 </Select>
-                            )}
-                        </Field>
+                            </Field>
+                        )}
 
                         {/* Time: the booking's own times say what is possible. The grandfathered instant has no range. */}
-                        <Field className={styles.topRowField}>
+                        <Field>
                             <Label>{t('bookingfrontend.hospitality_dialog_clock_time')}</Label>
                             {selectedDateOption && selectedDateOption.key !== GRANDFATHERED_DATE_KEY && (
                                 <Field.Description>
@@ -1008,10 +1013,11 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
                         </Alert>
                     )}
 
-                    {/* Cancellation deadline warning (informational) */}
+                    {/* Cancellation deadline: information while it can still be cancelled (#1502), a warning once
+                        the deadline has passed and the order could no longer be cancelled */}
                     {cancellationWarning && (
-                        <Alert data-color="warning" data-size="sm">
-                            {cancellationWarning}
+                        <Alert data-color={cancellationWarning.isPastDeadline ? 'warning' : 'info'} data-size="sm">
+                            {cancellationWarning.text}
                         </Alert>
                     )}
 

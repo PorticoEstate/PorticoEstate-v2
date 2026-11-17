@@ -171,54 +171,53 @@ const ArticlesSection: FC<ArticlesSectionProps> = ({applications, showPriceChoic
                         <Table.HeaderCell>{t('booking.sum')}</Table.HeaderCell>
                     </Table.Row>
                 </Table.Head>
-                <Table.Body>
-                    {groups.map(({application, lines}) => (
-                        <React.Fragment key={application.id}>
-                            <Table.Row className={styles.groupRow}>
-                                <Table.Cell colSpan={3}>{application.name}</Table.Cell>
-                            </Table.Row>
-                            {lines.map(line => (
-                                <React.Fragment key={line.index}>
+                {/* One body per application: its title row, then its lines (#1502) */}
+                {groups.map(({application, lines}) => (
+                    <Table.Body key={application.id} className={styles.group}>
+                        <Table.Row className={styles.groupRow}>
+                            <Table.Cell colSpan={3}>{application.name}</Table.Cell>
+                        </Table.Row>
+                        {lines.map(line => (
+                            <React.Fragment key={line.index}>
+                                <Table.Row>
+                                    <Table.Cell className={styles.lineName}>
+                                        {line.name}
+                                        {line.priceLabel && !line.priceChoice && !hideCategory && (
+                                            <Paragraph data-size="sm">
+                                                {t('bookingfrontend.price_category')}: {line.priceLabel}
+                                            </Paragraph>
+                                        )}
+                                    </Table.Cell>
+                                    <Table.Cell>{line.isMinuteUnit ? formatMinutes(line.quantity, t) : formatQuantity(line.quantity)}</Table.Cell>
+                                    <Table.Cell>
+                                        {line.pricePending
+                                            ? t('bookingfrontend.price_pending')
+                                            : line.total > 0 ? formatTotalWithHourlyRate(line.total, line.hourlyRate, line.currency, t) : '-'}
+                                    </Table.Cell>
+                                </Table.Row>
+                                {line.priceChoice && (
                                     <Table.Row>
-                                        <Table.Cell className={styles.lineName}>
-                                            {line.name}
-                                            {line.priceLabel && !line.priceChoice && !hideCategory && (
-                                                <Paragraph data-size="sm">
-                                                    {t('bookingfrontend.price_category')}: {line.priceLabel}
-                                                </Paragraph>
-                                            )}
-                                        </Table.Cell>
-                                        <Table.Cell>{line.isMinuteUnit ? formatMinutes(line.quantity, t) : formatQuantity(line.quantity)}</Table.Cell>
-                                        <Table.Cell>
-                                            {line.pricePending
-                                                ? t('bookingfrontend.price_pending')
-                                                : line.total > 0 ? formatTotalWithHourlyRate(line.total, line.hourlyRate, line.currency, t) : '-'}
+                                        <Table.Cell colSpan={3}>
+                                            <PriceChoiceField
+                                                id={priceChoiceFieldId(application.id, line.priceChoice.id)}
+                                                options={line.priceChoice.price_options ?? []}
+                                                value={applicationLines(application)[line.index].article_price_id ?? null}
+                                                onChange={(priceId) => choosePrice(application, line.index, priceId)}
+                                                quantity={line.quantity}
+                                                unit={line.priceChoice.unit}
+                                                taxPercent={line.priceChoice.tax_percent}
+                                                disabled={updateMutation.isPending}
+                                                error={showPriceChoiceErrors && line.pricePending
+                                                    ? t('bookingfrontend.price_choice_required')
+                                                    : undefined}
+                                            />
                                         </Table.Cell>
                                     </Table.Row>
-                                    {line.priceChoice && (
-                                        <Table.Row>
-                                            <Table.Cell colSpan={3}>
-                                                <PriceChoiceField
-                                                    id={priceChoiceFieldId(application.id, line.priceChoice.id)}
-                                                    options={line.priceChoice.price_options ?? []}
-                                                    value={applicationLines(application)[line.index].article_price_id ?? null}
-                                                    onChange={(priceId) => choosePrice(application, line.index, priceId)}
-                                                    quantity={line.quantity}
-                                                    unit={line.priceChoice.unit}
-                                                    taxPercent={line.priceChoice.tax_percent}
-                                                    disabled={updateMutation.isPending}
-                                                    error={showPriceChoiceErrors && line.pricePending
-                                                        ? t('bookingfrontend.price_choice_required')
-                                                        : undefined}
-                                                />
-                                            </Table.Cell>
-                                        </Table.Row>
-                                    )}
-                                </React.Fragment>
-                            ))}
-                        </React.Fragment>
-                    ))}
-                </Table.Body>
+                                )}
+                            </React.Fragment>
+                        ))}
+                    </Table.Body>
+                ))}
             </Table>
 
             {(articlesTotal > 0 || totalPending) && (

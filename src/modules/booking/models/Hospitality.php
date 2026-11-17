@@ -19,6 +19,23 @@ class Hospitality
     use SerializableTrait;
 
     /**
+     * The offer's description is shown in the citizen's «Legg til bevertning» dialog, so it is kept short (#1502).
+     */
+    public const DESCRIPTION_MAX_LENGTH = 70;
+
+    /**
+     * Is this description too long to store? Counted in Unicode code points, the unit the admin counter
+     * counts in too, so «æøå» counts 3 and an emoji 1 (strlen would count bytes). The string is counted as
+     * it will be stored, not trimmed. NULL and '' are allowed.
+     *
+     * @param mixed $description
+     */
+    public static function descriptionTooLong($description): bool
+    {
+        return is_string($description) && mb_strlen($description, 'UTF-8') > self::DESCRIPTION_MAX_LENGTH;
+    }
+
+    /**
      * @OA\Property(type="integer")
      * @Expose
      */

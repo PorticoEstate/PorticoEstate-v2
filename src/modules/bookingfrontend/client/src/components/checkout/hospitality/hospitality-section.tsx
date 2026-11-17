@@ -169,8 +169,13 @@ const HospitalitySection: FC<HospitalitySectionProps> = ({applicationIds, applic
                 </Button>
             </div>
 
+            {/* Information while the order can still be cancelled (#1502); a warning once the deadline has passed */}
             {cancellationInfo && (
-                <Alert data-color="warning" data-size="sm" style={{marginBottom: '0.75rem'}}>
+                <Alert
+                    data-color={cancellationInfo.isPastDeadline ? 'warning' : 'info'}
+                    data-size="sm"
+                    style={{marginBottom: '0.75rem'}}
+                >
                     {cancellationInfo.isPastDeadline
                         ? t('bookingfrontend.cancellation_deadline_passed_warning')
                         : t('bookingfrontend.cancellation_deadline_info')
@@ -180,6 +185,10 @@ const HospitalitySection: FC<HospitalitySectionProps> = ({applicationIds, applic
                             }))
                     }
                 </Alert>
+            )}
+
+            {orders.length === 0 && (
+                <Paragraph data-size="sm">{t('bookingfrontend.no_hospitality_added')}</Paragraph>
             )}
 
             {orders.length > 0 && (

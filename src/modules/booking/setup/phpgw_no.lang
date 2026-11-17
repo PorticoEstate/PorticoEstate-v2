@@ -1396,3 +1396,7 @@ direct_booking_blocked_resource_has_hospitality	booking	no	Ressursen er koblet t
 direct_booking_conflict_warning_resource	booking	no	Advarsel. Denne ressursen har direktebooking og er samtidig koblet til bevertning (%1). Det er ikke lenger tillatt å bruke begge på samme ressurs. Ingenting er endret. Slå av direktebooking eller fjern koblingen til bevertning.
 direct_booking_conflict_warning_hospitality	booking	no	Advarsel. Ressursene som er merket «Har direktebooking» er koblet til denne bevertningen. Det er ikke lenger tillatt å bruke begge på samme ressurs. Ingenting er endret. Slå av direktebooking på ressursen eller fjern koblingen her.
 resource_has_direct_booking_tag	booking	no	Har direktebooking
+hospitality_description_counter_under	booking	no	%1 tegn igjen
+hospitality_description_counter_over	booking	no	%1 tegn for mye
+hospitality_description_max_hint	booking	no	Maks %1 tegn.
+hospitality_description_too_long	booking	no	Beskrivelsen kan ha maks %1 tegn.

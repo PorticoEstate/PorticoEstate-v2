@@ -88,6 +88,30 @@ class HospitalityController
 	}
 
 	/**
+	 * Does the body carry a description that is too long (Hospitality::descriptionTooLong)? Judged only when
+	 * the body has the key: the admin saves one field per request, so an offer whose stored text predates
+	 * the limit still gets every other field saved, and the limit bites when the description itself is edited.
+	 *
+	 * @param array<string, mixed> $body
+	 */
+	public static function descriptionRefused(array $body): bool
+	{
+		return array_key_exists('description', $body) && Hospitality::descriptionTooLong($body['description']);
+	}
+
+	/**
+	 * 422 for a description over Hospitality::DESCRIPTION_MAX_LENGTH, in the admin's language.
+	 */
+	private function refuseDescriptionTooLong(Response $response): Response
+	{
+		$response->getBody()->write(json_encode([
+			'code' => 'description_too_long',
+			'error' => lang('booking.hospitality_description_too_long', Hospitality::DESCRIPTION_MAX_LENGTH),
+		]));
+		return $response->withHeader('Content-Type', 'application/json')->withStatus(422);
+	}
+
+	/**
 	 * Has the row been modified after the version the client holds (X-If-Modified-Since)?
 	 *
 	 * `modified` is stored as naive UTC, so it is read as UTC here instead of in whatever zone PHP
@@ -148,7 +172,7 @@ class HospitalityController
 	 *         required={"resource_id", "name"},
 	 *         @OA\Property(property="resource_id", type="integer"),
 	 *         @OA\Property(property="name", type="string"),
-	 *         @OA\Property(property="description", type="string"),
+	 *         @OA\Property(property="description", type="string", maxLength=70, description="At most 70 Unicode code points"),
 	 *         @OA\Property(property="active", type="integer"),
 	 *         @OA\Property(property="remote_serving_enabled", type="integer"),
 	 *         @OA\Property(property="include_in_checkout_payment", type="integer"),
@@ -157,7 +181,8 @@ class HospitalityController
 	 *     )),
 	 *     @OA\Response(response=201, description="Created"),
 	 *     @OA\Response(response=400, description="Bad request"),
-	 *     @OA\Response(response=403, description="Permission denied")
+	 *     @OA\Response(response=403, description="Permission denied"),
+	 *     @OA\Response(response=422, description="Description over 70 code points (code=description_too_long)")
 	 * )
 	 */
 	public function store(Request $request, Response $response): Response
@@ -177,6 +202,10 @@ class HospitalityController
 
 			if (!$this->normaliseActive($body)) {
 				return $this->refuseInvalidActive($response);
+			}
+
+			if (self::descriptionRefused($body)) {
+				return $this->refuseDescriptionTooLong($response);
 			}
 
 			// A resource with direct booking cannot be linked to hospitality (operator 2026-11-11).
@@ -264,7 +293,8 @@ class HospitalityController
 	 *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
 	 *     @OA\Response(response=200, description="Updated"),
 	 *     @OA\Response(response=403, description="Permission denied"),
-	 *     @OA\Response(response=404, description="Not found")
+	 *     @OA\Response(response=404, description="Not found"),
+	 *     @OA\Response(response=422, description="Description over 70 code points (code=description_too_long); judged only when the body carries description")
 	 * )
 	 */
 	public function update(Request $request, Response $response, array $args): Response
@@ -300,6 +330,10 @@ class HospitalityController
 
 			if (!$this->normaliseActive($body)) {
 				return $this->refuseInvalidActive($response);
+			}
+
+			if (self::descriptionRefused($body)) {
+				return $this->refuseDescriptionTooLong($response);
 			}
 
 			// Moving the hospitality to a resource, or re-activating it, links resources to it again:

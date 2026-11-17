@@ -16,6 +16,7 @@
 	var relevantAppsUrl = root.dataset.relevantAppsUrl ? root.dataset.relevantAppsUrl.split('?')[0] : null;
 	var applicationsBaseUrl = root.dataset.applicationsBaseUrl ? root.dataset.applicationsBaseUrl.split('?')[0] : null;
 	var canWrite = root.dataset.canWrite === '1';
+	var descriptionMaxLength = parseInt(root.dataset.descriptionMaxLength, 10);
 
 	// ═══════════════════════════════════════════════════════════════════
 	// Shared helpers
@@ -530,7 +531,14 @@
 
 		var formHtml = '<div class="hosp-show__edit-form">';
 
-		if (fieldType === 'textarea')
+		if (fieldType === 'textarea' && fieldName === 'description')
+		{
+			// The offer's description has a length limit: its counter and error go under the textarea (#1502)
+			formHtml += '<div class="hosp-show__edit-field">' +
+				'<textarea class="hosp-show__edit-input">' + esc(currentValue) + '</textarea>' +
+				'<div class="hosp-show__edit-error" role="alert" hidden></div>' +
+				'</div>';
+		} else if (fieldType === 'textarea')
 		{
 			formHtml += '<textarea class="hosp-show__edit-input">' + esc(currentValue) + '</textarea>';
 		} else if (fieldType === 'checkbox')
@@ -578,6 +586,24 @@
 		var input = valueSpan.querySelector('.hosp-show__edit-input');
 		if (input && input.tagName !== 'DIV') input.focus();
 
+		// Over the limit the save is blocked here, before any PUT; the server refuses it too (422)
+		var descriptionCounter = null;
+		var descriptionError = null;
+		if (fieldName === 'description' && input)
+		{
+			descriptionCounter = CharCounter.attach(input, {
+				limit: descriptionMaxLength,
+				under: lang('description_counter_under'),
+				over: lang('description_counter_over'),
+				hint: lang('description_max_hint')
+			});
+			descriptionError = valueSpan.querySelector('.hosp-show__edit-error');
+			input.addEventListener('input', function ()
+			{
+				if (!descriptionCounter.exceeded()) descriptionError.hidden = true;
+			});
+		}
+
 		// Save handler
 		valueSpan.querySelector('.hosp-show__edit-save').addEventListener('click', function ()
 		{
@@ -614,6 +640,13 @@
 				payload.open_days = isoToOpenDaysMask(isoDays);
 			} else
 			{
+				if (descriptionCounter && descriptionCounter.exceeded())
+				{
+					descriptionError.textContent = lang('description_too_long', descriptionMaxLength);
+					descriptionError.hidden = false;
+					input.focus();
+					return;
+				}
 				payload[fieldName] = input.value;
 			}
 

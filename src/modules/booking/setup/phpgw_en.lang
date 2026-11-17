@@ -1395,3 +1395,7 @@ direct_booking_blocked_resource_has_hospitality	booking	en	The resource is linke
 direct_booking_conflict_warning_resource	booking	en	Warning. This resource has direct booking and is also linked to hospitality (%1). Using both on the same resource is no longer allowed. Nothing has been changed. Turn off direct booking or remove the link to hospitality.
 direct_booking_conflict_warning_hospitality	booking	en	Warning. The resources marked “Has direct booking” are linked to this hospitality. Using both on the same resource is no longer allowed. Nothing has been changed. Turn off direct booking on the resource or remove the link here.
 resource_has_direct_booking_tag	booking	en	Has direct booking
+hospitality_description_counter_under	booking	en	Characters left: %1
+hospitality_description_counter_over	booking	en	Characters over the limit: %1
+hospitality_description_max_hint	booking	en	Max %1 characters.
+hospitality_description_too_long	booking	en	The description can have at most %1 characters.

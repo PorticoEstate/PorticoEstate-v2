@@ -75,12 +75,19 @@ function parse_navbar($force = False)
 			$selecte_bootstrap = '';
 			$selecte_digdir = ' selected = "selected"';
 			break;
+		case 'pure':
+			$selecte_portico = '';
+			$selecte_bootstrap = '';
+			$selecte_digdir = '';
+			$selecte_pure = ' selected = "selected"';
+			break;
 		default:
 			$selecte_portico = '';
 			$selecte_bootstrap = ' selected = "selected"';
 			$selecte_digdir = '';
 			break;
 	}
+	$selecte_pure = $selecte_pure ?? '';
 
 	$template_selector = <<<HTML
 
@@ -88,6 +95,7 @@ function parse_navbar($force = False)
 		<option value="portico"{$selecte_portico}>Portico</option>
 		<option value="bootstrap"{$selecte_bootstrap}>Bootstrap</option>
 		<option value="digdir"{$selecte_digdir}>Digdir</option>
+		<option value="pure"{$selecte_pure}>Pure</option>
 	   </select>
 HTML;
 

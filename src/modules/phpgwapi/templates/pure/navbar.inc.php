@@ -137,6 +137,36 @@ HTML;
 	$template = new Template(PHPGW_TEMPLATE_DIR);
 	$template->set_file('navbar', 'navbar.tpl');
 
+	switch ($userSettings['preferences']['common']['template_set'])
+	{
+		case 'portico':
+			$selecte_portico = ' selected = "selected"';
+			break;
+		case 'bootstrap':
+			$selecte_bootstrap = ' selected = "selected"';
+			break;
+		case 'digdir':
+			$selecte_digdir = ' selected = "selected"';
+			break;
+		case 'pure':
+			$selecte_pure = ' selected = "selected"';
+			break;
+	}
+	$selecte_portico = $selecte_portico ?? '';
+	$selecte_bootstrap = $selecte_bootstrap ?? '';
+	$selecte_digdir = $selecte_digdir ?? '';
+	$selecte_pure = $selecte_pure ?? '';
+
+	$var['template_selector'] = <<<HTML
+
+	   <select id = "template_selector">
+		<option value="pure"{$selecte_pure}>Pure</option>
+		<option value="portico"{$selecte_portico}>Portico</option>
+		<option value="bootstrap"{$selecte_bootstrap}>Bootstrap</option>
+		<option value="digdir"{$selecte_digdir}>Digdir</option>
+	   </select>
+HTML;
+
 	$var['current_app_title'] = isset($flags['app_header']) ? $flags['app_header'] : lang($flags['currentapp']);
 	$flags['menu_selection'] = isset($flags['menu_selection']) ? $flags['menu_selection'] : '';
 	$breadcrumb_selection = !empty($flags['breadcrumb_selection']) ? $flags['breadcrumb_selection'] : $flags['menu_selection'];

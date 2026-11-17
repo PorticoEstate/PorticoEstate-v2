@@ -13,7 +13,7 @@ body {
 	font-family: Arial, Helvetica, Verdana;
 	font-size: 14px;
 /*	line-height: 22px;*/
-	color: #666;
+	color: #333;
 	min-height: 100%;
 	position: relative;
 	-webkit-text-size-adjust: none;
@@ -94,6 +94,9 @@ nav:not(.mm-menu)
     right: 0px;
     z-index: 1;
 	background-color: #fff;
+	/* Let a wide top menu scroll inside the bar instead of widening the page. */
+	overflow-x: auto;
+	-webkit-overflow-scrolling: touch;
 
 }
 /*
@@ -120,7 +123,10 @@ nav:not(.mm-menu)
 
 .content
 {
-	padding: 20px 0px 50px 0px;
+	/* Small side gutters for mobile readability; bottom space clears the fixed footer. */
+	padding: 20px 8px 50px 8px;
+	box-sizing: border-box;
+	max-width: 100%;
 }
 
 div.dt-buttons {

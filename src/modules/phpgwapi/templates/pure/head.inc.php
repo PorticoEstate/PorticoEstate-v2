@@ -62,6 +62,7 @@ $stylesheets[] = "/phpgwapi/templates/pure/css/version_3/pure-min.css";
 $stylesheets[] = "/phpgwapi/templates/pure/css/pure-extension.css";
 $stylesheets[] = "/phpgwapi/templates/pure/css/version_3/grids-responsive-min.css";
 $stylesheets[] = "/phpgwapi/js/DataTables3/vendor/datatables.net/datatables.net-dt/css/dataTables.dataTables.min.css";
+$stylesheets[] = "/phpgwapi/templates/base/css/fontawesome/css/all.min.css";
 $stylesheets[] = "/phpgwapi/templates/pure/css/base.css";
 
 
@@ -98,19 +99,29 @@ switch ($userSettings['preferences']['common']['template_set'])
 {
 	case 'portico':
 		$selecte_portico = ' selected = "selected"';
-		$selecte_pure = '';
+		break;
+	case 'bootstrap':
+		$selecte_bootstrap = ' selected = "selected"';
+		break;
+	case 'digdir':
+		$selecte_digdir = ' selected = "selected"';
 		break;
 	case 'pure':
-		$selecte_portico = '';
 		$selecte_pure = ' selected = "selected"';
 		break;
 }
+$selecte_portico = $selecte_portico ?? '';
+$selecte_bootstrap = $selecte_bootstrap ?? '';
+$selecte_digdir = $selecte_digdir ?? '';
+$selecte_pure = $selecte_pure ?? '';
 
 $template_selector = <<<HTML
 
    <select id = "template_selector">
-	<option value="pure"{$selecte_pure}>Mobil</option>
-	<option value="portico"{$selecte_portico}>Desktop</option>
+	<option value="pure"{$selecte_pure}>Pure</option>
+	<option value="portico"{$selecte_portico}>Portico</option>
+	<option value="bootstrap"{$selecte_bootstrap}>Bootstrap</option>
+	<option value="digdir"{$selecte_digdir}>Digdir</option>
    </select>
 HTML;
 

@@ -4,6 +4,7 @@ namespace App\modules\booking\repositories;
 
 use App\Database\Db;
 use App\modules\booking\models\HospitalityOrder;
+use App\modules\booking\services\HospitalityOrderGuard;
 use PDO;
 
 class HospitalityOrderRepository
@@ -73,6 +74,34 @@ class HospitalityOrderRepository
     }
 
     // -- Orders --
+
+    /**
+     * How many OPEN orders of this hospitality are served at this location. THE one definition of "open" for
+     * the main-resource change (it decides whether moving the main would strand orders), so the refusal and
+     * any count of it are the same SQL:
+     *   - the order is not in a final status (HospitalityOrderGuard::FINAL_ORDER_STATUSES), and
+     *   - its serving time is unknown (NULL) or has not started yet.
+     * Deliberately on the safe side: an order with NO serving time and an order whose date lies years ahead (the
+     * database holds a few corrupt far-future dates) both count as open, so they block the move rather than
+     * being silently left behind. Compared against the current time as naive UTC, the way serving_time_iso is
+     * stored, so the database session's time zone does not matter.
+     */
+    public function countOpenAtLocation(int $hospitalityId, int $locationResourceId): int
+    {
+        $final = implode(', ', array_map(
+            static fn(string $status): string => "'" . $status . "'",
+            HospitalityOrderGuard::FINAL_ORDER_STATUSES // constants, never request input
+        ));
+        $stmt = $this->db->prepare(
+            "SELECT count(*) FROM bb_hospitality_order
+              WHERE hospitality_id = :hospitality_id
+                AND location_resource_id = :location_resource_id
+                AND status NOT IN ({$final})
+                AND (serving_time_iso IS NULL OR serving_time_iso > (now() AT TIME ZONE 'UTC'))"
+        );
+        $stmt->execute([':hospitality_id' => $hospitalityId, ':location_resource_id' => $locationResourceId]);
+        return (int)$stmt->fetchColumn();
+    }
 
     public function getById(int $id): ?array
     {

@@ -98,7 +98,8 @@
 		toast.dataset.color = type || 'success';
 		toast.textContent = message;
 		document.body.appendChild(toast);
-		setTimeout(function () { toast.remove(); }, 3000);
+		// An error is read, not glanced at: the server's refusals are whole sentences (a success stays at 3 s)
+		setTimeout(function () { toast.remove(); }, type === 'danger' ? 8000 : 3000);
 	}
 
 	function fetchJson(url)
@@ -217,6 +218,12 @@
 			{
 				case 'details':
 					renderDetails(hospitalityData);
+					break;
+				case 'main_resource':
+					// The main resource moved (here or on another admin's page): the Resources tab builds its main section
+					// and its leave-the-main-out filter from it, so it is rebuilt, not patched
+					renderDetails(hospitalityData);
+					renderResources(hospitalityData);
 					break;
 				case 'resources':
 					// If DOM already has building groups, just patch toggle states
@@ -354,7 +361,11 @@
 			? '<div class="hosp-show__field-desc">' + esc(opts.description) + '</div>'
 			: '';
 
-		if (fieldType === 'checkbox')
+		if (opts.displayHtml != null)
+		{
+			// Already-escaped markup (a link), for a value that is more than text
+			displayHtml = opts.displayHtml;
+		} else if (fieldType === 'checkbox')
 		{
 			displayHtml = displayValue ? lang('yes') : lang('no');
 		} else
@@ -496,6 +507,86 @@
 		}
 	}
 
+	// ── Main-resource picker (the Details tab's «Hovedressurs» edit) ───────────────────────────────
+	// The create form's picker, reused: a BuildingSelect, then a plain <select class="ds-input"> filled from
+	// /booking/buildings/{id}/resources. It opens on the building the current main resource sits in.
+	var _mainResourcePicker = null;
+
+	function disposeMainResourcePicker()
+	{
+		if (_mainResourcePicker)
+		{
+			_mainResourcePicker.dispose();
+			_mainResourcePicker = null;
+		}
+	}
+
+	// The building's resource rows carry `direct_booking` (a timestamp) only when it is set
+	function resourceRowHasDirectBooking(r)
+	{
+		return r.direct_booking != null && r.direct_booking !== '' && Number(r.direct_booking) !== 0;
+	}
+
+	function initMainResourcePicker(scope, h)
+	{
+		var container = scope.querySelector('.building-select');
+		var select = scope.querySelector('[data-sub="resource"]');
+		var saveButton = scope.querySelector('.hosp-show__edit-save');
+		var currentId = String(h.resource_id);
+
+		// Save only when a resource other than the current one is chosen
+		function updateSaveState()
+		{
+			saveButton.disabled = !select.value || select.value === currentId;
+		}
+
+		function loadResources(buildingId)
+		{
+			select.disabled = true;
+			select.innerHTML = '<option value="">' + esc(lang('loading')) + '...</option>';
+			updateSaveState();
+
+			return fetchJson(buildingsUrl + '/' + buildingId + '/resources').then(function (resources)
+			{
+				var html = '<option value="">' + esc(lang('selectResource')) + '</option>';
+				resources.forEach(function (r)
+				{
+					// Advisory only: the row stays selectable, the server is what refuses a direct-booking resource
+					var tag = resourceRowHasDirectBooking(r) ? ' \u2014 ' + lang('resourceHasDirectBookingTag') : '';
+					html += '<option value="' + esc(r.id) + '"' + (String(r.id) === currentId ? ' selected' : '') + '>' +
+						esc(r.name + tag) + '</option>';
+				});
+				select.innerHTML = html;
+				select.disabled = false;
+				updateSaveState();
+			}).catch(function ()
+			{
+				select.innerHTML = '<option value="">' + esc(lang('error')) + '</option>';
+				updateSaveState();
+			});
+		}
+
+		select.addEventListener('change', updateSaveState);
+
+		var picker = new BuildingSelect(container, {
+			apiUrl: buildingsUrl,
+			value: h.resource_building_id || null,
+			displayValue: h.resource_building_name || '',
+			onChange: function (buildingId) { loadResources(buildingId); }
+		});
+		if (h.resource_building_id)
+		{
+			// Open on the current building: the next thing to do is choose a resource. (Focusing the building search
+			// would open its dropdown on top of the resource list.)
+			loadResources(h.resource_building_id).then(function () { if (!select.disabled) select.focus(); });
+		} else
+		{
+			container.querySelector('.building-select__input').focus();
+		}
+		updateSaveState();
+		return picker;
+	}
+
 	// Delegated click handler for pen icons
 	root.addEventListener('click', function (e)
 	{
@@ -529,7 +620,7 @@
 			currentValue = hospitalityData[fieldName] != null ? String(hospitalityData[fieldName]) : '';
 		}
 
-		var formHtml = '<div class="hosp-show__edit-form">';
+		var formHtml = '<div class="hosp-show__edit-form' + (fieldType === 'resource' ? ' hosp-show__edit-form--stacked' : '') + '">';
 
 		if (fieldType === 'textarea' && fieldName === 'description')
 		{
@@ -568,6 +659,19 @@
 			});
 			formHtml += '</div>';
 			formHtml += '<div class="hosp-show__edit-error" role="alert" hidden></div>';
+		} else if (fieldType === 'resource')
+		{
+			// The create form's picker: a building search, then that building's resources (initMainResourcePicker)
+			formHtml += '<div class="hosp-show__resource-edit">' +
+				'<div id="main-resource-building" class="building-select">' +
+				'<input type="text" class="building-select__input ds-input" autocomplete="off" ' +
+				'placeholder="' + esc(lang('searchBuildings')) + '..." aria-label="' + esc(lang('building')) + '" ' +
+				'aria-expanded="false" aria-autocomplete="list" role="combobox">' +
+				'<input type="hidden"><ul class="building-select__dropdown" role="listbox"></ul></div>' +
+				'<select class="ds-input hosp-show__edit-input" data-sub="resource" aria-label="' + esc(lang('mainResource')) + '" disabled>' +
+				'<option value="">' + esc(lang('loading')) + '...</option></select>' +
+				'<div class="hosp-show__field-desc">' + esc(lang('mainResourceEditNote')) + '</div>' +
+				'</div>';
 		} else
 		{
 			formHtml += '<input type="text" class="hosp-show__edit-input" value="' + esc(currentValue) + '">';
@@ -584,7 +688,12 @@
 		collabStartEditing(editScope);
 
 		var input = valueSpan.querySelector('.hosp-show__edit-input');
-		if (input && input.tagName !== 'DIV') input.focus();
+		if (fieldType === 'resource')
+		{
+			fieldEl.classList.add('hosp-show__field--stacked'); // renderDetails replaces the row, so nothing to undo
+			disposeMainResourcePicker();
+			_mainResourcePicker = initMainResourcePicker(valueSpan, hospitalityData);
+		} else if (input && input.tagName !== 'DIV') input.focus();
 
 		// Over the limit the save is blocked here, before any PUT; the server refuses it too (422)
 		var descriptionCounter = null;
@@ -638,6 +747,12 @@
 					return;
 				}
 				payload.open_days = isoToOpenDaysMask(isoDays);
+			} else if (fieldType === 'resource')
+			{
+				// parseInt of a value that came from our own <option>s: always a plain integer (the server re-checks it)
+				var chosenResource = parseInt(valueSpan.querySelector('[data-sub="resource"]').value, 10);
+				if (!chosenResource) return;
+				payload.resource_id = chosenResource;
 			} else
 			{
 				if (descriptionCounter && descriptionCounter.exceeded())
@@ -660,13 +775,21 @@
 				headers['X-If-Modified-Since'] = hospitalityData.modified;
 			}
 
-			putJson(apiUrl, payload, headers).then(function (updated)
+			function applySaved(updated)
 			{
-				collabStopEditing(editScope);
+				disposeMainResourcePicker();
 				hospitalityData = Object.assign(hospitalityData, updated);
 				showToast(lang('saved'));
 				renderDetails(hospitalityData);
 				renderHeader(hospitalityData);
+				// The Resources tab builds its main-resource section and its leave-the-main-out filter from resource_id
+				if (payload.resource_id !== undefined) renderResources(hospitalityData);
+			}
+
+			putJson(apiUrl, payload, headers).then(function (updated)
+			{
+				collabStopEditing(editScope);
+				applySaved(updated);
 			}).catch(function (err)
 			{
 				collabStopEditing(editScope);
@@ -675,13 +798,7 @@
 					showConflictDialog(err.current, function ()
 					{
 						// Retry without conflict check
-						putJson(apiUrl, payload).then(function (updated)
-						{
-							hospitalityData = Object.assign(hospitalityData, updated);
-							showToast(lang('saved'));
-							renderDetails(hospitalityData);
-							renderHeader(hospitalityData);
-						}).catch(function (retryErr)
+						putJson(apiUrl, payload).then(applySaved).catch(function (retryErr)
 						{
 							showToast(lang('error') + ': ' + retryErr.message, 'danger');
 							renderDetails(hospitalityData);
@@ -699,6 +816,7 @@
 		valueSpan.querySelector('.hosp-show__edit-cancel').addEventListener('click', function ()
 		{
 			collabStopEditing(editScope);
+			disposeMainResourcePicker();
 			renderDetails(hospitalityData);
 		});
 
@@ -719,6 +837,8 @@
 
 	function renderDetails(h)
 	{
+		// A refresh from another admin can arrive while the picker is open: its listeners belong to DOM that is replaced here
+		disposeMainResourcePicker();
 		var html = '';
 
 		// Core info
@@ -731,7 +851,7 @@
 		// Service configuration
 		var svcHtml = '';
 		var resourceLink = '<a href="/?menuaction=booking.uiresource.show&id=' + esc(h.resource_id) + '">' + esc(h.resource_name) + '</a>';
-		svcHtml += fieldHtml(lang('main_resource'), resourceLink);
+		svcHtml += editableField(lang('main_resource'), null, 'resource_id', 'resource', { displayHtml: resourceLink });
 		svcHtml += editableField(lang('remoteServing', h.resource_name), h.remote_serving_enabled, 'remote_serving_enabled', 'checkbox', {
 			description: lang('remoteServingDesc', h.resource_name)
 		});

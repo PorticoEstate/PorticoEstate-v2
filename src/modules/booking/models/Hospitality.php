@@ -149,6 +149,21 @@ class Hospitality
     public $resource_name;
 
     /**
+     * The building the main resource sits in (the lowest building id when it is in several), so the admin UI
+     * can open the main-resource picker on it. Null when the resource is in no building, and on the list.
+     *
+     * @OA\Property(type="integer", nullable=true)
+     * @Expose
+     */
+    public $resource_building_id;
+
+    /**
+     * @OA\Property(type="string", nullable=true)
+     * @Expose
+     */
+    public $resource_building_name;
+
+    /**
      * True when this hospitality is active and its own resource has direct booking: an existing
      * conflict the admin UI warns about. Filled by the controller on read (show, update); null elsewhere.
      *

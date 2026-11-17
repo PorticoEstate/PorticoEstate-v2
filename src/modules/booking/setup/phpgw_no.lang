@@ -1400,3 +1400,6 @@ hospitality_description_counter_under	booking	no	%1 tegn igjen
 hospitality_description_counter_over	booking	no	%1 tegn for mye
 hospitality_description_max_hint	booking	no	Maks %1 tegn.
 hospitality_description_too_long	booking	no	Beskrivelsen kan ha maks %1 tegn.
+main_resource_edit_note	booking	no	Avbestillingsfrist, kontaktinformasjon og åpningstider for alle bestillinger hentes fra hovedressursen og endres når du bytter den.
+main_resource_has_open_orders	booking	no	Hovedressursen kan ikke byttes så lenge det finnes åpne bestillinger som skal leveres til den (%1). Avlys dem eller sett dem som levert først.
+main_resource_is_remote_location	booking	no	Ressursen «%1» er en ekstern lokasjon for denne bevertningen og kan ikke samtidig være hovedressurs. Fjern den fra de eksterne lokasjonene først.

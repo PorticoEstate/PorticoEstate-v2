@@ -1399,3 +1399,6 @@ hospitality_description_counter_under	booking	en	Characters left: %1
 hospitality_description_counter_over	booking	en	Characters over the limit: %1
 hospitality_description_max_hint	booking	en	Max %1 characters.
 hospitality_description_too_long	booking	en	The description can have at most %1 characters.
+main_resource_edit_note	booking	en	The cancellation deadline, contact details and opening hours of all orders are taken from the main resource and change when you change it.
+main_resource_has_open_orders	booking	en	The main resource cannot be changed while open orders are to be served at it (%1). Cancel them or mark them as delivered first.
+main_resource_is_remote_location	booking	en	The resource “%1” is a remote location of this hospitality and cannot also be the main resource. Remove it from the remote locations first.

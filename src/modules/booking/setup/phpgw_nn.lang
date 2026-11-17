@@ -1374,3 +1374,6 @@ hospitality_description_counter_under	booking	nn	%1 teikn igjen
 hospitality_description_counter_over	booking	nn	%1 teikn for mykje
 hospitality_description_max_hint	booking	nn	Maks %1 teikn.
 hospitality_description_too_long	booking	nn	Beskrivinga kan ha maks %1 teikn.
+main_resource_edit_note	booking	nn	Avbestillingsfrist, kontaktinformasjon og opningstider for alle bestillingar blir henta frå hovudressursen og endrar seg når du byter han.
+main_resource_has_open_orders	booking	nn	Hovudressursen kan ikkje byttast så lenge det finst opne bestillingar som skal leverast til han (%1). Avlys dei eller set dei som leverte først.
+main_resource_is_remote_location	booking	nn	Ressursen «%1» er ein ekstern lokasjon for denne bevertninga og kan ikkje samtidig vere hovudressurs. Fjern han frå dei eksterne lokasjonane først.

@@ -198,6 +198,75 @@ $activeCases = [
     ['["1"]', ['1'], null, null, 'checked'],
 ];
 
+// ── hospitality `resource_id`: ONE reading, used for the guard AND the repository ────────────
+// The same class of gap as F1, for the other column the guard judges. The guard read resource_id with (int)
+// while the repository bound the raw value, and Postgres 16+ casts text to integer more liberally than
+// PHP: "0x5D", "0o135", "0b1011101" and "9_3" are 93 there (resource 93 has direct booking) while PHP reads
+// 0, 0, 0 and 9. Postgres 15 rejects them, so the laptop cannot show it; a throwaway postgres:18 can.
+// The rule: a plain decimal integer in 1..2147483647 (an int, or a string of ASCII digits only), else 422.
+//
+// Columns: label | raw value as a request body can carry it | norm = G::normaliseResourceId (an int, or null
+// = not a resource id, the controller answers 422) | pg15 / pg16 = what Postgres 15 / Postgres 16-and-later
+// put in the integer column when PDO binds the raw value as text (an int, 'error' = rejected and nothing
+// stored, null = never bound as a value). Re-derivable with --pg-oracle-resource-id on each version.
+$resourceIdCases = [
+    // accepted: a plain decimal integer in range
+    ['int 93', 93, 93, 93, 93],
+    ['"93"', '93', 93, 93, 93],
+    ['"093" (PHP and Postgres agree)', '093', 93, 93, 93],
+    ['"0093"', '0093', 93, 93, 93],
+    ['"0000000000000000093" (19 chars, 2 significant)', '0000000000000000093', 93, 93, 93],
+    ['int 1', 1, 1, 1, 1],
+    ['"1"', '1', 1, 1, 1],
+    ['int 2147483647 (the column maximum)', 2147483647, 2147483647, 2147483647, 2147483647],
+    ['"2147483647"', '2147483647', 2147483647, 2147483647, 2147483647],
+    ['"0002147483647"', '0002147483647', 2147483647, 2147483647, 2147483647],
+    // THE DIVERGENCE: Postgres 16+ stores 93, Postgres 15 rejects, PHP (int) reads 0 or 9 -> refused
+    ['"0x5D" (PHP reads 0)', '0x5D', null, 'error', 93],
+    ['"0X5d" (PHP reads 0)', '0X5d', null, 'error', 93],
+    ['"9_3" (PHP reads 9)', '9_3', null, 'error', 93],
+    ['"0o135" (PHP reads 0)', '0o135', null, 'error', 93],
+    ['"0b1011101" (PHP reads 0)', '0b1011101', null, 'error', 93],
+    // every version stores 93 and (int) agrees, but it is not spelled as a plain integer: refused, not reinterpreted
+    ['"+93"', '+93', null, 93, 93],
+    ['" 93"', ' 93', null, 93, 93],
+    ['"93 "', '93 ', null, 93, 93],
+    ['"93\n"', "93\n", null, 93, 93],
+    ['"\t93"', "\t93", null, 93, 93],
+    ['float 93.0 (json "93.0": PDO binds "93")', 93.0, null, 93, 93],
+    ['true (PDO binds "1": resource 1)', true, null, 1, 1],
+    // not a resource id: zero, negative, out of range, not a number
+    ['int 0', 0, null, 0, 0],
+    ['"0"', '0', null, 0, 0],
+    ['"00"', '00', null, 0, 0],
+    ['"+0"', '+0', null, 0, 0],
+    ['"-0"', '-0', null, 0, 0],
+    ['int -1', -1, null, -1, -1],
+    ['"-1"', '-1', null, -1, -1],
+    ['"-93"', '-93', null, -93, -93],
+    ['int 2147483648 (one past the column)', 2147483648, null, 'error', 'error'],
+    ['"2147483648"', '2147483648', null, 'error', 'error'],
+    ['int PHP_INT_MAX', PHP_INT_MAX, null, 'error', 'error'],
+    ['"99999999999999999999"', '99999999999999999999', null, 'error', 'error'],
+    ['""', '', null, 'error', 'error'],
+    ['"   "', '   ', null, 'error', 'error'],
+    ['"abc"', 'abc', null, 'error', 'error'],
+    ['"93abc"', '93abc', null, 'error', 'error'],
+    ['"9 3"', '9 3', null, 'error', 'error'],
+    ['"9,3"', '9,3', null, 'error', 'error'],
+    ['"1e2" (PHP (int) reads 100)', '1e2', null, 'error', 'error'],
+    ['"93.0"', '93.0', null, 'error', 'error'],
+    ['"0x"', '0x', null, 'error', 'error'],
+    ['"٩٣" (Arabic-Indic digits)', "\u{0669}\u{0663}", null, 'error', 'error'],
+    ['"９３" (fullwidth digits)', "\u{FF19}\u{FF13}", null, 'error', 'error'],
+    ['float 93.5', 93.5, null, 'error', 'error'],
+    ['false (PDO binds "")', false, null, 'error', 'error'],
+    ['INF (json 1e999)', INF, null, 'error', 'error'],
+    ['null', null, null, null, null],
+    ['[]', [], null, null, null],
+    ['["93"]', ['93'], null, null, null],
+];
+
 if (in_array('--pg-oracle', $argv ?? [], true)) {
     $quote = static fn(string $s): string => "'" . str_replace("'", "''", $s) . "'";
     $values = [];
@@ -226,6 +295,52 @@ if (in_array('--pg-oracle', $argv ?? [], true)) {
         "  END LOOP;\n",
         "  IF bad > 0 THEN RAISE EXCEPTION '% disagreement(s) between Postgres and the normalised value', bad; END IF;\n",
         "  RAISE NOTICE 'ORACLE OK: % raw values, none is read as a different flag than Postgres would store', n;\n",
+        "END \$oracle\$;\n";
+    exit(0);
+}
+
+// --pg-oracle-resource-id: the same idea for `resource_id`, but the answer depends on the Postgres VERSION, so the
+// block reads server_version_num and holds the row to the column of the table that is meant for it.
+//   php tests/hospitality-direct-booking-guard/run.php --pg-oracle-resource-id | docker exec -i <container> psql -U postgres -v ON_ERROR_STOP=1 -f -
+// Run it on the laptop's portico_postgres (15) AND on a throwaway postgres:18; a green PG 15 run alone proves little,
+// because 15 rejects the very strings where the gap is. Touches no table.
+if (in_array('--pg-oracle-resource-id', $argv ?? [], true)) {
+    $quote = static fn(string $s): string => "'" . str_replace("'", "''", $s) . "'";
+    $values = [];
+    foreach ($resourceIdCases as [$label, $raw, $norm, $pg15, $pg16]) {
+        if ($pg15 === null && $pg16 === null) {
+            continue; // never reaches Postgres as a value (null, an array)
+        }
+        $bound = is_bool($raw) ? ($raw ? '1' : '') : (string)$raw; // what PDO::execute([...]) sends
+        // `norm` is what the guard that is LOADED right now reads (GUARD_FILE may point at a broken copy, which is how
+        // this oracle is shown to go red); `tnorm` is what the table above declares it should read.
+        $read = G::normaliseResourceId($raw);
+        $int = static fn(?int $n): string => $n === null ? 'NULL::bigint' : $n . '::bigint'; // bigint: a broken reading must WARN below, not overflow here
+        $values[] = sprintf(
+            "(%s, convert_from(decode('%s', 'hex'), 'UTF8'), %s, %s, %s, %s)",
+            $quote($label), bin2hex($bound), $int($read), $int($norm), $quote((string)$pg15), $quote((string)$pg16)
+        );
+    }
+    echo "DO \$oracle\$\nDECLARE c record; v int; got text; want text; bad int := 0; n int := 0;\n",
+        "  major int := current_setting('server_version_num')::int / 10000;\nBEGIN\n",
+        "  FOR c IN SELECT * FROM (VALUES\n    ", implode(",\n    ", $values), "\n  ) AS t(label, bound, norm, tnorm, pg15, pg16) LOOP\n",
+        "    n := n + 1;\n",
+        "    want := CASE WHEN major >= 16 THEN c.pg16 ELSE c.pg15 END;\n",
+        "    BEGIN v := c.bound::integer; got := v::text;\n",
+        "    EXCEPTION WHEN invalid_text_representation OR numeric_value_out_of_range THEN v := NULL; got := 'error';\n",
+        "    END;\n",
+        // the code reads what the table declares (otherwise the two halves of the proof, rows and oracle, would not meet)
+        "    IF c.norm IS DISTINCT FROM c.tnorm THEN RAISE WARNING '% : the code reads %, the table declares %', c.label, coalesce(c.norm::text, 'null'), coalesce(c.tnorm::text, 'null'); bad := bad + 1; END IF;\n",
+        // the table is right for THIS server (so the other checks mean something)
+        "    IF got IS DISTINCT FROM want THEN RAISE WARNING '% : the table says % on PG %, Postgres gave %', c.label, want, major, got; bad := bad + 1; END IF;\n",
+        // the point: a value that IS read is the very id Postgres stores
+        "    IF c.norm IS NOT NULL AND v IS NOT NULL AND c.norm <> v THEN RAISE WARNING '% : Postgres % stores %, but it is read as %', c.label, major, v, c.norm; bad := bad + 1; END IF;\n",
+        // and a value that is read must be one Postgres accepts at all, as a positive id
+        "    IF c.norm IS NOT NULL AND (v IS NULL OR v < 1) THEN RAISE WARNING '% : read as %, but Postgres % does not store a resource id for it (%)', c.label, c.norm, major, got; bad := bad + 1; END IF;\n",
+        "    RAISE NOTICE '% | PG %: % | read as: %', rpad(c.label, 48), major, rpad(got, 11), coalesce(c.norm::text, 'null (422)');\n",
+        "  END LOOP;\n",
+        "  IF bad > 0 THEN RAISE EXCEPTION '% disagreement(s) between Postgres % and the code', bad, major; END IF;\n",
+        "  RAISE NOTICE 'ORACLE OK (PG %): % raw values, none is read as a different resource than Postgres would store', major, n;\n",
         "END \$oracle\$;\n";
     exit(0);
 }
@@ -270,6 +385,59 @@ foreach ($activeCases as [$label, $raw, $norm, $pg, $guardDecision]) {
     }
 }
 
+// ── resource_id rows ────────────────────────────────────────────────────────────────────────
+// The guard judges the resource Postgres will store, so each row below asks the same thing of one case from the
+// table: what the one reading says, what the controller hands the repository, what the guard does with it, and
+// that no accepted value is read as another resource than any Postgres version stores.
+$guardOutcome = static function (callable $call) use ($decision): string {
+    try {
+        return $decision($call);
+    } catch (InvalidArgumentException $e) {
+        return 'threw'; // the guard refuses to judge a value that is not a resource id (the controller never lets one through)
+    }
+};
+$normaliseResourceBody = new ReflectionMethod(HospitalityController::class, 'normaliseResourceId');
+$resourceBodyAfter = static function (array $body) use ($controller, $normaliseResourceBody): array {
+    $ok = $normaliseResourceBody->invokeArgs($controller, [&$body]);
+    return [$ok, $body];
+};
+$storedActive = ['id' => 1, 'active' => 1, 'resource_id' => 11]; // an active hospitality an update moves
+
+foreach ($resourceIdCases as [$label, $raw, $norm, $pg15, $pg16]) {
+    $expect("resid/norm {$label}", G::normaliseResourceId($raw), $norm);
+    // refused = [false, body unchanged]; accepted = [true, body with the int the repository then binds]
+    $expect("resid/controller hands the repository {$label}", $resourceBodyAfter(['resource_id' => $raw, 'name' => 'x']),
+        $norm === null ? [false, ['resource_id' => $raw, 'name' => 'x']] : [true, ['resource_id' => $norm, 'name' => 'x']]);
+    // a resource id goes on to be judged; anything else is not judged at all (fail closed: the guard throws)
+    $expect("resid/create guard {$label}", $guardOutcome(fn() => $guard->checkHospitalityCreate(['resource_id' => $raw, 'name' => 'x'])), $norm === null ? 'threw' : 'checked');
+    $expect("resid/update guard {$label}", $guardOutcome(fn() => $guard->checkHospitalityUpdate($storedActive, ['resource_id' => $raw])), $norm === null ? 'threw' : 'checked');
+    foreach ([['15', $pg15], ['16+', $pg16]] as [$version, $pg]) {
+        // the point: when Postgres stores an id, a value that IS read is that same id ...
+        if (is_int($pg) && $norm !== null) {
+            $expect("resid/read as the id Postgres {$version} stores {$label}", $norm === $pg, true);
+        }
+        // ... and a value Postgres rejects, or stores as 0, a negative or past the column, is never read as an id
+        if ($pg === 'error' || (is_int($pg) && ($pg < 1 || $pg > G::MAX_RESOURCE_ID))) {
+            $expect("resid/never an id on Postgres {$version} {$label}", G::normaliseResourceId($raw), null);
+        }
+    }
+    // PHP's (int) is NOT the reading: where Postgres 16+ stores an id and (int) reads another one, the value is refused
+    if (is_string($raw) && is_int($pg16) && (int)$raw !== $pg16) {
+        $expect("resid/(int) would read another resource than Postgres 16+ stores, so refused {$label}", G::normaliseResourceId($raw), null);
+    }
+}
+$expect('resid/an ABSENT resource_id stays absent (a rename must not touch the resource)', $resourceBodyAfter(['name' => 'x']), [true, ['name' => 'x']]);
+$expect('resid/a null resource_id is refused, not treated as absent (the column is NOT NULL)', $resourceBodyAfter(['resource_id' => null, 'name' => 'x']), [false, ['resource_id' => null, 'name' => 'x']]);
+$expect('resid/update: no resource_id key on an ACTIVE hospitality: the stored resource is still judged',
+    $guardOutcome(fn() => $guard->checkHospitalityUpdate($storedActive, ['name' => 'x'])), 'checked');
+$expect('resid/update: an INACTIVE hospitality moved to a resource has no active link, nothing to check',
+    $guardOutcome(fn() => $guard->checkHospitalityUpdate($inactive, ['resource_id' => 11])), 'skipped');
+$expect('resid/update: moved AND re-activated, the new resource is judged',
+    $guardOutcome(fn() => $guard->checkHospitalityUpdate($inactive, ['resource_id' => 11, 'active' => 1])), 'checked');
+$expect('resid/create: no resource_id key at all is not judged against resource 0 (fail closed)',
+    $guardOutcome(fn() => $guard->checkHospitalityCreate(['name' => 'x'])), 'threw');
+$expect('resid/the column maximum is the largest 4-byte integer', G::MAX_RESOURCE_ID, 2147483647);
+
 // null and absent: today's default (create 1, update leaves the column alone), NOT a refusal and NOT a 0
 $expect('active/controller: an ABSENT active stays absent (a rename must not touch the flag)', $bodyAfter(['name' => 'x']), [true, ['name' => 'x']]);
 $expect('active/controller: a null active is dropped, so create defaults and update leaves it alone', $bodyAfter(['active' => null, 'name' => 'x']), [true, ['name' => 'x']]);
@@ -295,7 +463,32 @@ foreach ([['store', 'checkHospitalityCreate', 'repository->create('], ['update',
     $src = $methodSource($method);
     $expect("active/source order: {$method}() reads active before the guard", $firstBefore($src, '$this->normaliseActive($body)', "directBookingGuard->{$guardCall}("), true);
     $expect("active/source order: {$method}() reads active before the repository", $firstBefore($src, '$this->normaliseActive($body)', $repoCall), true);
+    // the same for resource_id, and the existence check: a positive id that is no resource must be a 422, not the foreign key's 500
+    $expect("resid/source order: {$method}() reads resource_id before the guard", $firstBefore($src, '$this->normaliseResourceId($body)', "directBookingGuard->{$guardCall}("), true);
+    $expect("resid/source order: {$method}() reads resource_id before the repository", $firstBefore($src, '$this->normaliseResourceId($body)', $repoCall), true);
+    $expect("resid/source order: {$method}() checks the resource exists before the guard", $firstBefore($src, 'repository->resourceExists(', "directBookingGuard->{$guardCall}("), true);
+    $expect("resid/source order: {$method}() checks the resource exists after reading it", $firstBefore($src, '$this->normaliseResourceId($body)', 'repository->resourceExists('), true);
 }
+// The two rulings of the operator about the main resource (Q1 open orders at the old main, Q2 the new main is a delivery
+// location): each lives in ONE method of the controller, runs after the direct-booking guard and before the write,
+// and "open" is defined once, in the repository, from the order guard's own list of final statuses.
+$updateSource = $methodSource('update');
+$expect('q/source order: update() asks the Q2 method after the direct-booking guard', $firstBefore($updateSource, 'directBookingGuard->checkHospitalityUpdate(', '$this->mainIsRemoteLocationRefusal('), true);
+$expect('q/source order: update() asks the Q1 method after the Q2 method', $firstBefore($updateSource, '$this->mainIsRemoteLocationRefusal(', '$this->openOrdersAtMainRefusal('), true);
+$expect('q/source order: update() asks the Q1 method before the repository writes', $firstBefore($updateSource, '$this->openOrdersAtMainRefusal(', 'repository->update('), true);
+$expect('q/only an actual move of the main resource asks them (both calls sit inside `if ($mainResourceChanged)`)',
+    preg_match('/if \(\$mainResourceChanged\) \{[^}]*\$this->mainIsRemoteLocationRefusal\([^}]*\$this->openOrdersAtMainRefusal\(/s', $updateSource), 1);
+$expect('q/a move is told apart from the key arriving unchanged (the whole row may be sent back)',
+    str_contains($updateSource, "\$body['resource_id'] !== (int)\$existing['resource_id']"), true);
+$expect('q/the broadcast tells other admins to rebuild the Resources tab when the main moved', str_contains($updateSource, "\$mainResourceChanged ? 'main_resource' : 'details'"), true);
+$controllerSource = file_get_contents(getenv('CONTROLLER_FILE') ?: $root . '/src/modules/booking/controllers/HospitalityController.php');
+$expect('q/"open" is not spelled in the controller (one definition, in the order repository)', str_contains($controllerSource, 'serving_time_iso') || str_contains($controllerSource, "'cancelled'"), false);
+$expect('q/the Q1 method counts through the one definition', str_contains($controllerSource, 'orderRepository->countOpenAtLocation('), true);
+$orderRepositorySource = file_get_contents(getenv('ORDER_REPOSITORY_FILE') ?: $root . '/src/modules/booking/repositories/HospitalityOrderRepository.php');
+$openFn = substr($orderRepositorySource, (int)strpos($orderRepositorySource, 'function countOpenAtLocation'), 1400);
+$expect('q/the definition of "open" reads the final statuses from the order guard, not a second list', str_contains($openFn, 'HospitalityOrderGuard::FINAL_ORDER_STATUSES') && !str_contains($openFn, "'cancelled'"), true);
+$expect('q/"open" counts an order with NO serving time as open (the safe direction)', str_contains($openFn, 'serving_time_iso IS NULL OR'), true);
+$expect('q/"open" compares with the current time as naive UTC, not the session zone', str_contains($openFn, "now() AT TIME ZONE 'UTC'"), true);
 
 // ── run ─────────────────────────────────────────────────────────────────────────────────────
 $failures = [];

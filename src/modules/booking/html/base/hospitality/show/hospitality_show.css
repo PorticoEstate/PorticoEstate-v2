@@ -86,6 +86,40 @@
 	color: var(--ds-color-text-default, #1e293b);
 }
 
+/* Main-resource picker: the building search above, that building's resources below, the buttons last */
+.hosp-show__edit-form--stacked {
+	flex-direction: column;
+	align-items: stretch;
+}
+
+.hosp-show__resource-edit {
+	display: flex;
+	flex-direction: column;
+	gap: 0.5rem;
+	min-width: 0;
+}
+
+/* While the picker is open the label moves above the form on a narrow screen: a 10rem label would leave it ~120px */
+.hosp-show__field--stacked .app-show__value {
+	min-width: 0;
+}
+
+@media (max-width: 640px) {
+	.hosp-show__field--stacked {
+		flex-direction: column;
+	}
+
+	/* the label's 10rem is a width in a row; in a column it would be a 10rem-high gap */
+	.hosp-show__field--stacked .app-show__label {
+		flex: 0 0 auto;
+	}
+}
+
+.hosp-show__edit-save:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
 /* Compound field (e.g. deadline: number + unit) */
 .hosp-show__compound-field {
 	display: flex;

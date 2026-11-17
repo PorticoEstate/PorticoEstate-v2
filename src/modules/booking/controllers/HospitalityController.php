@@ -6,6 +6,7 @@ use App\modules\phpgwapi\services\Settings;
 use App\modules\phpgwapi\security\Acl;
 use App\modules\booking\repositories\HospitalityRepository;
 use App\modules\booking\repositories\HospitalityArticleRepository;
+use App\modules\booking\repositories\HospitalityOrderRepository;
 use App\modules\booking\services\HospitalityDirectBookingGuard;
 use App\modules\booking\models\Hospitality;
 use App\modules\booking\models\HospitalityRemoteLocation;
@@ -24,6 +25,7 @@ class HospitalityController
 	protected Acl $acl;
 	protected HospitalityRepository $repository;
 	protected HospitalityArticleRepository $articleRepository;
+	protected HospitalityOrderRepository $orderRepository;
 	protected HospitalityDirectBookingGuard $directBookingGuard;
 
 	public function __construct(ContainerInterface $container)
@@ -32,6 +34,7 @@ class HospitalityController
 		$this->acl = Acl::getInstance();
 		$this->repository = new HospitalityRepository();
 		$this->articleRepository = new HospitalityArticleRepository();
+		$this->orderRepository = new HospitalityOrderRepository();
 		$this->directBookingGuard = new HospitalityDirectBookingGuard();
 	}
 
@@ -109,6 +112,101 @@ class HospitalityController
 			'error' => lang('booking.hospitality_description_too_long', Hospitality::DESCRIPTION_MAX_LENGTH),
 		]));
 		return $response->withHeader('Content-Type', 'application/json')->withStatus(422);
+	}
+
+	/**
+	 * Reads `resource_id` ONCE, to an int, and writes that back into the body, so the guard and the repository
+	 * both get the same value: the guard has to judge the resource the row will hold. (bb_hospitality.resource_id
+	 * is an integer column, and Postgres 16 and later read the string "0x5D" or "9_3" as 93 where PHP's (int)
+	 * reads 0 and 9.) Only a plain decimal integer is accepted (HospitalityDirectBookingGuard::normaliseResourceId);
+	 * anything else is refused, not guessed.
+	 *
+	 * An absent key stays absent: update then leaves the resource alone (store() has already answered 400 for it).
+	 * A key that is PRESENT is never treated as absent: null is refused too, because the column is NOT NULL and a
+	 * null is a client bug, not a request for a default (unlike `active`, which has a column default).
+	 *
+	 * @param array<string, mixed> $body
+	 * @return bool false when `resource_id` is present but is not a resource id ($body is then left as it was)
+	 */
+	private function normaliseResourceId(array &$body): bool
+	{
+		if (!array_key_exists('resource_id', $body)) {
+			return true;
+		}
+		$resourceId = HospitalityDirectBookingGuard::normaliseResourceId($body['resource_id']);
+		if ($resourceId === null) {
+			return false;
+		}
+		$body['resource_id'] = $resourceId;
+		return true;
+	}
+
+	/**
+	 * 422 for a `resource_id` that is not a resource id (invalid_resource_id) or names no resource
+	 * (unknown_resource: without this a positive id that is no resource reaches the foreign key and comes back as a
+	 * 500 carrying the raw database message). The generic «Field %1: Invalid format» text, already translated in
+	 * no/nn/en, labelled with the main resource; its key has spaces, so it cannot take a `booking.` prefix and is
+	 * looked up in the current module, like the legacy forms do.
+	 */
+	private function refuseResourceId(Response $response, string $code): Response
+	{
+		return $this->refuse($response, [
+			'code' => $code,
+			'error' => lang('Field %1: Invalid format', lang('booking.main_resource')),
+		]);
+	}
+
+	/** 422 with a JSON refusal. 422, not 409: 409 + error=CONFLICT is the stale-version answer the admin UI special-cases. */
+	private function refuse(Response $response, array $refusal): Response
+	{
+		$response->getBody()->write(json_encode($refusal));
+		return $response->withHeader('Content-Type', 'application/json')->withStatus(422);
+	}
+
+	/**
+	 * RULING Q1 (operator): moving the main resource while the hospitality has OPEN orders served at the current one
+	 * is refused. Such an order would be left on a location that is no longer a delivery location, and the applicant's
+	 * next save of it (Min side) would fail with «Invalid delivery location». What "open" means is decided in ONE
+	 * place, HospitalityOrderRepository::countOpenAtLocation. To rule otherwise, change this method only.
+	 *
+	 * @param array $existing the stored hospitality row
+	 * @return array{code: string, error: string, order_count: int}|null null = allowed
+	 */
+	private function openOrdersAtMainRefusal(array $existing): ?array
+	{
+		$open = $this->orderRepository->countOpenAtLocation((int)$existing['id'], (int)$existing['resource_id']);
+		if ($open === 0) {
+			return null;
+		}
+		return [
+			'code' => 'main_resource_has_open_orders',
+			'error' => lang('booking.main_resource_has_open_orders', $open),
+			'order_count' => $open,
+		];
+	}
+
+	/**
+	 * RULING Q2 (operator): the new main resource must not be an ACTIVE delivery location (remote location) of this
+	 * same hospitality. The Resources tab leaves the main resource out of the delivery locations, so the row would
+	 * turn invisible while it stays active, and the resource would be listed twice as a delivery location
+	 * (as main and as remote). The admin removes it from the delivery locations first. To rule otherwise,
+	 * change this method only.
+	 *
+	 * @param array $existing the stored hospitality row
+	 * @param int $newResourceId the (normalised) new main resource
+	 * @return array{code: string, error: string, resource_ids: int[]}|null null = allowed
+	 */
+	private function mainIsRemoteLocationRefusal(array $existing, int $newResourceId): ?array
+	{
+		if (!$this->directBookingGuard->remoteRowActive((int)$existing['id'], $newResourceId)) {
+			return null;
+		}
+		$name = $this->directBookingGuard->resourcesById([$newResourceId])[$newResourceId]['name'] ?? (string)$newResourceId;
+		return [
+			'code' => 'main_resource_is_remote_location',
+			'error' => lang('booking.main_resource_is_remote_location', $name),
+			'resource_ids' => [$newResourceId],
+		];
 	}
 
 	/**
@@ -200,8 +298,16 @@ class HospitalityController
 				return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
 			}
 
+			// resource_id and active are each read ONCE, before the guard and before the repository, so the
+			// value the guard judges is the value the row holds.
+			if (!$this->normaliseResourceId($body)) {
+				return $this->refuseResourceId($response, 'invalid_resource_id');
+			}
 			if (!$this->normaliseActive($body)) {
 				return $this->refuseInvalidActive($response);
+			}
+			if (!$this->repository->resourceExists($body['resource_id'])) {
+				return $this->refuseResourceId($response, 'unknown_resource');
 			}
 
 			if (self::descriptionRefused($body)) {
@@ -328,8 +434,16 @@ class HospitalityController
 
 			$body = $request->getParsedBody() ?? json_decode($request->getBody()->getContents(), true) ?? [];
 
+			// resource_id and active are each read ONCE, before the guard and before the repository, so the
+			// value the guard judges is the value the row holds.
+			if (!$this->normaliseResourceId($body)) {
+				return $this->refuseResourceId($response, 'invalid_resource_id');
+			}
 			if (!$this->normaliseActive($body)) {
 				return $this->refuseInvalidActive($response);
+			}
+			if (array_key_exists('resource_id', $body) && !$this->repository->resourceExists($body['resource_id'])) {
+				return $this->refuseResourceId($response, 'unknown_resource');
 			}
 
 			if (self::descriptionRefused($body)) {
@@ -344,6 +458,18 @@ class HospitalityController
 				return $this->refuseDirectBookingConflict($response, $refusal);
 			}
 
+			// A real move of the main resource (the key may also arrive unchanged, from a client that sends the whole
+			// row). Two rulings by the operator, each in one method: see openOrdersAtMainRefusal() and
+			// mainIsRemoteLocationRefusal().
+			$mainResourceChanged = array_key_exists('resource_id', $body) && $body['resource_id'] !== (int)$existing['resource_id'];
+			if ($mainResourceChanged) {
+				$refusal = $this->mainIsRemoteLocationRefusal($existing, $body['resource_id'])
+					?? $this->openOrdersAtMainRefusal($existing);
+				if ($refusal !== null) {
+					return $this->refuse($response, $refusal);
+				}
+			}
+
 			$accountId = (int)$this->userSettings['account_id'];
 			$body['modified_by'] = $accountId;
 
@@ -353,10 +479,11 @@ class HospitalityController
 			// The UI merges this response over what it holds: keep the warning flag in it.
 			$model->direct_booking_conflict = $this->directBookingGuard->conflictFlagsForHospitality($row, [])['main'];
 
-			// Broadcast update via WebSocket
+			// Broadcast update via WebSocket. A moved main resource is also the Resources tab's main section and
+			// its leave-the-main-out filter, so the other admins' pages are told to rebuild that tab too.
 			WebSocketHelper::sendEntityNotificationAsync(
 				'hospitality', $id, 'Hospitality updated', 'updated',
-				['section' => 'details', 'changedFields' => array_keys($body), 'modifiedBy' => $accountId]
+				['section' => $mainResourceChanged ? 'main_resource' : 'details', 'changedFields' => array_keys($body), 'modifiedBy' => $accountId]
 			);
 
 			$response->getBody()->write(json_encode($model->serialize()));

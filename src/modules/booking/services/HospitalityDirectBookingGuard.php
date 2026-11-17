@@ -42,6 +42,9 @@ final class HospitalityDirectBookingGuard
     /** The resource is linked to hospitality, so it may not get direct booking (resource side). */
     public const CODE_RESOURCE_HAS_HOSPITALITY = 'resource_has_hospitality';
 
+    /** The largest value of bb_hospitality.resource_id (a 4-byte integer column). */
+    public const MAX_RESOURCE_ID = 2147483647;
+
     private Db $db;
 
     public function __construct(?Db $db = null)
@@ -77,6 +80,46 @@ final class HospitalityDirectBookingGuard
             return 0;
         }
         return null;
+    }
+
+    /**
+     * THE one reading of a `resource_id` in a request body: a plain, positive integer that fits the
+     * column, or null. The controller applies it ONCE and hands the int to this guard AND to the
+     * repository, so the resource the guard judges is the resource the row will hold.
+     *
+     * It exists because Postgres 16 and later cast a string to integer more liberally than PHP reads it:
+     * "0x5D", "0o135", "0b1011101" and "9_3" are all 93 there, while PHP's (int) reads 0, 0, 0 and 9. A
+     * guard that read (int) looked at resource 0 and let a request through that stored resource 93, which
+     * has direct booking. Postgres 15 rejects those strings, so the gap only shows where the app is
+     * deployed on 16 or later. Nothing is reinterpreted: only what is spelled as a decimal integer is
+     * accepted, and everything else is refused.
+     *
+     * Accepted: an int from 1 to MAX_RESOURCE_ID, and a string of ASCII digits only, in that range
+     * ("093" is 93: PHP and every Postgres version agree). Refused, with null: true/false, floats (json
+     * "93.0"), arrays, null, "", " 93", "93 ", "93\n", "+93", "-93", "0", "0x5D", "9_3", "1e2", Arabic-Indic
+     * digits, and anything above MAX_RESOURCE_ID (Postgres answers "out of range" for it; PHP's (int) does not).
+     *
+     * @param mixed $value
+     * @return int|null the resource id, or null for everything that is not one
+     */
+    public static function normaliseResourceId($value): ?int
+    {
+        if (is_int($value)) {
+            return ($value >= 1 && $value <= self::MAX_RESOURCE_ID) ? $value : null;
+        }
+        // The D modifier matters: without it `$` also matches before a final newline, and Postgres reads "93\n" as 93.
+        if (!is_string($value) || preg_match('/^[0-9]+$/D', $value) !== 1) {
+            return null;
+        }
+        $digits = ltrim($value, '0');
+        $max = (string)self::MAX_RESOURCE_ID;
+        // The range is checked on the digits, as strings of the same length compare like the numbers they spell, so it
+        // does not depend on what (int) does with a string that overflows (it saturates at PHP_INT_MAX on 64-bit, and on
+        // a 32-bit build would land exactly on the maximum and accept "2147483648").
+        if ($digits === '' || strlen($digits) > strlen($max) || (strlen($digits) === strlen($max) && strcmp($digits, $max) > 0)) {
+            return null;
+        }
+        return (int)$digits;
     }
 
     /**
@@ -199,7 +242,7 @@ final class HospitalityDirectBookingGuard
         // the controller refuses it before it gets here, so this is for a caller that skips the controller.
         $after = [
             'active' => self::normaliseActive($body['active'] ?? 1) ?? 1,
-            'resource_id' => (int)($body['resource_id'] ?? 0),
+            'resource_id' => self::requireResourceId($body['resource_id'] ?? null),
         ];
         return $this->hospitalitySaveRefusal(null, $after, []);
     }
@@ -215,7 +258,7 @@ final class HospitalityDirectBookingGuard
         // Absent or null = the stored value stays. A value that is not a flag is checked as ON (fail closed).
         $after = [
             'active' => ($body['active'] ?? null) === null ? (int)$existing['active'] : (self::normaliseActive($body['active']) ?? 1),
-            'resource_id' => array_key_exists('resource_id', $body) ? (int)$body['resource_id'] : (int)$existing['resource_id'],
+            'resource_id' => array_key_exists('resource_id', $body) ? self::requireResourceId($body['resource_id']) : (int)$existing['resource_id'],
         ];
         $before = ['active' => (int)$existing['active'], 'resource_id' => (int)$existing['resource_id']];
         $remote = ($after['active'] === 1 && $before['active'] !== 1)
@@ -385,6 +428,24 @@ final class HospitalityDirectBookingGuard
     // ═══════════════════════════════════════════════════════════════════
     // Internals
     // ═══════════════════════════════════════════════════════════════════
+
+    /**
+     * The resource id this save would write. The controller has already turned the body's value into an int
+     * (or answered 422), so a value that still is not a resource id means a caller went round the controller.
+     * Reading it with (int) would judge another resource than the one a Postgres cast stores, so this refuses
+     * to judge at all: it throws, and nothing is written.
+     *
+     * @param mixed $value
+     * @throws \InvalidArgumentException when $value is not a resource id (see normaliseResourceId)
+     */
+    private static function requireResourceId($value): int
+    {
+        $id = self::normaliseResourceId($value);
+        if ($id === null) {
+            throw new \InvalidArgumentException('resource_id is not a resource id');
+        }
+        return $id;
+    }
 
     /**
      * @param array|null $before

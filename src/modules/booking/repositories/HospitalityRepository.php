@@ -16,18 +16,40 @@ class HospitalityRepository
         $this->db = Db::getInstance();
     }
 
+    /**
+     * The hospitality with its main resource. resource_building_id / resource_building_name are the building
+     * the main resource sits in (the lowest building id when it is in several, as getActiveByResourceIds does),
+     * so the admin's main-resource picker can open on it; null when the resource is in no building.
+     */
     public function getById(int $id): ?array
     {
         $sql = "SELECT h.*, r.name AS resource_name,
                        r.cancellation_deadline_value AS resource_cancellation_deadline_value,
-                       r.cancellation_deadline_unit AS resource_cancellation_deadline_unit
+                       r.cancellation_deadline_unit AS resource_cancellation_deadline_unit,
+                       rb.id AS resource_building_id, rb.name AS resource_building_name
                 FROM bb_hospitality h
                 LEFT JOIN bb_resource r ON h.resource_id = r.id
+                LEFT JOIN LATERAL (
+                    SELECT b.id, b.name
+                      FROM bb_building_resource br
+                      JOIN bb_building b ON b.id = br.building_id
+                     WHERE br.resource_id = h.resource_id
+                     ORDER BY b.id
+                     LIMIT 1
+                ) rb ON true
                 WHERE h.id = :id";
         $stmt = $this->db->prepare($sql);
         $stmt->execute([':id' => $id]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
         return $row ?: null;
+    }
+
+    /** Is there a bb_resource row with this id? (A positive int that is no resource would fail on the foreign key.) */
+    public function resourceExists(int $resourceId): bool
+    {
+        $stmt = $this->db->prepare("SELECT 1 FROM bb_resource WHERE id = :id");
+        $stmt->execute([':id' => $resourceId]);
+        return $stmt->fetchColumn() !== false;
     }
 
     /**

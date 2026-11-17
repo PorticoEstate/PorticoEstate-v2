@@ -207,3 +207,26 @@ div.error, div.warn div.msg_good{
 	color: #6b7280;
 	border-top: 1px solid #f0f0f0;
 }
+
+/* Table paginator (Prev | 1 - n / n | Next), same as the other templates. */
+.tablePaginator {
+	margin-bottom: 10px;
+	padding-left: 0;
+	list-style: none;
+}
+.tablePaginator li {
+	display: inline;
+}
+.tablePaginator li a {
+	text-decoration: underline;
+}
+.tablePaginator li a.disabled {
+	cursor: not-allowed;
+	text-decoration: none;
+}
+.tablePaginator li a.enabled {
+	cursor: pointer;
+}
+.tablePaginatorText {
+	margin: 0 15px;
+}

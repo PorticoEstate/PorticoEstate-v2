@@ -101,36 +101,6 @@ foreach ($javascripts as $javascript)
 	}
 }
 
-switch ($userSettings['preferences']['common']['template_set'])
-{
-	case 'portico':
-		$selecte_portico = ' selected = "selected"';
-		break;
-	case 'bootstrap':
-		$selecte_bootstrap = ' selected = "selected"';
-		break;
-	case 'digdir':
-		$selecte_digdir = ' selected = "selected"';
-		break;
-	case 'pure':
-		$selecte_pure = ' selected = "selected"';
-		break;
-}
-$selecte_portico = $selecte_portico ?? '';
-$selecte_bootstrap = $selecte_bootstrap ?? '';
-$selecte_digdir = $selecte_digdir ?? '';
-$selecte_pure = $selecte_pure ?? '';
-
-$template_selector = <<<HTML
-
-   <select id = "template_selector">
-	<option value="pure"{$selecte_pure}>Pure</option>
-	<option value="portico"{$selecte_portico}>Portico</option>
-	<option value="bootstrap"{$selecte_bootstrap}>Bootstrap</option>
-	<option value="digdir"{$selecte_digdir}>Digdir</option>
-   </select>
-HTML;
-
 $phpgwapi_common = new phpgwapi_common();
 
 $tpl_vars = array(
@@ -144,8 +114,7 @@ $tpl_vars = array(
 	'webserver_url'	=> $webserver_url,
 	'userlang'		=> $userSettings['preferences']['common']['lang'],
 	'win_on_events'	=> $phpgwapi_common->get_on_events(),
-	'menu_stylesheet_widescreen' => $menu_stylesheet_widescreen,
-	'template_selector'			=> $template_selector
+	'menu_stylesheet_widescreen' => $menu_stylesheet_widescreen
 );
 
 $template->set_var($tpl_vars);

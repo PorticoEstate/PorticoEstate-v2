@@ -94,10 +94,12 @@ nav:not(.mm-menu)
     right: 0px;
     z-index: 1;
 	background-color: #fff;
-	/* Let a wide top menu scroll inside the bar instead of widening the page. */
-	overflow-x: auto;
-	-webkit-overflow-scrolling: touch;
 
+}
+/* Wrap a wide top menu instead of widening the page; overflow scrolling
+   here would clip the .pure-menu-children dropdowns. */
+#horizontal-menu .pure-menu-horizontal {
+	white-space: normal;
 }
 /*
 #horizontal-menu
@@ -138,4 +140,70 @@ div.error, div.warn div.msg_good{
 }
 .msg_good{
     padding: 20px;
+}
+/* ============================================
+   Home bookmark tiles (#container_bookmark)
+   Same grid/tile utilities as portico/css/base.css so the
+   HomeHelper fallback markup renders identically here.
+   ============================================ */
+.app-container {
+	width: 100%;
+	padding-left: 1rem;
+	padding-right: 1rem;
+	margin-left: auto;
+	margin-right: auto;
+	box-sizing: border-box;
+}
+
+.app-row {
+	display: flex;
+	flex-wrap: wrap;
+	margin-left: -0.5rem;
+	margin-right: -0.5rem;
+	align-items: flex-start;
+}
+
+.app-row.mt-4 {
+	gap: 1rem;
+}
+
+.app-col-4 {
+	flex: 0 0 33.3333%;
+	padding-left: 0.5rem;
+	padding-right: 0.5rem;
+	box-sizing: border-box;
+}
+
+.app-tile-link {
+	display: block;
+	color: inherit;
+	text-decoration: none;
+}
+
+.app-tile {
+	height: 100%;
+	transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.app-tile:hover {
+	transform: translateY(-2px);
+	box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+	border-color: #d0d5dd;
+}
+
+.app-tile-icon-wrap {
+	margin: 0;
+	padding: 1.5rem 0 1rem;
+	font-size: 2rem;
+}
+
+.app-tile-icon {
+	color: #1e2b3c;
+}
+
+.app-tile-footer {
+	padding: 0.75rem 1rem;
+	text-align: center;
+	color: #6b7280;
+	border-top: 1px solid #f0f0f0;
 }

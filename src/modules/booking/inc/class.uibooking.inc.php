@@ -1006,6 +1006,22 @@ class booking_uibooking extends booking_uicommon
 		));
 	}
 
+	/**
+	 * After a delete the officer lands on the application the booking was made
+	 * for; a booking with no application goes back to the building calendar.
+	 */
+	private function redirect_after_delete( $booking, $allocation )
+	{
+		$application_id = $booking['application_id'] ?: ($allocation['application_id'] ?? null);
+		if ($application_id)
+		{
+			self::redirect(array('menuaction' => 'booking.uiapplication.show', 'id' => $application_id));
+		}
+
+		$building_id = $booking['building_id'] ?: ($allocation['building_id'] ?? null);
+		self::redirect(array('menuaction' => 'booking.uimassbooking.schedule', 'id' => $building_id));
+	}
+
 	public function delete()
 	{
 		$id = Sanitizer::get_var('id', 'int');
@@ -1038,7 +1054,7 @@ class booking_uibooking extends booking_uicommon
 				if ($_POST['delete_allocation'] != 'on')
 				{
 					$this->bo->so->delete_booking($id);
-					self::redirect(array('menuaction' => 'booking.uimassbooking.schedule', 'id' => $booking['building_id']));
+					$this->redirect_after_delete($booking, $allocation);
 				}
 				else
 				{
@@ -1053,7 +1069,7 @@ class booking_uibooking extends booking_uicommon
 					{
 //						$err = $this->allocation_bo->so->delete_allocation($allocation_id);
 						$err = $this->allocation_bo->delete($allocation_id);
-						self::redirect(array('menuaction' => 'booking.uimassbooking.schedule', 'id' => $booking['building_id']));
+						$this->redirect_after_delete($booking, $allocation);
 					}
 				}
 			}
@@ -1126,13 +1142,7 @@ class booking_uibooking extends booking_uicommon
 				}
 				if ($step == 3)
 				{
-					$application_id = $booking['application_id'] ? $booking['application_id'] : $allocation['application_id'];
-					if ($application_id)
-					{
-						self::redirect(array('menuaction' => 'booking.uiapplication.show', 'id' => $application_id));
-					}
-					$building_id = $booking['building_id'] ? $booking['building_id'] : $allocation['building_id'];
-					self::redirect(array('menuaction' => 'booking.uimassbooking.schedule', 'id' => $building_id));
+					$this->redirect_after_delete($booking, $allocation);
 				}
 			}
 		}

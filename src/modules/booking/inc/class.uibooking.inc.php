@@ -590,12 +590,25 @@ class booking_uibooking extends booking_uicommon
 					if ($application_id)
 					{
 						$allocation['application_id'] = $application_id;
+						$purchase_order = createObject('booking.sopurchase_order')->get_purchase_order($application_id);
+					}
+					else
+					{
+						$purchase_order = null;
 					}
 					$allocation['from_'] = $booking['from_'];
 					$allocation['to_'] = $booking['to_'];
 					$allocation['active'] = '1';
 					$allocation['completed'] = '0';
 					$receipt = $this->allocation_bo->add($allocation);
+					if($application_id && $purchase_order)
+					{
+						$purchase_order['application_id'] = -1;
+						$purchase_order['reservation_type'] = 'allocation';
+						$purchase_order['reservation_id'] = $receipt['id'];
+						createObject('booking.sopurchase_order')->add_purchase_order($purchase_order);
+					}
+
 					$booking['allocation_id'] = $receipt['id'];
 					$booking['secret'] = $this->generate_secret();
 					$receipt = $this->bo->add($booking);
@@ -684,6 +697,11 @@ class booking_uibooking extends booking_uicommon
 								if ($application_id != '0')
 								{
 									$allocation['application_id'] = $application_id;
+									$purchase_order = createObject('booking.sopurchase_order')->get_purchase_order($application_id);
+								}
+								else
+								{
+									$purchase_order = null;
 								}
 								$allocation['from_'] = $booking['from_'];
 								$allocation['to_'] = $booking['to_'];
@@ -691,6 +709,13 @@ class booking_uibooking extends booking_uicommon
 								$allocation['completed'] = '0';
 								$receipt = $this->allocation_bo->add($allocation);
 								$this->allocation_bo->so->update_id_string($receipt['id']);
+								if ($application_id && $purchase_order)
+								{
+									$purchase_order['application_id'] = -1;
+									$purchase_order['reservation_type'] = 'allocation';
+									$purchase_order['reservation_id'] = $receipt['id'];
+									createObject('booking.sopurchase_order')->add_purchase_order($purchase_order);
+								}
 								$booking['allocation_id'] = $receipt['id'];
 								if ($application_id != '0')
 								{

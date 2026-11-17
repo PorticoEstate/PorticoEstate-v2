@@ -643,6 +643,38 @@ class EmailService
     }
 
     /**
+     * Send a mail to ONE address — an application's case officer — about a change the applicant
+     * made from Min side that is not a catering order (GH #1392: a new time asked for, or a time
+     * shortened, on an allocation).
+     *
+     * A sibling of sendCateringChangeNotification() rather than a rewrite of it, so the catering
+     * mail stays exactly as it was shipped. Same transport and sender as the staff mail, so
+     * MAIL_TO_DISK / SMTP_HOST govern it identically, and the same promise: it never throws, a
+     * mail that cannot be sent must not be able to fail the change that caused it.
+     *
+     * @return bool true when the transport accepted the message
+     */
+    public function sendCaseOfficerNotification(string $to, string $subject, string $htmlBody): bool
+    {
+        try {
+            $config = $this->getBookingConfig();
+            if (!$config) {
+                return false;
+            }
+
+            $from = isset($config['email_sender']) && $config['email_sender']
+                ? $config['email_sender']
+                : "noreply<noreply@{$this->serverSettings['hostname']}>";
+
+            $this->send->msg('email', $to, $subject, $htmlBody, '', '', '', $from, 'AktivKommune', 'html');
+            return true;
+        } catch (\Throwable $e) {
+            error_log('EmailService::sendCaseOfficerNotification failed: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
      * Absolute https link into the booking backend, with plain "&" separators (the HTML escaping
      * is the template's job).
      */

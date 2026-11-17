@@ -1402,3 +1402,12 @@ hospitality_description_too_long	booking	en	The description can have at most %1 
 main_resource_edit_note	booking	en	The cancellation deadline, contact details and opening hours of all orders are taken from the main resource and change when you change it.
 main_resource_has_open_orders	booking	en	The main resource cannot be changed while open orders are to be served at it (%1). Cancel them or mark them as delivered first.
 main_resource_is_remote_location	booking	en	The resource “%1” is a remote location of this hospitality and cannot also be the main resource. Remove it from the remote locations first.
+allocation_change_mail_subject_requested	booking	en	Changed by applicant: requests a new time – %1, %2
+allocation_change_mail_subject_shortened	booking	en	Changed by applicant: time shortened – %1, %2
+allocation_change_mail_intro_requested	booking	en	%1 requests a new time for one date in the application. The time is unchanged until you accept or reject.
+allocation_change_mail_intro_shortened	booking	en	%1 has shortened one time in the application. The time is already changed.
+allocation_change_mail_old_time	booking	en	Previous time
+allocation_change_mail_new_time	booking	en	New time
+allocation_change_mail_resource	booking	en	Resource
+allocation_change_mail_date	booking	en	Date
+allocation_change_mail_applicant_comment	booking	en	Comment from the applicant

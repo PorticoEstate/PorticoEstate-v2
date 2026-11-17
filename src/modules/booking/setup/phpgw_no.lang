@@ -1403,3 +1403,12 @@ hospitality_description_too_long	booking	no	Beskrivelsen kan ha maks %1 tegn.
 main_resource_edit_note	booking	no	Avbestillingsfrist, kontaktinformasjon og åpningstider for alle bestillinger hentes fra hovedressursen og endres når du bytter den.
 main_resource_has_open_orders	booking	no	Hovedressursen kan ikke byttes så lenge det finnes åpne bestillinger som skal leveres til den (%1). Avlys dem eller sett dem som levert først.
 main_resource_is_remote_location	booking	no	Ressursen «%1» er en ekstern lokasjon for denne bevertningen og kan ikke samtidig være hovedressurs. Fjern den fra de eksterne lokasjonene først.
+allocation_change_mail_subject_requested	booking	no	Endret av søker: ønsker nytt tidspunkt – %1, %2
+allocation_change_mail_subject_shortened	booking	no	Endret av søker: tidspunkt forkortet – %1, %2
+allocation_change_mail_intro_requested	booking	no	%1 ber om nytt tidspunkt for én dato i søknaden. Tiden er uendret til du godtar eller avslår.
+allocation_change_mail_intro_shortened	booking	no	%1 har forkortet ett tidspunkt i søknaden. Tiden er allerede endret.
+allocation_change_mail_old_time	booking	no	Tidligere tid
+allocation_change_mail_new_time	booking	no	Ny tid
+allocation_change_mail_resource	booking	no	Ressurs
+allocation_change_mail_date	booking	no	Dato
+allocation_change_mail_applicant_comment	booking	no	Kommentar fra søker

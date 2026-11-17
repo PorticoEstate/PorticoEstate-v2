@@ -156,4 +156,36 @@ class AllocationTimeChangeRepository
 		);
 		$stmt->execute([':id' => $applicationId]);
 	}
+
+	/**
+	 * What the case officer's mail names the application by, and who the officer is
+	 * (case_officer_id 0: none). Null when there is no such application.
+	 *
+	 * @return array{id:int, id_string:string, name:string, building_name:string, activity_name:string, organization_name:?string, case_officer_id:int}|null
+	 */
+	public function findApplicationForMail(int $applicationId): ?array
+	{
+		$stmt = $this->db->prepare(
+			"SELECT a.id, a.id_string, a.name, a.building_name, a.customer_organization_name, a.case_officer_id,
+					act.name AS activity_name
+			 FROM bb_application a
+			 LEFT JOIN bb_activity act ON act.id = a.activity_id
+			 WHERE a.id = :id"
+		);
+		$stmt->execute([':id' => $applicationId]);
+		$row = $stmt->fetch(PDO::FETCH_ASSOC);
+		if (!$row) {
+			return null;
+		}
+
+		return [
+			'id' => (int) $row['id'],
+			'id_string' => (string) $row['id_string'],
+			'name' => (string) $row['name'],
+			'building_name' => (string) $row['building_name'],
+			'activity_name' => (string) $row['activity_name'],
+			'organization_name' => $row['customer_organization_name'],
+			'case_officer_id' => (int) $row['case_officer_id'],
+		];
+	}
 }

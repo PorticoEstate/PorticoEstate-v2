@@ -4,6 +4,7 @@ namespace App\modules\bookingfrontend\services;
 
 use App\Database\Db;
 use App\modules\booking\repositories\ApplicationChangeRequestRepository;
+use App\modules\booking\services\AllocationTimeChangeMailRenderer;
 use App\modules\booking\services\WebhookNotifier;
 use App\modules\bookingfrontend\repositories\AllocationCancellationRepository;
 use App\modules\bookingfrontend\repositories\AllocationTimeChangeRepository;
@@ -26,8 +27,9 @@ use Throwable;
  * officer accepts or rejects ("Godta endring", booking's
  * ApplicationChangeRequestService), exactly as for an event. Either way the
  * application keeps its status, and the officer hears of it through the same
- * comment and staff mail as a withdrawal (AllocationWithdrawalService); the
- * applicant gets no mail.
+ * comment and staff mail as a withdrawal (AllocationWithdrawalService), plus a
+ * mail of its own to the case officer alone, in the officer's language
+ * (AllocationTimeChangeNotifier); the applicant gets no mail.
  *
  * Only the one row changes: never another occurrence of its series.
  */
@@ -40,14 +42,16 @@ class AllocationTimeChangeService
 	private ApplicationChangeRequestRepository $requests;
 	private AllocationCancellationRepository $allocations;
 	private ApplicationCommentsService $commentsService;
+	private AllocationTimeChangeNotifier $officerMail;
 
-	public function __construct()
+	public function __construct(?AllocationTimeChangeNotifier $officerMail = null)
 	{
 		$this->db = Db::getInstance();
 		$this->repository = new AllocationTimeChangeRepository();
 		$this->requests = new ApplicationChangeRequestRepository();
 		$this->allocations = new AllocationCancellationRepository();
 		$this->commentsService = new ApplicationCommentsService();
+		$this->officerMail = $officerMail ?? new AllocationTimeChangeNotifier();
 	}
 
 	/**
@@ -155,6 +159,7 @@ class AllocationTimeChangeService
 
 		$this->showOnDashboard($applicationId);
 		$this->afterCommit($allocation);
+		$this->mailCaseOfficer(AllocationTimeChangeMailRenderer::KIND_SHORTENED, $applicationId, $context, $comment, $author);
 
 		return [
 			'outcome' => 'shortened',
@@ -208,6 +213,7 @@ class AllocationTimeChangeService
 
 		$this->showOnDashboard($applicationId);
 		$this->flushNotifications($allocationId);
+		$this->mailCaseOfficer(AllocationTimeChangeMailRenderer::KIND_REQUESTED, $applicationId, $context, $comment, $author);
 
 		return [
 			'outcome' => 'requested',
@@ -404,8 +410,9 @@ class AllocationTimeChangeService
 	}
 
 	/**
-	 * The officer mail and the calendar subscribers hear of the change only once
-	 * it is committed; neither may turn a stored change into an error.
+	 * The staff group mail (with the comment) and the calendar subscribers hear of
+	 * the change only once it is committed; neither may turn a stored change into
+	 * an error. The case officer's own mail follows in mailCaseOfficer().
 	 */
 	private function afterCommit(array $allocation): void
 	{
@@ -429,6 +436,40 @@ class AllocationTimeChangeService
 			$this->repository->showOnDashboard($applicationId);
 		} catch (Throwable $e) {
 			error_log('AllocationTimeChangeService: could not show application ' . $applicationId . ' on the dashboard: ' . $e->getMessage());
+		}
+	}
+
+	/**
+	 * The case officer's own mail about the change, on top of the comment and the group mail
+	 * (GH #1392). Once committed, nothing here may turn a stored change into an error:
+	 * the controller above catches Exception only, so a PHP Error (TypeError) from the
+	 * application read or the notifier is caught here, as Throwable, and logged.
+	 *
+	 * @param string $kind AllocationTimeChangeMailRenderer::KIND_*
+	 */
+	private function mailCaseOfficer(string $kind, int $applicationId, array $context, string $comment, ?string $author): void
+	{
+		try {
+			$application = $this->repository->findApplicationForMail($applicationId);
+			if ($application === null) {
+				error_log('AllocationTimeChangeService: no case officer mail for application ' . $applicationId . ': the application was not found');
+				return;
+			}
+
+			$this->officerMail->notify([
+				'kind' => $kind,
+				'actor' => (string) $author,
+				'application' => $application,
+				'occurrence' => [
+					'resource_name' => $context['resource_name'],
+					'date' => $context['date'],
+					'old_time' => $context['old_time'],
+					'new_time' => $context['new_time'],
+				],
+				'applicant_comment' => $comment,
+			]);
+		} catch (Throwable $e) {
+			error_log('AllocationTimeChangeService: case officer mail failed for application ' . $applicationId . ': ' . $e->getMessage());
 		}
 	}
 

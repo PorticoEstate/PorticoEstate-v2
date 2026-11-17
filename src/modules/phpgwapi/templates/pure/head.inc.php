@@ -14,6 +14,12 @@ $userSettings = Settings::getInstance()->get('user');
 
 $webserver_url = isset($serverSettings['webserver_url']) ? $serverSettings['webserver_url'] . PHPGW_MODULES_PATH : PHPGW_MODULES_PATH;
 
+$cache_refresh_token = '';
+if (!empty($serverSettings['cache_refresh_token']))
+{
+	$cache_refresh_token = "?n={$serverSettings['cache_refresh_token']}";
+}
+
 phpgw::import_class('phpgwapi.jquery');
 phpgwapi_jquery::load_widget('core');
 
@@ -81,7 +87,7 @@ foreach ($stylesheets as $stylesheet)
 {
 	if (file_exists(PHPGW_SERVER_ROOT . $stylesheet))
 	{
-		$template->set_var('stylesheet_uri', $webserver_url . $stylesheet);
+		$template->set_var('stylesheet_uri', $webserver_url . $stylesheet . $cache_refresh_token);
 		$template->parse('stylesheets', 'stylesheet', true);
 	}
 }
@@ -90,7 +96,7 @@ foreach ($javascripts as $javascript)
 {
 	if (file_exists(PHPGW_SERVER_ROOT . $javascript))
 	{
-		$template->set_var('javascript_uri', $webserver_url . $javascript);
+		$template->set_var('javascript_uri', $webserver_url . $javascript . $cache_refresh_token);
 		$template->parse('javascripts', 'javascript', true);
 	}
 }
@@ -130,8 +136,8 @@ $phpgwapi_common = new phpgwapi_common();
 $tpl_vars = array(
 	'noheader'		=> isset($flags['noheader_xsl']) && $flags['noheader_xsl'] ? 'true' : 'false',
 	'nofooter'		=> isset($flags['nofooter']) && $flags['nofooter'] ? 'true' : 'false',
-	'css'			=> $phpgwapi_common->get_css(),
-	'javascript'	=> $phpgwapi_common->get_javascript(),
+	'css'			=> $phpgwapi_common->get_css($cache_refresh_token),
+	'javascript'	=> $phpgwapi_common->get_javascript($cache_refresh_token),
 	'img_icon'      => $phpgwapi_common->find_image('phpgwapi', 'favicon.ico'),
 	'site_title'	=> "{$serverSettings['site_title']}",
 	'str_base_url'			 => phpgw::link('/', array(), true, false, true),
@@ -159,9 +165,16 @@ if (isset($flags['noframework']))
 
 function parse_footer_end_noframe()
 {
+	$serverSettings = Settings::getInstance()->get('server');
+	$cache_refresh_token = '';
+	if (!empty($serverSettings['cache_refresh_token']))
+	{
+		$cache_refresh_token = "?n={$serverSettings['cache_refresh_token']}";
+	}
+
 	$phpgwapi_common = new phpgwapi_common();
 
-	$javascript_end = $phpgwapi_common->get_javascript_end();
+	$javascript_end = $phpgwapi_common->get_javascript_end($cache_refresh_token);
 	$footer = <<<HTML
 		</body>
 		{$javascript_end}

@@ -105,10 +105,12 @@
 		</button>
 	</div>
 
-	<div class="row mt-2 collapse" id="democollapseBtn">
+	<!-- Not a .row: its child is #toolbar (not a .col), and stacked row gutters push the first column off-screen. -->
+	<div class="mt-2 ms-1 collapse" id="democollapseBtn">
 		<xsl:if test="item">
 			<xsl:variable name="count_items" select="count(item)"/>
-			<div id="toolbar" class='dtable_custom_controls'>
+			<!-- w-100: property/base.css sets #toolbar to inline-block, which would otherwise shrink-to-fit. -->
+			<div id="toolbar" class='dtable_custom_controls w-100'>
 				<form>
 					<fieldset>
 						<div class="row mb-2">

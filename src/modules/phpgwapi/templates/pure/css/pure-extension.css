@@ -37,6 +37,11 @@ https://github.com/yui/pure/blob/master/LICENSE.md
 	max-width: 100%;
 }
 
+/* Embeds such as #googlemapiframe carry a fixed width="500" attribute. */
+.pure-control-group iframe {
+	max-width: 100%;
+}
+
 /* Wrapped around inline .pure-table elements by phpgwapi/js/core/base.js. */
 .pure-table-scroll {
 	max-width: 100%;

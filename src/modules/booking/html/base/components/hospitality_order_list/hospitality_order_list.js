@@ -104,6 +104,18 @@ class HospitalityOrderList {
 		return label;
 	}
 
+	// «Endret av søker» + when, for an order the applicant has changed from Min side (GH #1425).
+	// Rendered only when the caller supplies the label (lang('changedByApplicant')): a page that
+	// does not (the hospitality record's own orders tab) shows the list exactly as before.
+	_applicantChangeMarker(order) {
+		if (!order.last_applicant_change_at) return '';
+		var label = this.lang('changedByApplicant');
+		if (!label || label === 'changedByApplicant' || label.charAt(0) === '!') return '';
+		return '<br><span class="booking-tag ds-tag" data-size="sm" data-color="warning" data-booking-role="applicant-change">' +
+			this._esc(label) + '</span> <small data-booking-role="applicant-change-time">' +
+			this._fmtDate(order.last_applicant_change_at) + '</small>';
+	}
+
 	_render() {
 		var self = this;
 		var orders = this.orders;
@@ -141,7 +153,7 @@ class HospitalityOrderList {
 			if (showApp) html += '<td>#' + self._esc(order.application_id) + '</td>';
 			if (showHosp) html += '<td>' + self._esc(order.hospitality_name) + '</td>';
 
-			html += '<td>' + statusTag + '</td>';
+			html += '<td>' + statusTag + self._applicantChangeMarker(order) + '</td>';
 			html += '<td>' + self._esc(order.location_name) + '</td>';
 			html += '<td>' + self._fmtDate(order.serving_time_iso) + '</td>';
 			html += '<td>' + amount + '</td>';

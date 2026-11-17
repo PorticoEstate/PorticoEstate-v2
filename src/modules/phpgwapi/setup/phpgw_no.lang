@@ -321,6 +321,14 @@ Showing _START_ to _END_ of _TOTAL_ entries	common	no	Viser _START_ til _END_ av
 showing items	common	no	Viser
 shows from	common	no	Viser fra
 sign in	common	no	Logg inn
+Sign in faster with a passkey	common	no	Logg inn raskere med en passkey
+Passkey sign-in is disabled while external authentication is configured.	common	no	Passkey-innlogging er deaktivert når ekstern autentisering er konfigurert.
+New passkeys require a discoverable credential. Remove an existing passkey here before registering it again.	common	no	Nye passkeys krever en oppdagbar legitimasjon. Fjern en eksisterende passkey her før du registrerer den på nytt.
+Use your device’s fingerprint, face recognition, or screen lock instead of a password. Only set this up on a device you trust.	common	no	Bruk fingeravtrykket, ansiktsgjenkjenningen eller skjermlåsen på enheten din i stedet for passord. Konfigurer bare dette på en enhet du stoler på.
+Set up passkey	common	no	Sett opp passkey
+Not now	common	no	Ikke nå
+Don’t ask again	common	no	Ikke spør igjen
+Unable to save passkey suggestion preference.	common	no	Klarte ikke å lagre innstillingen for passkey-forslaget.
 site configuration	common	no	Konfigurasjon av moduler
 sms	common	no	SMS
 smtp server is not set! (admin section)	common	no	SMTP serveren er ikke konfigurert (admin seksjonen)
@@ -407,6 +415,18 @@ zip_code_min_length	common	no	Postnummer må være minst 4 tegn
 invalid_url_format	common	no	Ugyldig URL-format
 phone_number_required	common	no	Telefonnummer er påkrevd
 email_required	common	no	E-post er påkrevd
-
 previous	common	no	Forrige
 access not permitted	common	no	Tilgang nektet
+session_expired_log_in_again	common	no	Sesjonen din er utløpt. Logg inn på nytt i en annen fane og prøv igjen.
+increase	common	no	Øk antall
+decrease	common	no	Reduser antall
+uploading	common	no	Laster opp
+error_loading_data	common	no	Kunne ikke laste data
+error_loading_events	common	no	Kunne ikke laste arrangementer
+Passkeys are unavailable: set webserver_url to the public HTTPS address, or set hostname to the public domain name when webserver_url is a relative path. http://localhost is allowed for development, IP addresses are not.	common	no	Passkeys er ikke tilgjengelig: sett webserver_url til den offentlige HTTPS-adressen, eller sett hostname til det offentlige domenenavnet når webserver_url er en relativ sti. http://localhost er tillatt for utvikling, IP-adresser er ikke tillatt.
+Please sign in again before adding a passkey.	common	no	Logg inn på nytt før du legger til en passnøkkel.
+Passkey registered successfully!	common	no	Passnøkkelen er registrert.
+Passkey registered, but the security email could not be sent.	common	no	Passnøkkelen er registrert, men sikkerhetsvarslingen kunne ikke sendes.
+A passkey was added to your account	common	no	En passnøkkel er lagt til på kontoen din
+A passkey named "%1" was added to your account at %2.	common	no	En passnøkkel med navnet «%1» ble lagt til på kontoen din %2.
+If you did not add this passkey, contact your system administrator immediately.	common	no	Hvis du ikke la til denne passnøkkelen, kontakt systemadministratoren umiddelbart.

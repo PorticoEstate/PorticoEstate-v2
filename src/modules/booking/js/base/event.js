@@ -129,6 +129,12 @@ $(document).ready(function ()
 		oArgs = {menuaction: 'booking.uievent.send_sms_participants', id: event_id};
 		var requestUrl = phpGWLink('index.php', oArgs, true);
 
+		// The message is HTML built on the server, with the phone numbers escaped there.
+		var showReceipt = function (msg_class, message)
+		{
+			$("#sms_receipt").html("<div class=\"" + msg_class + "\">" + message + "</div>");
+		};
+
 		$.ajax({
 			type: 'POST',
 			data: {sms_content: $('#field_sms_content').val(), send_sms: true},
@@ -136,25 +142,19 @@ $(document).ready(function ()
 			url: requestUrl,
 			success: function (data)
 			{
-				if (data != null)
+				// No message to show (the server answered with a bare false, or with nothing): say that it failed
+				// rather than print "undefined" or stay silent.
+				if (!data || !data.message)
 				{
-					var message = data.message;
-
-					htmlString = "";
-					var msg_class = "msg_good";
-					if (data.status == 'error')
-					{
-						msg_class = "error";
-					}
-					htmlString += "<div class=\"" + msg_class + "\">";
-					htmlString += message;
-					htmlString += '</div>';
-					$("#sms_receipt").html(htmlString);
-					if (data.status == 'error')
-					{
-						setTimeout(function(){ $("#sms_receipt").html(''); }, 1000);
-					}
+					showReceipt('error', lang['sms_send_failed']);
+					return;
 				}
+				showReceipt(data.status == 'error' ? 'error' : 'msg_good', data.message);
+			},
+			// A 500, or a reply that is not JSON (a die() in the sms class, an HTML error page).
+			error: function ()
+			{
+				showReceipt('error', lang['sms_send_failed']);
 			}
 		});
 

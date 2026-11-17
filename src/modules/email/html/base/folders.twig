@@ -1,0 +1,64 @@
+{% extends layout|default('@views/_bare.twig') %}
+
+{% block title %}{{ lang('Folders') }}{% endblock %}
+
+{% block styles %}
+<style>{{ source('@views/folders.css') }}</style>
+{% endblock %}
+
+{% block content %}
+<main class="email-folders" id="email-folders"
+	data-api-url="{{ api_url|e('html_attr') }}"
+	data-inbox-url="{{ inbox_url|e('html_attr') }}"
+	data-action-url="{{ action_url|e('html_attr') }}"
+	data-csrf-name="{{ csrf.name|e('html_attr') }}"
+	data-csrf-value="{{ csrf.value|e('html_attr') }}"
+	data-account="{{ account }}">
+	<header class="email-folders-header">
+		<div>
+			<p>{{ lang('E-Mail') }}</p>
+			<h1>{{ lang('Folders') }}</h1>
+		</div>
+		<nav class="email-folders-actions">
+			<a class="email-folders-button" href="{{ inbox_url|e }}">{{ lang('Back to inbox') }}</a>
+		</nav>
+	</header>
+	<div class="email-folders-status" id="email-folders-status" role="status" aria-live="polite">{{ lang('Loading folders') }}</div>
+	<div class="email-folders-error" id="email-folders-error" role="alert" hidden></div>
+	<form class="email-folders-manager" id="email-folders-manager">
+		<label>{{ lang('Action') }}
+			<select id="email-folder-action" name="action">
+				<option value="create">{{ lang('Create') }}</option>
+				<option value="rename">{{ lang('Rename') }}</option>
+				<option value="delete">{{ lang('Delete') }}</option>
+			</select>
+		</label>
+		<label id="email-folder-parent-field">
+			{{ lang('Parent folder') }}
+			<select id="email-folder-parent" name="parent_folder">
+				<option value="">{{ lang('Top level') }}</option>
+			</select>
+		</label>
+		<label id="email-folder-source-field" hidden><span id="email-folder-source-label">{{ lang('Folder to rename') }}</span>
+			<select id="email-folder-source" name="source"></select>
+		</label>
+		<label>{{ lang('Folder name') }}
+			<input id="email-folder-target" name="target" type="text" maxlength="255" autocomplete="off">
+		</label>
+		<button id="email-folder-submit" type="submit" disabled>{{ lang('Apply') }}</button>
+	</form>
+	<div class="email-folders-action-status" id="email-folders-action-status" role="status" aria-live="polite"></div>
+	<div class="email-folders-table-wrap">
+		<table class="email-folders-table">
+			<thead><tr><th scope="col">{{ lang('Folder') }}</th><th scope="col">{{ lang('Unread') }}</th><th scope="col">{{ lang('Total') }}</th></tr></thead>
+			<tbody id="email-folders-rows"></tbody>
+		</table>
+	</div>
+</main>
+{% endblock %}
+
+{% block scripts %}
+<script>{{ source('@views/url.js') }}</script>
+<script>{{ source('@views/folder-hierarchy.js') }}</script>
+<script>{{ source('@views/folders.js') }}</script>
+{% endblock %}

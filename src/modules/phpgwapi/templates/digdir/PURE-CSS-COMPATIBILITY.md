@@ -6,35 +6,83 @@ PorticoEstate currently uses **Pure CSS** (from Yahoo) alongside the new **Digdi
 
 ## CSS Load Order
 
-The stylesheets are loaded in this specific order:
+Bootstrap, Digdir and Portico load the shared `phpgwapi/templates/base/css/base.css`
+and the current module's `templates/base/css/base.css` when present, before the
+template-set overrides. Optional module and theme files are included only when
+present.
 
-```
-1. Pure CSS (base layer)
-   - global.css
-   - pure-min.css
-   - pure-extension.css
-   - grids-responsive-min.css
+Pure's global, action-bar, form and grid styles are loaded for all three.
+Bootstrap loads Bootstrap CSS once. Digdir loads `digdir-native.css`, its
+component and shell styles, then the Designsystemet and admin token assets; the
+Designsystemet assets use CSS cascade layers. Widget styles are emitted before
+the template styles in all three shells. The Bootstrap Multiselect widget does
+not inject Bootstrap's global stylesheet into Digdir or Portico; its dropdown
+uses scoped compatibility styles instead. DataTables styles are registered by
+the widget loader, not duplicated in the Portico head.
 
-2. Design System Layer
-   - @digdir/designsystemet-css (when template_set = 'digdir')
-   - designsystemet-compat.css (compatibility layer)
-   OR
-   - bootstrap.min.css (when template_set != 'digdir')
-
-3. Icon Fonts
-   - FontAwesome
-   - Flag Icons
-
-4. Template-specific CSS
-   - base.css
-   - sidebar.css
-   - navbar CSS
-
-5. Theme CSS
-   - User's selected theme
-```
+The shared phpgwapi stylesheet retains legacy element defaults for older
+templates while Bootstrap and Digdir use their own shell typography. Legacy
+module button rules do not override Pure or framework buttons in those two
+templates. `designsystemet-compat.css` is not loaded by the Digdir head.
+Digdir keeps Pure's responsive grid widths from the upstream responsive
+stylesheet; its native styles only provide the flex grid container behavior.
+Legacy module-wide form, label, link, and heading defaults are scoped away from
+Bootstrap and Digdir so they cannot outrank the framework styles. Portico
+includes a viewport declaration for mobile layout.
 
 ## Known Conflicts & Solutions
+
+### Home cards and bookmark tiles
+
+The Digdir page shell uses `.app-card` / `.app-card-body`, rather than the
+Bootstrap `.card` / `.card-body` classes. The outer `.app-page-card` allows
+overflow so form widgets and focus outlines are not clipped.
+Breadcrumbs and all `.app-card` containers use the same drop shadow.
+
+Home bookmarks use `.app-bookmark-grid` with three equal-width columns, two at
+viewport widths up to 48rem, and one up to 30rem. Tile links fill their grid cells;
+flexible card bodies align the footer rows even when icons or captions differ.
+These styles live in `css/digdir-native.css`; the Bootstrap rendering is unchanged.
+
+### Shared home hook tables
+
+For all template sets, `HomeHelper` encloses module home hooks in
+`#home-hook-content`. The shared `js/core/home.js` wraps each table in a
+keyboard-focusable `.home-table-scroll` container. It also handles tables
+recreated by pagination or filtering, without nesting or leaving empty wrappers.
+The overflow styles live in `templates/pure/css/global.css`, loaded by all three
+template sets. Headings, filters, and pagers remain outside the scroll area.
+
+### Legacy aligned forms in the Digdir template
+
+The active loader uses `digdir-native.css`, not `designsystemet-compat.css`.
+Digdir's `css/base.css` supplies the aligned-form adjustments without changing
+shared XSL templates or the Bootstrap template set:
+
+- Form text and native controls use a consistent scale and the current
+  Designsystemet typography and neutral-color tokens.
+- Select2 styling (single and multiple) lives in the shared
+  `phpgwapi/templates/base/css/base.css`, scoped to Select2's `default` theme.
+  It reads `--ds-*` tokens with neutral fallbacks, so Digdir gets Designsystemet
+  colours, Portico gets the fallbacks, and the Bootstrap set's `bootstrap-5`
+  theme is unaffected.
+- Fieldsets may shrink below their contents' intrinsic width. Controls retain
+  Pure's fractional widths, capped to leave room for the label column.
+- Standalone one-fifth columns in aligned custom grids use their natural width,
+  so short location lookup fields do not collapse inside shrink-to-fit wrappers.
+- At viewport widths up to 48rem, labels stack above controls and fractional
+  controls use the available width.
+- DataTables keep their own horizontal scrolling; plain tables directly inside
+  `.pure-custom` scroll inside that wrapper.
+- Action bars use `.sticky-action-bar` and the shared
+  `templates/pure/css/action-bar.css`, loaded by the administrative and legacy
+  frontend template sets. Property ticket add and view actions are inside their
+  sticky bars, with send-order remaining conditional on access and an existing
+  order. Eventplanner and Addressbook retain their existing action elements and
+  visibility hooks; initially hidden or disabled bars are not activated. The
+  inner `#submitbox` owns the surface styling so hiding it also collapses the
+  bar.
+- Digdir's remaining legacy action-bar overrides exclude `.sticky-action-bar`.
 
 ### 1. Grid Systems
 
@@ -87,14 +135,17 @@ The stylesheets are loaded in this specific order:
 <!-- Using component -->
 {% include '@components/button.twig' with {
     content: 'Digdir Button',
-    variant: 'primary'
+    variant: 'primary',
+    is_designsystemet: true
 } %}
 
-<!-- Or using classes -->
-<button class="btn btn-primary">Bootstrap-style</button>
+<!-- Or using the Digdir shell's native classes -->
+<button class="app-button app-button-primary">Primary</button>
 ```
 
-**Solution:** The compatibility layer ensures `.btn` classes work correctly. You can use both styles in the same page.
+The Digdir head does not load `designsystemet-compat.css`, so Bootstrap `.btn`
+classes are not a general Digdir button fallback. Use Pure or the Digdir shell
+classes for buttons in this template.
 
 ### 3. Forms
 

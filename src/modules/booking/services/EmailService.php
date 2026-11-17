@@ -610,6 +610,50 @@ class EmailService
     }
 
     /**
+     * Send the catering-change mail (GH #1425) to ONE address — the application's case officer.
+     *
+     * Unlike sendStatusChangeNotificationToStaff() this never fans out to the configured group
+     * addresses or the building's role holders: the operator's ruling is the case officer only.
+     * Same transport and sender as the staff mail, so MAIL_TO_DISK / SMTP_HOST govern it exactly
+     * the same way.
+     *
+     * Never throws: a mail that cannot be sent must not be able to fail the change that caused it.
+     * Catches Throwable on purpose — a PHP 8 TypeError is an Error, not an Exception.
+     *
+     * @return bool true when the transport accepted the message
+     */
+    public function sendCateringChangeNotification(string $to, string $subject, string $htmlBody): bool
+    {
+        try {
+            $config = $this->getBookingConfig();
+            if (!$config) {
+                return false;
+            }
+
+            $from = isset($config['email_sender']) && $config['email_sender']
+                ? $config['email_sender']
+                : "noreply<noreply@{$this->serverSettings['hostname']}>";
+
+            $this->send->msg('email', $to, $subject, $htmlBody, '', '', '', $from, 'AktivKommune', 'html');
+            return true;
+        } catch (\Throwable $e) {
+            error_log('EmailService::sendCateringChangeNotification failed: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Absolute https link into the booking backend, with plain "&" separators (the HTML escaping
+     * is the template's job).
+     */
+    public function buildBackendLink(string $path, array $params = []): string
+    {
+        $link = (string)\phpgw::link($path, $params, false, true, true);
+        $link = str_replace('&amp;', '&', $link);
+        return preg_replace('#^http://#i', 'https://', $link) ?? $link;
+    }
+
+    /**
      * Send SMS notifications (preserves legacy functionality)
      *
      * @param array $application Application data

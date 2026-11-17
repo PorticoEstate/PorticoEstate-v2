@@ -1,16 +1,15 @@
 {
     "name": "datatables.net-select-dt",
     "description": "Select for DataTables with styling for [DataTables](https://datatables.net/)",
-    "main": "js/select.dataTables.js",
-    "module": "js/select.dataTables.mjs",
-    "style": "css/select.dataTables.css",
+    "main": "./js/select.dataTables.js",
+    "module": "./js/select.dataTables.mjs",
+    "style": "./css/select.dataTables.css",
     "types": "./types/select.dataTables.d.ts",
-    "version": "4.0.1",
+    "version": "4.1.1",
     "files": [
-        "css/**/*.css",
-        "js/**/*.js",
-        "js/**/*.mjs",
-        "types/**/*.d.ts"
+        "js",
+        "css",
+        "types"
     ],
     "keywords": [
         "select",
@@ -21,8 +20,8 @@
         "sort"
     ],
     "dependencies": {
-        "datatables.net-select": "4.0.1",
-        "datatables.net-dt": "^3"
+        "datatables.net-select": "4.1.1",
+        "datatables.net-dt": "^3.1"
     },
     "author": {
         "name": "SpryMedia Ltd",
@@ -34,5 +33,25 @@
     "repository": {
         "type": "git",
         "url": "git+https://github.com/DataTables/Select.git"
-    }
+    },
+    "exports": {
+        ".": {
+            "types": "./types/select.dataTables.d.ts",
+            "style": "./css/select.dataTables.css",
+            "import": "./js/select.dataTables.mjs",
+            "require": "./js/select.dataTables.js",
+            "default": "./js/select.dataTables.mjs"
+        },
+        "./js/*": "./js/*",
+        "./css": {
+            "types": "./types/css.d.ts",
+            "default": "./css/select.dataTables.css"
+        },
+        "./css/*": {
+            "types": "./types/css.d.ts",
+            "default": "./css/*"
+        },
+        "./package.json": "./package.json"
+    },
+    "sideEffects": true
 }

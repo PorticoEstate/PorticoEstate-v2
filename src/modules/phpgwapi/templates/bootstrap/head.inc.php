@@ -87,6 +87,7 @@ else
 // Prepare stylesheets
 $stylesheets = array();
 $stylesheets[] = "/phpgwapi/templates/pure/css/global.css";
+$stylesheets[] = "/phpgwapi/templates/pure/css/action-bar.css";
 $stylesheets[] = "/phpgwapi/templates/pure/css/version_3/pure-min.css";
 $stylesheets[] = "/phpgwapi/templates/pure/css/pure-extension.css";
 $stylesheets[] = "/phpgwapi/templates/pure/css/version_3/grids-responsive-min.css";
@@ -95,6 +96,12 @@ $stylesheets[]	 = "/phpgwapi/js/bootstrap5/vendor/twbs/bootstrap/dist/css/bootst
 
 $stylesheets[] = "/phpgwapi/templates/base/css/fontawesome/css/all.min.css";
 $stylesheets[] = "/phpgwapi/templates/base/css/flag-icons.min.css";
+
+$stylesheets[] = "/phpgwapi/templates/base/css/base.css";
+if ($app != 'phpgwapi')
+{
+	$stylesheets[] = "/{$app}/templates/base/css/base.css";
+}
 
 if ($app != 'frontend')
 {
@@ -116,10 +123,13 @@ if (isset($userSettings['preferences']['common']['theme']))
 	$stylesheets[] = "/phpgwapi/templates/bootstrap/css/{$userSettings['preferences']['common']['theme']}.css";
 }
 
-$stylesheets[] = "/{$app}/templates/bootstrap/css/base.css";
-if (isset($userSettings['preferences']['common']['theme']))
+if ($app != 'phpgwapi')
 {
-	$stylesheets[] = "/{$app}/templates/bootstrap/css/{$userSettings['preferences']['common']['theme']}.css";
+	$stylesheets[] = "/{$app}/templates/bootstrap/css/base.css";
+	if (isset($userSettings['preferences']['common']['theme']))
+	{
+		$stylesheets[] = "/{$app}/templates/bootstrap/css/{$userSettings['preferences']['common']['theme']}.css";
+	}
 }
 
 $cssUris = [];

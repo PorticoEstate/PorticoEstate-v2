@@ -256,7 +256,7 @@ const OrganizationDelegatesContent = (props: OrganizationDelegatesContentProps) 
 		return (
 			<GSAccordion data-color={'neutral'} className={className}>
 				<GSAccordion.Heading>
-					<h3>{t('bookingfrontend.delegates')}</h3>
+					<h3>{t('booking.delegates')}</h3>
 				</GSAccordion.Heading>
 				<GSAccordion.Content>
 					<div className={styles.loading}>{t('common.loading')}</div>
@@ -269,7 +269,7 @@ const OrganizationDelegatesContent = (props: OrganizationDelegatesContentProps) 
 		return (
 			<GSAccordion data-color={'neutral'} className={className}>
 				<GSAccordion.Heading>
-					<h3>{t('bookingfrontend.delegates')}</h3>
+					<h3>{t('booking.delegates')}</h3>
 				</GSAccordion.Heading>
 				<GSAccordion.Content>
 					<div className={styles.error}>{t('common.error')}</div>

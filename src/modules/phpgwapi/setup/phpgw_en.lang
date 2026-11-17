@@ -416,8 +416,16 @@ puerto rico	common	en	PUERTO RICO
 qatar	common	en	QATAR
 read	common	en	Read
 read this list of methods.	common	en	Read this list of methods.
+Not now	common	en	Not now
 register_globals = %1	common	en	register_globals = %1
 register_globals_off	common	en	This application has been tested to work with register_globals = off in your php.ini.  This application should work with most PHP 5.2.0+ servers.  If you experience any problems, please report them on our bug tracker at <a href="https://github.com/PorticoEstate/PorticoEstate/issues" target="_blank">savannah.gnu.org</a>.
+Sign in faster with a passkey	common	en	Sign in faster with a passkey
+Passkey sign-in is disabled while external authentication is configured.	common	en	Passkey sign-in is disabled while external authentication is configured.
+New passkeys require a discoverable credential. Remove an existing passkey here before registering it again.	common	en	New passkeys require a discoverable credential. Remove an existing passkey here before registering it again.
+Use your device’s fingerprint, face recognition, or screen lock instead of a password. Only set this up on a device you trust.	common	en	Use your device’s fingerprint, face recognition, or screen lock instead of a password. Only set this up on a device you trust.
+Set up passkey	common	en	Set up passkey
+Don’t ask again	common	en	Don’t ask again
+Unable to save passkey suggestion preference.	common	en	Unable to save passkey suggestion preference.
 register_globals_on	common	en	This application has not been tested to work with register_globals = off in your php.ini.  This application requires register_globals = on to be set in your php.ini.  For more information regarding the potential problem of using register_globals = on, see <a href="http://www.php.net/manual/en/security.registerglobals.php" target="_blank">php.net</a>.  If you experience any problems, please report them on our bug tracker at <a href="https://github.com/PorticoEstate/PorticoEstate/issues" target="_blank">savannah.gnu.org</a>.
 reject	common	en	Reject
 rename	common	en	Rename
@@ -601,7 +609,21 @@ zip_code_min_length	common	en	Zip code must be at least 4 characters
 invalid_url_format	common	en	Invalid URL format
 phone_number_required	common	en	Phone number is required
 email_required	common	en	Email is required
-
 first	common	en	First
 last	common	en	Last
 previous	common	en	Previous
+session_expired_log_in_again	common	en	Your session has expired. Log in again in another tab and try again.
+increase	common	en	Increase quantity
+decrease	common	en	Decrease quantity
+uploading	common	en	Uploading
+error_loading_data	common	en	Could not load data
+error_loading_events	common	en	Could not load events
+contacts	common	en	Contacts
+inactive	common	en	Inactive
+Passkeys are unavailable: set webserver_url to the public HTTPS address, or set hostname to the public domain name when webserver_url is a relative path. http://localhost is allowed for development, IP addresses are not.	common	en	Passkeys are unavailable: set webserver_url to the public HTTPS address, or set hostname to the public domain name when webserver_url is a relative path. http://localhost is allowed for development, IP addresses are not.
+Please sign in again before adding a passkey.	common	en	Please sign in again before adding a passkey.
+Passkey registered successfully!	common	en	Passkey registered successfully!
+Passkey registered, but the security email could not be sent.	common	en	Passkey registered, but the security email could not be sent.
+A passkey was added to your account	common	en	A passkey was added to your account
+A passkey named "%1" was added to your account at %2.	common	en	A passkey named "%1" was added to your account at %2.
+If you did not add this passkey, contact your system administrator immediately.	common	en	If you did not add this passkey, contact your system administrator immediately.

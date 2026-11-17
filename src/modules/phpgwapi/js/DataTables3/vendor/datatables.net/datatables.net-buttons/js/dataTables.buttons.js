@@ -1,4 +1,4 @@
-/*! Buttons 4.0.2 for DataTables
+/*! Buttons 4.1.3 for DataTables
  * Copyright (c) SpryMedia Ltd - datatables.net/license
  */
 
@@ -10,13 +10,6 @@
 		});
 	}
 	else if (typeof exports === 'object') {
-		// CommonJS
-		var cjsRequires = function (root) {
-			if (! root.DataTable) {
-				require('datatables.net')(root);
-			}
-		};
-
 		if (typeof window === 'undefined') {
 			module.exports = function (root) {
 				if (! root) {
@@ -24,14 +17,20 @@
 					// root. This will give an error otherwise
 					root = window;
 				}
+				
+				var DataTable = root.DataTable ?
+					root.DataTable :
+					require('datatables.net')(root);
 
-				cjsRequires(root);
-				return factory(root, root.document, root.DataTable);
+				return factory(root, root.document, DataTable);
 			};
 		}
 		else {
-			cjsRequires(window);
-			module.exports = factory(window, window.document, window.DataTable);
+			var DataTable = window.DataTable ?
+				window.DataTable :
+				require('datatables.net');
+
+			module.exports = factory(window, window.document, DataTable);
 		}
 	}
 	else {
@@ -947,7 +946,7 @@ const excelHtml5 = {
             '[Content_Types].xml': getXml('[Content_Types].xml')
         };
         var data = dt.buttons.exportData(config.exportOptions);
-        var columnTypes = dt.columns(config.exportOptions.columns).types();
+        var columnTypes = data.columnTypes;
         var currentRow, rowNode;
         var addRow = function (row) {
             currentRow = rowPos + 1;
@@ -994,7 +993,8 @@ const excelHtml5 = {
                     }
                 }
                 if (!cell) {
-                    if (columnTypes[i].includes('num') &&
+                    if (columnTypes[i] &&
+                        columnTypes[i].includes('num') &&
                         (typeof row[i] === 'number' ||
                             (row[i].match &&
                                 row[i].match(/^-?\d+(\.\d+)?([eE]\-?\d+)?$/) && // Includes exponential format
@@ -1536,7 +1536,7 @@ const pdfHtml5 = {
 /*
  * Print button for Buttons and DataTables.
  */
-var _link = document.createElement('a');
+var _link;
 /**
  * Convert a URL from a relative to an absolute address so it will work
  * correctly in the popup window which has no base URL.
@@ -1546,6 +1546,9 @@ var _link = document.createElement('a');
 var _relToAbs = function (href) {
     // Assign to a link on the original page so the browser will do all the
     // hard work of figuring out where the file actually is
+    if (!_link) {
+        _link = Dom.c('a')[0];
+    }
     _link.href = href;
     var linkHost = _link.host;
     // IE doesn't have a trailing slash on the host
@@ -1772,7 +1775,7 @@ Object.assign(DataTable.ext.buttons, {
 * License : https://github.com/eligrey/FileSaver.js/blob/master/LICENSE.md (MIT)
 * source  : http://purl.eligrey.com/github/FileSaver.js
 */
-var _global = window;
+var _global = DataTable.use('win');
 function isUtf8TextOrXml(typeString) {
     if (!typeString) {
         return false;
@@ -1934,12 +1937,12 @@ var saveAs = _global.saveAs || (
             });
 
 
-if (!DataTable.versionCheck('3')) {
-    throw 'Warning: Buttons requires DataTables 3 or newer';
+if (!DataTable.versionCheck('3.1')) {
+    throw 'Warning: Buttons requires DataTables 3.1 or newer';
 }
 // Expose file saver on the DataTables API.
 DataTable.fileSave = saveAs;
-const _exportTextarea = document.createElement('textarea');
+var _exportTextarea;
 // Used for namespacing events added to the document by each instance, so they
 // can be removed on destroy
 var _instCounter = 0;
@@ -2220,7 +2223,7 @@ class Buttons {
                 if (top > half) {
                     top = half;
                 }
-                display.css('marginTop', top + 'px');
+                display.css('marginTop', -top + 'px');
             };
             place();
             Dom.w.on('resize.dtb-collection', function () {
@@ -2445,7 +2448,7 @@ class Buttons {
      */
     destroy() {
         // Key event listener
-        Dom.s('body').off('keyup.' + this.s.namespace);
+        Dom.s('body').off('keydown.' + this.s.namespace);
         // Individual button destroy (so they can remove their own events if
         // needed). Take a copy as the array is modified by `remove`
         var buttons = this.s.buttons.slice();
@@ -2678,14 +2681,17 @@ class Buttons {
                 that.destroy();
             }
         });
-        // Global key event binding to listen for button keys
-        Dom.c('body').on('keyup.' + this.s.namespace, function (e) {
+        // Global key event binding to listen for button keys. Keydown to allow
+        // prevent default, which is needed in Firefox to stop the quick find
+        // feature.
+        Dom.s(document).on('keydown.' + this.s.namespace, function (e) {
             if (!document.activeElement ||
                 document.activeElement === document.body) {
                 // Use a string of characters for fast lookup of if we need to
                 // handle this
                 var character = String.fromCharCode(e.keyCode).toLowerCase();
                 if (that.s.listenKeys.toLowerCase().indexOf(character) !== -1) {
+                    e.preventDefault();
                     that._keypress(character, e);
                 }
             }
@@ -3578,6 +3584,9 @@ Buttons.stripData = function (input, config) {
             str = _entityDecoder(str);
         }
         else {
+            if (!_exportTextarea) {
+                _exportTextarea = Dom.c('textarea')[0];
+            }
             _exportTextarea.innerHTML = str;
             str = _exportTextarea.value;
         }
@@ -3694,7 +3703,7 @@ Buttons.defaults = {
 /**
  * Version information
  */
-Buttons.version = '4.0.2';
+Buttons.version = '4.1.3';
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
  * DataTables API
@@ -3942,7 +3951,7 @@ DataTable.Buttons = Buttons;
 // they will have been if the `B` option was used in `dom`, otherwise we should
 // create the buttons instance here so they can be inserted into the document
 // using the API.
-Dom.s(document).on('init.dt plugin-init.dt', function (e, settings) {
+Dom.on('init.dt plugin-init.dt', function (e, settings) {
     if (e.namespace !== 'dt') {
         return;
     }
@@ -4134,7 +4143,8 @@ var _exportData = function (dt, inOpts) {
         headerStructure: _headerFormatter(config.format.header, dt.table().header.structure(config.columns)),
         footer: footer,
         footerStructure: _headerFormatter(config.format.footer, dt.table().footer.structure(config.columns)),
-        body: body
+        body: body,
+        columnTypes: dt.columns(config.columns).types().toArray()
     };
     if (config.customizeData) {
         config.customizeData(data);

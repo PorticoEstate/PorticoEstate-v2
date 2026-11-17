@@ -773,6 +773,79 @@ class property_boproject
 		return $values;
 	}
 
+	/**
+	 * Fetch and format invoice vouchers for a project.
+	 * Sets $this->total_records as a side effect.
+	 *
+	 * @param array $data project_id, year, paid, order, sort, start, results, allrows
+	 * @return array formatted voucher rows
+	 */
+	public function get_vouchers($data)
+	{
+		$project_id = isset($data['project_id']) ? (int)$data['project_id'] : 0;
+
+		$this->total_records = 0;
+
+		if ($project_id <= 0)
+		{
+			return array();
+		}
+
+		$soinvoice	 = CreateObject('property.soinvoice');
+		$invoices	 = $soinvoice->read_invoice_sub_sum(array(
+			'project_id' => $project_id,
+			'year'		 => isset($data['year']) ? (int)$data['year'] : 0,
+			'paid'		 => isset($data['paid']) ? $data['paid'] : 'both',
+			'order'		 => !empty($data['order']) ? (string)$data['order'] : 'voucher_id',
+			'sort'		 => strtolower((string)($data['sort'] ?? 'asc')) === 'desc' ? 'DESC' : 'ASC',
+			'start'		 => isset($data['start']) ? (int)$data['start'] : 0,
+			'results'	 => isset($data['results']) ? (int)$data['results'] : 0,
+			'allrows'	 => !empty($data['allrows']),
+		));
+
+		$config				 = CreateObject('phpgwapi.config', 'property')->read();
+		$invoicehandler_2	 = isset($config['invoicehandler']) && $config['invoicehandler'] == 2;
+		$dateformat			 = $this->userSettings['preferences']['common']['dateformat'] ?? 'Y-m-d';
+
+		$values = array();
+		foreach ((array)$invoices as $entry)
+		{
+			$voucher_id = $invoicehandler_2
+				? (!empty($entry['transfer_time']) ? -1 * (int)$entry['voucher_id'] : (int)$entry['voucher_id'])
+				: ($entry['external_voucher_id'] ?? null);
+
+			$values[] = array(
+				'voucher_id'			 => $voucher_id,
+				'voucher_out_id'		 => $entry['voucher_out_id'] ?? null,
+				'workorder_id'			 => $entry['workorder_id'] ?? null,
+				'status'				 => $entry['status'] ?? '',
+				'period'				 => $entry['period'] ?? '',
+				'periodization'			 => $entry['periodization'] ?? '',
+				'periodization_start'	 => $entry['periodization_start'] ?? '',
+				'invoice_id'			 => $entry['invoice_id'] ?? '',
+				'budget_account'		 => $entry['budget_account'] ?? '',
+				'dima'					 => $entry['dima'] ?? '',
+				'dimb'					 => $entry['dimb'] ?? '',
+				'dimd'					 => $entry['dimd'] ?? '',
+				'type'					 => $entry['type'] ?? '',
+				'amount_ex_tax'			 => ((float)($entry['amount'] ?? 0)) * 0.8,
+				'amount_tax'			 => ((float)($entry['amount'] ?? 0)) * 0.2,
+				'amount'				 => $entry['amount'] ?? 0,
+				'approved_amount'		 => $entry['approved_amount'] ?? 0,
+				'vendor'				 => $entry['vendor'] ?? '',
+				'external_project_id'	 => $entry['project_id'] ?? null,
+				'currency'				 => $entry['currency'] ?? '',
+				'budget_responsible'	 => $entry['budget_responsible'] ?? '',
+				'budsjettsigndato'		 => !empty($entry['budsjettsigndato']) ? $this->phpgwapi_common->show_date(strtotime($entry['budsjettsigndato']), $dateformat) : '',
+				'transfer_time'			 => !empty($entry['transfer_time']) ? $this->phpgwapi_common->show_date(strtotime($entry['transfer_time']), $dateformat) : '',
+			);
+		}
+
+		$this->total_records = (int)($soinvoice->total_records ?? count($values));
+
+		return $values;
+	}
+
 	function read_single_mini($project_id)
 	{
 		if ($project = $this->so->read_single($project_id))

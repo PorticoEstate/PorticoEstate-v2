@@ -64,14 +64,18 @@ $javascripts[] = "/phpgwapi/templates/portico/js/keep_alive.js";
 
 $stylesheets = array();
 $stylesheets[] = "/phpgwapi/templates/pure/css/global.css";
+$stylesheets[] = "/phpgwapi/templates/pure/css/action-bar.css";
 $stylesheets[] = "/phpgwapi/templates/pure/css/version_3/pure-min.css";
 $stylesheets[] = "/phpgwapi/templates/pure/css/pure-extension.css";
 $stylesheets[] = "/phpgwapi/templates/pure/css/version_3/grids-responsive-min.css";
 
-$stylesheets[] = "/phpgwapi/js/DataTables3/vendor/datatables.net/datatables.net-dt/css/dataTables.dataTables.min.css";
 $stylesheets[] = "/phpgwapi/templates/base/css/fontawesome/css/all.min.css";
 
 $stylesheets[] = "/phpgwapi/templates/base/css/base.css";
+if ($app != 'phpgwapi')
+{
+	$stylesheets[] = "/{$app}/templates/base/css/base.css";
+}
 $stylesheets[] = "/phpgwapi/templates/portico/css/base.css";
 
 
@@ -79,11 +83,13 @@ if (isset($userSettings['preferences']['common']['theme']))
 {
 	$stylesheets[] = "/phpgwapi/templates/portico/css/{$userSettings['preferences']['common']['theme']}.css";
 }
-$stylesheets[] = "/{$app}/templates/base/css/base.css";
-$stylesheets[] = "/{$app}/templates/portico/css/base.css";
-if (isset($userSettings['preferences']['common']['theme']))
+if ($app != 'phpgwapi')
 {
-	$stylesheets[] = "/{$app}/templates/portico/css/{$userSettings['preferences']['common']['theme']}.css";
+	$stylesheets[] = "/{$app}/templates/portico/css/base.css";
+	if (isset($userSettings['preferences']['common']['theme']))
+	{
+		$stylesheets[] = "/{$app}/templates/portico/css/{$userSettings['preferences']['common']['theme']}.css";
+	}
 }
 
 //	if(isset($userSettings['preferences']['common']['yui_table_nowrap']) && $userSettings['preferences']['common']['yui_table_nowrap'])

@@ -1,4 +1,4 @@
-import React, {PropsWithChildren, useCallback, useEffect, useRef, useState} from 'react';
+import React, {PropsWithChildren, useCallback, useEffect, useId, useRef, useState} from 'react';
 import styles from './mobile-dialog.module.scss';
 import {useTrans} from '@/app/i18n/ClientTranslationProvider';
 import {XMarkIcon, ExpandIcon, ShrinkIcon} from '@navikt/aksel-icons';
@@ -23,8 +23,10 @@ interface DialogProps extends PropsWithChildren {
 	confirmOnClose?: boolean;
 	/** Optional footer content */
 	footer?: ((attemptOnClose: () => void) => React.ReactNode) | React.ReactNode;
-	/** Optional title content */
+	/** Optional title content. When rendered (default header), it is the dialog's accessible name. */
 	title?: React.ReactNode;
+	/** Accessible name for a dialog without a rendered title. Ignored when a title is rendered. */
+	'aria-label'?: string;
 	/** Enable clicking background to close */
 	closeOnBackdropClick?: boolean;
 
@@ -43,7 +45,8 @@ interface DialogProps extends PropsWithChildren {
  * @param showDefaultHeader - Controls whether the default header is shown (default: true)
  * @param confirmOnClose - Prompts the user for confirmation before closing (default: false)
  * @param footer - Optional footer content to be rendered at the bottom of the dialog
- * @param title - Optional title content to be rendered in the header
+ * @param title - Optional title content to be rendered in the header; a rendered title names the dialog (aria-labelledby)
+ * @param aria-label - Accessible name used only when no title is rendered
  * @param closeOnBackdropClick - Allows closing the dialog by clicking the backdrop (default: false)
  */
 const Dialog: React.FC<DialogProps> = ({
@@ -56,9 +59,16 @@ const Dialog: React.FC<DialogProps> = ({
 										   confirmOnClose = false,
 										   footer,
 										   title,
+										   'aria-label': ariaLabel,
 										   closeOnBackdropClick = false,
 										   stickyFooter = false,
 									   }) => {
+	const titleId = useId();
+	// Exactly one naming attribute: a rendered title names the dialog; otherwise the aria-label prop does,
+	// falling back to a plain-text title whose header is hidden.
+	const nameProps = showDefaultHeader && title
+		? {'aria-labelledby': titleId}
+		: {'aria-label': ariaLabel ?? (typeof title === 'string' && title ? title : undefined)};
 	const dialogRef = useRef<HTMLDialogElement | null>(null);
 	const contentRef = useRef<HTMLDivElement | null>(null);
 	const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -247,6 +257,7 @@ const Dialog: React.FC<DialogProps> = ({
 				isFullscreen ? styles.fullscreen : ''
 			}`}
 			onClick={handleBackdropClick}
+			{...nameProps}
 		>
 			{/* Custom backdrop inside dialog */}
 			{show && <div className={styles.customBackdrop} onClick={closeOnBackdropClick ? attemptClose : undefined} />}
@@ -258,7 +269,7 @@ const Dialog: React.FC<DialogProps> = ({
 			<div className={styles.dialogContainer}>
 				{showDefaultHeader && (
 					<div className={`${styles.dialogHeader} ${scrolled ? styles.scrolled : ''}`}>
-						<div className={styles.headerTitle}>{title || ''}</div>
+						<div id={titleId} className={styles.headerTitle}>{title || ''}</div>
 						<div className={styles.headerButtons}>
 							{!isMobile && <Tooltip
 								content={isFullscreen ? t('common.exit_fullscreen') : t('common.enter_fullscreen')}

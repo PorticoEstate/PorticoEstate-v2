@@ -7,6 +7,7 @@ import { ApplicationModule } from './modules/application/application.module';
 import { FreeTimeModule } from './modules/freetime/freetime.module';
 import { BookingModule } from './modules/booking/booking.module';
 import { GatewayModule } from './modules/gateway/gateway.module';
+import { HealthModule } from './health/health.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { GatewayModule } from './modules/gateway/gateway.module';
     FreeTimeModule,
     BookingModule,
     GatewayModule,
+    HealthModule,
   ],
 })
 export class AppModule {}

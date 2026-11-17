@@ -223,7 +223,7 @@
 				case controller_control::REPEAT_TYPE_MONTH:
 					$this->repeat_type_label = lang('repeat_type_month');
 					break;
-				case controller_control::REPEAT_TYPE_YEAR;
+				case controller_control::REPEAT_TYPE_YEAR:
 					$this->repeat_type_label = lang('repeat_type_year');
 					break;
 				default:

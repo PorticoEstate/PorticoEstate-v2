@@ -15,6 +15,7 @@ import {
 	fetchApplicationComments,
 	fetchApplicationDocuments,
 	fetchApplicationScheduleEntities,
+	fetchApplicationRecurringSeries,
 	addApplicationComment,
 	updateApplicationStatus,
 	fetchArticlesForResources,
@@ -30,6 +31,7 @@ import {
 	fetchInvoices,
 	fetchOrganizations,
 	fetchPartialApplications,
+	refetchPartialApplicationsViaRest,
 	fetchSearchDataClient,
 	fetchServerMessages,
 	fetchServerSettings,
@@ -39,7 +41,7 @@ import {
 	fetchMultiDomains,
 	patchBookingUser
 } from "@/service/api/api-utils";
-import {IApplication, IUpdatePartialApplication, NewPartialApplication, GetCommentsResponse, AddCommentRequest, AddCommentResponse, UpdateStatusRequest, UpdateStatusResponse} from "@/service/types/api/application.types";
+import {IApplication, IUpdatePartialApplication, NewPartialApplication, GetCommentsResponse, AddCommentRequest, AddCommentResponse, UpdateStatusRequest, UpdateStatusResponse, IRecurringSeries} from "@/service/types/api/application.types";
 import {INotification, INotificationListResponse, IUnreadCountResponse, IMarkReadResponse} from "@/service/types/api/notification.types";
 import {ICompletedReservation} from "@/service/types/api/invoices.types";
 import {phpGWLink} from "@/service/util";
@@ -64,6 +66,13 @@ import {
 } from './use-websocket-subscriptions';
 import {IWSServerDeletedMessage, IWSServerNewMessage, WebSocketMessage} from '../websocket/websocket.types';
 import { pendingDeletions } from './pending-deletions';
+import {
+	isStalePartialApplicationsList,
+	judgePartialApplicationsMessage,
+	PARTIAL_APPLICATIONS_QUERY_KEY,
+	PartialApplicationsCache,
+	partialApplicationsTotal,
+} from './partial-applications-sync';
 
 /**
  * Custom hook that wraps useMutation and adds server message invalidation
@@ -859,23 +868,24 @@ export function usePartialApplications(): UseQueryResult<{ list: IApplication[],
 	const { status: wsStatus, sessionConnected, isReady: wsReady, sendMessage } = useWebSocketContext();
 	const lastSeqRef = useRef(0);
 
-	const calcTotalSum = (apps: IApplication[]) =>
-		apps.reduce((sum: number, app: IApplication) => {
-			const orderSum = app.orders?.reduce((acc: number, order: any) => acc + (Number(order.sum) || 0), 0) || 0;
-			return sum + orderSum;
-		}, 0);
-
 	// Handle server-pushed partial application updates
 	useMessageTypeSubscription('partial_applications_response', (message) => {
-		if (message.data.error !== false) return;
+		// A failed push, or a list that drops what the cart holds, is never taken as it is:
+		// the cart is read over REST instead (partial-applications-sync.ts)
+		const verdict = judgePartialApplicationsMessage(
+			queryClient.getQueryData<PartialApplicationsCache>(PARTIAL_APPLICATIONS_QUERY_KEY),
+			message.data,
+			lastSeqRef.current,
+			pendingDeletions,
+		);
+		if (verdict === 'read-rest') {
+			refetchPartialApplicationsViaRest(queryClient);
+			return;
+		}
+		if (verdict === 'ignore') return;
 
 		const seq = message.data.seq ?? 0;
 		const diff = message.data.diff;
-
-		// If this message has a seq older than what we've already processed, try diff only
-		if (seq > 0 && seq < lastSeqRef.current && !diff) {
-			return; // Reject stale full update without diff
-		}
 
 		if (seq > lastSeqRef.current) {
 			lastSeqRef.current = seq;
@@ -905,7 +915,7 @@ export function usePartialApplications(): UseQueryResult<{ list: IApplication[],
 						}
 					}
 
-					return { list, total_sum: calcTotalSum(list) };
+					return { list, total_sum: partialApplicationsTotal(list) };
 				}
 			);
 		}
@@ -918,7 +928,7 @@ export function usePartialApplications(): UseQueryResult<{ list: IApplication[],
 				: message.data.applications;
 			queryClient.setQueryData(['partialApplications'], {
 				list: apps,
-				total_sum: calcTotalSum(apps),
+				total_sum: partialApplicationsTotal(apps),
 			});
 		}
 	});
@@ -932,7 +942,12 @@ export function usePartialApplications(): UseQueryResult<{ list: IApplication[],
 				// Prefer WebSocket when connected — avoids HTTP round-trip
 				if (isWebSocketActive) {
 					try {
-						return await fetchPartialApplicationsViaWs(sendMessage);
+						const fromWs = await fetchPartialApplicationsViaWs(sendMessage);
+						const current = queryClient.getQueryData<PartialApplicationsCache>(PARTIAL_APPLICATIONS_QUERY_KEY);
+						if (!isStalePartialApplicationsList(current?.list, fromWs.list, null, pendingDeletions)) {
+							return fromWs;
+						}
+						// It drops applications the cart holds — REST decides
 					} catch {
 						// WebSocket request failed or timed out — fall back to REST
 					}
@@ -1231,6 +1246,31 @@ export function useApplicationScheduleEntities(
 }
 
 /**
+ * Hook to fetch every occurrence of a recurring application, with its status (GH #1392)
+ * @param applicationId The application ID
+ * @param secret Optional secret for external access
+ * @param enabled False for an application that is not recurring - the server refuses those
+ * @returns Query result with the series
+ */
+export function useApplicationRecurringSeries(
+    applicationId: number,
+    secret?: string,
+    enabled: boolean = true
+): UseQueryResult<IRecurringSeries> {
+    return useQuery({
+        // Under ['application', id] on purpose: what changes an occurrence's status - a
+        // withdrawn or changed time, a status change, a comment - already invalidates that
+        // prefix (allocation-cancellation-hooks.ts, useUpdateApplicationStatus,
+        // useAddApplicationComment), so the series follows without invalidations of its own.
+        queryKey: ['application', applicationId, 'recurringSeries', secret],
+        queryFn: () => fetchApplicationRecurringSeries(applicationId, secret),
+        enabled,
+        retry: 1,
+        refetchOnWindowFocus: false,
+    });
+}
+
+/**
  * Hook to add a comment to an application
  * @param options Mutation options
  * @returns Mutation object for adding comments
@@ -1494,7 +1534,6 @@ export function useInvoices(
 
 export function useCreatePartialApplication() {
 	const queryClient = useQueryClient();
-	const { status: wsStatus, sessionConnected,isReady: wsReady } = useWebSocketContext();
 
 	return useServerMessageMutation({
 		mutationFn: async (newApplication: Partial<NewPartialApplication>) => {
@@ -1518,24 +1557,15 @@ export function useCreatePartialApplication() {
 			return response.json();
 		},
 		onSuccess: () => {
-			// Check if websocket connection is active
-			const isWebSocketActive = wsReady &&
-				wsStatus === 'OPEN' &&
-				sessionConnected;
-
-			// Only invalidate if WebSocket is not active
-			// If WebSocket is active, the server will send a message with the updated data
-			if (!isWebSocketActive) {
-				// Invalidate and refetch partial applications queries
-				queryClient.invalidateQueries({queryKey: ['partialApplications']});
-			}
+			// Over REST, also when the WebSocket is up: its update can be missing or wrong,
+			// and the new application must be in the cart either way
+			refetchPartialApplicationsViaRest(queryClient);
 		},
 	});
 }
 
 export function useUpdatePartialApplication() {
 	const queryClient = useQueryClient();
-	const { status: wsStatus, sessionConnected, isReady: wsReady } = useWebSocketContext();
 
 	return useServerMessageMutation({
 		mutationFn: async ({id, application}: { id: number, application: IUpdatePartialApplication }) => {
@@ -1592,17 +1622,9 @@ export function useUpdatePartialApplication() {
 			}
 		},
 		onSettled: () => {
-			// Check if websocket connection is active
-			const isWebSocketActive = wsReady &&
-				wsStatus === 'OPEN' &&
-				sessionConnected;
-
-			// Only invalidate if WebSocket is not active
-			// If WebSocket is active, the server will send a message with the updated data
-			if (!isWebSocketActive) {
-				// Always refetch after error or success to ensure data is correct
-				queryClient.invalidateQueries({queryKey: ['partialApplications']});
-			}
+			// Always read the cart back after error or success, over REST also when the
+			// WebSocket is up: its update can be missing or wrong
+			refetchPartialApplicationsViaRest(queryClient);
 		},
 	});
 }
@@ -1694,16 +1716,10 @@ export function useDeletePartialApplication() {
 		},
 		onSuccess: (_data, variables) => {
 			pendingDeletions.delete(variables);
-			const isWebSocketActive = wsReady && wsStatus === 'OPEN' && sessionConnected;
-			if (!isWebSocketActive) {
-				queryClient.invalidateQueries({queryKey: ['partialApplications']});
-			}
 		},
 		onSettled: () => {
-			const isWebSocketActive = wsReady && wsStatus === 'OPEN' && sessionConnected;
-			if (!isWebSocketActive) {
-				queryClient.invalidateQueries({queryKey: ['partialApplications']});
-			}
+			// Over REST, also when the WebSocket is up: its update can be missing or wrong
+			refetchPartialApplicationsViaRest(queryClient);
 		},
 	});
 }
@@ -1871,11 +1887,13 @@ export function useCreateSimpleApplication() {
 			throw new Error('Booking timed out');
 		},
 		onSuccess: (_data, variables) => {
+			// The cart over REST, also when the WebSocket is up: its update can be missing or wrong
+			refetchPartialApplicationsViaRest(queryClient);
+
 			const isWebSocketActive = wsReady && wsStatus === 'OPEN' && sessionConnected;
-			// When WS is active, server pushes handle updates (partial_apps_response
-			// + room_message). Only invalidate when WS is not available.
+			// When WS is active, server pushes handle the timeslot updates (room_message).
+			// Only invalidate when WS is not available.
 			if (!isWebSocketActive) {
-				queryClient.invalidateQueries({queryKey: ['partialApplications']});
 				if (variables.building_id) {
 					queryClient.invalidateQueries({
 						predicate: (query) =>
@@ -1952,6 +1970,16 @@ export function useServerSettings(): UseQueryResult<IServerSettings> {
 			refetchOnWindowFocus: false, // Do not refetch on window focus by default
 		}
 	);
+}
+
+/**
+ * Whether an admin has hidden the price category (bookingfrontend config
+ * hide_price_category). Until the settings have loaded, or when they fail to,
+ * the category is shown, as it was before the setting existed.
+ */
+export function useHidePriceCategory(): boolean {
+	const {data: serverSettings} = useServerSettings();
+	return serverSettings?.bookingfrontend_config?.hide_price_category === true;
 }
 
 

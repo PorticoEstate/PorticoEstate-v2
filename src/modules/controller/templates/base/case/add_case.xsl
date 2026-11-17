@@ -12,7 +12,7 @@
 	</xsl:variable>
 
 
-	<div id="main_content" class="medium container">
+	<div id="main_content" class="medium">
 		<a href="#" class="scrollup">
 			<xsl:value-of select="php:function('lang', 'scroll to top')" />
 		</a>
@@ -35,7 +35,7 @@
 				<div id="choose-building-wrp">
 					<xsl:call-template name="select_component_children" />
 					<div class="row mt-2">
-						<div class="container">
+						<div >
 							<h5 class="ms-5">Kontrollert utstyr</h5>
 							<ul class="ms-2">
 								<xsl:for-each select="completed_list">
@@ -57,7 +57,7 @@
 			<xsl:with-param name="active_tab">add_case</xsl:with-param>
 		</xsl:call-template>
 
-		<div id="view_cases" class="container mt-4">
+		<div id="view_cases" class="mt-4">
 			<!--			<xsl:choose>
 				<xsl:when test="component_children/child::node() and count(component_children) &gt; 0">
 					<xsl:attribute name="style">
@@ -72,13 +72,13 @@
 			</h5>-->
 
 			<!-- MODAL INSPECT EQUIPMENT START -->
-			<div class="modal modal-lg fade" id="inspectObject" tabindex="-1" role="dialog" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false" >
+			<div class="modal modal-lg" id="inspectObject" tabindex="-1" role="dialog" aria-hidden="true" aria-labelledby="inspection_title">
 				<div class="modal-dialog">
 					<div class="modal-content">
 						<!-- Modal Header -->
 						<div class="modal-header">
 							<h4 id="inspection_title" class="modal-title">Utfør kontroll</h4>
-							<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+							<button type="button" class="btn-close" aria-label="Close"></button>
 						</div>
 						<!-- Modal body -->
 						<div class="modal-body">
@@ -100,7 +100,7 @@
 
 											<xsl:choose>
 												<xsl:when test="components_at_location/child::node()">
-													<select name="component_at_control_group_{control_group/id}" id="component_at_control_group_{control_group/id}" class="form-select">
+													<select name="component_at_control_group_{control_group/id}" id="component_at_control_group_{control_group/id}" >
 														<xsl:apply-templates select="components_at_location/component_options"/>
 													</select>
 												</xsl:when>
@@ -115,7 +115,7 @@
 															<xsl:value-of select="title"/>
 														</h3>
 													</legend>
-													<form class="frm_register_case" action="{$action_url}" method="post">
+													<form class="frm_register_case pure-form pure-form-stacked" action="{$action_url}" method="post">
 														<!--input type="hidden" name="location_code"  value="" class="required" /-->
 														<input type="hidden" name="location_code" >
 															<xsl:attribute name="value" >
@@ -150,7 +150,7 @@
 
 														<xsl:choose>
 															<xsl:when test="what_to_do !=''">
-																<div class="form-group what-to-do">
+																<div class="pure-control-group what-to-do">
 																	<label>Hva skal sjekkes:</label>
 																	<div>
 																		<xsl:value-of disable-output-escaping="yes" select="what_to_do"/>
@@ -161,7 +161,7 @@
 
 														<xsl:choose>
 															<xsl:when test="how_to_do !=''">
-																<div class="form-group how-to-do">
+																<div class="pure-control-group how-to-do">
 																	<label>Utførelsesbeskrivelse:</label>
 																	<div>
 																		<xsl:value-of disable-output-escaping="yes" select="how_to_do"/>
@@ -171,28 +171,28 @@
 														</xsl:choose>
 														<xsl:if test="include_condition_degree = 1">
 
-															<div class="form-group">
-																<label>
+															<div class="pure-control-group">
+																<label for="case-{$control_group_id}-{$control_item_id}-condition">
 																	<xsl:attribute name="title">
 																		<xsl:text>Tilstandsgrad iht NS 3424</xsl:text>
 																	</xsl:attribute>
 																	<xsl:value-of select="php:function('lang', 'condition degree')"/>
 																</label>
-																<select name="condition_degree" class="form-select">
+																<select id="case-{$control_group_id}-{$control_item_id}-condition" name="condition_degree" >
 																	<xsl:attribute name="title">
 																		<xsl:value-of select="php:function('lang', 'select value')"/>
 																	</xsl:attribute>
 																	<xsl:apply-templates select="//degree_list/options"/>
 																</select>
 															</div>
-															<div class="form-group">
-																<label>
+															<div class="pure-control-group">
+																<label for="case-{$control_group_id}-{$control_item_id}-consequence">
 																	<xsl:attribute name="title">
 																		<xsl:value-of select="php:function('lang', 'consequence')"/>
 																	</xsl:attribute>
 																	<xsl:value-of select="php:function('lang', 'consequence')"/>
 																</label>
-																<select name="consequence" class="form-select">
+																<select id="case-{$control_group_id}-{$control_item_id}-consequence" name="consequence" >
 																	<xsl:attribute name="title">
 																		<xsl:value-of select="php:function('lang', 'select value')"/>
 																	</xsl:attribute>
@@ -205,9 +205,9 @@
 															<xsl:when test="type = 'control_item_type_1'">
 																<input type="hidden" name="status" value="0" />
 																<input type="hidden" name="type" value="control_item_type_1" />
-																<div class="form-group">
-																	<label>Status</label>
-																	<select name="status" class="form-select">
+																<div class="pure-control-group">
+																	<label for="case-{$control_group_id}-{$control_item_id}-status">Status</label>
+																	<select id="case-{$control_group_id}-{$control_item_id}-status" name="status" >
 																		<option value="0" SELECTED="SELECTED">Åpen</option>
 																		<option value="1" >Lukket</option>
 																		<!-- <option value="2" >Venter på tilbakemelding</option> -->
@@ -216,12 +216,12 @@
 																		</option>
 																	</select>
 																</div>
-																<div class="form-group">
-																	<label>Beskrivelse av sak</label>
-																	<textarea name="case_descr" class="form-control">
+																<div class="pure-control-group">
+																	<label for="case-{$control_group_id}-{$control_item_id}-description">Beskrivelse av sak</label>
+																	<textarea id="case-{$control_group_id}-{$control_item_id}-description" name="case_descr" >
 																		<xsl:if test="required = 1">
 																			<xsl:attribute name="class" >
-																				<xsl:text>required form-control</xsl:text>
+																				<xsl:text>required</xsl:text>
 																			</xsl:attribute>
 																		</xsl:if>
 
@@ -229,11 +229,11 @@
 																	</textarea>
 																</div>
 																<xsl:if test="include_counter_measure = 1">
-																	<div class="form-group">
-																		<label>
+																	<div class="pure-control-group">
+																		<label for="case-{$control_group_id}-{$control_item_id}-countermeasure">
 																			<xsl:value-of select="php:function('lang', 'proposed counter measure')"/>
 																		</label>
-																		<textarea name="proposed_counter_measure" class="form-control">
+																		<textarea id="case-{$control_group_id}-{$control_item_id}-countermeasure" name="proposed_counter_measure" >
 																			<xsl:value-of select="proposed_counter_measure"/>
 																		</textarea>
 																	</div>
@@ -249,15 +249,15 @@
 																		<xsl:value-of select="$lang_new_value" />
 																	</xsl:with-param>
 																</xsl:call-template>
-																<input type="submit" class="btn btn-primary btn-lg me-3" name="save_control" value="Lagre sak" />
+																<input type="submit" class="pure-button btn-primary btn-lg me-3" name="save_control" value="Lagre sak" />
 
 															</xsl:when>
 															<xsl:when test="type = 'control_item_type_2'">
 																<input name="type" type="hidden" value="control_item_type_2" />
 
-																<div class="form-group">
-																	<label>Status</label>
-																	<select name="status" class="form-select">
+																<div class="pure-control-group">
+																	<label for="case-{$control_group_id}-{$control_item_id}-status">Status</label>
+																	<select id="case-{$control_group_id}-{$control_item_id}-status" name="status" >
 																		<option value="0" SELECTED="SELECTED">Åpen</option>
 																		<option value="1" >Lukket</option>
 																		<!-- <option value="2" >Venter på tilbakemelding</option> -->
@@ -266,12 +266,12 @@
 																		</option>
 																	</select>
 																</div>
-																<div class="form-group">
-																	<label>Registrer målingsverdi</label>
-																	<input class="form-control">
+																<div class="pure-control-group">
+																	<label for="case-{$control_group_id}-{$control_item_id}-measurement">Registrer målingsverdi</label>
+																	<input id="case-{$control_group_id}-{$control_item_id}-measurement">
 																		<xsl:if test="required = 1">
 																			<xsl:attribute name="class" >
-																				<xsl:text>required form-control</xsl:text>
+																				<xsl:text>required</xsl:text>
 																			</xsl:attribute>
 																		</xsl:if>
 
@@ -282,18 +282,18 @@
 																		</xsl:attribute>
 																	</input>
 																</div>
-																<div class="form-group">
-																	<label>Beskrivelse av sak</label>
-																	<textarea name="case_descr" class="form-control">
+																<div class="pure-control-group">
+																	<label for="case-{$control_group_id}-{$control_item_id}-description">Beskrivelse av sak</label>
+																	<textarea id="case-{$control_group_id}-{$control_item_id}-description" name="case_descr" >
 																		<xsl:value-of select="comment"/>
 																	</textarea>
 																</div>
 																<xsl:if test="include_counter_measure = 1">
-																	<div>
-																		<label>
+																	<div class="pure-control-group">
+																		<label for="case-{$control_group_id}-{$control_item_id}-countermeasure">
 																			<xsl:value-of select="php:function('lang', 'proposed counter measure')"/>
 																		</label>
-																		<textarea name="proposed_counter_measure" class="form-control">
+																		<textarea id="case-{$control_group_id}-{$control_item_id}-countermeasure" name="proposed_counter_measure" >
 																			<xsl:value-of select="proposed_counter_measure"/>
 																		</textarea>
 																	</div>
@@ -312,15 +312,15 @@
 																<xsl:variable name="lang_save">
 																	<xsl:value-of select="php:function('lang', 'register_error')" />
 																</xsl:variable>
-																<input type="submit" class="btn btn-primary btn-lg me-3" name="save_control" value="Lagre måling" title="{$lang_save}" />
+																<input type="submit" class="pure-button btn-primary btn-lg me-3" name="save_control" value="Lagre måling" title="{$lang_save}" />
 
 															</xsl:when>
 															<xsl:when test="type = 'control_item_type_3'">
 																<input name="type" type="hidden" value="control_item_type_3" />
 
-																<div class="form-group">
-																	<label>Status</label>
-																	<select name="status" class="form-select">
+																<div class="pure-control-group">
+																	<label for="case-{$control_group_id}-{$control_item_id}-status">Status</label>
+																	<select id="case-{$control_group_id}-{$control_item_id}-status" name="status" >
 																		<option value="0" SELECTED="SELECTED">Åpen</option>
 																		<option value="1" >Lukket</option>
 																		<!-- <option value="2" >Venter på tilbakemelding</option> -->
@@ -329,12 +329,12 @@
 																		</option>
 																	</select>
 																</div>
-																<div class="form-group">
-																	<label>Velg verdi fra liste</label>
-																	<select name="option_value" class="form-select">
+																<div class="pure-control-group">
+																	<label for="case-{$control_group_id}-{$control_item_id}-option">Velg verdi fra liste</label>
+																	<select id="case-{$control_group_id}-{$control_item_id}-option" name="option_value" >
 																		<xsl:if test="required = 1">
 																			<xsl:attribute name="class" >
-																				<xsl:text>form-select required</xsl:text>
+																				<xsl:text>required</xsl:text>
 																			</xsl:attribute>
 																		</xsl:if>
 																		<option value="" >Velg</option>
@@ -348,18 +348,18 @@
 																		</xsl:for-each>
 																	</select>
 																</div>
-																<div class="form-group">
-																	<label>Beskrivelse av sak</label>
-																	<textarea name="case_descr" class="form-control">
+																<div class="pure-control-group">
+																	<label for="case-{$control_group_id}-{$control_item_id}-description">Beskrivelse av sak</label>
+																	<textarea id="case-{$control_group_id}-{$control_item_id}-description" name="case_descr" >
 																		<xsl:value-of select="comment"/>
 																	</textarea>
 																</div>
 																<xsl:if test="include_counter_measure = 1">
-																	<div class="form-group">
-																		<label>
+																	<div class="pure-control-group">
+																		<label for="case-{$control_group_id}-{$control_item_id}-countermeasure">
 																			<xsl:value-of select="php:function('lang', 'proposed counter measure')"/>
 																		</label>
-																		<textarea name="proposed_counter_measure" class="form-control">
+																		<textarea id="case-{$control_group_id}-{$control_item_id}-countermeasure" name="proposed_counter_measure" >
 																			<xsl:value-of select="proposed_counter_measure"/>
 																		</textarea>
 																	</div>
@@ -378,16 +378,16 @@
 																<xsl:variable name="lang_save">
 																	<xsl:value-of select="php:function('lang', 'register_error')" />
 																</xsl:variable>
-																<input type="submit" class="btn btn-primary btn-lg me-3" name="save_control" value="Lagre sak/måling" title="{$lang_save}" />
+																<input type="submit" class="pure-button btn-primary btn-lg me-3" name="save_control" value="Lagre sak/måling" title="{$lang_save}" />
 
 															</xsl:when>
 															<xsl:when test="type = 'control_item_type_4'">
 
 																<input name="type" type="hidden" value="control_item_type_4" />
 
-																<div class="form-group">
-																	<label>Status</label>
-																	<select name="status" class="form-select">
+																<div class="pure-control-group">
+																	<label for="case-{$control_group_id}-{$control_item_id}-status">Status</label>
+																	<select id="case-{$control_group_id}-{$control_item_id}-status" name="status" >
 																		<option value="0" SELECTED="SELECTED">Åpen</option>
 																		<option value="1" >Lukket</option>
 																		<!-- <option value="2" >Venter på tilbakemelding</option> -->
@@ -396,9 +396,9 @@
 																		</option>
 																	</select>
 																</div>
-																<div class="form-group">
-																	<label>Velg verdi fra lister</label>
-																	<select name="option_value" class="form-select">
+																<div class="pure-control-group">
+																	<label for="case-{$control_group_id}-{$control_item_id}-option">Velg verdi fra lister</label>
+																	<select id="case-{$control_group_id}-{$control_item_id}-option" name="option_value" >
 																		<xsl:if test="required = 1">
 																			<xsl:attribute name="class" >
 																				<xsl:text>required</xsl:text>
@@ -415,18 +415,18 @@
 																		</xsl:for-each>
 																	</select>
 																</div>
-																<div class="form-group">
-																	<label>Beskrivelse av sak</label>
-																	<textarea name="case_descr" class="form-control">
+																<div class="pure-control-group">
+																	<label for="case-{$control_group_id}-{$control_item_id}-description">Beskrivelse av sak</label>
+																	<textarea id="case-{$control_group_id}-{$control_item_id}-description" name="case_descr" >
 																		<xsl:value-of select="comment"/>
 																	</textarea>
 																</div>
 																<xsl:if test="include_counter_measure = 1">
-																	<div class="form-group">
-																		<label>
+																	<div class="pure-control-group">
+																		<label for="case-{$control_group_id}-{$control_item_id}-countermeasure">
 																			<xsl:value-of select="php:function('lang', 'proposed counter measure')"/>
 																		</label>
-																		<textarea name="proposed_counter_measure" class="form-control">
+																		<textarea id="case-{$control_group_id}-{$control_item_id}-countermeasure" name="proposed_counter_measure" >
 																			<xsl:value-of select="proposed_counter_measure"/>
 																		</textarea>
 																	</div>
@@ -445,16 +445,16 @@
 																<xsl:variable name="lang_save">
 																	<xsl:value-of select="php:function('lang', 'register_error')" />
 																</xsl:variable>
-																<input type="submit" class="btn btn-primary btn-lg me-3" name="save_control" value="Lagre sak/måling" title="{$lang_save}" />
+																<input type="submit" class="pure-button btn-primary btn-lg me-3" name="save_control" value="Lagre sak/måling" title="{$lang_save}" />
 
 															</xsl:when>
 															<xsl:when test="type = 'control_item_type_5'">
 
 																<input name="type" type="hidden" value="control_item_type_5" />
 																<!--<input name="status" type="hidden" value="1" />-->
-																<div class="form-group">
-																	<label>Status</label>
-																	<select name="status" class="form-select">
+																<div class="pure-control-group">
+																	<label for="case-{$control_group_id}-{$control_item_id}-status">Status</label>
+																	<select id="case-{$control_group_id}-{$control_item_id}-status" name="status" >
 																		<option value="0" SELECTED="SELECTED">Åpen</option>
 																		<option value="1" >Lukket</option>
 																		<!-- <option value="2" >Venter på tilbakemelding</option> -->
@@ -464,9 +464,8 @@
 																	</select>
 																</div>
 
-																<div class="form-group">
-																	<label class="pure-checkbox">Velg verdi fra lister</label>
-																	<br/>
+																<div class="pure-control-group">
+																	<span>Velg verdi fra lister</span>
 																	<div>
 																		<xsl:if test="required = 1">
 																			<xsl:attribute name="class" >
@@ -474,27 +473,27 @@
 																			</xsl:attribute>
 																		</xsl:if>
 																		<xsl:for-each select="options_array">
-																			<input type="checkbox" name="option_value[]" value="{option_value}">
-																			</input>
-																			<xsl:value-of select="option_value"/>
-																			<br/>
+																			<label class="pure-checkbox">
+																				<input type="checkbox" name="option_value[]" value="{option_value}"/>
+																				<xsl:value-of select="option_value"/>
+																			</label>
 																		</xsl:for-each>
 																	</div>
 																</div>
-																<div class="form-group">
-																	<label>
+																<div class="pure-control-group">
+																	<label for="case-{$control_group_id}-{$control_item_id}-description">
 																		<xsl:value-of select="php:function('lang', 'comment')" />
 																	</label>
-																	<textarea name="case_descr" class="form-control">
+																	<textarea id="case-{$control_group_id}-{$control_item_id}-description" name="case_descr" >
 																		<xsl:value-of select="comment"/>
 																	</textarea>
 																</div>
 																<xsl:if test="include_counter_measure = 1">
-																	<div class="form-group">
-																		<label>
+																	<div class="pure-control-group">
+																		<label for="case-{$control_group_id}-{$control_item_id}-countermeasure">
 																			<xsl:value-of select="php:function('lang', 'proposed counter measure')"/>
 																		</label>
-																		<textarea name="proposed_counter_measure" class="form-control">
+																		<textarea id="case-{$control_group_id}-{$control_item_id}-countermeasure" name="proposed_counter_measure" >
 																			<xsl:value-of select="proposed_counter_measure"/>
 																		</textarea>
 																	</div>
@@ -513,14 +512,14 @@
 																<xsl:variable name="lang_save">
 																	<xsl:value-of select="php:function('lang', 'register_error')" />
 																</xsl:variable>
-																<input type="submit" class="btn btn-primary btn-lg me-3" name="save_control" value="Lagre sak/måling" title="{$lang_save}" />
+																<input type="submit" class="pure-button btn-primary btn-lg me-3" name="save_control" value="Lagre sak/måling" title="{$lang_save}" />
 
 															</xsl:when>
 														</xsl:choose>
 														<xsl:variable name="lang_reset_form">
 															<xsl:value-of select="php:function('lang', 'reset form')" />
 														</xsl:variable>
-														<input type="button" name="reset_form" id="reset_form" value="{$lang_reset_form}" title="{lang_reset_form}" class="btn btn-primary btn-lg" onclick="resetForm(form);"/>
+														<input type="button" name="reset_form" id="reset_form" value="{$lang_reset_form}" title="{lang_reset_form}" class="pure-button btn-primary btn-lg" onclick="resetForm(form);"/>
 													</form>
 													<div class="add_picture_to_case" style="display:none">
 														<form class="add_picture_to_case_form" ENCTYPE="multipart/form-data" method="post">
@@ -528,16 +527,16 @@
 																<xsl:value-of select="php:function('get_phpgw_link', '/index.php', 'menuaction:controller.uicase.add_case_image, phpgw_return_as:json')" />
 															</xsl:attribute>
 
-															<div class="form-group">
+															<div class="pure-control-group">
 																<label>
 																	<xsl:value-of select="php:function('lang', 'picture')" />
 																</label>
 																<div class="pure-custom" name="picture_container"/>
 															</div>
-															<div id="new_picture" class="form-group">
+															<div id="new_picture" class="pure-control-group">
 																<div class="input-group">
 																	<div class="custom-file">
-																		<input type="file" name="file" class="custom-file-input" aria-describedby="submit_update_component">
+																		<input type="file" id="case_picture_file" name="file" class="custom-file-input" aria-describedby="submit_update_component">
 																			<xsl:attribute name="accept">image/*</xsl:attribute>
 																			<xsl:attribute name="capture">camera</xsl:attribute>
 																		</input>
@@ -546,7 +545,7 @@
 																		</label>
 																	</div>
 																</div>
-																<!--																<button id = "submit_update_component" type="submit" class="btn btn-primary btn-lg me-3 mt-3">
+																<!--																<button id = "submit_update_component" type="submit" class="pure-button btn-primary btn-lg me-3 mt-3">
 																	<xsl:value-of select="php:function('lang', 'add picture')" />
 																</button>-->
 															</div>
@@ -585,7 +584,7 @@
 										</xsl:attribute>
 									</input>
 									<div class="modal-footer">
-										<button type="submit" class="btn btn-success ms-5 me-3">Ferdig (delskjema)</button>
+										<button type="submit" class="pure-button btn-success ms-5 me-3">Ferdig (delskjema)</button>
 									</div>
 								</form>
 							</xsl:when>
@@ -625,29 +624,28 @@
 	<xsl:param name="lang_new_value" />
 
 	<xsl:if test="include_regulation_reference = 1">
-		<div class="form-group">
+		<div class="pure-control-group">
 			<label>
 				<xsl:attribute name="title">
 					<xsl:value-of select="php:function('lang', 'regulation reference')"/>
 				</xsl:attribute>
 				<xsl:value-of select="php:function('lang', 'regulation reference')"/>
-			</label>
-			<select id="regulation_reference" name="regulation_reference" class="form-select">
-				<xsl:attribute name="title">
-					<xsl:value-of select="php:function('lang', 'select value')"/>
-				</xsl:attribute>
-				<xsl:for-each select="regulation_reference_options_array">
-					<option>
-						<xsl:attribute name="value">
+				<select id="regulation_reference" name="regulation_reference" >
+					<xsl:attribute name="title">
+						<xsl:value-of select="php:function('lang', 'select value')"/>
+					</xsl:attribute>
+					<xsl:for-each select="regulation_reference_options_array">
+						<option>
+							<xsl:attribute name="value">
+								<xsl:value-of select="option_value"/>
+							</xsl:attribute>
 							<xsl:value-of select="option_value"/>
-						</xsl:attribute>
-						<xsl:value-of select="option_value"/>
-					</option>
-				</xsl:for-each>
-			</select>
+						</option>
+					</xsl:for-each>
+				</select>
+			</label>
 		</div>
-		<div class="form-group">
-			<label><xsl:text> </xsl:text></label>
+		<div class="pure-control-group">
 			<a id="add_reference_option" href="#" onClick="addNewValueToRegulationReference('{$control_item_id}', '{$lang_regulation_reference}', '{$lang_new_value}');">
 				<img src="{//add_img}" width="23"/>
 				<xsl:text> </xsl:text>
@@ -656,8 +654,7 @@
 				<xsl:value-of select="php:function('lang', 'regulation reference')"/>
 			</a>
 		</div>
-		<div class="form-group">
-			<label><xsl:text> </xsl:text></label>
+		<div class="pure-control-group">
 			<i class="far fa-2x fa-trash-alt"></i>
 			<a id="delete_reference_option" href="#" onClick="deleteValueFromRegulationReference('{$control_item_id}');">
 				<xsl:text> </xsl:text>

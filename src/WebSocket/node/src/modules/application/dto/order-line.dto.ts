@@ -47,7 +47,23 @@ export class OrderLineDto {
   @Expose()
   tax: number;
 
+  /**
+   * The VAT % of tax_code (fm_ecomva.percent_), to label `tax`. Read-only: it is never stored (the line's VAT
+   * is `tax`, as billed), and null (a code with no fm_ecomva row) is not 0 %. Mirrors PHP OrderLine::$tax_percent.
+   */
+  @Expose()
+  tax_percent: number | null;
+
   @Expose()
   @Transform(({ value }) => sanitizeString(value))
   name: string;
+
+  /** The bb_article_price row a resource line was priced from; null when no choice was recorded */
+  @Expose()
+  article_price_id: number | null;
+
+  /** What the citizen chose, as it read when they chose it; set only when there was a choice */
+  @Expose()
+  @Transform(({ value }) => sanitizeString(value))
+  price_label: string | null;
 }

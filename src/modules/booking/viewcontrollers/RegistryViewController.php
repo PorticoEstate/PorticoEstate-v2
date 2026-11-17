@@ -32,14 +32,17 @@ class RegistryViewController
 	{
 		$type = $args['type'] ?? '';
 
-		try {
+		try
+		{
 			$pagination = $this->getDatatablePagination();
 			$config = $this->getValidatedConfig($type);
-			if (!$config) {
+			if (!$config)
+			{
 				return ResponseHelper::sendErrorResponse(['error' => "Registry type '{$type}' not found"], 404);
 			}
 
-			if (!$this->acl->check($config['acl_location'], Acl::READ, $config['acl_app'])) {
+			if (!$this->acl->check($config['acl_location'], Acl::READ, $config['acl_app']))
+			{
 				return ResponseHelper::sendErrorResponse(['error' => 'Permission denied'], 403);
 			}
 
@@ -61,7 +64,9 @@ class RegistryViewController
 
 			$response->getBody()->write($html);
 			return $response->withHeader('Content-Type', 'text/html');
-		} catch (Exception $e) {
+		}
+		catch (Exception $e)
+		{
 			return ResponseHelper::sendErrorResponse(
 				['error' => 'Error loading registry list: ' . $e->getMessage()],
 				500
@@ -88,14 +93,17 @@ class RegistryViewController
 		$id = isset($args['id']) ? (int)$args['id'] : null;
 		$isNew = ($id === null);
 
-		try {
+		try
+		{
 			$config = $this->getValidatedConfig($type);
-			if (!$config) {
+			if (!$config)
+			{
 				return ResponseHelper::sendErrorResponse(['error' => "Registry type '{$type}' not found"], 404);
 			}
 
 			$requiredPermission = $isNew ? Acl::ADD : Acl::EDIT;
-			if (!$this->acl->check($config['acl_location'], $requiredPermission, $config['acl_app'])) {
+			if (!$this->acl->check($config['acl_location'], $requiredPermission, $config['acl_app']))
+			{
 				return ResponseHelper::sendErrorResponse(['error' => 'Permission denied'], 403);
 			}
 
@@ -116,7 +124,9 @@ class RegistryViewController
 
 			$response->getBody()->write($html);
 			return $response->withHeader('Content-Type', 'text/html');
-		} catch (Exception $e) {
+		}
+		catch (Exception $e)
+		{
 			return ResponseHelper::sendErrorResponse(
 				['error' => 'Error loading registry form: ' . $e->getMessage()],
 				500
@@ -126,7 +136,8 @@ class RegistryViewController
 
 	private function getValidatedConfig(string $type): ?array
 	{
-		if (!$type || !in_array($type, BookingGenericRegistry::getAvailableTypes())) {
+		if (!$type || !in_array($type, BookingGenericRegistry::getAvailableTypes()))
+		{
 			return null;
 		}
 		return BookingGenericRegistry::getRegistryConfig($type);
@@ -147,10 +158,12 @@ class RegistryViewController
 	private function getMenuSelection(string $type, array $config): string
 	{
 		$entry = RegistryMenuConfig::get($type);
-		if ($entry) {
+		if ($entry)
+		{
 			return $entry['menu_selection'];
 		}
-		if (!empty($config['menu_selection'])) {
+		if (!empty($config['menu_selection']))
+		{
 			return $config['menu_selection'];
 		}
 		return 'booking::settings';
@@ -159,7 +172,8 @@ class RegistryViewController
 	private function getDisplayName(string $type, array $config): string
 	{
 		$entry = RegistryMenuConfig::get($type);
-		if ($entry) {
+		if ($entry)
+		{
 			return lang($entry['text_key']);
 		}
 		return $config['name'] ?? ucfirst(str_replace('_', ' ', $type));
@@ -169,7 +183,8 @@ class RegistryViewController
 	{
 		$flags = Settings::getInstance()->get('flags');
 		$header = lang('booking') . '::' . $displayName;
-		if ($action) {
+		if ($action)
+		{
 			$header .= '::' . $action;
 		}
 		$flags['app_header'] = $header;

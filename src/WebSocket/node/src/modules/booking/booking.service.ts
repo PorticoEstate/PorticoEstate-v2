@@ -3,6 +3,7 @@ import { createHash, randomBytes } from 'crypto';
 import { DatabaseService } from '../../database/database.service';
 import { RedisService } from '../notification/redis.service';
 import { FreeTimeService } from '../freetime/freetime.service';
+import { getEligibleResourcePrices, preselectedPrice, priceCategoriesInstalled, priceLabel } from './resource-price';
 
 /**
  * A booking takes milliseconds. A statement in its transaction that runs longer than
@@ -91,6 +92,8 @@ export class BookingService implements OnModuleInit {
   private readonly logger = new Logger(BookingService.name);
   private installId: string | null = null;
   private guestAccountId: number | null = null;
+  private bootValuesLoaded = false;
+  private bootValuesLoading: Promise<void> | null = null;
   private readonly workers = new Map<number, ResourceWorker>();
   private workerCleanupInterval: ReturnType<typeof setInterval> | null = null;
 
@@ -101,34 +104,47 @@ export class BookingService implements OnModuleInit {
   ) {}
 
   async onModuleInit() {
-    try {
-      const { rows } = await this.db.query(
-        "SELECT config_value FROM phpgw_config WHERE config_name = 'install_id' LIMIT 1",
-      );
-      this.installId = rows[0]?.config_value || null;
-      if (this.installId) {
-        this.logger.log('Loaded install_id for Redis lock compatibility');
-      }
-    } catch (err: any) {
-      this.logger.error(`Failed to load install_id: ${err.message}`);
-    }
-
-    try {
-      const { rows } = await this.db.query(
-        "SELECT account_id FROM phpgw_accounts WHERE account_lid = 'bookingguest' LIMIT 1",
-      );
-      this.guestAccountId = rows[0]?.account_id ?? null;
-      if (this.guestAccountId) {
-        this.logger.log(`Loaded guest account ID: ${this.guestAccountId}`);
-      } else {
-        this.logger.warn('No bookingguest account found — anonymous bookings will fail');
-      }
-    } catch (err: any) {
-      this.logger.error(`Failed to load guest account: ${err.message}`);
-    }
+    await this.ensureBootValues().catch((err) =>
+      this.logger.error(`Failed to load install_id and guest account, will retry on use: ${err.message}`),
+    );
 
     // Clean up idle worker DB connections every 30s
     this.workerCleanupInterval = setInterval(() => this.cleanupIdleWorkers(), 30_000);
+  }
+
+  /**
+   * Reads install_id (PHP puts it in front of every Redis key) and the guest account that
+   * anonymous bookings are made for. When the database cannot be read at start-up, the first
+   * booking or deletion that needs them reads them; they are never taken to be absent.
+   */
+  private ensureBootValues(): Promise<void> {
+    if (this.bootValuesLoaded) return Promise.resolve();
+    this.bootValuesLoading ??= this.loadBootValues().finally(() => {
+      this.bootValuesLoading = null;
+    });
+    return this.bootValuesLoading;
+  }
+
+  private async loadBootValues(): Promise<void> {
+    const { rows: installRows } = await this.db.query(
+      "SELECT config_value FROM phpgw_config WHERE config_name = 'install_id' LIMIT 1",
+    );
+    const { rows: guestRows } = await this.db.query(
+      "SELECT account_id FROM phpgw_accounts WHERE account_lid = 'bookingguest' LIMIT 1",
+    );
+
+    this.installId = installRows[0]?.config_value || null;
+    this.guestAccountId = guestRows[0]?.account_id ?? null;
+    this.bootValuesLoaded = true;
+
+    if (this.installId) {
+      this.logger.log('Loaded install_id for Redis lock compatibility');
+    }
+    if (this.guestAccountId) {
+      this.logger.log(`Loaded guest account ID: ${this.guestAccountId}`);
+    } else {
+      this.logger.warn('No bookingguest account found — anonymous bookings will fail');
+    }
   }
 
   private cleanupIdleWorkers() {
@@ -155,7 +171,7 @@ export class BookingService implements OnModuleInit {
    * so bookings for different resources run in parallel while bookings
    * for the same resource are serialized (no deadlocks, no row locks needed).
    */
-  enqueueBooking(
+  async enqueueBooking(
     resourceId: number,
     buildingId: number,
     from: string,
@@ -165,13 +181,14 @@ export class BookingService implements OnModuleInit {
     ssn: string | null,
   ): Promise<BookingResult> {
     // Resolve owner early so callers get a fast rejection
-    if (!ownerId && this.guestAccountId) {
-      ownerId = this.guestAccountId;
+    if (!ownerId) {
+      await this.ensureBootValues();
+      if (this.guestAccountId) {
+        ownerId = this.guestAccountId;
+      }
     }
     if (!ownerId) {
-      return Promise.reject(
-        new TranslatableError('No valid owner account available', 'no_valid_owner'),
-      );
+      throw new TranslatableError('No valid owner account available', 'no_valid_owner');
     }
 
     return new Promise<BookingResult>((resolve, reject) => {
@@ -816,6 +833,9 @@ export class BookingService implements OnModuleInit {
     resourceIds: number[];
     dates: Array<{ from_: string; to_: string }>;
   }> {
+    // The timeslot locks cleared below are keyed with install_id
+    await this.ensureBootValues();
+
     let client: any = null;
     try {
       client = await this.db.getClient();
@@ -1491,8 +1511,16 @@ export class BookingService implements OnModuleInit {
 
       const mapping = mappingRows[0];
 
+      // PHP: resolveResourcePrice($mappingId, null) — these are all the resource
+      // itself (article_cat 1), so the price is the citizen's, not the mapping's.
+      // Nobody can choose here: the preselected option is used, and where the
+      // citizen must choose the line stays unpriced (no price row, 0) until
+      // they do so in checkout, which refuses to submit it before.
+      const options = await getEligibleResourcePrices(client, article.id);
+      const chosen = preselectedPrice(options);
+
       // PHP: $line = [...] — line 103-110
-      const unitPrice = parseFloat(mapping.price || '0'); // ex_tax_price
+      const unitPrice = chosen ? parseFloat(chosen.price) : 0; // ex_tax_price
       const quantity = article.quantity;
       const taxPercent = parseFloat(mapping.tax_percent || '0');
 
@@ -1500,12 +1528,21 @@ export class BookingService implements OnModuleInit {
       const amount = unitPrice * quantity;
       const tax = amount * (taxPercent / 100);
 
+      // The category the line was priced in (ref #1477): the chosen row's, once the column exists
+      const withCategory = await priceCategoriesInstalled(client);
+
       await client.query(
         `INSERT INTO bb_purchase_order_line (
           order_id, article_mapping_id, quantity,
-          tax_code, unit_price, parent_mapping_id, amount, tax, currency
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'NOK')`,
-        [orderId, article.id, quantity, mapping.tax_code, unitPrice, article.parent_id, amount, tax],
+          tax_code, unit_price, parent_mapping_id, amount, tax, currency,
+          article_price_id, price_label${withCategory ? ', category_id' : ''}
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'NOK', $9, $10${withCategory ? ', $11' : ''})`,
+        [
+          orderId, article.id, quantity, mapping.tax_code, unitPrice, article.parent_id, amount, tax,
+          chosen ? chosen.id : null,
+          chosen ? priceLabel(chosen, options.length) : null,
+          ...(withCategory ? [chosen?.category_id ?? null] : []),
+        ],
       );
     }
   }
@@ -1632,6 +1669,11 @@ export class BookingService implements OnModuleInit {
   // --- Redis lock helpers (matching PHP Cache::_gen_key + RedisCache) ---
 
   private genRedisKey(module: string, id: string): string {
+    if (!this.bootValuesLoaded) {
+      // A key without install_id is not the key PHP uses, so a lock taken or cleared with it
+      // would miss PHP's lock.
+      throw new Error('install_id has not been read yet; no Redis key can be made');
+    }
     const raw = `${this.installId || ''}::${module}::${id}`;
     return createHash('sha1').update(raw).digest('hex');
   }

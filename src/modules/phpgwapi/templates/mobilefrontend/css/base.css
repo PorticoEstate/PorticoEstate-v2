@@ -285,6 +285,7 @@ button.dt-button.disabled, div.dt-button.disabled, a.dt-button.disabled
 .pastable.pastable-focus{
 	box-shadow: 0 0 10px black;
 }
+/* Kept here: mobilefrontend does not load phpgwapi/templates/base/css/base.css, where shared Select2 rules live. */
 .select2-selection__rendered
 {
     line-height: 33px !important;

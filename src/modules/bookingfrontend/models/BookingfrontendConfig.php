@@ -96,6 +96,19 @@ class BookingfrontendConfig
     public $close_calendar_without_season = false;
 
     /**
+     * When true, the Next client does not show the price category (#1477): not
+     * the shared "who are you applying as" choice, the per-resource switch or the
+     * category's name. The applicant then chooses a price per resource, as before
+     * categories. Visibility only: prices, stored data and the server are unchanged.
+     * Unset means shown.
+     *
+     * @OA\Property(type="boolean")
+	 * @Expose
+	 * @ParseBool
+     */
+    public $hide_price_category = false;
+
+    /**
      * When true, users who explicitly selected the old template stay on it.
      * When false (default), the new client is forced for paths that have a
      * new-client alternative (see phpgwapi StartPoint redirect map).

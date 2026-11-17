@@ -769,6 +769,7 @@ CSS;
 	public function create_select_box($label, $name, $values, $help = '', $default = '')
 	{
 		$t = $this->template;
+		$s = '';
 
 		$_appname = $this->check_app();
 		if ($this->is_forced_value($_appname, $name))

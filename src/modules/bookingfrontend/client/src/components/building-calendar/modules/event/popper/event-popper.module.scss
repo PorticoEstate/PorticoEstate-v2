@@ -7,6 +7,12 @@
     background-color: $grey-24;
     flex-grow: 1;
 
+    /* Inside the shared Dialog (mobile) the card is the panel itself: same colour as the panel.
+       The desktop floating popper is not in a <dialog> and keeps its grey. */
+    :global(dialog) & {
+        background-color: var(--ds-color-neutral-background-default);
+    }
+
     @include tablet {
         /* design 1a: "Compact — 300 px · glance-first". Desktop only; inside the
            mobile dialog the card still fills the sheet. */
@@ -82,6 +88,9 @@
     .dialogHeader {
         background-color: $grey-24;
         position: sticky;
+        :global(dialog) & {
+            background-color: var(--ds-color-neutral-background-default);
+        }
         display: flex;
         //flex-direction: row-reverse;
         justify-content: space-between;

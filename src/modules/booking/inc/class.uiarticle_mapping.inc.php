@@ -28,7 +28,11 @@
  * @version $Id: $
  */
 
+use App\modules\booking\helpers\ArticlePriceInput;
+use App\modules\booking\repositories\PriceCategoryRepository;
 use App\modules\phpgwapi\services\Settings;
+use Slim\Csrf\Guard;
+use Slim\Psr7\Factory\ResponseFactory;
 
 phpgw::import_class('phpgwapi.uicommon');
 phpgw::import_class('phpgwapi.datetime');
@@ -162,6 +166,7 @@ class booking_uiarticle_mapping extends phpgwapi_uicommon
 		$reservation_id		 = Sanitizer::get_var('reservation_id', 'int', 'GET');
 		$alloc_template_id	 = Sanitizer::get_var('alloc_template_id', 'int', 'GET');
 		$collection			 = Sanitizer::get_var('collection', 'bool', 'GET');
+		$edit				 = Sanitizer::get_var('edit', 'bool', 'GET');
 
 		if ($alloc_template_id)
 		{
@@ -204,10 +209,13 @@ class booking_uiarticle_mapping extends phpgwapi_uicommon
 
 
 		// Get purchase orders - handle combined applications if viewing an application
-		if ($application_id && !$reservation_type && !$reservation_id) {
+		if ($application_id && !$reservation_type && !$reservation_id)
+		{
 			// This is an application view - get combined purchase orders
 			$purchase_order = createObject('booking.sopurchase_order')->get_purchase_order_combined($application_id);
-		} else {
+		}
+		else
+		{
 			// This is for editing/creating reservations - use original method
 			$purchase_order = createObject('booking.sopurchase_order')->get_purchase_order($application_id, $reservation_type, $reservation_id, $collection);
 		}
@@ -266,8 +274,10 @@ class booking_uiarticle_mapping extends phpgwapi_uicommon
 		}
 
 		// Filter out articles with no cost when viewing application (not editing)
-		if ($application_id && !$reservation_type && !$reservation_id) {
-			$articles = array_filter($articles, function($article) {
+		if ($application_id && !$reservation_type && !$reservation_id && !$edit)
+		{
+			$articles = array_filter($articles, function ($article)
+			{
 				return !empty($article['selected_sum']) && floatval($article['selected_sum']) > 0;
 			});
 			// Re-index array after filtering
@@ -366,6 +376,67 @@ class booking_uiarticle_mapping extends phpgwapi_uicommon
 		self::render_template_xsl('datatable2', $data);
 	}
 
+	/**
+	 * The price categories a resource's price rows can be linked to (ref #1477):
+	 * the active ones, plus those the rows already have. Null when the
+	 * article has none to offer: a service, an article not stored yet, or
+	 * before the migration that adds categories has run.
+	 */
+	private function get_price_categories(int $id, $article, array $pricing): ?array
+	{
+		if (!$id || (int)$article->article_cat_id !== 1 || !PriceCategoryRepository::isInstalled())
+		{
+			return null;
+		}
+
+		return (new PriceCategoryRepository())->listForSelect(array_filter(array_column($pricing, 'category_id')));
+	}
+
+	/**
+	 * A category select for a price row: "no category" first, then the
+	 * categories, the row's own selected, and the button that adds a new one
+	 * (article_mapping.js). The names are the admin's text, so they are
+	 * escaped here; the cell reaches the page as HTML.
+	 */
+	private function price_category_select(array $categories, ?int $selected, string $attributes): string
+	{
+		$options = "<option value=''>" . htmlspecialchars(lang('price_category_none'), ENT_QUOTES, 'UTF-8') . '</option>';
+		foreach ($categories as $category)
+		{
+			$is_selected = (int)$category['id'] === $selected ? " selected='selected'" : '';
+			$options .= "<option value='" . (int)$category['id'] . "'{$is_selected}>"
+				. htmlspecialchars((string)$category['name'], ENT_QUOTES, 'UTF-8') . '</option>';
+		}
+		$new = htmlspecialchars(lang('price_category_new'), ENT_QUOTES, 'UTF-8');
+
+		return "<select {$attributes}>{$options}</select>"
+			. " <button type='button' class='ds-button price-category-new' data-variant='tertiary' data-color='accent' data-size='sm'>{$new}</button>";
+	}
+
+	/**
+	 * What the price tab needs to add a category without leaving it: where
+	 * to post it, and a CSRF token for that post (checked by the
+	 * /booking/price-categories route), plus the categories for the new
+	 * price's select.
+	 */
+	private function price_category_config(array $categories): array
+	{
+		$csrf_storage = null;
+		$guard = new Guard(new ResponseFactory(), 'csrf', $csrf_storage, null, 200, 16, true);
+		$token = $guard->generateToken();
+
+		return array(
+			// Plain '&' (as for a redirect) and no click history: the URL is used by a script
+			'url'		 => phpgw::link('/booking/price-categories', array(), true, false, false, true),
+			'csrf_name'	 => $token[$guard->getTokenNameKey()],
+			'csrf_value' => $token[$guard->getTokenValueKey()],
+			'options'	 => array_map(function ($category)
+			{
+				return array('id' => (int)$category['id'], 'name' => (string)$category['name']);
+			}, $categories),
+		);
+	}
+
 	public function get_pricing()
 	{
 		$id	 = Sanitizer::get_var('id', 'int');
@@ -421,9 +492,46 @@ class booking_uiarticle_mapping extends phpgwapi_uicommon
 
 		$pricing	 = $this->bo->get_pricing($id);
 		$dateformat	 = $this->userSettings['preferences']['common']['dateformat'];
+
+		// Prices are stored ex. VAT; the VAT-inclusive column is worked out
+		// from the mapping's tax code, as a purchase order line bills it
+		$tax_percentages = $this->bo->get_tax_percentages();
+		$tax_code		 = $article->tax_code;
+		$tax_percent	 = is_numeric($tax_code) && array_key_exists((int)$tax_code, $tax_percentages) ? $tax_percentages[(int)$tax_code] : null;
+
+		$lang_price_invalid	 = htmlspecialchars(lang('price_invalid'), ENT_QUOTES, 'UTF-8');
+		$lang_date_invalid	 = htmlspecialchars(lang('Invalid from date'), ENT_QUOTES, 'UTF-8');
+		$incl_disabled		 = $tax_percent === null ? 'disabled' : '';
+
+		// A resource's prices can each belong to a price category (ref #1477),
+		// which an applicant booking several resources chooses once. Only a
+		// resource has that choice, so a service's prices get no category.
+		$price_categories = $this->get_price_categories($id, $article, $pricing);
+
+		// A stored price is edited in place. Its fields keep their name in
+		// data-name until article_mapping.js sets it on an edit, so a save
+		// that edits nothing posts nothing for them. The date is the stored
+		// day as eligibility reads it, without a time zone shift.
 		foreach ($pricing as $key => &$price)
 		{
-			$price['value_date']		 = $this->phpgwapi_common->show_date(strtotime($price['from_']), 'Y-m-d');
+			$ex_cents	 = ArticlePriceInput::parseCents((string)$price['price']);
+			$price_ex	 = $ex_cents === null ? '' : ArticlePriceInput::format($ex_cents, ',');
+			$price_incl	 = $ex_cents === null || $tax_percent === null ? '' : ArticlePriceInput::format(ArticlePriceInput::inclVatCents($ex_cents, $tax_percent), ',');
+			$date_from	 = substr((string)$price['from_'], 0, 10);
+			$remark		 = htmlspecialchars((string)$price['remark'], ENT_QUOTES, 'UTF-8');
+			$name		 = "article_prices[{$price['id']}]";
+
+			$price['price_input']		 = "<input type='text' class='price-row-ex' data-name='{$name}[price]' value='{$price_ex}' size='8' inputmode='decimal' autocomplete='off'"
+				. " data-validation='article_price_row' data-validation-error-msg='{$lang_price_invalid}'>";
+			$price['price_incl_input']	 = "<input type='text' class='price-row-incl' value='{$price_incl}' size='8' inputmode='decimal' autocomplete='off' {$incl_disabled}>"
+				. "<span class='price-row-incl-note' hidden='hidden'></span>";
+			$price['from_input']		 = "<input type='text' class='price-row-from' data-name='{$name}[from_]' value='{$date_from}' size='10' autocomplete='off' placeholder='YYYY-MM-DD'"
+				. " data-validation='article_price_from' data-validation-error-msg='{$lang_date_invalid}'>";
+			$price['remark_input']		 = "<input type='text' class='price-row-remark' data-name='{$name}[remark]' value='{$remark}' size='20'>";
+			if ($price_categories !== null)
+			{
+				$price['category_input'] = $this->price_category_select($price_categories, $price['category_id'], "class='price-row-category ds-input' data-size='sm' data-name='{$name}[category_id]'");
+			}
 			$active_checked				 = $price['active'] ? 'checked' : '';
 			$price['active_checkbox']	 = "<input type='checkbox' {$active_checked}  name='price_table[active][{$price['id']}]' value='1'>";
 			$default_checked			 = $price['default_'] ? 'checked' : '';
@@ -434,20 +542,32 @@ class booking_uiarticle_mapping extends phpgwapi_uicommon
 		$pricing_def = array(
 			array('key' => 'id', 'label' => '#', 'sortable' => true, 'resizeable' => true),
 			array('key' => 'article_mapping_id', 'label' => lang('article id'), 'sortable' => true, 'resizeable' => true),
-			array('key' => 'price', 'label' => lang('price'), 'sortable' => true, 'resizeable' => true),
-			array('key' => 'value_date', 'label' => lang('from'), 'sortable' => true, 'resizeable' => true),
-			array('key' => 'remark', 'label' => lang('remark'), 'sortable' => true, 'resizeable' => true),
+			array('key' => 'price_input', 'label' => lang('price_ex_vat'), 'sortable' => false, 'resizeable' => true),
+			array('key' => 'price_incl_input', 'label' => lang('price_incl_vat'), 'sortable' => false, 'resizeable' => true),
+			array('key' => 'from_input', 'label' => lang('from'), 'sortable' => false, 'resizeable' => true),
+			array('key' => 'remark_input', 'label' => lang('remark'), 'sortable' => false, 'resizeable' => true),
+		);
+		if ($price_categories !== null)
+		{
+			$pricing_def[] = array('key' => 'category_input', 'label' => lang('price_category'), 'sortable' => false, 'resizeable' => true);
+		}
+		array_push($pricing_def,
 			array('key' => 'active_checkbox', 'label' => lang('active'), 'sortable' => false, 'resizeable' => true),
 			array('key' => 'default_radio', 'label' => lang('default'), 'sortable' => false, 'resizeable' => true),
-			array('key' => 'delete_checkbox', 'label' => lang('delete'), 'sortable' => false, 'resizeable' => true),
+			array('key' => 'delete_checkbox', 'label' => lang('delete'), 'sortable' => false, 'resizeable' => true)
 		);
 
+		// The table's JSON reaches its inline script through
+		// phpgwapi_xmlhelper::toXML(), which entity-decodes every string. With
+		// & < > ' " written as \u escapes there is nothing for it to decode, so
+		// a cell's escaped remark stays escaped and no "</script" can end the
+		// script early.
 		$datatable_def	 = array();
 		$datatable_def[] = array(
 			'container'	 => 'datatable-container_0',
 			'requestUrl' => "''",
 			'ColumnDefs' => $pricing_def,
-			'data'		 => json_encode($pricing),
+			'data'		 => json_encode($pricing, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT),
 			'config'	 => array(
 				array('disableFilter' => true),
 				array('disablePagination' => true)
@@ -588,6 +708,7 @@ JS;
 			'article_categories'	 => array('options' => $this->get_category_options($article->article_cat_id)),
 			'unit_list'				 => array('options' => $this->get_unit_list($article->unit)),
 			'tax_code_list'			 => array('options' => execMethod('booking.bogeneric.get_list', array('type' => 'tax', 'order' => 'id', 'selected' => $article->tax_code))),
+			'tax_percentages_json'	 => json_encode($tax_percentages, JSON_FORCE_OBJECT),
 			'article_group_list'	 => array('options' => execMethod('booking.bogeneric.get_list', array('type' => 'article_group', 'order' => 'id', 'selected' => $article->group_id))),
 			'service_list'			 => ($id && $article->article_cat_id == 2) ? array('options' => $this->get_services($article->article_id)) : array(),
 			'mode'					 => $mode,
@@ -596,7 +717,8 @@ JS;
 			'fileupload'			 => true,
 			'multi_upload_action'	 => self::link(array('menuaction' => "{$this->currentapp}.uiarticle_mapping.handle_multi_upload_file", 'id' => $id, 'section' => $section)),
 			'multiple_uploader'		 => true,
-			'resources_json'		 => ($id && $article->article_cat_id == 1) ? json_encode(array($article->article_id)) : '[]'
+			'resources_json'		 => ($id && $article->article_cat_id == 1) ? json_encode(array($article->article_id)) : '[]',
+			'price_category'		 => $price_categories === null ? array() : $this->price_category_config($price_categories)
 		);
 
 		$this->flags['app_header']	 .= '::' . lang('edit');

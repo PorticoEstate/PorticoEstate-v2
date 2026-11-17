@@ -156,6 +156,29 @@ class Article
 	public $lang_unit;
 
 	/**
+	 * The prices the citizen can choose between, for the resource itself only
+	 * @OA\Property(type="array", @OA\Items(ref="#/components/schemas/PriceOption"))
+	 * @Expose
+	 * @SerializeAs(type="array", of="App\modules\bookingfrontend\models\PriceOption")
+	 */
+	public $price_options;
+
+	/**
+	 * The option preselected: the only one, or the default. Null when the
+	 * citizen has to choose or there is no price
+	 * @OA\Property(type="integer", nullable=true)
+	 * @Expose
+	 */
+	public $default_price_id;
+
+	/**
+	 * Several prices and no default: the citizen must choose before saving
+	 * @OA\Property(type="boolean")
+	 * @Expose
+	 */
+	public $price_choice_required;
+
+	/**
 	 * Constructor initializes the article with provided data
 	 *
 	 * @param array $data Initial data for the article

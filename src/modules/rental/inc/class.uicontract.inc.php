@@ -1663,7 +1663,7 @@ JS;
 		phpgwapi_js::getInstance()->add_code('', $code);
 
 		self::add_javascript('rental', 'base', 'contract.index.js');
-		phpgwapi_jquery::load_widget('bootstrap-multiselect');
+		phpgwapi_jquery::load_widget('select2');
 		phpgwapi_jquery::load_widget('numberformat');
 		self::render_template_xsl('datatable2', $data);
 	}

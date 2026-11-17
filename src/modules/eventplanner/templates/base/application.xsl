@@ -20,10 +20,6 @@
 <xsl:template xmlns:php="http://php.net/xsl" match="edit">
 	<div class="content">
 		<style type="text/css">
-			#floating-box {
-			position: relative;
-			z-index: 1000;
-			}
 			#submitbox {
 			display: none;
 			}
@@ -44,7 +40,7 @@
 			<form id="form" name="form" method="post" action="{$form_action}" class="pure-form pure-form-aligned">
 				<div id="tab-content">
 					<xsl:value-of disable-output-escaping="yes" select="tabs"/>
-					<div id="floating-box">
+					<div id="floating-box" class="sticky-action-bar">
 						<div id="submitbox">
 							<xsl:variable name="lang_cancel">
 								<xsl:value-of select="php:function('lang', 'cancel')"/>
@@ -65,10 +61,10 @@
 								</xsl:otherwise>
 							</xsl:choose-->
 
-							<table width="200px">
+							<table>
 								<tbody>
 									<tr>
-										<td width="200px">
+										<td>
 											<input type="button" class="pure-button pure-button-primary" name="save" id="save_button" onClick="validate_submit();">
 												<xsl:attribute name="value">
 													<xsl:value-of select="$lang_save"/>
@@ -79,7 +75,7 @@
 											</input>
 										</td>
 										<td>
-											<input type="button" class="pure-button pure-button-primary" name="done" value="{$lang_cancel}" onClick="window.location = '{cancel_url}';">
+											<input type="button" class="pure-button" name="done" value="{$lang_cancel}" onClick="window.location = '{cancel_url}';">
 												<xsl:attribute name="title">
 													<xsl:value-of select="php:function('lang', 'Back to the ticket list')"/>
 												</xsl:attribute>

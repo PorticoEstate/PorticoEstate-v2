@@ -7,6 +7,8 @@ use App\modules\phpgwapi\services\ScimFilterParser;
 use App\modules\phpgwapi\services\ScimProvisioningRepository;
 use App\modules\phpgwapi\services\ScimProvisioningStore;
 use App\modules\phpgwapi\services\ScimResourceMapper;
+use App\modules\phpgwapi\services\ScimConfiguration;
+use DomainException;
 use InvalidArgumentException;
 use PDOException;
 use Throwable;
@@ -100,7 +102,7 @@ final class ScimController
 		$this->store = $store;
 		$this->filterParser = $filterParser ?? new ScimFilterParser();
 		$this->mapper = $mapper ?? new ScimResourceMapper();
-		$configuredBaseUrl = $publicBaseUrl ?? getenv('SCIM_PUBLIC_BASE_URL');
+		$configuredBaseUrl = $publicBaseUrl ?? (new ScimConfiguration())->get('SCIM_PUBLIC_BASE_URL');
 		$this->publicBaseUrl = is_string($configuredBaseUrl) && trim($configuredBaseUrl) !== ''
 			? rtrim(trim($configuredBaseUrl), '/')
 			: null;
@@ -285,7 +287,7 @@ final class ScimController
 	 *     operationId="scimCreateUser",
 	 *     tags={"SCIM 2.0 Users"},
 	 *     summary="Create a provisioned user",
-	 *     description="Idempotent by externalId within the configured Entra tenant.",
+	 *     description="Idempotent by externalId within the configured Entra tenant. Adopts an existing local user when userName matches its account_lid or, for email-style names, when the unique local part matches; conflicting SCIM mappings are rejected.",
 	 *     security={{"scimBearerAuth": {}}},
 	 *     @OA\RequestBody(required=true, @OA\JsonContent(ref="#/components/schemas/ScimUser")),
 	 *     @OA\Response(response=201, description="User created", @OA\JsonContent(ref="#/components/schemas/ScimUser")),
@@ -314,6 +316,10 @@ final class ScimController
 		catch (InvalidArgumentException $exception)
 		{
 			return ScimResponse::error(400, $exception->getMessage(), 'invalidValue');
+		}
+		catch (DomainException $exception)
+		{
+			return ScimResponse::error(409, $exception->getMessage(), 'uniqueness');
 		}
 		catch (PDOException $exception)
 		{
@@ -485,10 +491,10 @@ final class ScimController
 	 *     operationId="scimCreateGroup",
 	 *     tags={"SCIM 2.0 Groups"},
 	 *     summary="Create a provisioned group",
-	 *     description="Idempotent by externalId within the configured Entra tenant.",
+	 *     description="Idempotent by externalId within the configured Entra tenant. An exact displayName match against a local group account_lid links that existing group instead of creating a new account. Conflicting or disabled SCIM mappings are rejected.",
 	 *     security={{"scimBearerAuth": {}}},
 	 *     @OA\RequestBody(required=true, @OA\JsonContent(ref="#/components/schemas/ScimGroup")),
-	 *     @OA\Response(response=201, description="Group created", @OA\JsonContent(ref="#/components/schemas/ScimGroup")),
+	 *     @OA\Response(response=201, description="Group created or existing local group linked", @OA\JsonContent(ref="#/components/schemas/ScimGroup")),
 	 *     @OA\Response(response=200, description="Group already exists for externalId", @OA\JsonContent(ref="#/components/schemas/ScimGroup")),
 	 *     @OA\Response(response=400, description="Invalid Group resource", @OA\JsonContent(ref="#/components/schemas/ScimError")),
 	 *     @OA\Response(response=401, description="Missing or invalid bearer token", @OA\JsonContent(ref="#/components/schemas/ScimError")),
@@ -514,6 +520,10 @@ final class ScimController
 		catch (InvalidArgumentException $exception)
 		{
 			return ScimResponse::error(400, $exception->getMessage(), 'invalidValue');
+		}
+		catch (DomainException $exception)
+		{
+			return ScimResponse::error(409, $exception->getMessage(), 'uniqueness');
 		}
 		catch (PDOException $exception)
 		{

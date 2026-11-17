@@ -70,16 +70,6 @@
 
 <!-- add / edit -->
 <xsl:template xmlns:php="http://php.net/xsl" match="edit">
-	<style type="text/css">
-		#floating-box {
-		position: relative;
-		z-index: 10;
-		}
-		#submitbox {
-		display: none;
-		}
-
-	</style>
 	<script type="text/javascript">
 		var lang = <xsl:value-of select="php:function('js_lang', 'next', 'save', 'Select branch', 'select user', 'select category')"/>;
 	</script>
@@ -121,8 +111,11 @@
 		<input type="hidden" id="active_tab" name="active_tab" value="{value_active_tab}"/>
 		<div id="tab-content">
 			<xsl:value-of disable-output-escaping="yes" select="tabs"/>
-			<div id="floating-box">
+			<div id="floating-box" class="sticky-action-bar">
 				<div id="submitbox">
+					<xsl:if test="not(mode='edit' and lean = 0)">
+						<xsl:attribute name="style">display: none</xsl:attribute>
+					</xsl:if>
 					<table>
 						<tbody>
 							<tr>
@@ -136,7 +129,7 @@
 											</input>
 										</td>
 										<td>
-											<input type="button" class="pure-button pure-button-primary" name="done" value="{$lang_done}" onClick="document.done_form.submit();">
+											<input type="button" class="pure-button" name="done" value="{$lang_done}" onClick="document.done_form.submit();">
 												<xsl:attribute name="title">
 														<xsl:value-of select="php:function('lang', 'Back to the list')"/>
 												</xsl:attribute>
@@ -150,7 +143,7 @@
 											<xsl:variable name="lang_calculate">
 												<xsl:value-of select="php:function('lang', 'Calculate Workorder')"/>
 											</xsl:variable>
-											<input type="button" class="pure-button pure-button-primary" id="calculate_button" name="calculate" value="{$lang_calculate}" onClick="calculate_order();">
+											<input type="button" class="pure-button" id="calculate_button" name="calculate" value="{$lang_calculate}" onClick="calculate_order();">
 												<xsl:attribute name="title">
 														<xsl:value-of select="php:function('lang', 'Calculate workorder by adding items from vendors prizebook or adding general hours')"/>
 												</xsl:attribute>
@@ -167,7 +160,7 @@
 													</xsl:otherwise>
 												</xsl:choose>
 											</xsl:variable>
-											<input type="button" class="pure-button pure-button-primary" name="send" value="{$lang_send}" onClick="send_order();">
+											<input type="button" class="pure-button" name="send" value="{$lang_send}" onClick="send_order();">
 												<xsl:attribute name="title">
 														<xsl:value-of select="php:function('lang', 'send this workorder to vendor')"/>
 												</xsl:attribute>

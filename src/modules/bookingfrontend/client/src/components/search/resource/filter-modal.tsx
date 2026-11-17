@@ -257,7 +257,7 @@ const FilterModal: FC<FilterModalProps> = ({
                                 onDateChange={onDateChange}
                                 view="timeGridDay"
                                 allowEmpty={true}
-                                placeholder={t('bookingfrontend.select_date')}
+                                placeholder={t('bookingfrontend.select date')}
                             />
                         </div>
                     </div>

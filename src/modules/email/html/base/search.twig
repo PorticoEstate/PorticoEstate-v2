@@ -1,0 +1,74 @@
+{% extends layout|default('@views/_bare.twig') %}
+
+{% block title %}{{ lang('Search') }}{% endblock %}
+
+{% block styles %}
+<style>{{ source('@views/search.css') }}</style>
+{% endblock %}
+
+{% block content %}
+<main class="email-search" id="email-search"
+	data-api-url="{{ api_url|e('html_attr') }}"
+	data-folders-api-url="{{ folders_api_url|e('html_attr') }}"
+	data-account="{{ account }}"
+	data-preferred-folder="{{ preferred_folder|e('html_attr') }}"
+	data-csrf-name="{{ csrf.name|e('html_attr') }}"
+	data-csrf-value="{{ csrf.value|e('html_attr') }}">
+	<header class="email-search-header">
+		<div><p>{{ lang('E-Mail') }}</p><h1>{{ lang('Search') }}</h1></div>
+		<a class="email-search-button" href="{{ inbox_url|e }}">{{ lang('Back to inbox') }}</a>
+	</header>
+	<div class="email-search-error" id="email-search-error" role="alert" hidden></div>
+	<form id="email-search-form">
+		<fieldset>
+			<legend>{{ lang('Search terms') }}</legend>
+			<div class="email-search-grid">
+				<label>{{ lang('Subject') }}<input name="search_subject" type="search"></label>
+				<label>{{ lang('From') }}<input name="search_from" type="search"></label>
+				<label>{{ lang('Body') }}<input name="search_body" type="search"></label>
+				<label>{{ lang('To') }}<input name="search_to" type="search"></label>
+				<label>{{ lang('Cc') }}<input name="search_cc" type="search"></label>
+				<label>{{ lang('Bcc') }}<input name="search_bcc" type="search"></label>
+				<label>{{ lang('Keyword') }}<input name="search_keyword" type="search"></label>
+				<label>{{ lang('Folders') }}<select id="email-search-folders" multiple size="6"></select></label>
+			</div>
+		</fieldset>
+		<fieldset>
+			<legend>{{ lang('Message status') }}</legend>
+			<div class="email-search-checks">
+				{% set flags = [
+					['flg_all', 'All'], ['flg_answered', 'Answered'], ['flg_deleted', 'Deleted'], ['flg_flagged', 'Flagged'], ['flg_new', 'New'],
+					['flg_old', 'Old'], ['flg_recent', 'Recent'], ['flg_seen', 'Seen'], ['flg_unanswered', 'Unanswered'],
+					['flg_undeleted', 'Undeleted'], ['flg_unflagged', 'Unflagged'], ['flg_unseen', 'Unseen']
+				] %}
+				{% for flag in flags %}<label><input type="checkbox" name="flags" value="{{ flag[0] }}"> {{ lang(flag[1]) }}</label>{% endfor %}
+			</div>
+		</fieldset>
+		<fieldset>
+			<legend>{{ lang('Date range') }}</legend>
+			<div class="email-search-grid">
+				<label>{{ lang('On') }}<input type="date" name="date_on"></label>
+				<label>{{ lang('Before') }}<input type="date" name="date_before"></label>
+				<label>{{ lang('After') }}<input type="date" name="date_after"></label>
+			</div>
+		</fieldset>
+		<div class="email-search-actions"><button class="email-search-button email-search-button--primary" type="submit">{{ lang('Search') }}</button></div>
+	</form>
+	<section class="email-search-results" aria-labelledby="email-search-results-title">
+		<h2 id="email-search-results-title">{{ lang('Results') }}</h2>
+		<p id="email-search-status" role="status" aria-live="polite"></p>
+		<div class="email-search-table-wrap"><table class="email-search-table">
+			<thead><tr><th scope="col">{{ lang('Folder') }}</th><th scope="col">{{ lang('From') }}</th><th scope="col">{{ lang('Subject') }}</th><th scope="col">{{ lang('Date') }}</th><th scope="col">{{ lang('Size') }}</th></tr></thead>
+			<tbody id="email-search-rows"></tbody>
+		</table></div>
+		<nav class="email-search-pagination" id="email-search-pagination" aria-label="{{ lang('Search result pages') }}" hidden>
+			<button type="button" id="email-search-previous">{{ lang('Previous') }}</button><span id="email-search-range"></span><button type="button" id="email-search-next">{{ lang('Next') }}</button>
+		</nav>
+	</section>
+</main>
+{% endblock %}
+
+{% block scripts %}
+<script>{{ source('@views/folder-hierarchy.js') }}</script>
+<script>{{ source('@views/search.js') }}</script>
+{% endblock %}

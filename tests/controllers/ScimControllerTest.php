@@ -222,6 +222,20 @@ class ScimControllerTest extends TestCase
 		$this->assertSame('SCIM Staff', $store->createGroupData['displayName']);
 	}
 
+	public function testGroupMappingConflictReturnsScim409(): void
+	{
+		$store = new ScimControllerFakeStore(null);
+		$store->groupCreationError = new \DomainException('Local group already has a different or disabled SCIM mapping');
+		$request = (new ServerRequestFactory())
+			->createServerRequest('POST', 'https://example.test/api/scim/v2/Groups')
+			->withParsedBody(['externalId' => 'group-7', 'displayName' => 'Existing Staff']);
+		$response = (new ScimController($store))->createGroup($request, new Response());
+		$payload = json_decode((string) $response->getBody(), true, 512, JSON_THROW_ON_ERROR);
+
+		$this->assertSame(409, $response->getStatusCode());
+		$this->assertSame('uniqueness', $payload['scimType']);
+	}
+
 	public function testPatchesGroupMembershipIdempotently(): void
 	{
 		$groupRow = ['account_id' => 7, 'account_lid' => 'SCIM Staff', 'account_type' => 'g', 'external_id' => 'group-7'];
@@ -250,6 +264,7 @@ final class ScimControllerFakeStore implements ScimProvisioningStore
 	public ?array $updatedRow = null;
 	public array $createGroupData = [];
 	public ?array $createdGroupRow = null;
+	public ?\Throwable $groupCreationError = null;
 	public array $members = [];
 	public array $addedMembers = [];
 	public array $removedMembers = [];
@@ -304,6 +319,10 @@ final class ScimControllerFakeStore implements ScimProvisioningStore
 	public function createGroup(array $data): array
 	{
 		$this->createGroupData = $data;
+		if ($this->groupCreationError !== null)
+		{
+			throw $this->groupCreationError;
+		}
 
 		return $this->createdGroupRow ?? [];
 	}

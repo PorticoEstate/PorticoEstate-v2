@@ -1,0 +1,31 @@
+// The room rental and the equipment and services of an application (GH #1423), as the Min side design has them:
+// a section each of the price surface, the lines as «Tillegg | Antall (N × pris) | Beløp» and the total under them. The lines and the total
+// are the catering servings' own (price-lines.scss); the card, the heading and the Table are the design system's.
+
+@use './price-lines' as price;
+
+.lines {
+    @include price.lines;
+}
+
+.total {
+    @include price.total;
+}
+
+// The application's total when it closes the price surface (no price summary): as the design's total, a strong rule
+// above it and the figure in large type.
+.closing {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: var(--ds-size-4);
+    margin: 0;
+    padding-top: var(--ds-size-4);
+    border-top: 2px solid var(--ds-color-neutral-text-default);
+    font-size: var(--ds-font-size-6);
+    font-weight: var(--ds-font-weight-semibold);
+
+    @media (max-width: price.$stack-breakpoint) {
+        font-size: var(--ds-font-size-5);
+    }
+}

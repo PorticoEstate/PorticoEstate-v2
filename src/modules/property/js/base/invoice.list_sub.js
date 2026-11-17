@@ -1,6 +1,6 @@
 this.local_DrawCallback0 = function (container)
 {
-	var api = $("#" + container).dataTable().api();
+	var api = new DataTable("#" + container);
 
 	var data = api.ajax.json();
 

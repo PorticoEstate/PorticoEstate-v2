@@ -86,15 +86,15 @@
 		<body>
 						
 			<xsl:if test = "return_as_file !=1">
-				<button class="btn mt-1 btn-secondary" onClick="window.print();">
+				<button class="pure-button mt-1 btn-secondary" onClick="window.print();">
 					<xsl:value-of select="php:function('lang', 'print')" />
 				</button>
-				<button class="ms-2 mt-1 btn btn-secondary" onClick="send_report();" title="{report_email}">
+				<button class="ms-2 mt-1 pure-button btn-secondary" onClick="send_report();" title="{report_email}">
 					<xsl:value-of select="php:function('lang', 'send report')" />
 				</button>
 			</xsl:if>
 		
-			<div class="container small">
+			<div class="small">
 				<div class="mt-5 row">
 					<div class="col-md-6 align-left">
 						<xsl:choose>
@@ -122,7 +122,7 @@
 				</div>
 
 				<div class="row mt-3">
-					<table class="table table-bordered">
+					<table class="pure-table pure-table-bordered">
 						<tr>
 							<td>
 								<xsl:value-of select="php:function('lang', 'date')" />
@@ -178,7 +178,7 @@
 					<xsl:choose>
 						<xsl:when test="findings/child::node()">
 							<div class="col-sm-3">
-								<table class="table table-bordered table-sm">
+								<table class="pure-table pure-table-bordered table-sm">
 									<tr>
 										<th class="text-start border-bottom-0">
 											<xsl:attribute name="colspan">
@@ -197,7 +197,7 @@
 									<tr>
 										<xsl:for-each select="findings">
 											<td>
-												<table class="table table-sm">
+												<table class="pure-table table-sm">
 													<xsl:for-each select="values">
 														<tr>
 															<td class="border-0">
@@ -269,7 +269,7 @@
 								</xsl:if>
 							</div>
 							<div class="col-md-8">
-								<table class="table">
+								<table class="pure-table">
 									<xsl:for-each select="data">
 										<tr>
 											<td>
@@ -310,7 +310,7 @@
 									</xsl:for-each>
 								</div>
 								<div class="col-md-8">
-									<table class="table">
+									<table class="pure-table">
 										<xsl:for-each select="data">
 											<tr>
 												<td>
@@ -362,7 +362,7 @@
 								</xsl:for-each>
 							</div>
 							<div class="col-md-8">
-								<table class="table">
+								<table class="pure-table">
 									<xsl:for-each select="data">
 										<tr>
 											<td>

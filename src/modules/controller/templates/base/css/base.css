@@ -9,35 +9,39 @@
 .hd img {
   vertical-align: middle;
 }
-fieldset {
+:where(html:not(.template-bootstrap):not(.template-digdir)) fieldset {
   margin-top: 0.5em;	
 }
 
-legend {
+:where(html:not(.template-bootstrap):not(.template-digdir)) legend {
   font-weight: bolder;
   margin-bottom: 0.2em;	
 }
 
-label {
+:where(html:not(.template-bootstrap):not(.template-digdir)) label {
   font-size: 13px;
   font-weight: bold;
   margin-right: 5px;
   display: inline-block;
 }
 
-a{
+:where(html:not(.template-bootstrap):not(.template-digdir)) a{
   cursor: pointer;	
 }
 
-.row{
+:where(html.template-bootstrap) .pure-form label {
+  font-size: 13px;
+}
+
+:where(html:not(.template-bootstrap):not(.template-digdir)) .row{
   padding: 0.3em 0;
 }
-h3 {
+:where(html:not(.template-bootstrap):not(.template-digdir)) h3 {
   font-size: 1.2em;
   font-weight: bold;
   margin: 1em 0;
 }
-#page_content {
+:where(html:not(.template-bootstrap):not(.template-digdir)) #page_content {
   margin: 2em 1em;
 }
 .clr { clear: both;}
@@ -346,28 +350,28 @@ h1 img, li img {
 
 /* ==========================================   SELECTORS, IDS AND CLASSES    =========================================== */
 
-input[type="radio"] {
+:where(html:not(.template-bootstrap):not(.template-digdir)) input[type="radio"] {
   margin: 0 5px 0 2px;
   padding: 3px 6px;
 }
 
-input[type="checkbox"] {
+:where(html:not(.template-bootstrap):not(.template-digdir)) input[type="checkbox"] {
   margin: 5px;
 }
 
-input[type="text"] {
+:where(html:not(.template-bootstrap):not(.template-digdir)) input[type="text"] {
   padding: 5px 5px 2px;
 }
 
-select {
+:where(html:not(.template-bootstrap):not(.template-digdir)) select {
   padding: 4px;
 }
 
-fieldset {
+:where(html:not(.template-bootstrap):not(.template-digdir)) fieldset {
  /* border-bottom:0px solid #ccc;*/
 }
 
-textarea{
+:where(html:not(.template-bootstrap):not(.template-digdir)) textarea{
   padding: 4px;	
 }
 
@@ -375,12 +379,12 @@ h1 em {
   font-style:italic;
 }
 
-a {
+:where(html:not(.template-bootstrap):not(.template-digdir)) a {
   color: #0066CC;
   text-decoration: none;
 }
 
-#innertoolbar-button, input[type="submit"] {
+#innertoolbar-button, input[type="submit"]:not(:where(html:is(.template-bootstrap, .template-digdir) :is(.pure-button, .btn, .app-button, .ds-button))) {
   background: none repeat scroll 0 0 #4F9AEA;
   border: 1px solid #4685C8;
   border-radius: 4px;
@@ -390,7 +394,9 @@ a {
   padding: 5px 20px;
 }
 
-#innertoolbar-button, input[type="button"], #innertoolbar-button, input[type="submit"] {
+#innertoolbar-button,
+input[type="button"]:not(:where(html:is(.template-bootstrap, .template-digdir) :is(.pure-button, .btn, .app-button, .ds-button))),
+input[type="submit"]:not(:where(html:is(.template-bootstrap, .template-digdir) :is(.pure-button, .btn, .app-button, .ds-button))) {
   margin-right: 3px;
   padding: 3px 20px;
 }
@@ -864,7 +870,9 @@ ul.row li{
   color: #FFFFFF;
 }
 
-.btn, .btn_m, .btn-sm {
+:where(html:not(.template-bootstrap):not(.template-digdir)) .btn,
+.btn_m,
+:where(html:not(.template-bootstrap):not(.template-digdir)) .btn-sm {
   background: none repeat scroll 0 0 #4F9AEA;
   border: 1px solid #428AD7;
   border-radius: 4px;
@@ -880,18 +888,18 @@ ul.row li{
   font-size: 12px;
 }
 
-.btn-sm {
+:where(html:not(.template-bootstrap):not(.template-digdir)) .btn-sm {
   font-size: 12px;
   padding: 1px 4px;
 }
 
-.btn.cancel, .btn_m.cancel {
+:where(html:not(.template-bootstrap):not(.template-digdir)) .btn.cancel, .btn_m.cancel {
   background: none repeat scroll 0 0 #EEEEEE;
   border: 1px solid #CCCCCC;
   color: #333333;
 }
 
-.btn.focus, .btn_m.focus {
+:where(html:not(.template-bootstrap):not(.template-digdir)) .btn.focus, .btn_m.focus {
   background: none repeat scroll 0 0 #F57056;
   border-color: #EE836F -moz-use-text-color #CB563F;
   border-style: solid none;
@@ -904,7 +912,7 @@ ul.row li{
 
 #main_content {
   padding: 20px;
-  width: 1150px;
+  max-width: 1150px;
 }
 
 #main_content.groups{
@@ -1767,7 +1775,7 @@ fieldset.location_details div{
 
 #main_content.medium {
   overflow: hidden;
-  width: 900px;
+  max-width: 900px;
 }
 
 /* ====================================  CASE DETAILS  ============================== */
@@ -2061,6 +2069,7 @@ div.controller_checklist {
 
 #comp-filters .filter {
   float: left;
+  margin-right: 5px;
 }
 
 #choose-location #datatable-container{
@@ -2410,4 +2419,460 @@ p.no_items_msg {
 .centered {
   display: inline-block;
   vertical-align: middle;
+}
+
+/* ==================================================================================
+   FRAMEWORK-INDEPENDENT UTILITY FALLBACKS
+   ----------------------------------------------------------------------------------
+   The controller JS (js/base/*.js) and XSL templates reference Bootstrap-style
+   utility class names (spinners, status colours, spacing, ...). Bootstrap CSS is
+   only loaded by the 'bootstrap' template set, so these fallbacks keep the module
+   working on the Pure CSS based template sets (portico, digdir, ...).
+   The :where() guard keeps specificity at utility level (so later template CSS,
+   e.g. digdir-native.css, can override) and skips the bootstrap template set,
+   where the real Bootstrap definitions apply.
+   ================================================================================== */
+
+/* Layout */
+:where(html:not(.template-bootstrap)) .d-flex { display: flex; }
+:where(html:not(.template-bootstrap)) .justify-content-center { justify-content: center; }
+:where(html:not(.template-bootstrap)) .text-center { text-align: center; }
+:where(html:not(.template-bootstrap)) .position-fixed { position: fixed; }
+:where(html:not(.template-bootstrap)) .float-start { float: left; }
+:where(html:not(.template-bootstrap)) .float-end { float: right; }
+:where(html:not(.template-bootstrap)) .float-none { float: none; }
+
+/* Spacing */
+:where(html:not(.template-bootstrap)) .m-0 { margin: 0; }
+:where(html:not(.template-bootstrap)) .p-0 { padding: 0; }
+:where(html:not(.template-bootstrap)) .mt-1 { margin-top: 0.25rem; }
+:where(html:not(.template-bootstrap)) .mt-2 { margin-top: 0.5rem; }
+:where(html:not(.template-bootstrap)) .mt-3 { margin-top: 1rem; }
+:where(html:not(.template-bootstrap)) .mt-5 { margin-top: 3rem; }
+:where(html:not(.template-bootstrap)) .ml-2 { margin-left: 0.5rem; }
+
+/* Accessibility / media */
+:where(html:not(.template-bootstrap)) .sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+:where(html:not(.template-bootstrap)) .img-fluid {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Tables */
+:where(html:not(.template-bootstrap)) .table-responsive {
+  display: block;
+  width: 100%;
+  overflow-x: auto;
+}
+:where(html:not(.template-bootstrap)) .table-bordered { border-collapse: collapse; }
+:where(html:not(.template-bootstrap)) .table-bordered th,
+:where(html:not(.template-bootstrap)) .table-bordered td { border: 1px solid #dee2e6; }
+:where(html:not(.template-bootstrap)) .table-sm th,
+:where(html:not(.template-bootstrap)) .table-sm td { padding: 0.25rem; }
+:where(html:not(.template-bootstrap)) .table-hover tbody tr:hover { background-color: rgba(0, 0, 0, 0.05); }
+:where(html:not(.template-bootstrap)) .table-active { background-color: rgba(0, 0, 0, 0.1); }
+
+/* Contextual colours (toggled from JS to signal status) */
+:where(html:not(.template-bootstrap)) .bg-primary { background-color: #0d6efd; }
+:where(html:not(.template-bootstrap)) .bg-success { background-color: #198754; }
+:where(html:not(.template-bootstrap)) .bg-warning { background-color: #ffc107; }
+:where(html:not(.template-bootstrap)) .bg-danger { background-color: #dc3545; }
+:where(html:not(.template-bootstrap)) .bg-light { background-color: #f8f9fa; }
+:where(html:not(.template-bootstrap)) .text-light { color: #f8f9fa; }
+:where(html:not(.template-bootstrap)) .text-dark { color: #212529; }
+:where(html:not(.template-bootstrap)) .text-primary { color: #0d6efd; }
+
+/* Button variants (toggled from JS on submit buttons) */
+:where(html:not(.template-bootstrap)) .btn-primary { background: #0d6efd; border-color: #0d6efd; color: #fff; }
+:where(html:not(.template-bootstrap)) .btn-secondary { background: #6c757d; border-color: #6c757d; color: #fff; }
+:where(html:not(.template-bootstrap)) .btn-success { background: #198754; border-color: #198754; color: #fff; }
+:where(html:not(.template-bootstrap)) .btn-danger { background: #dc3545; border-color: #dc3545; color: #fff; }
+:where(html:not(.template-bootstrap)) .btn-warning { background: #ffc107; border-color: #ffc107; color: #212529; }
+:where(html:not(.template-bootstrap)) .btn-info { background: #0dcaf0; border-color: #0dcaf0; color: #212529; }
+
+/* Forms */
+:where(html:not(.template-bootstrap)) .form-group { margin-bottom: 1rem; }
+:where(html:not(.template-bootstrap)) .form-control {
+  padding: 0.375rem 0.5rem;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+:where(html:not(.template-bootstrap)) .input-group { display: flex; align-items: stretch; }
+:where(html:not(.template-bootstrap)) .input-group-addon {
+  display: flex;
+  align-items: center;
+  padding: 0.375rem 0.5rem;
+  background-color: #e9ecef;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+}
+:where(html:not(.template-bootstrap)) .custom-file-label { display: inline-block; }
+
+/* Loading spinner (injected from JS) */
+:where(html:not(.template-bootstrap)) .spinner-border {
+  display: inline-block;
+  width: 2rem;
+  height: 2rem;
+  vertical-align: -0.125em;
+  border: 0.25em solid currentcolor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: controller-spinner 0.75s linear infinite;
+}
+
+@keyframes controller-spinner {
+  to { transform: rotate(360deg); }
+}
+
+:where(html:not(.template-bootstrap)) .spinner-container {
+  top: 0;
+  left: 0;
+  width: 100%;
+  display: flex;
+  z-index: 1060;
+}
+
+/* Modal backdrop (injected from report.js while generating reports) */
+:where(html:not(.template-bootstrap)) .modal-open { overflow: hidden; }
+:where(html:not(.template-bootstrap)) .modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1050;
+}
+
+/* Extra spacing / text utilities used by the XSL templates */
+:where(html:not(.template-bootstrap)) .ms-1 { margin-left: 0.25rem; }
+:where(html:not(.template-bootstrap)) .ms-2 { margin-left: 0.5rem; }
+:where(html:not(.template-bootstrap)) .ms-3 { margin-left: 1rem; }
+:where(html:not(.template-bootstrap)) .ms-5 { margin-left: 3rem; }
+:where(html:not(.template-bootstrap)) .me-1 { margin-right: 0.25rem; }
+:where(html:not(.template-bootstrap)) .me-2 { margin-right: 0.5rem; }
+:where(html:not(.template-bootstrap)) .me-3 { margin-right: 1rem; }
+:where(html:not(.template-bootstrap)) .mb-1 { margin-bottom: 0.25rem; }
+:where(html:not(.template-bootstrap)) .mb-2 { margin-bottom: 0.5rem; }
+:where(html:not(.template-bootstrap)) .mb-3 { margin-bottom: 1rem; }
+:where(html:not(.template-bootstrap)) .mt-4 { margin-top: 1.5rem; }
+:where(html:not(.template-bootstrap)) .text-start { text-align: left; }
+:where(html:not(.template-bootstrap)) .text-end { text-align: right; }
+:where(html:not(.template-bootstrap)) .text-nowrap { white-space: nowrap; }
+:where(html:not(.template-bootstrap)) .clearfix::after {
+  content: "";
+  display: table;
+  clear: both;
+}
+
+/* Modal dialog skeleton (opened from controller JS, no Bootstrap plugin) */
+:where(html:not(.template-bootstrap)) .modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+  z-index: 1055;
+}
+:where(html:not(.template-bootstrap)) .modal-dialog {
+  position: relative;
+  max-width: 800px;
+  margin: 1.75rem auto;
+}
+:where(html:not(.template-bootstrap)) .modal-content {
+  display: flex;
+  flex-direction: column;
+  background-color: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  border-radius: 6px;
+}
+:where(html:not(.template-bootstrap)) .modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  border-bottom: 1px solid #dee2e6;
+}
+:where(html:not(.template-bootstrap)) .modal-title { margin: 0; }
+:where(html:not(.template-bootstrap)) .modal-body { padding: 1rem; }
+:where(html:not(.template-bootstrap)) .modal-footer {
+  padding: 0.75rem 1rem;
+  border-top: 1px solid #dee2e6;
+  text-align: right;
+}
+:where(html:not(.template-bootstrap)) .btn-close {
+  background: transparent;
+  border: 0;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+}
+:where(html:not(.template-bootstrap)) .btn-close::before { content: "\00d7"; }
+
+/* Inspection modal: retain the existing JS hooks while letting form controls shrink. */
+#inspectObject .modal-dialog {
+  width: auto;
+  max-width: 800px;
+  margin: 1rem;
+}
+#inspectObject .modal-content,
+#inspectObject .modal-body,
+#inspectObject .tab_item,
+#inspectObject fieldset {
+  min-width: 0;
+  box-sizing: border-box;
+}
+#inspectObject .tab_item {
+  overflow-wrap: anywhere;
+}
+#inspectObject .frm_register_case .pure-control-group {
+  margin-bottom: 1rem;
+}
+#inspectObject .frm_register_case label {
+  display: block;
+  width: auto;
+  margin: 0 0 0.35rem;
+  text-align: left;
+}
+#inspectObject .frm_register_case :is(select, input[type="text"], textarea) {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  font-size: 1rem;
+}
+#inspectObject .frm_register_case :is(select, input[type="text"], textarea):not(.error):not(.valid) {
+  border-color: #767676;
+}
+#inspectObject .frm_register_case textarea {
+  min-height: 6rem;
+  margin: 0;
+  resize: vertical;
+}
+#inspectObject .frm_register_case a {
+  color: #0056b3;
+  text-decoration: underline;
+}
+#inspectObject .frm_register_case > br {
+  display: none;
+}
+#inspectObject .frm_register_case .pure-button,
+#inspectObject .modal-footer .pure-button {
+  width: auto;
+  max-width: 100%;
+  min-height: 2.75rem;
+  margin: 0.25rem 0.5rem 0.25rem 0;
+  white-space: normal;
+}
+#inspectObject .frm_register_case .pure-button.btn-primary {
+  background-color: #0056b3;
+  border-color: #0056b3;
+  color: #fff;
+}
+@media (min-width: 832px) {
+  #inspectObject .modal-dialog {
+    margin: 1.75rem auto;
+  }
+}
+
+/* ==================================================================================
+   TEMPLATE-INDEPENDENT MODULE STYLES (apply in every template set)
+   ================================================================================== */
+
+/* Colour variants for pure-button; also toggled from JS on status buttons */
+.pure-button.btn-primary { background: #0d6efd; border-color: #0d6efd; color: #fff; }
+.pure-button.btn-secondary { background: #6c757d; border-color: #6c757d; color: #fff; }
+.pure-button.btn-success { background: #198754; border-color: #198754; color: #fff; }
+.pure-button.btn-danger { background: #dc3545; border-color: #dc3545; color: #fff; }
+.pure-button.btn-warning { background: #ffc107; border-color: #ffc107; color: #212529; }
+.pure-button.btn-info { background: #0dcaf0; border-color: #0dcaf0; color: #212529; }
+
+/* Hover support for pure-table (replaces Bootstrap .table-hover) */
+.pure-table.table-hover tbody tr:hover > td,
+.pure-table.table-hover tbody tr:hover > th {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+/* Borderless helper tables nested inside headers */
+.table-plain tbody tr,
+.table-plain tbody tr:hover,
+.table-plain tbody td {
+  background-color: transparent;
+  border: none;
+}
+
+/* Filter panel used by the calendar planner views */
+#democollapseBtn[hidden] {
+  display: none !important;
+}
+/* Calendar planner month view: Bootstrap's .table top-aligns cells and its flex .card clears
+   the floated day number. Do the same in every template set so cards are not hidden under the
+   number and dropped cards stay at the top of the (often very tall) day cell. */
+.table-hover-cells > tbody > tr.target_row > th,
+.table-hover-cells > tbody > tr.target_row > td {
+  vertical-align: top;
+}
+
+.target_row .event {
+  clear: both;
+}
+
+/* Calendar planner cards: same shape as Bootstrap's .card in the template sets without Bootstrap. */
+:where(html:not(.template-bootstrap)) .target_row .event.card {
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  min-width: 0;
+  word-wrap: break-word;
+  border: 1px solid rgba(0, 0, 0, 0.176);
+  border-radius: 0.375rem;
+}
+:where(html:not(.template-bootstrap)) .target_row .event .card-body {
+  flex: 1 1 auto;
+  padding: 1rem;
+}
+:where(html:not(.template-bootstrap)) .target_row .event .card-body p {
+  margin: 0 0 1rem;
+  line-height: 1.7;
+}
+:where(html:not(.template-bootstrap)) .target_row .event .card-body p:last-child {
+  margin-bottom: 0;
+}
+
+/* Calendar planner result lists: keep the page within the viewport on small screens.
+   The pager wraps with natural-width buttons, and wide result tables scroll inside their own box. */
+.planner-pager ul {
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding-left: 0;
+}
+.planner-pager .pure-button {
+  width: auto;
+  min-width: 0;
+}
+.planner-table-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Check list in-page navigation: vertical, collapsible menu (native <details>), shared by all template sets. */
+.checklist-nav {
+  clear: both;
+  max-width: 28rem;
+  margin: 1rem 0;
+  border: 1px solid #8a8f94;
+  border-radius: 0.375rem;
+  background: #fff;
+  overflow: hidden;
+}
+.checklist-nav > summary.pure-menu-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  min-height: 2.75rem;
+  padding: 0.5rem 1rem;
+  color: #1a1a1a;
+  font-size: 1rem;
+  font-weight: 600;
+  text-transform: none;
+  white-space: normal;
+  cursor: pointer;
+  list-style: none;
+}
+.checklist-nav > summary::-webkit-details-marker {
+  display: none;
+}
+.checklist-nav > summary::after {
+  content: "";
+  margin-left: auto;
+  padding: 0.2rem;
+  border: solid currentColor;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+  transition: transform 0.2s;
+}
+.checklist-nav[open] > summary::after {
+  transform: rotate(-135deg);
+}
+.checklist-nav > summary:hover {
+  background: #eef1f4;
+}
+.checklist-nav > summary:focus-visible,
+.checklist-nav .pure-menu-link:focus-visible {
+  outline: 3px solid #0b5cad;
+  outline-offset: -3px;
+}
+.checklist-nav .pure-menu-list {
+  border-top: 1px solid #8a8f94;
+}
+.checklist-nav .pure-menu-item {
+  height: auto;
+}
+.checklist-nav .pure-menu-link {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  min-height: 2.75rem;
+  padding: 0.5rem 1rem;
+  color: #1a1a1a;
+  white-space: normal;
+  text-decoration: none;
+}
+.checklist-nav .pure-menu-link > i {
+  width: 1.25em;
+  text-align: center;
+}
+.checklist-nav .pure-menu-link:hover,
+.checklist-nav .pure-menu-link:focus {
+  background: #eef1f4;
+  color: #000;
+}
+.checklist-nav .pure-menu-item.active > .pure-menu-link {
+  background: #1e3a5f;
+  color: #fff;
+  font-weight: 600;
+}
+
+.form_new_component .pure-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0.5rem 0;
+}
+.form_new_component .pure-button {
+  width: auto;
+  margin: 0;
+}
+
+@media (max-width: 47.99em) {
+  .checklist-nav {
+    max-width: none;
+  }
+  #check-list-heading .box-1,
+  #check-list-heading .box-2 {
+    float: none;
+    width: auto;
+  }
+  #check-list-heading #map {
+    max-width: 100%;
+  }
+  #main_content {
+    padding: 0.75rem 0;
+  }
 }

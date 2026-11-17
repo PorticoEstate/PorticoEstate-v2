@@ -4,6 +4,7 @@ namespace App\modules\bookingfrontend\controllers\applications;
 
 use App\modules\bookingfrontend\controllers\DocumentController;
 use App\modules\bookingfrontend\helpers\ApplicationHelper;
+use App\modules\bookingfrontend\helpers\PriceChoiceException;
 use App\helpers\ResponseHelper;
 use App\modules\bookingfrontend\helpers\UserHelper;
 use App\modules\bookingfrontend\helpers\WebSocketHelper;
@@ -11,14 +12,17 @@ use App\modules\booking\models\Document;
 use App\modules\bookingfrontend\repositories\ApplicationRepository;
 use App\modules\bookingfrontend\repositories\ArticleRepository;
 use App\modules\bookingfrontend\services\applications\ApplicationService;
+use App\modules\bookingfrontend\services\applications\RecurringSeriesService;
 use App\modules\bookingfrontend\services\FreeTimeService;
 use App\modules\phpgwapi\security\Sessions;
+use App\modules\phpgwapi\services\Log;
 use App\modules\phpgwapi\services\Settings;
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use App\WebSocket\Services\RedisService;
 use Exception;
+use RuntimeException;
 use OpenApi\Annotations as OA;
 
 /**
@@ -249,6 +253,95 @@ class ApplicationController extends DocumentController
         } catch (Exception $e) {
             return ResponseHelper::sendErrorResponse(
                 ['error' => "Error retrieving application: " . $e->getMessage()],
+                500
+            );
+        }
+    }
+
+    /**
+     * @OA\Get(
+     *     path="/bookingfrontend/applications/{id}/recurring-series",
+     *     summary="Get every occurrence of a recurring application, with its status",
+     *     description="The case officer's recurring preview as the applicant may see it: each occurrence, whether a time is allocated for it, and the application's own elements placed on it. Same access as the application itself.",
+     *     tags={"Applications"},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         required=true,
+     *         description="ID of the recurring application",
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Parameter(
+     *         name="secret",
+     *         in="query",
+     *         required=false,
+     *         description="Secret key that can be used to access the application without authentication",
+     *         @OA\Schema(type="string")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="The series",
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(property="application_id", type="integer"),
+     *             @OA\Property(property="interval_weeks", type="integer"),
+     *             @OA\Property(property="occurrences", type="array", @OA\Items(
+     *                 type="object",
+     *                 @OA\Property(property="from_", type="string", format="date-time"),
+     *                 @OA\Property(property="to_", type="string", format="date-time"),
+     *                 @OA\Property(property="status", type="string", enum={"allocated", "rejected", "cancelled", "withdrawn", "not_allocated", "awaiting"}),
+     *                 @OA\Property(property="elements", type="array", @OA\Items(ref="#/components/schemas/RecurringSeriesElement"))
+     *             )),
+     *             @OA\Property(property="outside_series", type="array", @OA\Items(ref="#/components/schemas/RecurringSeriesElement"))
+     *         )
+     *     ),
+     *     @OA\Response(response=400, description="The application is not recurring, or has no date"),
+     *     @OA\Response(response=403, description="Unauthorized to view this application"),
+     *     @OA\Response(response=404, description="Application not found")
+     * )
+     * @OA\Schema(
+     *     schema="RecurringSeriesElement",
+     *     type="object",
+     *     @OA\Property(property="type", type="string", enum={"allocation", "event", "booking"}),
+     *     @OA\Property(property="id", type="integer"),
+     *     @OA\Property(property="active", type="boolean"),
+     *     @OA\Property(property="from_", type="string", format="date-time", nullable=true),
+     *     @OA\Property(property="to_", type="string", format="date-time", nullable=true)
+     * )
+     */
+    public function getRecurringSeries(Request $request, Response $response, array $args): Response
+    {
+        try {
+            $id = (int)$args['id'];
+
+            $application = $this->applicationService->getApplicationById($id);
+            if (!$application) {
+                return ResponseHelper::sendErrorResponse(
+                    ['error' => 'Application not found'],
+                    404
+                );
+            }
+
+            // The guard of the application itself (getApplicationById), before anything about
+            // the series is computed: the owner, a delegate of the owning organization, or the
+            // application's secret.
+            if (!$this->applicationHelper->canViewApplication($application, $request)) {
+                return ResponseHelper::sendErrorResponse(
+                    ['error' => 'Unauthorized to view this application'],
+                    403
+                );
+            }
+
+            $series = (new RecurringSeriesService())->getSeries($id, (string)$application['status']);
+            return ResponseHelper::sendJSONResponse($series);
+
+        } catch (RuntimeException $e) {
+            // The recurring preview's own refusals: not recurring or no date (400), gone (404).
+            $code = in_array($e->getCode(), [400, 404], true) ? $e->getCode() : 500;
+            return ResponseHelper::sendErrorResponse(['error' => $e->getMessage()], $code);
+        } catch (Exception $e) {
+            return ResponseHelper::sendErrorResponse(
+                ['error' => "Error retrieving recurring series: " . $e->getMessage()],
                 500
             );
         }
@@ -496,7 +589,8 @@ class ApplicationController extends DocumentController
      *                     type="object",
      *                     @OA\Property(property="id", type="integer", description="Article mapping ID"),
      *                     @OA\Property(property="quantity", type="integer", description="Quantity ordered"),
-     *                     @OA\Property(property="parent_id", type="integer", nullable=true, description="Optional parent mapping ID for sub-items")
+     *                     @OA\Property(property="parent_id", type="integer", nullable=true, description="Optional parent mapping ID for sub-items"),
+     *                     @OA\Property(property="price_id", type="integer", nullable=true, description="The resource's chosen price (a price_options[].price_id from /applications/articles); only for the resource itself")
      *                 )
      *             ),
      *             @OA\Property(
@@ -522,6 +616,10 @@ class ApplicationController extends DocumentController
      *     @OA\Response(
      *         response=400,
      *         description="Invalid input or missing session"
+     *     ),
+     *     @OA\Response(
+     *         response=422,
+     *         description="Refused price choice: {error, errors, code: price_choice_required|price_choice_invalid, article_mapping_id}"
      *     )
      * )
      */
@@ -545,6 +643,10 @@ class ApplicationController extends DocumentController
                     400
                 );
             }
+
+            // POST always creates a new partial; an existing one is changed through PATCH /partials/{id}.
+            // The order is built from `articles` alone.
+            unset($data['id'], $data['purchase_order']);
 
             // Add required application data
             $data['owner_id'] = $this->userSettings['account_id'];
@@ -587,6 +689,8 @@ class ApplicationController extends DocumentController
             $response->getBody()->write(json_encode($responseData));
             return $response->withStatus(201)
                 ->withHeader('Content-Type', 'application/json');
+        } catch (PriceChoiceException $e) {
+            return ResponseHelper::sendErrorResponse($e->toResponseBody(), 422);
         } catch (Exception $e) {
             return ResponseHelper::sendErrorResponse(
                 ['error' => "Error creating partial application: " . $e->getMessage()],
@@ -617,7 +721,8 @@ class ApplicationController extends DocumentController
      *                     type="object",
      *                     @OA\Property(property="id", type="integer", description="Article mapping ID"),
      *                     @OA\Property(property="quantity", type="integer", description="Quantity ordered"),
-     *                     @OA\Property(property="parent_id", type="integer", nullable=true, description="Optional parent mapping ID for sub-items")
+     *                     @OA\Property(property="parent_id", type="integer", nullable=true, description="Optional parent mapping ID for sub-items"),
+     *                     @OA\Property(property="price_id", type="integer", nullable=true, description="The resource's chosen price (a price_options[].price_id from /applications/articles); only for the resource itself")
      *                 )
      *             )
      *         )
@@ -625,6 +730,10 @@ class ApplicationController extends DocumentController
      *     @OA\Response(
      *         response=200,
      *         description="Application updated successfully"
+     *     ),
+     *     @OA\Response(
+     *         response=422,
+     *         description="Refused price choice: {error, errors, code: price_choice_required|price_choice_invalid, article_mapping_id}"
      *     )
      * )
      */
@@ -669,6 +778,8 @@ class ApplicationController extends DocumentController
                 ->withHeader('Content-Type', 'application/json');
 
 
+        } catch (PriceChoiceException $e) {
+            return ResponseHelper::sendErrorResponse($e->toResponseBody(), 422);
         } catch (Exception $e) {
             return ResponseHelper::sendErrorResponse(
                 ['error' => "Error updating application: " . $e->getMessage()],
@@ -699,6 +810,7 @@ class ApplicationController extends DocumentController
      *             @OA\Property(property="contact_name", type="string"),
      *             @OA\Property(property="contact_email", type="string"),
      *             @OA\Property(property="contact_phone", type="string"),
+     *             @OA\Property(property="parent_id", type="integer", nullable=true, description="The application this one is combined under, or null for none; only an application the caller may modify"),
      *             @OA\Property(
      *                 property="resources",
      *                 type="array",
@@ -724,7 +836,8 @@ class ApplicationController extends DocumentController
      *                     type="object",
      *                     @OA\Property(property="id", type="integer", description="Article mapping ID"),
      *                     @OA\Property(property="quantity", type="integer", description="Quantity ordered"),
-     *                     @OA\Property(property="parent_id", type="integer", nullable=true, description="Optional parent mapping ID for sub-items")
+     *                     @OA\Property(property="parent_id", type="integer", nullable=true, description="Optional parent mapping ID for sub-items"),
+     *                     @OA\Property(property="price_id", type="integer", nullable=true, description="The resource's chosen price (a price_options[].price_id from /applications/articles); only for the resource itself")
      *                 )
      *             ),
      *             @OA\Property(
@@ -751,8 +864,16 @@ class ApplicationController extends DocumentController
      *         description="Invalid input"
      *     ),
      *     @OA\Response(
+     *         response=403,
+     *         description="The caller may not modify this application, or parent_id is neither null nor an application the caller may modify; nothing is changed"
+     *     ),
+     *     @OA\Response(
      *         response=404,
      *         description="Application not found"
+     *     ),
+     *     @OA\Response(
+     *         response=422,
+     *         description="Refused price choice: {error, errors, code: price_choice_required|price_choice_invalid, article_mapping_id}"
      *     )
      * )
      */
@@ -786,6 +907,25 @@ class ApplicationController extends DocumentController
                 );
             }
 
+            // PATCH only links to an application the caller may modify, by the same check as above, or to none
+            // (null). Any other parent_id is refused before anything is changed, with one answer for every case.
+            if (is_array($data) && array_key_exists('parent_id', $data) && $data['parent_id'] !== null) {
+                $parentId = $data['parent_id'];
+                if (is_string($parentId) && preg_match('/^[1-9][0-9]{0,9}\z/', $parentId) === 1) {
+                    $parentId = (int)$parentId;
+                }
+                $parent = is_int($parentId) && $parentId >= 1 && $parentId <= 2147483647
+                    ? $this->applicationService->getApplicationById($parentId)
+                    : null;
+                if (!$parent || !$this->applicationHelper->canModifyApplication($parent, $request)) {
+                    return ResponseHelper::sendErrorResponse(
+                        ['error' => 'Link to parent application refused'],
+                        403
+                    );
+                }
+                $data['parent_id'] = $parentId;
+            }
+
             // Handle recurring_info - convert object to JSON string for database storage
             if (isset($data['recurring_info'])) {
                 if (is_array($data['recurring_info']) && !empty($data['recurring_info'])) {
@@ -806,6 +946,8 @@ class ApplicationController extends DocumentController
             return $response->withStatus(200)
                 ->withHeader('Content-Type', 'application/json');
 
+        } catch (PriceChoiceException $e) {
+            return ResponseHelper::sendErrorResponse($e->toResponseBody(), 422);
         } catch (Exception $e) {
             return ResponseHelper::sendErrorResponse(
                 ['error' => "Error updating application: " . $e->getMessage()],
@@ -1030,6 +1172,14 @@ class ApplicationController extends DocumentController
      *     @OA\Response(
      *         response=404,
      *         description="Application not found"
+     *     ),
+     *     @OA\Response(
+     *         response=422,
+     *         description="A file was refused (type, size or name); none of the files were stored",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="error", type="string"),
+     *             @OA\Property(property="errors", type="array", @OA\Items(type="string"))
+     *         )
      *     )
      * )
      */
@@ -1068,44 +1218,21 @@ class ApplicationController extends DocumentController
                 $files = [$files];
             }
 
-            $documents = [];
             $parseBody = $request->getParsedBody();
-            $description = $parseBody['description'] ?? null;
-            $focalPointX = $parseBody['focal_point_x'] ?? null;
-            $focalPointY = $parseBody['focal_point_y'] ?? null;
 
-            foreach ($files as $file) {
-                // Basic validation
-                $filename = $file->getClientFilename();
-//                $fileType = $this->documentService->getFileTypeFromFilename($filename);
-//
-//                if (!$this->documentService->isAllowedFileType($fileType)) {
-//                    return ResponseHelper::sendErrorResponse(
-//                        ['error' => "File type not allowed for: {$filename}"],
-//                        400
-//                    );
-//                }
-
-                // Create document record
-                $document = [
-                    'category' => Document::CATEGORY_OTHER,
-                    'owner_id' => $applicationId,
-                    'name' => $filename,
-                    'description' => $description ?? $filename
-                ];
-
-                // Add focal point if provided
-                if ($focalPointX !== null && $focalPointY !== null) {
-                    $document['focal_point_x'] = $focalPointX;
-                    $document['focal_point_y'] = $focalPointY;
-                }
-
-                $docId = $this->documentService->createDocument($document);
-
-                // Move uploaded file to correct location
-                $this->documentService->saveDocumentFile($docId, $file);
-                $documents[] = $docId;
+            // Every file is checked before any is stored; one refused file stores none.
+            $result = $this->documentService->storeUploads($applicationId, $files, [
+                'description' => $parseBody['description'] ?? null,
+                'focal_point_x' => $parseBody['focal_point_x'] ?? null,
+                'focal_point_y' => $parseBody['focal_point_y'] ?? null,
+            ]);
+            if (!empty($result['errors'])) {
+                return ResponseHelper::sendErrorResponse(
+                    ['error' => implode("\n", $result['errors']), 'errors' => $result['errors']],
+                    422
+                );
             }
+            $documents = $result['ids'];
 
             WebSocketHelper::triggerPartialApplicationsUpdate();
 
@@ -1116,9 +1243,16 @@ class ApplicationController extends DocumentController
             ]));
             return $response->withHeader('Content-Type', 'application/json');
 
-        } catch (Exception $e) {
+        } catch (\Throwable $e) {
+            // The message, file and trace go to phpgw_log, not to the citizen.
+            $log = new Log();
+            $log->fatal([
+                'text' => get_class($e) . ': ' . $e->getMessage() . "\n" . $e->getTraceAsString(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+            ]);
             return ResponseHelper::sendErrorResponse(
-                ['error' => "Error uploading files: " . $e->getMessage()],
+                ['error' => lang('booking.attachment_upload_failed')],
                 500
             );
         }

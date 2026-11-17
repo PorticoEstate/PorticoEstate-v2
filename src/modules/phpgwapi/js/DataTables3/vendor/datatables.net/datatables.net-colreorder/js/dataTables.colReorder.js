@@ -1,4 +1,4 @@
-/*! ColReorder 3.0.1 for DataTables
+/*! ColReorder 3.1.2 for DataTables
  * Copyright (c) SpryMedia Ltd - datatables.net/license
  */
 
@@ -481,8 +481,8 @@ function validateStructureMove(structure, from, to) {
 }
 
 // Sanity check
-if (!DataTable.versionCheck('3')) {
-    throw 'Warning: ColReorder requires DataTables 3 or newer';
+if (!DataTable.versionCheck('3.1')) {
+    throw 'Warning: ColReorder requires DataTables 3.1 or newer';
 }
 /**
  * This is one possible UI for column reordering in DataTables. In this case
@@ -607,8 +607,8 @@ class ColReorder {
         let origTr = origCell.parent();
         let origThead = origTr.parent();
         let origTable = origThead.parent();
-        let cloneCell = origCell.clone();
-        // This is a slightly odd combination of jQuery and DOM, but it is the
+        let cloneCell = origCell.clone(true);
+        // This is a slightly odd combination of Dom and vanilla, but it is the
         // fastest and least resource intensive way I could think of cloning
         // the table with just a single header cell in it.
         this.dom.drag = Dom.s(origTable.get(0).cloneNode(false))
@@ -927,7 +927,7 @@ ColReorder.defaults = {
     headerRows: null,
     order: null
 };
-ColReorder.version = '3.0.1';
+ColReorder.version = '3.1.2';
 
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
@@ -1001,7 +1001,7 @@ DataTable.ColReorder = ColReorder;
 // Called when DataTables is going to load a state. That might be
 // before the table is ready (state saving) or after (state restoring).
 // Also note that it happens _before_ preInit (below).
-Dom.s(document).on('stateLoadInit.dt', function (e, settings, state) {
+Dom.on('stateLoadInit.dt', function (e, settings, state) {
     if (e.namespace !== 'dt') {
         return;
     }
@@ -1033,7 +1033,7 @@ Dom.s(document).on('stateLoadInit.dt', function (e, settings, state) {
         }
     }
 });
-Dom.s(document).on('preInit.dt', function (e, settings) {
+Dom.on('preInit.dt', function (e, settings) {
     if (e.namespace !== 'dt') {
         return;
     }

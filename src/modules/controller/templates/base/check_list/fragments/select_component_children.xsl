@@ -16,7 +16,7 @@
 			<label>
 				<xsl:value-of select="php:function('lang', 'equipment')" />
 			</label>
-			<select id="choose-child-on-component" name = "component" class="form-select pure-input-1-2">
+			<select id="choose-child-on-component" name = "component" class="pure-input-1">
 				<xsl:for-each select="component_children">
 					<option>
 						<xsl:if test="id = //current_child/id">
@@ -72,7 +72,7 @@
 						<xsl:choose>
 							<xsl:when test="$template_set = 'bootstrap'">
 								<xsl:attribute name="class">
-									<xsl:text>btn btn-primary btn-sm</xsl:text>
+									<xsl:text>pure-button btn-primary btn-sm</xsl:text>
 								</xsl:attribute>
 							</xsl:when>
 							<xsl:otherwise>
@@ -89,7 +89,7 @@
 						<xsl:choose>
 							<xsl:when test="$template_set = 'bootstrap'">
 								<xsl:attribute name="class">
-									<xsl:text>btn btn-primary btn-sm ms-1</xsl:text>
+									<xsl:text>pure-button btn-primary btn-sm ms-1</xsl:text>
 								</xsl:attribute>
 							</xsl:when>
 							<xsl:otherwise>

@@ -3,7 +3,7 @@ function onAdjust_price()
 	var price_item_id = document.getElementById('price_item_id').value;
 	var new_price = document.getElementById('ctrl_adjust_price_item_price').value;
 
-	var oArgs = {menuaction: 'rental.uiprice_item.adjust_price', price_item_id: price_item_id, new_price: new_price};
+	var oArgs = { menuaction: 'rental.uiprice_item.adjust_price', price_item_id: price_item_id, new_price: new_price };
 	var requestUrl = phpGWLink('index.php', oArgs, true);
 
 	JqueryPortico.execute_ajax(requestUrl, function (result)
@@ -53,7 +53,7 @@ getRequestData = function (dataSelected, parameters)
 
 function removePrice(oArgs, parameters)
 {
-	var api = $('#datatable-container_0').dataTable().api();
+	var api = new DataTable('#datatable-container_0');
 	var selected = api.rows({selected: true}).data();
 	var nTable = 0;
 

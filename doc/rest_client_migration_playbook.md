@@ -227,6 +227,18 @@ Document current behavior before changing anything.
 
 Most regressions come from undocumented implicit contracts.
 
+### DataTables API access
+
+Retrieve an existing table with `new DataTable('#datatable-container_0')` (or
+`new DataTable('#' + container)` for dynamic IDs). With DataTables 3,
+`$(selector).dataTable().api()` can return an empty API even when the table exists.
+Keep existing `oTable.api()` calls where the shared table helpers provide a
+compatibility alias; they do not have the same retrieval problem.
+
+Use `api.order([[2, 'asc']]).draw()` instead of legacy `fnSort()`. Inside a draw
+callback, check whether the order actually changed before drawing again to avoid
+recursive redraws.
+
 ## Phase B: REST Endpoint Surface
 
 Implement REST endpoints in parallel, not replacement-first.

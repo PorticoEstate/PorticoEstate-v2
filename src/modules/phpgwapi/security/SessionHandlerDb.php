@@ -34,11 +34,6 @@
  */
 class SessionHandlerDb implements SessionHandlerInterface
 {
-	private function __construct()
-	{
-		//prevent instiation
-	}
-
 	/**
 	 * Close connection to session handler backend
 	 *

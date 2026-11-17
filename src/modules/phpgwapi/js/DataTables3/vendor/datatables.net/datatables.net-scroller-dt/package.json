@@ -1,16 +1,15 @@
 {
     "name": "datatables.net-scroller-dt",
     "description": "Scroller for DataTables with styling for [DataTables](https://datatables.net/)",
-    "main": "js/scroller.dataTables.js",
-    "module": "js/scroller.dataTables.mjs",
-    "style": "css/scroller.dataTables.css",
+    "main": "./js/scroller.dataTables.js",
+    "module": "./js/scroller.dataTables.mjs",
+    "style": "./css/scroller.dataTables.css",
     "types": "./types/scroller.dataTables.d.ts",
-    "version": "3.0.0",
+    "version": "3.1.1",
     "files": [
-        "css/**/*.css",
-        "js/**/*.js",
-        "js/**/*.mjs",
-        "types/**/*.d.ts"
+        "js",
+        "css",
+        "types"
     ],
     "keywords": [
         "Scroller",
@@ -21,8 +20,8 @@
         "sort"
     ],
     "dependencies": {
-        "datatables.net-scroller": "3.0.0",
-        "datatables.net-dt": "^3"
+        "datatables.net-scroller": "3.1.1",
+        "datatables.net-dt": "^3.1"
     },
     "author": {
         "name": "SpryMedia Ltd",
@@ -34,5 +33,25 @@
     "repository": {
         "type": "git",
         "url": "git+https://github.com/DataTables/Scroller.git"
-    }
+    },
+    "exports": {
+        ".": {
+            "types": "./types/scroller.dataTables.d.ts",
+            "style": "./css/scroller.dataTables.css",
+            "import": "./js/scroller.dataTables.mjs",
+            "require": "./js/scroller.dataTables.js",
+            "default": "./js/scroller.dataTables.mjs"
+        },
+        "./js/*": "./js/*",
+        "./css": {
+            "types": "./types/css.d.ts",
+            "default": "./css/scroller.dataTables.css"
+        },
+        "./css/*": {
+            "types": "./types/css.d.ts",
+            "default": "./css/*"
+        },
+        "./package.json": "./package.json"
+    },
+    "sideEffects": true
 }

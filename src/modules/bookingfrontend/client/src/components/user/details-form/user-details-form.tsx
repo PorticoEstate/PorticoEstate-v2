@@ -4,7 +4,7 @@ import {useForm, Controller} from 'react-hook-form';
 import {z} from 'zod';
 import {IBookingUser} from "@/service/types/api.types";
 import {zodResolver} from "@hookform/resolvers/zod";
-import {Button, Heading, Paragraph, Tag, Textfield, Checkbox} from "@digdir/designsystemet-react";
+import {Button, Heading, Paragraph, Tag, Textfield} from "@digdir/designsystemet-react";
 import {PencilIcon, PersonGroupIcon, PlusIcon} from "@navikt/aksel-icons";
 import styles from "./user-details-form.module.scss";
 import {useTrans} from "@/app/i18n/ClientTranslationProvider";
@@ -369,43 +369,11 @@ const UserDetailsForm: React.FC<DetailsProps> = ({user, onUpdate}) => {
                 </>
             )}
 
-            {/* Notifications section — UI-only, not wired to backend yet */}
-            <div className={styles.sectionHeader}>
-                <Heading level={2} data-size="sm">
-                    {t('bookingfrontend.notifications_and_communication')}
-                </Heading>
-            </div>
-            <div className={styles.card}>
-                <div className={styles.toggleRow}>
-                    <div className={styles.toggleLabel}>
-                        <div className={styles.title}>{t('bookingfrontend.email_notifications')}</div>
-                        <div className={styles.helper}>{t('bookingfrontend.email_notifications_description')}</div>
-                    </div>
-                    <div className={styles.toggleControl}>
-                        <Checkbox defaultChecked aria-label={t('bookingfrontend.email_notifications')}/>
-                    </div>
-                </div>
-
-                <div className={styles.toggleRow}>
-                    <div className={styles.toggleLabel}>
-                        <div className={styles.title}>{t('bookingfrontend.sms_notifications')}</div>
-                        <div className={styles.helper}>{t('bookingfrontend.sms_notifications_description')}</div>
-                    </div>
-                    <div className={styles.toggleControl}>
-                        <Checkbox aria-label={t('bookingfrontend.sms_notifications')}/>
-                    </div>
-                </div>
-
-                <div className={styles.toggleRow}>
-                    <div className={styles.toggleLabel}>
-                        <div className={styles.title}>{t('bookingfrontend.newsletter')}</div>
-                        <div className={styles.helper}>{t('bookingfrontend.newsletter_description')}</div>
-                    </div>
-                    <div className={styles.toggleControl}>
-                        <Checkbox defaultChecked aria-label="Nyhetsbrev"/>
-                    </div>
-                </div>
-            </div>
+            {/*
+              The notifications section (e-mail, SMS and newsletter checkboxes) is not rendered: it was
+              UI-only and saved nothing. Showing it again needs backend wiring first (the choices are not
+              part of EditableBookingUser). Its lang keys and the toggleRow styles are kept for that.
+            */}
         </section>
     );
 };

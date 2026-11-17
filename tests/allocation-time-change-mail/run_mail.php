@@ -11,9 +11,11 @@
  *     resolves them (forced > own > default), and the CITIZEN's Settings['user'] and the Preferences
  *     singleton left exactly as they were
  *   - AllocationTimeChangeMailRenderer: the real Twig template, the real .lang files in no/nn/en,
- *     the language swap, escape-once of every value, the applicant's comment
+ *     the language swap, escape-once of every value (the applicant's and the organisation's names
+ *     included), the applicant's comment
  *   - AllocationTimeChangeNotifier: recipient rules, the officer's language whatever the acting
- *     (citizen) session says, a log line for no officer / no address, and that NOTHING in it can throw
+ *     (citizen) session says, that the officer is looked up by case_officer_id and not by the
+ *     application id, a log line for no officer / no address, and that NOTHING in it can throw
  *   - EmailService::sendCaseOfficerChangeMail: an empty booking config is logged, not a silent no-mail
  *   - AllocationTimeChangeService::mailCaseOfficer: the stored change survives a notifier that throws
  *
@@ -239,6 +241,11 @@ $lacks('...and escaped once, not twice', $mail['body'], '&amp;amp;');
 $contains('a line break in the comment is kept', $mail['body'], "<br />\nlinje to");
 $mail = $renderer->render($payload('requested', ['application' => ['name' => "X\r\nBcc: a@b.c"]]), 'no');
 $check('the subject is one line (header injection)', !preg_match('/[\r\n]/', $mail['subject']), $mail['subject']);
+// the applicant's and the organisation's names are typed by citizens: markup in either is escaped, never live
+$mail = $renderer->render($payload('requested', ['actor' => '<b>x</b>', 'application' => ['organization_name' => '<b>x</b>']]), 'no');
+$contains('names: markup in the applicant\'s and the organisation\'s names is escaped', $mail['body'], '&lt;b&gt;x&lt;/b&gt;');
+$lacks('names: ...and no live <b>x</b> reaches the officer', $mail['body'], '<b>x</b>');
+$same('names: ...escaped once for EACH of the two names (the applicant\'s and the organisation\'s)', substr_count($mail['body'], '&lt;b&gt;x&lt;/b&gt;'), 2);
 
 // the language comes back also when the render fails
 $sw1 = new FakeLangSwitch('en');
@@ -270,9 +277,12 @@ class TestNotifier extends AllocationTimeChangeNotifier
     public ?\Throwable $linkThrows = null;
     public ?\Throwable $deliverThrows = null;
     public array $officer = ['email' => 'officer@example.test', 'lang' => 'no'];
+    /** @var list<int> every account id the notifier asked loadOfficer() for */
+    public array $officerIdsSeen = [];
 
     protected function loadOfficer(int $accountId): array
     {
+        $this->officerIdsSeen[] = $accountId;
         if ($this->officerThrows) {
             throw $this->officerThrows;
         }
@@ -322,6 +332,16 @@ $n = new TestNotifier(new AllocationTimeChangeMailRenderer(new FakeLangSwitch('e
 $n->officer = ['email' => 'officer@example.test', 'lang' => 'nn'];
 $n->notify($withOfficer(7));
 $same('(1c) officer nn, acting en ⇒ nynorsk', $n->delivered[0][1] ?? null, 'Endra av søkjar: ønskjer nytt tidspunkt – Sommerfest, 10.12.2026');
+
+// (1d) the officer is looked up by bb_application.case_officer_id, NOT by the application's own id
+// (84260 in the fixture): both are plain integers, so only an assertion on the seam can tell them apart
+$n = new TestNotifier(new AllocationTimeChangeMailRenderer(new FakeLangSwitch('no')));
+$n->notify($withOfficer(7));
+$same('(1d) loadOfficer is asked for the application\'s case_officer_id (7), once', $n->officerIdsSeen, [7]);
+$check('(1d) ...and that is not the application id (84260)', !in_array(84260, $n->officerIdsSeen, true), 'loadOfficer got ' . json_encode($n->officerIdsSeen));
+$n = new TestNotifier(new AllocationTimeChangeMailRenderer(new FakeLangSwitch('no')));
+$n->notify($withOfficer(31));
+$same('(1d) ...for another case officer too (31), not a constant', $n->officerIdsSeen, [31]);
 
 // (2) the officer has no language preference
 $n = new TestNotifier(new AllocationTimeChangeMailRenderer(new FakeLangSwitch('en')));

@@ -2,6 +2,7 @@
 
 namespace App\modules\bookingfrontend\services;
 
+use App\Database\Db;
 use App\modules\booking\services\AllocationTimeChangeMailRenderer;
 use App\modules\booking\services\EmailService;
 use App\modules\booking\services\TranslationLangSwitch;
@@ -19,6 +20,12 @@ use App\modules\bookingfrontend\helpers\WebSocketHelper;
  *
  * LANGUAGE. The officer's own `common.lang`, else Norwegian (the instance language). The citizen's
  * cookie or session language never decides it — see AllocationTimeChangeMailRenderer.
+ *
+ * IDENTITY. The request is the CITIZEN's, and stays so. The officer's preferences are read with a
+ * query of their own, never through CreateObject('phpgwapi.preferences', $id): that returns the
+ * Preferences SINGLETON and calls setAccountId(), which rewrites Settings['user'] (account id and
+ * preferences) for the rest of the request — the deferred group mail and bell, and every legacy
+ * read that authorises on the current user, would then run as the case officer.
  *
  * FAILURE. Called AFTER the change is committed. notify() catches Throwable at every level and
  * cannot throw: a PHP 8 TypeError is an Error, not an Exception, and the notification chains here
@@ -87,17 +94,93 @@ class AllocationTimeChangeNotifier
     }
 
     /**
-     * seam — the case officer's address and language.
+     * seam — the case officer's address and language, read WITHOUT making the officer the current user.
      *
      * @return array{email: ?string, lang: ?string}
      */
     protected function loadOfficer(int $accountId): array
     {
-        $prefs = CreateObject('phpgwapi.preferences', $accountId)->read();
+        $common = self::resolveCommonPreferences($this->readCommonPreferenceRows($accountId));
         return [
-            'email' => $prefs['common']['email'] ?? null,
-            'lang' => $prefs['common']['lang'] ?? null,
+            'email' => $common['email'] ?? null,
+            'lang' => $common['lang'] ?? null,
         ];
+    }
+
+    /**
+     * seam — the stored `common` preference rows that decide an account's effective preferences:
+     * the forced row (owner -1), the default row (owner -2) and the account's own. The same select
+     * as Preferences::Readpreferences() (Preferences.php:116), narrowed to the one app.
+     *
+     * @return list<array{preference_owner: int|string, preference_json: string}>
+     */
+    protected function readCommonPreferenceRows(int $accountId): array
+    {
+        $stmt = Db::getInstance()->prepare(
+            "SELECT preference_owner, preference_json FROM phpgw_preferences
+             WHERE preference_owner IN (-1, -2, ?) AND REPLACE(preference_app, ' ', '') = 'common'"
+        );
+        $stmt->execute([$accountId]);
+        return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * The effective `common` preferences of one account, resolved exactly as
+     * Preferences::Readpreferences() resolves them (Preferences.php:113-169) — minus the object's
+     * side effects on Settings and the Translation singleton:
+     *   1. the account's own value;
+     *   2. a default (owner -2) fills in where the own value is unset or '';
+     *   3. a forced value (owner -1) overwrites whatever is there, even an own value.
+     * Every stored string is unquoted (stripslashes) first, as Preferences::unquote() does.
+     *
+     * NOT mirrored: the `$$name$$` placeholder substitution of Preferences::standard_substitutes().
+     * A stored address or language that still carries a placeholder is therefore not substituted: it
+     * fails the address check (logged, no mail) or is not a supported language (Norwegian).
+     * No stored common.email or common.lang holds a placeholder in the local database.
+     *
+     * @param list<array{preference_owner: int|string, preference_json: string}> $rows
+     * @return array<string, mixed>
+     */
+    private static function resolveCommonPreferences(array $rows): array
+    {
+        $forced = $default = $own = [];
+        foreach ($rows as $row) {
+            $value = self::unquote(json_decode((string)$row['preference_json'], true));
+            if (!is_array($value)) {
+                continue;
+            }
+            switch ((int)$row['preference_owner']) {
+                case -1:
+                    $forced = $value;
+                    break;
+                case -2:
+                    $default = $value;
+                    break;
+                default:
+                    $own = $value;
+                    break;
+            }
+        }
+
+        $effective = $own;
+        foreach ($default as $name => $value) {
+            if (!isset($effective[$name]) || $effective[$name] === '') {
+                $effective[$name] = $value;
+            }
+        }
+        foreach ($forced as $name => $value) {
+            $effective[$name] = $value;
+        }
+        return $effective;
+    }
+
+    /** Preferences::unquote() (Preferences.php:93): stripslashes on every scalar, recursively. */
+    private static function unquote(mixed $value): mixed
+    {
+        if (is_array($value)) {
+            return array_map(self::unquote(...), $value);
+        }
+        return stripslashes((string)$value);
     }
 
     /** seam — the absolute link to the case in the booking backend. */
@@ -115,6 +198,6 @@ class AllocationTimeChangeNotifier
     /** seam — the transport. */
     protected function deliver(string $to, string $subject, string $body): void
     {
-        (new EmailService())->sendCaseOfficerNotification($to, $subject, $body);
+        (new EmailService())->sendCaseOfficerChangeMail($to, $subject, $body);
     }
 }

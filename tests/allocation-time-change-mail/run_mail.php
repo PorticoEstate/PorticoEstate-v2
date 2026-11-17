@@ -7,10 +7,14 @@
  *   php tests/allocation-time-change-mail/run_mail.php
  *
  * Covers, with no database and no mail transport:
+ *   - AllocationTimeChangeNotifier::loadOfficer: the officer's preferences resolved as the framework
+ *     resolves them (forced > own > default), and the CITIZEN's Settings['user'] and the Preferences
+ *     singleton left exactly as they were
  *   - AllocationTimeChangeMailRenderer: the real Twig template, the real .lang files in no/nn/en,
  *     the language swap, escape-once of every value, the applicant's comment
  *   - AllocationTimeChangeNotifier: recipient rules, the officer's language whatever the acting
  *     (citizen) session says, a log line for no officer / no address, and that NOTHING in it can throw
+ *   - EmailService::sendCaseOfficerChangeMail: an empty booking config is logged, not a silent no-mail
  *   - AllocationTimeChangeService::mailCaseOfficer: the stored change survives a notifier that throws
  *
  * Translations are read from the real phpgw_{no,nn,en}.lang files by a stand-in for the global
@@ -33,6 +37,7 @@ define('PHPGW_SERVER_ROOT', $root . '/src/modules');
 foreach ([
     'booking/services/CateringText.php',
     'booking/services/CateringLangSwitch.php',
+    'booking/services/EmailService.php',
     'booking/services/AllocationTimeChangeMailRenderer.php',
     'booking/services/TranslationLangSwitch.php',
     'bookingfrontend/services/AllocationTimeChangeNotifier.php',
@@ -44,6 +49,9 @@ foreach ([
 
 use App\modules\booking\services\AllocationTimeChangeMailRenderer;
 use App\modules\booking\services\CateringLangSwitch;
+use App\modules\booking\services\EmailService;
+use App\modules\phpgwapi\services\Preferences;
+use App\modules\phpgwapi\services\Settings;
 use App\modules\bookingfrontend\repositories\AllocationTimeChangeRepository;
 use App\modules\bookingfrontend\services\AllocationTimeChangeNotifier;
 use App\modules\bookingfrontend\services\AllocationTimeChangeService;
@@ -391,6 +399,161 @@ try {
 }
 $check('containment: the render throws a TypeError: notify does not throw', !$threw);
 $same('...it reports no mail and the citizen\'s language is back', [$res, $sw3->current()], [false, 'en']);
+
+// ======================================================================================================
+// 2b. loadOfficer reads the officer WITHOUT becoming the current user
+// ======================================================================================================
+// The legacy CreateObject('phpgwapi.preferences', $id) returns the Preferences SINGLETON and calls
+// setAccountId(), which rewrites Settings['user'] for the rest of the request (ofphpgwapi.inc.php:141-148
+// → Preferences.php:48-55). This stand-in records the call and reproduces that write, so code that goes
+// back to it is RED on the identity itself and not only on a missing function.
+$GLOBALS['__createobject_calls'] = [];
+if (!function_exists('CreateObject')) {
+    function CreateObject($class, $accountId = null)
+    {
+        $GLOBALS['__createobject_calls'][] = [$class, $accountId];
+        if ($class === 'phpgwapi.preferences' && $accountId) {
+            Preferences::getInstance()->account_id = $accountId;
+            Settings::getInstance()->update('user', ['account_id' => $accountId, 'preferences' => ['common' => ['lang' => 'no', 'email' => 'officer@example.test']]]);
+        }
+        return new class {
+            public function read(): array
+            {
+                return ['common' => ['email' => 'officer@example.test', 'lang' => 'no']];
+            }
+        };
+    }
+}
+
+// the citizen's request: Settings['user'] = the frontend's anonymous account, session language en, and
+// the Preferences singleton built for it. Both are bare instances (no database in this runner).
+$seedCitizen = static function (): void {
+    $settings = (new ReflectionClass(Settings::class))->newInstanceWithoutConstructor();
+    (new ReflectionProperty(Settings::class, 'settings'))->setValue($settings, ['user' => ['account_id' => 1022, 'preferences' => ['common' => ['lang' => 'en']]]]);
+    (new ReflectionProperty(Settings::class, 'instance'))->setValue(null, $settings);
+    $prefs = (new ReflectionClass(Preferences::class))->newInstanceWithoutConstructor();
+    $prefs->account_id = 1022;
+    (new ReflectionProperty(Preferences::class, 'instance'))->setValue(null, $prefs);
+};
+$identity = static fn(): array => [Settings::getInstance()->get('user'), Preferences::getInstance()->account_id];
+
+/** The production loadOfficer(), with only the database read replaced by fixed rows. */
+class RowsNotifier extends AllocationTimeChangeNotifier
+{
+    public array $rows = [];
+    public array $delivered = [];
+    public ?\Throwable $rowsThrow = null;
+
+    public function officer(int $accountId): array
+    {
+        return $this->loadOfficer($accountId);
+    }
+
+    protected function readCommonPreferenceRows(int $accountId): array
+    {
+        if ($this->rowsThrow) {
+            throw $this->rowsThrow;
+        }
+        return $this->rows;
+    }
+
+    protected function buildCaseLink(int $applicationId): string
+    {
+        return "https://x.test/booking/view/applications/{$applicationId}";
+    }
+
+    protected function defer(callable $work): void
+    {
+        $work();
+    }
+
+    protected function deliver(string $to, string $subject, string $body): void
+    {
+        $this->delivered[] = [$to, $subject, $body];
+    }
+}
+
+$stored = static fn(int|string $owner, array $json): array => ['preference_owner' => $owner, 'preference_json' => json_encode($json, JSON_UNESCAPED_UNICODE)];
+$resolve = static function (array $rows): array {
+    $n = new RowsNotifier(new AllocationTimeChangeMailRenderer(new FakeLangSwitch('no')));
+    $n->rows = $rows;
+    return $n->officer(7);
+};
+
+// resolution: the framework's order, forced > own > default (Preferences.php:148-168)
+$seedCitizen();
+$same('prefs: no rows at all ⇒ no address, no language', $resolve([]), ['email' => null, 'lang' => null]);
+$same('prefs: the account\'s own address and language', $resolve([$stored(7, ['email' => 'own@example.test', 'lang' => 'en'])]), ['email' => 'own@example.test', 'lang' => 'en']);
+$same('prefs: a default fills in what the account has not set', $resolve([$stored(-2, ['lang' => 'nn']), $stored(7, ['email' => 'own@example.test'])]), ['email' => 'own@example.test', 'lang' => 'nn']);
+$same('prefs: a default fills in an EMPTY own value', $resolve([$stored(-2, ['lang' => 'nn']), $stored(7, ['email' => 'own@example.test', 'lang' => ''])]), ['email' => 'own@example.test', 'lang' => 'nn']);
+$same('prefs: the own value beats the default', $resolve([$stored(-2, ['lang' => 'no']), $stored(7, ['lang' => 'en'])])['lang'], 'en');
+$same('prefs: a FORCED value beats the account\'s own (owner -1; as on the local database, #45917)', $resolve([$stored(-1, ['lang' => 'no']), $stored(-2, ['lang' => 'nn']), $stored(7, ['lang' => 'en'])])['lang'], 'no');
+$same('prefs: ...whatever order the rows come in', $resolve([$stored(7, ['lang' => 'en']), $stored(-2, ['lang' => 'nn']), $stored(-1, ['lang' => 'no'])])['lang'], 'no');
+$same('prefs: owners arrive from PDO as strings', $resolve([$stored('-1', ['lang' => 'no']), $stored('7', ['lang' => 'en'])])['lang'], 'no');
+$same('prefs: a forced value only touches its own key', $resolve([$stored(-1, ['lang' => 'no']), $stored(7, ['email' => 'own@example.test', 'lang' => 'en'])])['email'], 'own@example.test');
+$same('prefs: a forced EMPTY value still overwrites, as in the framework', $resolve([$stored(-1, ['lang' => '']), $stored(7, ['lang' => 'en'])])['lang'], '');
+$same('prefs: stored strings are unquoted like Preferences::unquote()', $resolve([$stored(7, ['email' => "o\\'brien@example.test"])])['email'], "o'brien@example.test");
+$same('prefs: a row that is not valid JSON, or not an object, is skipped', $resolve([['preference_owner' => 7, 'preference_json' => '{nope'], ['preference_owner' => 7, 'preference_json' => '"text"'], $stored(-2, ['lang' => 'nn'])]), ['email' => null, 'lang' => 'nn']);
+
+// the citizen's identity is untouched by a whole notify(), and the officer still gets the mail
+$seedCitizen();
+$beforeIdentity = $identity();
+$GLOBALS['__createobject_calls'] = [];
+$n = new RowsNotifier(new AllocationTimeChangeMailRenderer(new FakeLangSwitch('en')));
+$n->rows = [$stored(-1, ['lang' => 'no']), $stored(7, ['email' => 'officer@example.test', 'lang' => 'en'])];
+$res = $n->notify($withOfficer(7));
+$same('identity: the officer\'s mail is sent, in Norwegian (forced), to the officer', [$res, $n->delivered[0][0] ?? null, $n->delivered[0][1] ?? null], [true, 'officer@example.test', 'Endret av søker: ønsker nytt tidspunkt – Sommerfest, 10.12.2026']);
+$same('identity: Settings[user] (account id AND preferences) is byte-equal after notify()', $identity()[0], $beforeIdentity[0]);
+$same('identity: ...and so is the Preferences singleton\'s account id', $identity()[1], $beforeIdentity[1]);
+$same('identity: ...the citizen is still account 1022 with session language en', [Settings::getInstance()->get('user')['account_id'], Settings::getInstance()->get('user')['preferences']['common']['lang']], [1022, 'en']);
+$same('identity: ...and the legacy CreateObject(phpgwapi.preferences) was never called', $GLOBALS['__createobject_calls'], []);
+
+// ...also when something in the chain throws
+$seedCitizen();
+$beforeIdentity = $identity();
+$n = new RowsNotifier(new AllocationTimeChangeMailRenderer(new FakeLangSwitch('en'), $thrower));
+$n->rows = [$stored(7, ['email' => 'officer@example.test', 'lang' => 'no'])];
+$res = $n->notify($withOfficer(7));
+$same('identity: a render that throws: no mail, identity unchanged', [$res, $identity()], [false, $beforeIdentity]);
+$clearLog();
+$n = new RowsNotifier(new AllocationTimeChangeMailRenderer(new FakeLangSwitch('en')));
+$n->rowsThrow = new \TypeError('db down');
+$threw = false;
+$res = null;
+try {
+    $res = $n->notify($withOfficer(7));
+} catch (\Throwable $e) {
+    $threw = true;
+}
+$check('identity: the preference read throws a TypeError: notify does not throw', !$threw);
+$same('identity: ...no mail, a line in the log, identity unchanged', [$res, count($n->delivered), str_contains($logTail(), 'db down'), $identity()], [false, 0, true, $beforeIdentity]);
+
+// ======================================================================================================
+// 2c. EmailService::sendCaseOfficerChangeMail — an empty booking config is logged, not silent
+// ======================================================================================================
+/** The real method, built without its constructor (no database); only the config read is replaced. */
+class ConfigLessEmailService extends EmailService
+{
+    public ?array $config = null;
+
+    protected function getBookingConfig(): ?array
+    {
+        return $this->config;
+    }
+}
+$mailService = (new ReflectionClass(ConfigLessEmailService::class))->newInstanceWithoutConstructor();
+foreach (['null' => null, 'an empty array' => []] as $what => $config) {
+    $clearLog();
+    $mailService->config = $config;
+    $same("mail: a booking config that is {$what}: nothing sent", $mailService->sendCaseOfficerChangeMail('officer@example.test', 'S', '<p>B</p>'), false);
+    $contains("mail: ...and the log says why ({$what})", $logTail(), 'sendCaseOfficerChangeMail: mail not sent, the booking config is empty');
+    $lacks("mail: ...the recipient's address is not written to the log ({$what})", $logTail(), 'officer@example.test');
+    $lacks("mail: ...it is the config line, not the catch-all failure line ({$what})", $logTail(), 'failed:');
+}
+// the name no longer reads like the array-taking sibling it used to differ from by one letter
+$same('mail: sendCaseOfficerNotification (singular) no longer exists', method_exists(EmailService::class, 'sendCaseOfficerNotification'), false);
+$same('mail: sendCaseOfficerNotifications(array) is still there, untouched', method_exists(EmailService::class, 'sendCaseOfficerNotifications'), true);
+$same('mail: the notifier delivers through sendCaseOfficerChangeMail', method_exists(EmailService::class, 'sendCaseOfficerChangeMail'), true);
 
 // ======================================================================================================
 // 3. AllocationTimeChangeService::mailCaseOfficer — the stored change survives the officer's mail

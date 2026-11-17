@@ -654,11 +654,12 @@ class EmailService
      *
      * @return bool true when the transport accepted the message
      */
-    public function sendCaseOfficerNotification(string $to, string $subject, string $htmlBody): bool
+    public function sendCaseOfficerChangeMail(string $to, string $subject, string $htmlBody): bool
     {
         try {
             $config = $this->getBookingConfig();
             if (!$config) {
+                error_log('EmailService::sendCaseOfficerChangeMail: mail not sent, the booking config is empty');
                 return false;
             }
 
@@ -669,7 +670,7 @@ class EmailService
             $this->send->msg('email', $to, $subject, $htmlBody, '', '', '', $from, 'AktivKommune', 'html');
             return true;
         } catch (\Throwable $e) {
-            error_log('EmailService::sendCaseOfficerNotification failed: ' . $e->getMessage());
+            error_log('EmailService::sendCaseOfficerChangeMail failed: ' . $e->getMessage());
             return false;
         }
     }

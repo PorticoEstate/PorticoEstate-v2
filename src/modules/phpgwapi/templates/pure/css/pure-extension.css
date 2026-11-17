@@ -35,6 +35,21 @@ https://github.com/yui/pure/blob/master/LICENSE.md
 
 .pure-form-aligned .pure-custom {
 	max-width: 100%;
+	/* Plain tables and other wide content scroll sideways inside the
+	   container instead of widening the page. Popup widgets (select2,
+	   datepicker) attach to <body>, so they are not clipped. */
+	overflow-x: auto;
+	-webkit-overflow-scrolling: touch;
+}
+
+/* Embeds such as #googlemapiframe carry a fixed width="500" attribute. */
+.pure-control-group iframe {
+	max-width: 100%;
+}
+
+/* Popup windows render #content as the only child of <body>; give it side gutters. */
+body > .content {
+	padding: 0 1rem;
 }
 
 /* Embeds such as #googlemapiframe carry a fixed width="500" attribute. */

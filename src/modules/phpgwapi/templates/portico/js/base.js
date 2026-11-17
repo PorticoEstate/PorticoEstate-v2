@@ -45,6 +45,25 @@ $(document).ready(function ()
 	});
 
 	pageLayout.hide("east");
+
+	/* On narrow screens, close the menu pane when clicking outside it
+	   instead of requiring a second click on the toggler. */
+	$(document).on('click', function (e)
+	{
+		if (window.innerWidth >= 992)
+		{
+			return;
+		}
+		if (!pageLayout.state.west || pageLayout.state.west.isClosed || pageLayout.state.west.isHidden)
+		{
+			return;
+		}
+		if ($(e.target).closest('.ui-layout-west, .ui-layout-toggler-west, .ui-layout-resizer-west').length)
+		{
+			return;
+		}
+		pageLayout.close('west');
+	});
 //
 //		console.log(localStorage);
 //		if (typeof(localStorage['pageLayout_west_closed']) != 'undefined' && localStorage['pageLayout_west_closed'] == 1)

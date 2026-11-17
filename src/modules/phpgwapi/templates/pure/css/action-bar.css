@@ -60,3 +60,21 @@ body:has(.app-topbar) #floating-box.sticky-action-bar
 	outline: 2px solid #005fcc;
 	outline-offset: 2px;
 }
+
+/* Secondary (non-primary) buttons: Pure's flat grey default reads as
+   "disabled" next to the blue primary. Render them as outline buttons
+   so users see they are active; genuinely disabled ones stay grey. */
+.sticky-action-bar .pure-button:not(.pure-button-primary):not(.pure-button-disabled):not([disabled])
+{
+	background: #fff;
+	color: #0062c4;
+	border: 1px solid #0062c4;
+}
+
+.sticky-action-bar .pure-button:not(.pure-button-primary):not(.pure-button-disabled):not([disabled]):hover,
+.sticky-action-bar .pure-button:not(.pure-button-primary):not(.pure-button-disabled):not([disabled]):focus
+{
+	background: #e7f1fb;
+	color: #004a99;
+	border-color: #004a99;
+}

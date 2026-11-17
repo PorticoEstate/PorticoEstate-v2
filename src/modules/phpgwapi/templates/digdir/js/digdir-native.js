@@ -131,18 +131,19 @@
 			}
 		}
 
-		// Close sidebar on mobile when clicking outside
-		if (window.innerWidth < 992) {
-			document.addEventListener('click', (e) => {
-				if (!sidebar.contains(e.target) && !toggleBtn.contains(e.target)) {
-					sidebar.classList.add('app-sidebar--collapsed');
-					sidebar.classList.remove('show');
-					if (main) {
-						main.classList.remove('app-main--expanded');
-					}
-				}
-			});
-		}
+		// Close sidebar on mobile when clicking outside (checked at click time
+		// so it also works after resizing, and only when the sidebar is open).
+		document.addEventListener('click', (e) => {
+			if (window.innerWidth >= 992) return;
+			if (!sidebar.classList.contains('show')) return;
+			if (sidebar.contains(e.target) || toggleBtn.contains(e.target)) return;
+
+			sidebar.classList.add('app-sidebar--collapsed');
+			sidebar.classList.remove('show');
+			if (main) {
+				main.classList.remove('app-main--expanded');
+			}
+		});
 	}
 
 	// Template selector functionality

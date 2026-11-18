@@ -1305,4 +1305,4 @@ billing_party_custom	bookingfrontend	no	Tilpasset
 billing_address	bookingfrontend	no	Fakturaadresse
 edit_billing_information	bookingfrontend	no	Rediger fakturainformasjon
 birth_number	bookingfrontend	no	Fødselsnummer
-recurring_billing_note	bookingfrontend	no	%1 er registrert på %2. Kontaktperson og fakturaadresse hentes likevel fra fakturainformasjonen du velger nedenfor.
+recurring_billing_note	bookingfrontend	no	%1 er registrert på %2, og faktureres organisasjonen. Kontaktpersonen og adressen du velger nedenfor lagres på søknaden.

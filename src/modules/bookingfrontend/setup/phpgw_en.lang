@@ -1304,4 +1304,4 @@ billing_party_custom	bookingfrontend	en	Custom
 billing_address	bookingfrontend	en	Billing address
 edit_billing_information	bookingfrontend	en	Edit billing information
 birth_number	bookingfrontend	en	National identity number
-recurring_billing_note	bookingfrontend	en	%1 is registered to %2. The contact person and billing address are still taken from the billing information you choose below.
+recurring_billing_note	bookingfrontend	en	%1 is registered to %2, and the organisation is invoiced. The contact person and address you choose below are saved on the application.

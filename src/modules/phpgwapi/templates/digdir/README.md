@@ -4,6 +4,10 @@ This template integrates the [Digdir Designsystemet](https://www.designsystemet.
 
 ## Overview
 
+Pure reuses this template's page shell and responsive sidebar toggle, including the saved open/closed state and mobile outside-click dismissal. Pure uses mmenu inside the sidebar instead of Digdir's jqTree.
+Pure displays the sidebar link for the current page in bold with an outline and marks it with `aria-current="page"`.
+The shared breadcrumb aligns with the page card below it in both templates.
+
 The `digdir` template is a complete implementation of the Digdir Designsystemet within PorticoEstate, featuring:
 
 - **Web Components**: Modern, reusable UI components

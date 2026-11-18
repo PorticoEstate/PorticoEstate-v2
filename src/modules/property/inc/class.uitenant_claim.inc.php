@@ -1315,25 +1315,7 @@ class property_uitenant_claim extends phpgwapi_uicommon_jquery
 		}
 
 		//--------------files
-		$link_file_data = array(
-			'menuaction' => 'property.uitenant_claim.view_file',
-			'id'		 => $claim_id
-		);
-
-		$link_view_file = phpgw::link('/index.php', $link_file_data);
-
-		$_files = $this->bo->get_files($claim_id);
-
-		$lang_view_file		 = lang('click to view file');
-		$lang_delete_file	 = lang('Check to delete file');
-		$content_files		 = array();
-		foreach ($_files as $_file)
-		{
-			$content_files[] = array(
-				'file_name'	 => "<a href=\"{$link_view_file}&amp;file_id={$_file['file_id']}\" target=\"_blank\" title=\"{$lang_view_file}\">{$_file['name']}</a>",
-				'delete_file' => "<input type=\"checkbox\" name=\"values[file_action][]\" value=\"{$_file['file_id']}\" title=\"{$lang_delete_file}\">"
-			);
-		}
+		$content_files = $this->get_attachment_rows((int) $claim_id);
 
 		$myColumnDefs1 = array(
 			array(
@@ -1422,6 +1404,7 @@ class property_uitenant_claim extends phpgwapi_uicommon_jquery
 			'lang_parent'						=> $lang_parent,
 			'value_parent_id'					=> $value_parent_id,
 			'datatable_def'						 => $datatable_def,
+			'content_files'						 => $content_files,
 			'table_header_workorder'			 => $table_header_workorder,
 			'lang_no_workorders'				 => lang('No workorder budget'),
 			'workorder_link'					 => phpgw::link('/index.php', array('menuaction' => 'property.uiworkorder.view')),
@@ -1541,6 +1524,10 @@ class property_uitenant_claim extends phpgwapi_uicommon_jquery
 		phpgwapi_jquery::load_widget('core');
 		phpgwapi_jquery::load_widget('numberformat');
 		phpgwapi_jquery::load_widget('file-upload-minimum');
+		if ($claim_id)
+		{
+			phpgwapi_jquery::load_widget('glider');
+		}
 
 		self::add_javascript('property', 'base', 'tenant_claim.edit.js');
 
@@ -1570,24 +1557,7 @@ class property_uitenant_claim extends phpgwapi_uicommon_jquery
 			return;
 		}
 
-		$link_file_data = array(
-			'menuaction' => 'property.uitenant_claim.view_file',
-		);
-
-
-		$link_view_file	 = phpgw::link('/index.php', $link_file_data);
-		$_files = $this->bo->get_files($id);
-
-
-		$content_files = array();
-
-		foreach ($_files as $_entry)
-		{
-			$content_files[] = array(
-				'file_name'		 => '<a href="' . $link_view_file . '&amp;file_id=' . $_entry['file_id'] . '" target="_blank" title="' . lang('click to view file') . '">' . $_entry['name'] . '</a>',
-				'delete_file'	 => '<input type="checkbox" name="values[file_action][]" value="' . $_entry['file_id'] . '" title="' . lang('Check to delete file') . '">',
-			);
-		}
+		$content_files = $this->get_attachment_rows((int) $id);
 
 		if (Sanitizer::get_var('phpgw_return_as') == 'json')
 		{
@@ -1602,6 +1572,35 @@ class property_uitenant_claim extends phpgwapi_uicommon_jquery
 			);
 		}
 		return $content_files;
+	}
+
+	private function get_attachment_rows(int $claim_id): array
+	{
+		$rows = array();
+		$lang_view_file = htmlspecialchars(lang('click to view file'), ENT_QUOTES, 'UTF-8');
+		$lang_delete_file = htmlspecialchars(lang('Check to delete file'), ENT_QUOTES, 'UTF-8');
+		foreach ($this->bo->get_files($claim_id) as $file)
+		{
+			$file_id = (int) $file['file_id'];
+			$url = phpgw::link('/index.php', array(
+				'menuaction' => 'property.uitenant_claim.view_file',
+				'id' => $claim_id,
+				'file_id' => $file_id
+			));
+			$href = htmlspecialchars($url, ENT_QUOTES, 'UTF-8', false);
+			$name = htmlspecialchars($file['name'], ENT_QUOTES, 'UTF-8');
+			$row = array(
+				'file_name' => "<a href=\"{$href}\" target=\"_blank\" title=\"{$lang_view_file}\">{$name}</a>",
+				'delete_file' => "<input type=\"checkbox\" name=\"values[file_action][]\" value=\"{$file_id}\" title=\"{$lang_delete_file}\">"
+			);
+			if (in_array($file['mime_type'] ?? '', array('image/jpeg', 'image/png', 'image/gif'), true))
+			{
+				$row['img_url'] = $url;
+				$row['img_alt'] = $file['name'];
+			}
+			$rows[] = $row;
+		}
+		return $rows;
 	}
 
 	function delete()

@@ -285,12 +285,12 @@ li.mm-vertical.mm-opened > .mm-panel {
 	right: 23px; }
 
 .mm-menu {
-	background: #f3f3f3;
+	/* background: #f3f3f3; */
 	border-color: rgba(0, 0, 0, 0.1);
 	color: rgba(0, 0, 0, 0.7); }
 .mm-menu .mm-navbar > *,
 .mm-menu .mm-navbar a {
-    color: rgba(0, 0, 0, 0.3); }
+    color: rgba(0, 0, 0, 0.548); }
 .mm-menu .mm-navbar .mm-btn:before, .mm-menu .mm-navbar .mm-btn:after {
     border-color: rgba(0, 0, 0, 0.3); }
 .mm-menu .mm-listview {

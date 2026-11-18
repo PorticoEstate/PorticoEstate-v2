@@ -45,7 +45,8 @@ class ApplicationViewController
 
 		$serverSettings = Settings::getInstance()->get('server');
 		$templateSet = $serverSettings['template_set'] ?? 'digdir';
-		if ($templateSet !== 'digdir') {
+		if (! in_array($templateSet, ['digdir', 'pure']))
+		{
 			$legacyUrl = '/?menuaction=booking.uiapplication.show&id=' . $id;
 			return $response->withHeader('Location', $legacyUrl)->withStatus(302);
 		}

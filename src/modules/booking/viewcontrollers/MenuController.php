@@ -28,7 +28,7 @@ class MenuController
 			self::appendAtPath($menus, $path, $items);
 		}
 
-		if ($templateSet !== 'digdir') {
+		if (!in_array($templateSet, ['digdir', 'pure'])) {
 			return $menus;
 		}
 

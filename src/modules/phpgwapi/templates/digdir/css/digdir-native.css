@@ -387,7 +387,7 @@ body {
     align-items: center;
     gap: var(--ds-spacing-2, 0.5rem);
     padding: var(--ds-spacing-3, 0.75rem) var(--ds-spacing-4, 1rem);
-    margin-bottom: var(--ds-spacing-4, 1rem);
+    margin: 0 0 var(--ds-spacing-4, 1rem);
     background-color: var(--ds-color-background-subtle, #f8f9fa);
     border-radius: var(--ds-border-radius-md, 0.5rem);
     list-style: none;

@@ -1300,3 +1300,9 @@ hours_short	bookingfrontend	no	t
 hide price category note no choice	bookingfrontend	no	Når aktiv velger ikke søkeren pris: verken priskategori eller pris per ressurs vises, og hver ressurs faktureres med standardprisen, ellers prisen med nyeste dato, slik som før søkeren kunne velge. Har flere priser samme dato og ingen er standard, er det ikke bestemt hvilken som brukes, så merk én som standard. Søknader som alt er sendt beholder prisen; en tidsslotbooking som venter på prisvalg får denne prisen ved utsjekking.
 price_set_check_amount	bookingfrontend	no	Prisen er nå satt. Se over beløpet og send inn på nytt.
 no_hospitality_added	bookingfrontend	no	Ingen bevertning lagt til
+choose_billing_party	bookingfrontend	no	Hvem skal faktureres?
+billing_party_custom	bookingfrontend	no	Tilpasset
+billing_address	bookingfrontend	no	Fakturaadresse
+edit_billing_information	bookingfrontend	no	Rediger fakturainformasjon
+birth_number	bookingfrontend	no	Fødselsnummer
+recurring_billing_note	bookingfrontend	no	%1 er registrert på %2. Kontaktperson og fakturaadresse hentes likevel fra fakturainformasjonen du velger nedenfor.

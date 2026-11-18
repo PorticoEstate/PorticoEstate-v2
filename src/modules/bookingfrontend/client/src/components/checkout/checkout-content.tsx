@@ -492,6 +492,9 @@ const CheckoutContent: FC = () => {
 
             <BillingForm
                 user={user}
+                // The spinner above unmounts the form while submitting; a failed submit mounts it again
+                // with the billing the citizen had chosen, not the profile's
+                initialValues={billingDetails}
                 onBillingChange={setBillingDetails}
                 onSubmit={handleFormSubmit}
                 onVippsPayment={shouldShowExternalPaymentOptions ? handleVippsPayment : undefined}

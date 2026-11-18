@@ -8,12 +8,7 @@ import {Button, Heading, Paragraph, Tag, Textfield} from "@digdir/designsystemet
 import {PencilIcon, PersonGroupIcon, PlusIcon} from "@navikt/aksel-icons";
 import styles from "./user-details-form.module.scss";
 import {useTrans} from "@/app/i18n/ClientTranslationProvider";
-
-
-const maskSSN = (ssn: string): string => {
-    if (!ssn) return '';
-    return ssn.slice(0, -5) + '*****';
-};
+import {maskSSN} from "@/utils/mask-ssn";
 
 const validatePhone = (phone: string) => {
     if (!phone) return true;

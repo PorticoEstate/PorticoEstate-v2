@@ -492,6 +492,70 @@ class ApplicationRepository
     }
 
     /**
+     * Resolve the organisation an application belongs to from the organisation register.
+     *
+     * customer_organization_id/_name are derived here and never taken from the caller as
+     * given: the number is what identifies the organisation, the register supplies the id
+     * and the name (the client-supplied name is ignored).
+     *
+     *  - type is not 'organization_number', or there is no number: [null, null]
+     *  - exactly one ACTIVE organisation holds the number: that id + its register name
+     *  - several ACTIVE organisations hold the number: the caller's id, but only when it is
+     *    one of them (with that row's register name), otherwise [null, null]
+     *  - none holds it: [null, null]
+     *
+     * Never throws on caller input and never refuses: an unresolvable organisation is stored
+     * as NULL/NULL, which is what the officer side already falls back from (by number).
+     *
+     * Deliberately untyped: all three values arrive from client JSON and may be of any type.
+     *
+     * @param mixed $type The customer_identifier_type
+     * @param mixed $number The customer_organization_number
+     * @param mixed $clientId The customer_organization_id the caller named, if any
+     * @return array{0: int|null, 1: string|null} [organisation id, organisation name]
+     */
+    private function resolveOrganization($type, $number, $clientId): array
+    {
+        if (is_int($number))
+        {
+            $number = (string)$number;
+        }
+
+        if ($type !== 'organization_number' || !is_string($number) || $number === '')
+        {
+            return [null, null];
+        }
+
+        $stmt = $this->db->prepare(
+            "SELECT id, name FROM bb_organization WHERE organization_number = :number AND active = 1 ORDER BY id"
+        );
+        $stmt->execute([':number' => $number]);
+        $matches = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        if (count($matches) === 1)
+        {
+            return [(int)$matches[0]['id'], $matches[0]['name']];
+        }
+
+        if (count($matches) > 1 && (is_int($clientId) || is_string($clientId)))
+        {
+            $wantedId = filter_var($clientId, FILTER_VALIDATE_INT);
+            if ($wantedId !== false)
+            {
+                foreach ($matches as $match)
+                {
+                    if ((int)$match['id'] === $wantedId)
+                    {
+                        return [$wantedId, $match['name']];
+                    }
+                }
+            }
+        }
+
+        return [null, null];
+    }
+
+    /**
      * Insert a new application
      *
      * @param array $data Application data
@@ -499,11 +563,19 @@ class ApplicationRepository
      */
     private function insertApplication(array $data): array
     {
+        // The id/name come from the register by number, not from the client (see resolveOrganization)
+        [$organizationId, $organizationName] = $this->resolveOrganization(
+            $data['customer_identifier_type'] ?? null,
+            $data['customer_organization_number'] ?? null,
+            $data['customer_organization_id'] ?? null
+        );
+
         $sql = "INSERT INTO bb_application (
         status, session_id, building_name,building_id,
         activity_id, contact_name, contact_email, contact_phone,
         responsible_street, responsible_zip_code, responsible_city,
         customer_identifier_type, customer_organization_number,
+        customer_organization_id, customer_organization_name,
         created, modified, secret, owner_id, name, organizer, recurring_info,
         homepage, description, equipment
     ) VALUES (
@@ -511,6 +583,7 @@ class ApplicationRepository
         :activity_id, :contact_name, :contact_email, :contact_phone,
         :responsible_street, :responsible_zip_code, :responsible_city,
         :customer_identifier_type, :customer_organization_number,
+        :customer_organization_id, :customer_organization_name,
         NOW(), NOW(), :secret, :owner_id, :name, :organizer, :recurring_info,
         :homepage, :description, :equipment
     )";
@@ -532,6 +605,8 @@ class ApplicationRepository
             ':responsible_city' => $data['responsible_city'],
             ':customer_identifier_type' => $data['customer_identifier_type'],
             ':customer_organization_number' => $data['customer_organization_number'],
+            ':customer_organization_id' => $organizationId,
+            ':customer_organization_name' => $organizationName,
             ':secret' => $this->generateSecret(),
             ':owner_id' => $data['owner_id'],
             ':name' => $data['name'] ?? '',
@@ -566,6 +641,13 @@ class ApplicationRepository
         $derivedBuildingName = $this->resolveBuildingName($data['building_id'] ?? null);
         $buildingNameClause = $derivedBuildingName === null ? '' : 'building_name = :building_name,';
 
+        // The id/name come from the register by number, not from the client (see resolveOrganization)
+        [$organizationId, $organizationName] = $this->resolveOrganization(
+            $data['customer_identifier_type'] ?? null,
+            $data['customer_organization_number'] ?? null,
+            $data['customer_organization_id'] ?? null
+        );
+
         $sql = "UPDATE bb_application SET
         {$buildingNameClause}
         building_id = :building_id,
@@ -578,6 +660,8 @@ class ApplicationRepository
         responsible_city = :responsible_city,
         customer_identifier_type = :customer_identifier_type,
         customer_organization_number = :customer_organization_number,
+        customer_organization_id = :customer_organization_id,
+        customer_organization_name = :customer_organization_name,
         name = :name,
         organizer = :organizer,
         recurring_info = :recurring_info,
@@ -600,6 +684,8 @@ class ApplicationRepository
             ':responsible_city' => $data['responsible_city'],
             ':customer_identifier_type' => $data['customer_identifier_type'],
             ':customer_organization_number' => $data['customer_organization_number'],
+            ':customer_organization_id' => $organizationId,
+            ':customer_organization_name' => $organizationName,
             ':organizer' => $data['organizer'] ?? '',
             ':name' => $data['name'] ?? '',
             ':recurring_info' => $data['recurring_info'] ?? null,
@@ -630,6 +716,34 @@ class ApplicationRepository
         if (!$applicationId)
         {
             throw new \Exception("No application ID provided");
+        }
+
+        // A patch that names any of the organisation fields gets the id/name re-derived from the
+        // register by number (see resolveOrganization); a patch that names none leaves them alone.
+        // A patch is partial, so what it does not carry is read from the stored row.
+        $organizationFields = [
+            'customer_identifier_type', 'customer_organization_number',
+            'customer_organization_name', 'customer_organization_id'
+        ];
+        if (array_intersect($organizationFields, array_keys($data)))
+        {
+            $stmt = $this->db->prepare(
+                "SELECT customer_identifier_type, customer_organization_number, customer_organization_id
+                FROM bb_application WHERE id = :id"
+            );
+            $stmt->execute([':id' => $applicationId]);
+            $stored = $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
+
+            [$organizationId, $organizationName] = $this->resolveOrganization(
+                array_key_exists('customer_identifier_type', $data)
+                    ? $data['customer_identifier_type'] : ($stored['customer_identifier_type'] ?? null),
+                array_key_exists('customer_organization_number', $data)
+                    ? $data['customer_organization_number'] : ($stored['customer_organization_number'] ?? null),
+                array_key_exists('customer_organization_id', $data)
+                    ? $data['customer_organization_id'] : ($stored['customer_organization_id'] ?? null)
+            );
+            $data['customer_organization_id'] = $organizationId;
+            $data['customer_organization_name'] = $organizationName;
         }
 
         // Build dynamic UPDATE query based on provided fields

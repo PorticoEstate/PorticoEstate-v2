@@ -26,14 +26,18 @@ if (!empty($serverSettings['cache_refresh_token']))
 }
 
 $templateDir = PHPGW_TEMPLATE_DIR;
+$pure_menu = basename($templateDir) === 'pure';
 $twigDir = PHPGW_TEMPLATE_DIR . '/twig';
 
-$serverSettings['no_jscombine'] = false;
+$serverSettings['no_jscombine'] = $pure_menu;
 Settings::getInstance()->set('server', $serverSettings);
 
 phpgw::import_class('phpgwapi.jquery');
 phpgwapi_jquery::load_widget('core');
-phpgwapi_jquery::load_widget('jqtree');
+if (!$pure_menu)
+{
+	phpgwapi_jquery::load_widget('jqtree');
+}
 
 $javascripts = array();
 $javascripts[]	 = "/phpgwapi/js/popper/popper2.min.js";
@@ -46,7 +50,15 @@ $userSettings['preferences']['common']['sidecontent'] = 'ajax_menu'; //ajax_menu
 if (empty($flags['noframework']) && empty($flags['nonavbar']))
 {
 	phpgwapi_jquery::load_widget('contextMenu');
-	$javascripts[] = "/phpgwapi/templates/digdir/js/sidenav.js";
+	if ($pure_menu)
+	{
+		$javascripts[] = "/phpgwapi/js/jquery/mmenu/core/js/jquery.mmenu.min.all.js";
+		$javascripts[] = "/phpgwapi/templates/pure/js/mmenu.js";
+	}
+	else
+	{
+		$javascripts[] = "/phpgwapi/templates/digdir/js/sidenav.js";
+	}
 }
 
 // Prepare JavaScript files
@@ -108,13 +120,24 @@ if ($app != 'phpgwapi')
 $stylesheets[] = "/phpgwapi/templates/digdir/css/digdir-native.css";
 $stylesheets[] = "/phpgwapi/templates/digdir/components/language-selector/language-selector.css";
 $stylesheets[] = "/phpgwapi/templates/digdir/components/user-menu/user-menu.css";
+if ($pure_menu)
+{
+	$stylesheets[] = "/phpgwapi/templates/pure/css/sidebar.css";
+}
 
 if ($app != 'frontend')
 {
 	$stylesheets[] = "/phpgwapi/templates/digdir/css/base.css";
 	$stylesheets[] = "/phpgwapi/templates/digdir/css/sidebar.css";
 
-	if ($userSettings['preferences']['common']['sidecontent'] == 'ajax_menu')
+	if ($pure_menu)
+	{
+		if (empty($flags['noframework']) && empty($flags['nonavbar']))
+		{
+			$stylesheets[] = "/phpgwapi/js/jquery/mmenu/core/css/jquery.mmenu.all.css";
+		}
+	}
+	else if ($userSettings['preferences']['common']['sidecontent'] == 'ajax_menu')
 	{
 		$stylesheets[] = "/phpgwapi/templates/digdir/css/navbar_jqtree.css";
 	}
@@ -301,6 +324,7 @@ $tpl_vars = array(
 	// Variables for Twig templates
 	'javascripts'       => $jsUris,
 	'stylesheets'       => $cssUris,
+	'pure_menu'         => $pure_menu,
 	'is_designsystemet' => true,
 
 	// ESM import map for Designsystemet Web components
@@ -331,7 +355,7 @@ $tpl_vars = array(
 // Use Twig to render the template
 try {
 	$twig = \App\modules\phpgwapi\services\Twig::getInstance();
-	echo $twig->render('head.twig', $tpl_vars);
+	echo $twig->render('@digdir/head.twig', $tpl_vars);
 } catch (\Twig\Error\Error $e) {
 	error_log("Failed to render head.twig: " . $e->getMessage());
 	// Output minimal fallback

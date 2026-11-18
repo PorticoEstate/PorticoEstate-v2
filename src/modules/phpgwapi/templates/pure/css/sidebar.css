@@ -1,0 +1,15 @@
+#menu:not(.mm-menu) {
+	display: none;
+}
+
+.pure-sidebar {
+	position: sticky;
+	top: var(--app-topbar-height, 60px);
+	height: calc(100dvh - var(--app-topbar-height, 60px));
+	background: var(--ds-color-background-default, #fff);
+}
+
+.pure-sidebar a[aria-current="page"] {
+	outline: 2px solid var(--ds-color-accent-text-default, #20568f);
+	outline-offset: -2px;
+}

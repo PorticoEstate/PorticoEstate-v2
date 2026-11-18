@@ -18,6 +18,7 @@ function parse_navbar($force = False)
 	$userSettings = Settings::getInstance()->get('user');
 	$phpgwapi_common = new phpgwapi_common();
 	$translation = Translation::getInstance();
+	$pure_menu = basename(PHPGW_TEMPLATE_DIR) === 'pure';
 
 
 	$nonavbar = false;
@@ -142,12 +143,13 @@ HTML;
 		}
 	}
 
+	$lang_bookmarks = lang('bookmarks');
+	$user_preferences_url = '';
 	if (!$nonavbar)
 	{
 
 		$bookmarks = Cache::user_get('phpgwapi', "bookmark_menu", $userSettings['id']);
 		//			_debug_array($bookmarks);
-		$lang_bookmarks = lang('bookmarks');
 
 		$_treemenu = '';
 
@@ -383,14 +385,14 @@ HTML;
 	}
 	// Language selector — rendered as self-contained JS component via Twig shell
 	$twigService = \App\modules\phpgwapi\services\Twig::getInstance();
-	$language_option = $twigService->render('@components/language-selector/language-selector.twig', [
+	$language_option = $twigService->render('@digdir/components/language-selector/language-selector.twig', [
 		'api_prefix' => rtrim($serverSettings['webserver_url'] ?? '', '/')
 	]);
 	$name_parts = preg_split('/\s+/', trim($user_fullname));
 	$user_initials = count($name_parts) > 1
 		? mb_strtoupper(mb_substr($name_parts[0], 0, 1) . mb_substr(end($name_parts), 0, 1))
 		: mb_strtoupper(mb_substr($name_parts[0], 0, 1));
-	$user_menu = $twigService->render('@components/user-menu/user-menu.twig', [
+	$user_menu = $twigService->render('@digdir/components/user-menu/user-menu.twig', [
 		'fullname' => $user_fullname,
 		'initials' => $user_initials,
 		'preferences_url' => $user_preferences_url,
@@ -429,8 +431,14 @@ HTML;
 	{
 		$navbar_state = execMethod('phpgwapi.template_portico.retrieve_local', 'menu_state');
 		$var['menu_state'] = !empty($navbar_state['menu_state']) ? 'sb-sidenav-toggled' : '';
-
-		if (true) //$userSettings['preferences']['common']['sidecontent'] == 'ajax_menu')
+		$toggle = '<button type="button" class="app-topbar__toggle" id="sidebarToggle" aria-controls="layoutSidenav_nav" aria-label="Toggle sidebar"><i class="fas fa-bars" aria-hidden="true"></i></button>';
+		if ($pure_menu)
+		{
+			$var['sidebar'] = '<div class="pure-sidebar">'
+				. render_pure_menu($navbar, $bookmarks ?: [], $flags['menu_selection'], $user_preferences_url)
+				. '</div>';
+		}
+		else
 		{
 			$lang_collapse_all	= lang('collapse all');
 			$var['sidebar'] = <<<HTML
@@ -465,25 +473,10 @@ HTML;
                 </nav>
 HTML;
 		}
-		else
-		{
-			$var['sidebar'] = <<<HTML
-				<nav id="sidebar" class="{$var['menu_state']}">
-					<div class="sidebar-header">
-						<h1>{$user_fullname}</h1>
-					</div>
-					<div class="sidebar-sticky">
-						{$treemenu}
-					</div>
-				</nav>
-HTML;
-		}
 
 		$var['top_panel'] = <<<HTML
 	        <header class="app-topbar">
-	            <button class="app-topbar__toggle" id="sidebarToggle" aria-label="Toggle sidebar">
-					<i class="fas fa-bars"></i>
-				</button>
+				{$toggle}
 				<a class="app-topbar__brand" href="#">{$serverSettings['site_title']}</a>
 				{$topmenu}
 			</header>
@@ -524,7 +517,7 @@ HTML;
 	// Use Twig to render the template
 	try {
 		$twig = \App\modules\phpgwapi\services\Twig::getInstance();
-		echo $twig->render('navbar.twig', $var);
+		echo $twig->render('@digdir/navbar.twig', $var);
 	} catch (\Twig\Error\Error $e) {
 		error_log("Failed to render navbar.twig: " . $e->getMessage());
 		echo "<div class='app-alert app-alert-danger'>Error loading navbar template. Please check logs.</div>";
@@ -558,6 +551,7 @@ HTML;
 document.addEventListener('DOMContentLoaded', function() {
     // Native modal implementation (replacing bootstrap.Modal)
     const commandPaletteElement = document.getElementById('commandPalette');
+    if (!commandPaletteElement) return;
     const commandPalette = {
         show: function() {
             commandPaletteElement.style.display = 'block';
@@ -609,7 +603,7 @@ document.addEventListener('DOMContentLoaded', function() {
         menuItems = [];
 
         // Get menu items from sidebar navigation with path context
-        const navItems = document.querySelectorAll('#navbar a.context-menu-nav');
+        const navItems = document.querySelectorAll('#navbar a.context-menu-nav, #menu a[id^="navbar::"]');
         navItems.forEach(item => {
             if (item.textContent.trim() && item.href) {
                 const path = getMenuPath(item);
@@ -1080,7 +1074,7 @@ function parse_footer_end()
 	// Use Twig to render the template
 	try {
 		$twig = \App\modules\phpgwapi\services\Twig::getInstance();
-		echo $twig->render('footer.twig', $var);
+		echo $twig->render('@digdir/footer.twig', $var);
 	} catch (\Twig\Error\Error $e) {
 		error_log("Failed to render footer.twig: " . $e->getMessage());
 		echo "<!-- Error loading footer template. Please check logs. -->";

@@ -11,8 +11,8 @@
 .msg
 {
 	background-color: #FFA500;
-	border: 1px solid #f00;
-	color: #f00;
+	border: 1px solid #c00;
+	color: #212529;
 	text-align: center;
 }
 
@@ -28,7 +28,7 @@
 {
 	background-color: #ff8;
 	border: 1px solid #fc0;
-	color: #fc0;
+	color: #664d00;
 }
 
 div.error, div.warn

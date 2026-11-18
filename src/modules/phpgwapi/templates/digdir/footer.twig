@@ -86,8 +86,35 @@ $("a").click(function (event) {
 	}, 1000);
 });
 
+const sidebarToggle = document.getElementById('sidebarToggle');
+const sidebarNav = document.getElementById('layoutSidenav_nav');
+const desktopSidebar = window.matchMedia('(min-width: 992px)');
+
+function isSidebarOpen() {
+	return document.body.classList.contains('sb-sidenav-toggled') !== desktopSidebar.matches;
+}
+
+function syncSidebarState() {
+	const open = isSidebarOpen();
+	sidebarToggle.setAttribute('aria-expanded', String(open));
+	sidebarNav.inert = !open;
+}
+
+if (sidebarToggle && sidebarNav) {
+	syncSidebarState();
+	desktopSidebar.addEventListener('change', syncSidebarState);
+
+	document.addEventListener('click', event => {
+		if (!desktopSidebar.matches && isSidebarOpen()
+			&& !sidebarToggle.contains(event.target) && !sidebarNav.contains(event.target)) {
+			sidebarToggle.click();
+		}
+	});
+}
+
 $('#sidebarToggle').on('click', function () {
 	document.body.classList.toggle('sb-sidenav-toggled');
+	syncSidebarState();
 
 	var oArgs = {
 		menuaction: 'phpgwapi.template_portico.store',

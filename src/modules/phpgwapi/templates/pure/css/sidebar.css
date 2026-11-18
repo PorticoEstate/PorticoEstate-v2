@@ -10,6 +10,7 @@
 }
 
 .pure-sidebar a[aria-current="page"] {
+	font-weight: bold;
 	outline: 2px solid var(--ds-color-accent-text-default, #20568f);
 	outline-offset: -2px;
 }

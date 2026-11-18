@@ -3869,7 +3869,7 @@ class booking_uiapplication extends booking_uicommon
 		}
 
 		$template_set = $this->userSettings['preferences']['common']['template_set'] ?? '';
-		if ($template_set === 'digdir')
+		if (in_array($template_set, ['digdir', 'pure']))
 		{
 			\phpgw::redirect_link('/booking/view/applications/' . $id);
 			return;

@@ -55,50 +55,9 @@
 
 <xsl:template match="toolbar"
 	xmlns:php="http://php.net/xsl">
-	<style id='toggle-box-css' type='text/css' scoped='scoped'>
-		.toggle-box {
-		display: none;
-		}
-
-		.toggle-box + label {
-		cursor: pointer;
-		display: block;
-		font-weight: bold;
-		line-height: 21px;
-		margin-bottom: 5px;
-		}
-
-		.toggle-box + label + #toolbar {
-		display: none;
-	/*	margin-bottom: 10px;*/
-		}
-
-		.toggle-box:checked + label + #toolbar {
-		display: block;
-		}
-
-		.toggle-box + label:before {
-		background-color: #4F5150;
-		-webkit-border-radius: 10px;
-		-moz-border-radius: 10px;
-		border-radius: 10px;
-		color: #FFFFFF;
-		content: "+";
-		display: block;
-		float: left;
-		font-weight: bold;
-		height: 20px;
-		line-height: 20px;
-		margin-right: 5px;
-		text-align: center;
-		width: 20px;
-		}
-
-		.toggle-box:checked + label:before {
-		content: "\2212";
-		}
-	</style>
 	<style>
+		.datatable-filter-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-block: 0.5rem; }
+		#toolbar.dtable_custom_controls[hidden] { display: none; }
 		#active_filters { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem; }
 		.app-filter-chip { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.2rem 0.35rem 0.2rem 0.6rem; border: 1px solid #adb5bd; border-radius: 999px; background: #f8f9fa; }
 		.app-filter-chip__remove { width: 1.35rem; height: 1.35rem; padding: 0; border: 0; border-radius: 50%; background: transparent; color: inherit; font-size: 1.1rem; line-height: 1; cursor: pointer; }
@@ -106,18 +65,19 @@
 		#datatable-container_wrapper div.dt-buttons { justify-content: flex-start; }
 	</style>
 	<div id="active_filters" aria-live="polite"></div>
-	<div id="reset_filter" style="display: none;">
-		<input id="reset_filter_btn" type="checkbox" onclick="reset_filter();"/>
-		<label for="reset_filter_btn">
+	<div class="datatable-filter-actions">
+		<xsl:if test="item">
+			<button class="pure-button pure-button-primary" type="button" aria-controls="toolbar" aria-expanded="false"
+				onclick="const toolbar = document.getElementById(this.getAttribute('aria-controls')); toolbar.hidden = !toolbar.hidden; this.setAttribute('aria-expanded', String(!toolbar.hidden));">
+				<xsl:value-of select="php:function('lang', 'filter')"/>
+			</button>
+		</xsl:if>
+		<button id="reset_filter" class="pure-button" type="button" onclick="reset_filter();" style="display: none;">
 			<xsl:value-of select="php:function('lang', 'reset filter')"/>
-		</label>
+		</button>
 	</div>
 	<xsl:if test="item">
-		<input class="toggle-box" id="header1" type="checkbox" />
-		<label for="header1">
-			<xsl:value-of select="php:function('lang', 'filter')"/>
-		</label>
-		<div id="toolbar" class='dtable_custom_controls'>
+		<div id="toolbar" class="dtable_custom_controls" hidden="hidden">
 			<form class="pure-form pure-form-stacked">
 				<fieldset>
 					<div class="pure-g">

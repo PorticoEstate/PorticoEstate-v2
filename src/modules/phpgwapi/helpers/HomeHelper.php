@@ -142,7 +142,7 @@ class HomeHelper
 			$icon_class = 'text-secondary';
 			$icon_wrap_class = 'p-3';
 		}
-		else if ($template_set == 'digdir')
+		else if (in_array($template_set, ['digdir', 'pure'], true))
 		{
 			$grid_envelope = 'app-bookmark-grid';
 			$grid_element = 'app-bookmark-column';

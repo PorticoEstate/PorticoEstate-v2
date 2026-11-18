@@ -1,6 +1,6 @@
 body {
 	background-color: #fff;
-	color: #666;
+	color: #333;
 }
 body *
 {
@@ -20,18 +20,18 @@ a, a:link, a:active, a:visited, a:hover
 
 /* Tabs container */
 .r-tabs {
-	background-color: #999999;
-	border-top: 1px solid #999999;
-	border-right: 1px solid #999999;
-	border-left: 1px solid #999999;
-	border-bottom: 4px solid #999999;
+	background-color: #6c757d;
+	border-top: 1px solid #6c757d;
+	border-right: 1px solid #6c757d;
+	border-left: 1px solid #6c757d;
+	border-bottom: 4px solid #6c757d;
 
 }
 
 /* Tab element */
 .r-tabs .r-tabs-nav .r-tabs-tab {
 
-	background-color: #999999;
+	background-color: #6c757d;
 }
 
 /* Tab anchor */
@@ -46,7 +46,7 @@ a, a:link, a:active, a:visited, a:hover
 
 /* Active state tab anchor */
 .r-tabs .r-tabs-nav .r-tabs-state-active .r-tabs-anchor {
-	color: #999999;
+	color: #333;
 	background-color: white;
 }
 
@@ -60,14 +60,14 @@ a, a:link, a:active, a:visited, a:hover
 /* Accordion anchor */
 .r-tabs .r-tabs-accordion-title .r-tabs-anchor {
 
-	background-color: #999999;
+	background-color: #6c757d;
 	color: #fff;
 }
 
 /* Active accordion anchor */
 .r-tabs .r-tabs-accordion-title.r-tabs-state-active .r-tabs-anchor {
 	background-color: #fff;
-	color: #999999;
+	color: #333;
 	text-shadow: none;
 }
 
@@ -76,14 +76,15 @@ a, a:link, a:active, a:visited, a:hover
 	opacity: 0.5;
 }
 
-/* Buttons */
-button {
+/* Buttons: white text only on filled primary buttons; default pure buttons keep dark text. */
+.pure-button-primary,
+.pure-button-selected {
 	color: #fff;
 }
 
 /* Info bar */
 .info {
-	color: #999999;
+	color: #555;
 	border: 2px solid #00ab94;
 	background-color: #fff;
 } 

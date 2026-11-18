@@ -113,3 +113,16 @@ div.dataTables_wrapper .dataTables_filter
 	float: right;
 	text-align: right;
 }
+
+.dtable_custom_controls label:has(~ select.select2-hidden-accessible)
+{
+	display: block;
+}
+
+.dtable_custom_controls .select2-container
+{
+	display: block;
+	/* Select2 sets a fixed inline width when initialized. */
+	width: 100% !important;
+	max-width: 100%;
+}

@@ -33,19 +33,24 @@ function parse_navbar($force = False)
 	{
 		case 'portico':
 			$selecte_portico = ' selected = "selected"';
-			$selecte_pure = '';
 			break;
 		case 'bootstrap':
-			$selecte_portico = '';
 			$selecte_bootstrap = ' selected = "selected"';
 			break;
+		case 'pure':
+			$selecte_pure = ' selected = "selected"';
+			break;
 	}
+	$selecte_portico = $selecte_portico ?? '';
+	$selecte_bootstrap = $selecte_bootstrap ?? '';
+	$selecte_pure = $selecte_pure ?? '';
 
 	$template_selector = <<<HTML
 
 	   <select id = "template_selector">
 		<option value="bootstrap"{$selecte_bootstrap}>Bootstrap</option>
 		<option value="portico"{$selecte_portico}>Portico</option>
+		<option value="pure"{$selecte_pure}>Pure</option>
 	   </select>
 	HTML;
 

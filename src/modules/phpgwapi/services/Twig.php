@@ -191,6 +191,7 @@ class Twig
         // Register template-set paths before generic base fallbacks.
         $this->loader->addPath(PHPGW_SERVER_ROOT . '/phpgwapi/templates/' . $templateSet);
         $this->loader->addPath(PHPGW_SERVER_ROOT . '/phpgwapi/templates/base');
+        $this->loader->addPath(PHPGW_SERVER_ROOT . '/phpgwapi/templates/digdir', 'digdir');
 
         // Template-set components may override shared components from base.
         $componentPath = PHPGW_SERVER_ROOT . '/phpgwapi/templates/' . $templateSet . '/components';

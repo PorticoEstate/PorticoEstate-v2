@@ -1,6 +1,6 @@
 body {
 	background-color: #fff;
-	color: #666;
+	color: #333;
 }
 body *
 {
@@ -14,7 +14,8 @@ a, a:link, a:active, a:visited, a:hover
 .header,
 .footer
 {
-	background: #777;
+	/* WCAG AA: #777 only gives 4.0:1 against white text. */
+	background: #5f6a72;
 	color: #fff;
 }
 

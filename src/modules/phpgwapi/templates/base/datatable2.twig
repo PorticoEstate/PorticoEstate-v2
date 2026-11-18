@@ -93,6 +93,13 @@
 {% include 'jquery_phpgw_i18n.twig' %}
 
 <style>
+	.datatable-filter-actions {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+		margin-block: 0.5rem;
+	}
+
 	#active_filters {
 		display: flex;
 		flex-wrap: wrap;
@@ -138,11 +145,12 @@
 		<div class="row ms-1">
 			<div id="active_filters" aria-live="polite"></div>
 		</div>
-		<div class="mt-2 mb-2 ms-1">
-			<button class="app-button app-button--secondary" type="button" onclick="document.getElementById('democollapseBtn').classList.toggle('app-collapse--show');" aria-expanded="false" aria-controls="democollapseBtn">
+		<div class="datatable-filter-actions ms-1">
+			<button class="pure-button pure-button-primary" type="button" aria-expanded="false" aria-controls="democollapseBtn"
+				onclick="const panel = document.getElementById(this.getAttribute('aria-controls')); this.setAttribute('aria-expanded', String(panel.classList.toggle('app-collapse--show')));">
 				{{ lang('filter') }}
 			</button>
-			<button id="reset_filter" class="ms-2 app-button app-button--tertiary" type="button" onclick="reset_filter();" style="display: none;">
+			<button id="reset_filter" class="pure-button" type="button" onclick="reset_filter();" style="display: none;">
 				{{ lang('reset filter') }}
 			</button>
 		</div>

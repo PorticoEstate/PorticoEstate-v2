@@ -89,6 +89,17 @@
 			$this->geolocation = $geolocation;
 		}
 
+		public function set_geolocation_from_entity( array $entity )
+		{
+			foreach ($entity['attributes'] ?? array() as $attribute)
+			{
+				if (($attribute['column_name'] ?? '') == 'geolocation')
+				{
+					$this->set_geolocation($attribute['value']);
+				}
+			}
+		}
+
 		public function get_geolocation()
 		{
 			return $this->geolocation;

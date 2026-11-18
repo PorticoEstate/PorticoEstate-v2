@@ -1,12 +1,12 @@
-/*! KeyTable 3.0.0 for DataTables
+/*! KeyTable 3.1.2 for DataTables
  * Copyright (c) SpryMedia Ltd - datatables.net/license
  */
 
 import DataTable, { util, Dom } from 'datatables.net';
 
 // Sanity check
-if (!DataTable || !DataTable.versionCheck('3')) {
-    throw 'Warning: KeyTable requires DataTables 3 or newer';
+if (!DataTable || !DataTable.versionCheck('3.1')) {
+    throw 'Warning: KeyTable requires DataTables 3.1 or newer';
 }
 var namespaceCounter = 0;
 var editorNamespaceCounter = 0;
@@ -1050,7 +1050,7 @@ KeyTable.defaults = {
      */
     tabIndex: null
 };
-KeyTable.version = '3.0.0';
+KeyTable.version = '3.1.2';
 
 
 DataTable.KeyTable = KeyTable;
@@ -1114,7 +1114,7 @@ DataTable.ext.selector.cell.push(function (settings, opts, cells) {
 });
 // Attach a listener to the document which listens for DataTables initialisation
 // events so we can automatically initialise
-Dom.s(document).on('preInit.dt.dtk', function (e, settings, json) {
+Dom.on('preInit.dt.dtk', function (e, settings, json) {
     if (e.namespace !== 'dt') {
         return;
     }

@@ -48,8 +48,8 @@ COPY --from=builder /app/package.json ./
 # service that accepts connections but cannot read anything is reported unhealthy too.
 # Shell form, so WS_PORT is read from the container's environment at run time, like main.js does.
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
-    CMD wget -q -T 4 -O /dev/null "http://localhost:${WS_PORT:-8080}/socket.io/?EIO=4&transport=polling" \
-     && wget -q -T 4 -O /dev/null "http://localhost:${WS_PORT:-8080}/health" || exit 1
+    CMD wget -Y off -q -T 4 -O /dev/null "http://localhost:${WS_PORT:-8080}/socket.io/?EIO=4&transport=polling" \
+     && wget -Y off -q -T 4 -O /dev/null "http://localhost:${WS_PORT:-8080}/health" || exit 1
 
 # supervisor.js runs the service (main.js) and restarts it when it stops answering that handshake.
 # It does not probe /health: a restart cannot bring back a database that is unreachable, and the

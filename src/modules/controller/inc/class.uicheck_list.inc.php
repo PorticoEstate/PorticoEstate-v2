@@ -31,6 +31,7 @@
 
 use App\modules\phpgwapi\services\Settings;
 use App\modules\phpgwapi\services\Cache;
+use App\modules\phpgwapi\services\MailerSmtp;
 use App\modules\phpgwapi\controllers\Accounts\Accounts;
 
 
@@ -338,10 +339,10 @@ class controller_uicheck_list extends phpgwapi_uicommon_jquery
 			}
 			else
 			{
-				$component_arr = execMethod('property.soentity.read_single_eav', array(
-					'location_id' => $location_id,
-					'id' => $component_id
-				));
+				$component_arr = createObject('property.soentity')->read_single_eav(
+					array('location_id' => $location_id, 'id' => $component_id),
+					array('attributes' => array(array('column_name' => 'geolocation')))
+				);
 
 				$location_code = $component_arr['location_code'];
 				$check_list->set_location_code($location_code);
@@ -361,7 +362,7 @@ class controller_uicheck_list extends phpgwapi_uicommon_jquery
 			$component->set_location_id($location_id);
 			$component->set_location_code($location_code);
 			$component->set_xml_short_desc($short_desc);
-
+			$component->set_geolocation_from_entity($component_arr ?? array());
 			$component_array = $component->toArray();
 			$building_location_code = $this->location_finder->get_building_location_code($location_code);
 
@@ -729,16 +730,7 @@ class controller_uicheck_list extends phpgwapi_uicommon_jquery
 			$component->set_location_id($location_id);
 			$component->set_location_code($component_arr['location_code']);
 			$component->set_xml_short_desc($short_desc);
-			if (!empty($component_arr['attributes']))
-			{
-				foreach ($component_arr['attributes'] as $attribute)
-				{
-					if ($attribute['column_name'] == 'geolocation')
-					{
-						$component->set_geolocation($attribute['value']);
-					}
-				}
-			}
+			$component->set_geolocation_from_entity($component_arr ?? array());
 			$component_array = $component->toArray();
 
 			$type = 'component';
@@ -1799,10 +1791,10 @@ class controller_uicheck_list extends phpgwapi_uicommon_jquery
 			}
 			else
 			{
-				$component_arr = execMethod('property.soentity.read_single_eav', array(
-					'location_id' => $location_id,
-					'id' => $component_id
-				));
+				$component_arr = createObject('property.soentity')->read_single_eav(
+					array('location_id' => $location_id, 'id' => $component_id),
+					array('attributes' => array(array('column_name' => 'geolocation')))
+				);
 
 				$location_name = execMethod('property.bolocation.get_location_name', $component_arr['location_code']);
 
@@ -1818,6 +1810,7 @@ class controller_uicheck_list extends phpgwapi_uicommon_jquery
 			$component->set_location_id($location_id);
 			$component->set_location_code($component_arr['location_code']);
 			$component->set_xml_short_desc($short_desc);
+			$component->set_geolocation_from_entity($component_arr ?? array());
 			$component_array = $component->toArray();
 
 			$type = 'component';
@@ -2768,7 +2761,7 @@ HTML;
 		);
 
 		//test
-		$mail = createObject('phpgwapi.mailer_smtp');
+		$mail = new MailerSmtp();
 		$mail->Subject = $subject;
 		$mail->Body = <<<HTML
 			<html>
@@ -4373,10 +4366,10 @@ HTML;
 			}
 			else
 			{
-				$component_arr = execMethod('property.soentity.read_single_eav', array(
-					'location_id' => $location_id,
-					'id' => $component_id
-				));
+				$component_arr = createObject('property.soentity')->read_single_eav(
+					array('location_id' => $location_id, 'id' => $component_id),
+					array('attributes' => array(array('column_name' => 'geolocation')))
+				);
 				$location_name = execMethod('property.bolocation.get_location_name', $component_arr['location_code']);
 				$short_desc = $location_name . '::' . execMethod('property.soentity.get_short_description', array(
 					'location_id' => $location_id,
@@ -4389,6 +4382,7 @@ HTML;
 			$component->set_location_id($location_id);
 			$component->set_location_code($component_arr['location_code']);
 			$component->set_xml_short_desc($short_desc);
+			$component->set_geolocation_from_entity($component_arr ?? array());
 			$component_array = $component->toArray();
 
 			$type = 'component';

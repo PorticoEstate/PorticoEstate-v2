@@ -31,30 +31,21 @@
 
 			<!-- ==================  CHECKLIST TAB MENU  ===================== -->
 
-			<!-- differ from bootstrap-->
-			<div class="pure-menu pure-menu-horizontal pure-menu-scrollable">
-
-				<!-- LOGO -->
-				<a class="navbar-brand" href="#" data-bs-toggle="collapse" data-bs-target="#collapsibleNavbar">
+			<details class="pure-menu checklist-nav" id="collapsibleNavbar" open="open">
+				<summary class="pure-menu-heading">
+					<i class="fa fa-bars" aria-hidden="true"></i>
 					<xsl:value-of select="php:function('lang', 'create_case_message')"/>
-				</a>
-<!--
-				<button class="navbar-toggler collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapsibleNavbar" aria-expanded="false">
-					<span class="navbar-toggler-icon"></span>
-				</button>
--->
-				<div class="navbar-collapse collapse" id="collapsibleNavbar" style="">
-
-					<ul class="navbar-nav">
+				</summary>
+					<ul class="pure-menu-list">
 						<xsl:call-template name="check_list_menu" >
 							<xsl:with-param name="active_tab">create_case_message</xsl:with-param>
 						</xsl:call-template>
 
 						<xsl:choose>
 							<xsl:when test="type = 'component'">
-								<li class="nav-item">
+								<li class="pure-menu-item">
 
-									<a class="nav-link">
+									<a class="pure-menu-link">
 										<xsl:attribute name="href">
 											<xsl:value-of select="php:function('get_phpgw_link', '/index.php', 'menuaction:controller.uicomponent.index' )" />
 											<xsl:text>&amp;year=</xsl:text>
@@ -75,8 +66,8 @@
 								</li>
 							</xsl:when>
 							<xsl:otherwise>
-								<li class="nav-item">
-									<a class="nav-link">
+								<li class="pure-menu-item">
+									<a class="pure-menu-link">
 										<xsl:attribute name="href">
 											<xsl:value-of select="php:function('get_phpgw_link', '/index.php', 'menuaction:controller.uicalendar.view_calendar_for_year' )" />
 											<xsl:text>&amp;year=</xsl:text>
@@ -89,9 +80,9 @@
 										Kontrollplan for bygg/eiendom (år)
 									</a>
 								</li>
-								<li class="nav-item">
+								<li class="pure-menu-item">
 
-									<a class="nav-link">
+									<a class="pure-menu-link">
 										<xsl:attribute name="href">
 											<xsl:value-of select="php:function('get_phpgw_link', '/index.php', 'menuaction:controller.uicalendar.view_calendar_for_month' )" />
 											<xsl:text>&amp;year=</xsl:text>
@@ -109,8 +100,16 @@
 							</xsl:otherwise>
 						</xsl:choose>
 					</ul>
-				</div>
-			</div>
+			</details>
+			<script>
+				(function (nav) {
+					if (nav) {
+						if (window.matchMedia('(max-width: 47.99em)').matches) {
+							nav.open = false;
+						}
+					}
+				})(document.getElementById('collapsibleNavbar'));
+			</script>
 
 		<!-- =======================  INFO ABOUT MESSAGE  ========================= -->
 		<h3 class="box_header ext">Registrer melding</h3>
@@ -313,7 +312,7 @@
 							<xsl:variable name="lang_save">
 								<xsl:value-of select="php:function('lang', 'save')" />
 							</xsl:variable>
-							<input class="btn btn-primary btn-lg me-3" type="submit" name="save_control" value="Send melding" title="{$lang_save}" />
+							<input class="pure-button btn-primary btn-lg me-3" type="submit" name="save_control" value="Send melding" title="{$lang_save}" />
 						</div>
 					</form>
 				</xsl:when>

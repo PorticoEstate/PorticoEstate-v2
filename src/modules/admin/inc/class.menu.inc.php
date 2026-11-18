@@ -102,6 +102,18 @@ class admin_menu
 					)
 				)
 			);
+			//scim configuration
+			$menus['admin']['scim_config'] = array(
+				'text'	=> $translation->translate('scim configuration', array(), true),
+				'nav_location' => 'navbar#' . $locations->get_id('admin', 'scim_config'),
+				'url'	=> phpgw::link(
+					'/index.php',
+					array(
+						'menuaction' => 'admin.uiconfig2.index',
+						'location_id' => $locations->get_id('admin', 'scim_config')
+					)
+				)
+			);
 			$menus['admin']['file_config'] = array(
 				'text'	=> $translation->translate('file configuration', array(), true),
 				'nav_location' => 'navbar#' . $locations->get_id('admin', 'vfs_filedata'),

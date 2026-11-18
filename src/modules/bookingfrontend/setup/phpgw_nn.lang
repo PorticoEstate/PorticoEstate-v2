@@ -1,4 +1,29 @@
 %1 bookings were updated.	bookingfrontend	nn	%1 interntildelingar vart oppdatert.
+Info skjerm - ressursvelger	bookingfrontend	nn	Info skjerm - ressursveljar
+You can add resources from several buildings. Previous selections are kept when you search for another building.	bookingfrontend	nn	Du kan leggje til ressursar frå fleire bygg. Tidlegare val blir bevarte når du søkjer opp eit anna bygg.
+Selected resources	bookingfrontend	nn	Valde ressursar
+Remove selected resource	bookingfrontend	nn	Fjern vald ressurs
+Searching for buildings	bookingfrontend	nn	Søkjer etter bygg
+No buildings found	bookingfrontend	nn	Ingen bygg funne
+Select a building to see its resources	bookingfrontend	nn	Vel eit bygg for å sjå ressursane
+Loading resources	bookingfrontend	nn	Lastar ressursar
+No active resources found for this building	bookingfrontend	nn	Ingen aktive ressursar funne for dette bygget
+Could not load data. Please try again	bookingfrontend	nn	Klarte ikkje å laste inn data. Prøv igjen
+Link copied	bookingfrontend	nn	Lenkja er kopiert
+Could not copy the link	bookingfrontend	nn	Klarte ikkje å kopiere lenkja
+Choose a building and the resources to show on your information screen. Copy the generated link to save it as a shortcut.	bookingfrontend	nn	Vel eit bygg og ressursane som skal visast på informasjonsskjermen. Kopier lenkja for å lagre henne som ein snarveg.
+Search for a building	bookingfrontend	nn	Søk etter bygg
+Type at least two characters	bookingfrontend	nn	Skriv minst to teikn
+Filter resources	bookingfrontend	nn	Filtrer ressursar
+Search resources	bookingfrontend	nn	Søk i ressursar
+Link to the information screen	bookingfrontend	nn	Lenkje til informasjonsskjermen
+Open information screen	bookingfrontend	nn	Opne informasjonsskjermen
+Copy link	bookingfrontend	nn	Kopier lenkje
+Days to display	bookingfrontend	nn	Dagar som skal visast
+Whole week	bookingfrontend	nn	Heile veka
+Weekdays	bookingfrontend	nn	Ukedagar
+Weekend	bookingfrontend	nn	Helg
+JavaScript is required to configure the information screen	bookingfrontend	nn	JavaScript må vere aktivert for å konfigurere informasjonsskjermen
 %1 bookings will be updated.	bookingfrontend	nn	%1 interntildelingar vil bli oppdatert.
 -- select an activity --	bookingfrontend	nn	Vel ein aktivitet
 1 week	bookingfrontend	nn	1 veke

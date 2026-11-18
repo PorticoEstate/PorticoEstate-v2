@@ -46,3 +46,70 @@ div.error, div.warn
 {
 	color: black;
 }
+
+#home-hook-content,
+.home-table-scroll
+{
+	min-width: 0;
+	max-width: 100%;
+}
+
+#home-hook-content
+{
+	max-width: min(100%, calc(100vw - 2rem));
+}
+
+.home-table-scroll
+{
+	width: 100%;
+	overflow-x: auto;
+}
+
+.home-table-scroll:focus-visible
+{
+	outline: 2px solid currentColor;
+	outline-offset: 2px;
+}
+
+/* Wrap search below toolbar controls when they cannot share a row. */
+div.dt-container div.dt-layout-row:not(.dt-layout-table):has(.dt-search)
+{
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+}
+
+div.dt-container div.dt-layout-row:not(.dt-layout-table):has(.dt-search) > div.dt-layout-cell
+{
+	flex-shrink: 0;
+	max-width: 100%;
+}
+
+div.dt-container div.dt-layout-row:not(.dt-layout-table):has(.dt-search) > div.dt-layout-cell.dt-layout-end
+{
+	margin-left: auto;
+}
+
+/* Keep DataTables search controls right-aligned, including stacked mobile layouts. */
+div.dt-container .dt-search
+{
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: flex-end;
+	margin-left: auto;
+	max-width: 100%;
+	text-align: right;
+}
+
+div.dt-container .dt-search input
+{
+	box-sizing: border-box;
+	max-width: 100%;
+}
+
+div.dataTables_wrapper .dataTables_filter
+{
+	float: right;
+	text-align: right;
+}

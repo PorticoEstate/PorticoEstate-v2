@@ -1106,27 +1106,7 @@ HTML;
 								  $el.append($("<option></option>").attr("value", value.id).text(value.name));
 							}
 						});
-						$("#user_id").multiselect("destroy");
-						$("#user_id").multiselect({
-							buttonWidth: 250,
-							includeSelectAllOption: true,
-							enableFiltering: true,
-							enableCaseInsensitiveFiltering: true,
-							onChange: function ($option)
-							{
-								// Check if the filter was used.
-								var query = $("#user_id").find("li.multiselect-filter input").val();
-								if (query)
-								{
-									$("#user_id").find("li.multiselect-filter input").val("").trigger("keydown");
-								}
-							}
-						});
-
-						$(".btn-group").addClass(\'w-100\');
-						$(".multiselect").addClass(\'form-control\');
-						$(".multiselect").removeClass(\'btn\');
-						$(".multiselect").removeClass(\'btn-default\');
+						$("#user_id").porticoMultiselect("refresh");
 
 					}, data, "GET", "json"
 				);
@@ -1252,7 +1232,7 @@ HTML;
 		phpgwapi_jquery::load_widget('numberformat');
 		self::add_javascript('helpdesk', 'base', 'tts.index.js');
 
-		phpgwapi_jquery::load_widget('bootstrap-multiselect');
+		phpgwapi_jquery::load_widget('select2');
 
 		$start_date = urldecode($this->start_date);
 		$end_date = urldecode($this->end_date);

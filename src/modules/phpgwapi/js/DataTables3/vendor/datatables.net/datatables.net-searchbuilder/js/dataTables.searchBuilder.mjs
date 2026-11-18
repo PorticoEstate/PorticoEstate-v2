@@ -1,4 +1,4 @@
-/*! SearchBuilder 2.0.0 for DataTables
+/*! SearchBuilder 2.1.1 for DataTables
  * Copyright (c) SpryMedia Ltd - datatables.net/license
  */
 
@@ -704,18 +704,55 @@ class Criteria {
                 conditionObj = this.c.conditions[this.s.type];
             }
             else if (this.s.type && this.s.type === 'datetime') {
-                // If no format was specified in the DT type, then we need to use
-                // Moment / Luxon's default locale formatting.
-                let moment = DataTable.use('moment');
-                let luxon = DataTable.use('luxon');
-                if (moment) {
+                conditionObj = this.c.conditions.date;
+                // If no format was specified in the DT type, a Javascript
+                // native toLocaleDateString was used. Need to work out what
+                // that format is in Moment or Luxon. We need to pass a known
+                // value though the renderer and work out the format
+                //
+                // This is the same method as ColumnControl uses. A shared
+                // method might be appropriate in future.
+                let renderer = colInits[column].render;
+                let resultPm = renderer('1999-08-07T23:05:04Z', 'display');
+                let resultAm = renderer('1999-08-07T03:05:04Z', 'display');
+                let leadingZero = resultAm.includes('03');
+                // What formatter are we using?
+                if (DataTable.use('moment')) {
                     conditionObj = this.c.conditions.moment;
-                    this.s.dateFormat =
-                        moment().creationData().locale._longDateFormat.L;
+                    this.s.dateFormat = resultPm
+                        .replace('23', leadingZero ? 'HH' : 'H')
+                        .replace('11', leadingZero ? 'hh' : 'h')
+                        .replace('05', 'mm')
+                        .replace('04', 'ss')
+                        .replace('PM', 'A')
+                        .replace('pm', 'a')
+                        .replace('07', 'DD')
+                        .replace('7', 'D')
+                        .replace('08', 'MM')
+                        .replace('8', 'M')
+                        .replace('1999', 'YYYY')
+                        .replace('99', 'YY');
                 }
-                if (luxon) {
+                else if (DataTable.use('luxon')) {
                     conditionObj = this.c.conditions.luxon;
-                    this.s.dateFormat = luxon.DateTime.DATE_SHORT;
+                    this.s.dateFormat = resultPm
+                        .replace('23', leadingZero ? 'HH' : 'H')
+                        .replace('11', leadingZero ? 'hh' : 'h')
+                        .replace('05', 'mm')
+                        .replace('04', 'ss')
+                        .replace('PM', 'a')
+                        .replace('07', 'dd')
+                        .replace('7', 'd')
+                        .replace('08', 'MM')
+                        .replace('8', 'M')
+                        .replace('1999', 'yyyy')
+                        .replace('99', 'yy');
+                }
+                else if (resultPm.includes('23') && resultPm.includes('1999')) {
+                    this.s.dateFormat = 'YYYY-MM-DD hh:mm:ss';
+                }
+                else if (resultPm.includes('23')) {
+                    this.s.dateFormat = 'hh:mm:ss';
                 }
             }
             else if (this.s.type && this.s.type.includes('datetime-')) {
@@ -955,32 +992,14 @@ class Criteria {
         }
     }
     /**
-     * Provides throttling capabilities to SearchBuilder without having to use dt's _fnThrottle function
-     * This is because that function is not quite suitable for our needs as it runs initially rather than waiting
+     * Provides debounce capabilities to SearchBuilder. Makes use of DataTables'
+     * utility methods.
      *
      * @param args arguments supplied to the throttle function
      * @returns Function that is to be run that implements the throttling
      */
     _throttle(fn, frequency = 200) {
-        let last = null;
-        let timer = null;
-        let that = this;
-        if (frequency === null) {
-            frequency = 200;
-        }
-        return function (...args) {
-            let now = +new Date();
-            if (last !== null && now < last + frequency) {
-                clearTimeout(timer);
-            }
-            else {
-                last = now;
-            }
-            timer = setTimeout(function () {
-                last = null;
-                fn.apply(that, args);
-            }, frequency);
-        };
+        return DataTable.util.debounce(fn, frequency);
     }
 }
 Criteria.classes = {
@@ -3171,8 +3190,8 @@ Group.defaults = {
 };
 
 // Check that the required version of DataTables is included
-if (!DataTable || !DataTable.versionCheck || !DataTable.versionCheck('3')) {
-    throw new Error('SearchBuilder requires DataTables 3 or newer');
+if (!DataTable || !DataTable.versionCheck || !DataTable.versionCheck('3.1')) {
+    throw new Error('SearchBuilder requires DataTables 3.1 or newer');
 }
 /**
  * SearchBuilder class for DataTables.
@@ -3585,7 +3604,7 @@ class SearchBuilder {
         });
     }
 }
-SearchBuilder.version = '2.0.0';
+SearchBuilder.version = '2.1.1';
 SearchBuilder.classes = {
     button: 'dtsb-button',
     clearAll: 'dtsb-clearAll',
@@ -3767,7 +3786,7 @@ function _init(settings, options) {
 }
 // Attach a listener to the document which listens for DataTables initialisation
 // events so we can automatically initialise
-Dom.s(document).on('preInit.dt.dtsp', function (e, settings) {
+Dom.on('preInit.dt.dtsp', function (e, settings) {
     if (e.namespace !== 'dt') {
         return;
     }

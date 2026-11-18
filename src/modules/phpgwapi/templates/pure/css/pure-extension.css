@@ -30,6 +30,43 @@ https://github.com/yui/pure/blob/master/LICENSE.md
 .custom-container {
 	display:inline-block;
 	vertical-align: top;
+	max-width: 100%;
+}
+
+.pure-form-aligned .pure-custom {
+	max-width: 100%;
+	/* Plain tables and other wide content scroll sideways inside the
+	   container instead of widening the page. Popup widgets (select2,
+	   datepicker) attach to <body>, so they are not clipped. */
+	overflow-x: auto;
+	-webkit-overflow-scrolling: touch;
+}
+
+/* Embeds such as #googlemapiframe carry a fixed width="500" attribute. */
+.pure-control-group iframe {
+	max-width: 100%;
+}
+
+/* Popup windows render #content as the only child of <body>; give it side gutters. */
+body > .content {
+	padding: 0 1rem;
+}
+
+/* Embeds such as #googlemapiframe carry a fixed width="500" attribute. */
+.pure-control-group iframe {
+	max-width: 100%;
+}
+
+/* Popup windows render #content as the only child of <body>; give it side gutters. */
+body > .content {
+	padding: 0 1rem;
+}
+
+/* Wrapped around inline .pure-table elements by phpgwapi/js/core/base.js. */
+.pure-table-scroll {
+	max-width: 100%;
+	overflow-x: auto;
+	-webkit-overflow-scrolling: touch;
 }
 
 .custom-label {
@@ -38,6 +75,10 @@ https://github.com/yui/pure/blob/master/LICENSE.md
 
 .pure-control-group > label {
 	font-weight: bold;
+}
+
+:where(html.template-bootstrap, html.template-digdir) .pure-form label {
+	font-size: inherit;
 }
 
 .p0{padding-left: 0px !important;padding-top: 0px !important;padding-bottom: 0px !important;}
@@ -229,4 +270,27 @@ ul#audience {list-style: none;padding-left: 10px;}
         /* Increased bottom padding to make it group with its related input element. */
         padding: 0.2em 0 0.8em;
     }
+
+    .r-tabs .r-tabs-panel {
+        padding: 0.5em;
+    }
+
+    .pure-form-aligned .pure-control-group {
+        overflow-wrap: anywhere;
+    }
+
+    /* Tables handle overflow via their own horizontal scrolling
+       (.pure-table-scroll / DataTables' .dt-scroll-body); mid-word
+       wrapping would shrink them to fit and disable that scroll. */
+    .pure-form-aligned .pure-control-group table {
+        overflow-wrap: normal;
+    }
+}
+
+/* WCAG AA: Pure's default primary blue (#0078e7) gives only 4.34:1 against white text. */
+.pure-button-primary,
+.pure-button-selected,
+a.pure-button-primary,
+a.pure-button-selected {
+    background-color: #0062c4;
 }

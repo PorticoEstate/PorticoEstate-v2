@@ -14,7 +14,7 @@ formatLinkproject = function (key, oData)
 
 this.local_DrawCallback4 = function (container)
 {
-	var api = $("#" + container).dataTable().api();
+	var api = new DataTable("#" + container);
 	// Remove the formatting to get integer data for summation
 	var intVal = function (i)
 	{
@@ -42,7 +42,7 @@ this.local_DrawCallback4 = function (container)
 };
 this.local_DrawCallback5 = function (container)
 {
-	var api = $("#" + container).dataTable().api();
+	var api = new DataTable("#" + container);
 	// Remove the formatting to get integer data for summation
 	var intVal = function (i)
 	{
@@ -681,65 +681,5 @@ $(function ()
 	});
 
 	on_location_updated(location_code);
-
-	var test = document.getElementById('send_order_button');
-	if (test == null)
-	{
-		return;
-	}
-	//var width = 200;
-	var width = $("#submitbox").width();
-	$("#submitbox").css({
-		position: 'absolute',
-		right: '10px',
-		border: '1px solid #B5076D',
-		padding: '0 10px 10px 10px',
-//		width: width + 'px',
-		"background - color": '#FFF',
-		display: "block"
-	});
-
-	var offset = $("#submitbox").offset();
-	var topPadding = 180;
-
-	if ($("#center_content").length === 1)
-	{
-		$("#center_content").on('scroll', function ()
-		{
-			if ($("#center_content").scrollTop() > offset.top)
-			{
-				$("#submitbox").stop().animate({
-					marginTop: $("#center_content").scrollTop() - offset.top + topPadding
-				}, 100);
-			}
-			else
-			{
-				$("#submitbox").stop().animate({
-					marginTop: 0
-				}, 100);
-			}
-			;
-		});
-	}
-	else
-	{
-		$(window).on('scroll', function ()
-		{
-			if ($(window).scrollTop() > offset.top)
-			{
-				$("#submitbox").stop().animate({
-					marginTop: $(window).scrollTop() - offset.top + topPadding
-				}, 100);
-			}
-			else
-			{
-				$("#submitbox").stop().animate({
-					marginTop: 0
-				}, 100);
-			}
-			;
-		});
-	}
-
 
 });

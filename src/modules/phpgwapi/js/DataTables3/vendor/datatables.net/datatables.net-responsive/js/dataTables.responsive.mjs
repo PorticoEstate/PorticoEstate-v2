@@ -1,4 +1,4 @@
-/*! Responsive 4.0.2 for DataTables
+/*! Responsive 4.1.1 for DataTables
  * Copyright (c) SpryMedia Ltd - datatables.net/license
  */
 
@@ -194,8 +194,8 @@ function tableAll(options = {}) {
 }
 
 // Sanity check
-if (!DataTable || !DataTable.versionCheck || !DataTable.versionCheck('3')) {
-    throw 'DataTables Responsive requires DataTables 3 or newer';
+if (!DataTable || !DataTable.versionCheck || !DataTable.versionCheck('3.1')) {
+    throw 'DataTables Responsive requires DataTables 3.1 or newer';
 }
 class Responsive {
     /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
@@ -856,12 +856,10 @@ class Responsive {
         var columnApis = [];
         let settings = dt.settings()[0];
         return this.s.columns
-            .filter(function (col) {
-            // Never and control columns should not be passed to the
-            // renderer
-            return col.never || col.control ? false : true;
-        })
             .map(function (col, i) {
+            if (col.never || col.control) {
+                return false;
+            }
             var dtCol = settings.columns[i];
             if (!columnApis[i]) {
                 columnApis[i] = dt.column(i);
@@ -874,7 +872,8 @@ class Responsive {
                 rowIndex: rowIdx,
                 title: columnApis[i].title()
             };
-        });
+        })
+            .filter(c => !!c);
     }
     /**
      * Find a breakpoint object from a name
@@ -1323,7 +1322,7 @@ Responsive.renderer = {
     listHiddenNodes: listHiddenNodes,
     tableAll: tableAll
 };
-Responsive.version = '4.0.2';
+Responsive.version = '4.1.1';
 
 
 Api.register('responsive()', function () {
@@ -1367,7 +1366,7 @@ Api.registerPlural('columns().responsiveHidden()', 'column().responsiveHidden()'
 DataTable.Responsive = Responsive;
 // Attach a listener to the document which listens for DataTables initialisation
 // events so we can automatically initialise
-Dom.s(document).on('preInit.dt.dtr', function (e, settings, json) {
+Dom.on('preInit.dt.dtr', function (e, settings, json) {
     if (e.namespace !== 'dt') {
         return;
     }

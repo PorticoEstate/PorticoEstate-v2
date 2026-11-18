@@ -146,4 +146,7 @@ redis host	admin	nn	Redis server
 redis database	admin	nn	Redis database
 opcache monitor	admin	nn	Opcache monitor
 Trusted proxies	admin	nn	Betrodde proxyer
+opcache monitor	admin	nn	Opcache monitor
+Trusted proxies	admin	nn	Betrodde proxyer
 comma separated list of IPs or CIDR	admin	nn	Komma-separert liste av IP-adresser eller CIDR
+scim configuration	common	nn	SCIM konfigurasjon

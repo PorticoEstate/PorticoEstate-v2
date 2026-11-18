@@ -49,34 +49,10 @@ $(function ()
 	});
 
 
-	$("#part_of_town_id").multiselect({
-		buttonClass: 'form-select',
-		templates: {
-		button: '<button type="button" class="multiselect dropdown-toggle" data-bs-toggle="dropdown"><span class="multiselect-selected-text"></span></button>',
-		},
-//	buttonWidth: 250,
-		includeSelectAllOption: true,
-		enableFiltering: true,
-		enableCaseInsensitiveFiltering: true,
-		onChange: function ($option)
-		{
-			// Check if the filter was used.
-			var query = $("#part_of_town_id").find('li.multiselect-filter input').val();
-
-			if (query)
-			{
-				$("#part_of_town_id").find('li.multiselect-filter input').val('').trigger('keydown');
-			}
-		},
-		onDropdownHidden: function (event)
-		{
-					 $("#form").trigger('submit');
-		}
+	$("#part_of_town_id").porticoMultiselect().on('select2:close', function ()
+	{
+		$("#form").trigger('submit');
 	});
-	$(".btn-group").addClass('w-100');
-//	$(".multiselect ").addClass('form-control');
-//	$(".multiselect").removeClass('btn');
-//	$(".multiselect").removeClass('btn-default');
 
 
 	start_inspection = function ()
@@ -97,3 +73,16 @@ $(function ()
 
 });
 
+
+// Template-independent filter panel toggle (no Bootstrap collapse plugin needed).
+$(function ()
+{
+	var $panel = $("#democollapseBtn");
+	var $toggle = $("#toggle_filter_panel");
+	$toggle.on('click', function ()
+	{
+		var expanded = $panel.prop('hidden');
+		$panel.prop('hidden', !expanded);
+		$toggle.attr('aria-expanded', String(expanded));
+	});
+});

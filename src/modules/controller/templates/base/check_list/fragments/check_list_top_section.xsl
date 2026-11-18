@@ -73,7 +73,7 @@
 					<h2>
 						<xsl:value-of select="component_array/xml_short_desc"/>
 					</h2>
-					<button id = "submit_parent_component" type="button" class="mb-3 btn btn-info btn-block" onclick="show_parent_component_information({component_array/location_id}, {component_array/id});">
+					<button id = "submit_parent_component" type="button" class="mb-3 pure-button btn-info btn-block" onclick="show_parent_component_information({component_array/location_id}, {component_array/id});">
 						<xsl:value-of select="php:function('lang', 'details')" />
 					</button>
 					<form ENCTYPE="multipart/form-data" method="post" id="frm_add_picture_parent">
@@ -83,15 +83,15 @@
 
 						<input type="hidden" name="component" value="{component_array/location_id}_{component_array/id}" />
 
-						<div id="new_picture_parent" class="container" style="display:none">
+						<div id="new_picture_parent"  style="display:none">
 
-							<div class="form-group">
+							<div class="pure-control-group">
 								<!--								<label>
 									<xsl:value-of select="php:function('lang', 'picture')" />
 								</label>-->
 								<div  id="equipment_parent_picture_container"/>
 							</div>
-							<div class="form-group">
+							<div class="pure-control-group">
 
 								<div class="input-group">
 									<div class="custom-file">
@@ -108,7 +108,7 @@
 						</div>
 
 					</form>
-					<button id = "update_geolocation" type="button" class="mt-2 mb-2 btn btn-info btn-block" onclick="update_geolocation({component_array/location_id}, {component_array/id});">
+					<button id = "update_geolocation" type="button" class="mt-2 mb-2 pure-button btn-info btn-block" onclick="update_geolocation({component_array/location_id}, {component_array/id});">
 						<xsl:value-of select="php:function('lang', 'update geolocation')" />
 					</button>
 					<div id="map" class="mb-2" style="width: 600px; height: 400px; display: none;"></div>
@@ -133,16 +133,11 @@
 			</xsl:choose>
 		</div>
 		<!-- ==================  CHECKLIST TAB MENU  ===================== -->
-		<!-- differ from bootstrap-->
-		<div class="pure-menu pure-menu-horizontal pure-menu-scrollable">
-			<!-- LOGO -->
-			<a class="navbar-brand" href="#" data-bs-toggle="collapse" data-bs-target="#collapsibleNavbar">
+		<details class="pure-menu checklist-nav" id="collapsibleNavbar" open="open">
+			<summary class="pure-menu-heading">
+				<i class="fa fa-bars" aria-hidden="true"></i>
 				<xsl:value-of select="php:function('lang', $active_tab)"/>
-			</a>
-			<!--			<button class="navbar-toggler collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapsibleNavbar" aria-expanded="false">
-				<span class="navbar-toggler-icon"></span>
-			</button>-->
-			<div class="pure-menu pure-menu-horizontal" id="collapsibleNavbar" style="">
+			</summary>
 				<ul class="pure-menu-list">
 					<xsl:choose>
 						<xsl:when test="count(check_list_type) = 0 or check_list_type != 'add_check_list'">
@@ -159,8 +154,16 @@
 						</xsl:otherwise>
 					</xsl:choose>
 				</ul>
-			</div>
-		</div>
+		</details>
+		<script>
+			(function (nav) {
+				if (nav) {
+					if (window.matchMedia('(max-width: 47.99em)').matches) {
+						nav.open = false;
+					}
+				}
+			})(document.getElementById('collapsibleNavbar'));
+		</script>
 	</div>
 	<xsl:choose>
 		<xsl:when test="buildings_on_property/child::node() and not(component_children/child::node())">
@@ -168,7 +171,7 @@
 				<xsl:call-template name="select_buildings_on_property" />
 				<xsl:if test="$active_tab != 'view_details'">
 					<div class="row mt-2">
-						<div class="container">
+						<div >
 							<h5 class="ms-5">Kontrollert lokasjon</h5>
 							<ul class="ms-2">
 								<xsl:for-each select="completed_list">
@@ -197,7 +200,7 @@
 				</xsl:call-template>
 				<xsl:if test="$active_tab != 'view_details'">
 					<div class="row mt-2">
-						<div class="container">
+						<div >
 							<h5 class="ms-5">Kontrollert utstyr</h5>
 							<ul class="ms-2">
 								<xsl:for-each select="completed_list">

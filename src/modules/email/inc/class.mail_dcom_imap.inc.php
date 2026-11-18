@@ -1,313 +1,344 @@
 <?php
-	/**
-	* EMail - Mail function abstraction for IMAP servers
-	*
-	* @author Itzchak Rehberg <izzy@phpgroupware.org>
-	* @author Joseph Engo <jengo@phpgroupware.org>
-	* @copyright Copyright (C) 2000-2001 Itzchak Rehberg
-	* @copyright Copyright (C) 2003-2005 Free Software Foundation, Inc. http://www.fsf.org/
-	* @license http://www.gnu.org/licenses/lgpl.html GNU Lesser General Public License
-	* @package email
-	* @version $Id$
-	*/
 
-	phpgw::import_class('email.mail_dcom_base');
+/**
+ * EMail - Mail function abstraction for IMAP servers
+ *
+ * @author Itzchak Rehberg <izzy@phpgroupware.org>
+ * @author Joseph Engo <jengo@phpgroupware.org>
+ * @copyright Copyright (C) 2000-2001 Itzchak Rehberg
+ * @copyright Copyright (C) 2003-2005 Free Software Foundation, Inc. http://www.fsf.org/
+ * @license http://www.gnu.org/licenses/lgpl.html GNU Lesser General Public License
+ * @package email
+ * @version $Id$
+ */
 
-	// Include modern IMAP configuration
-	require_once __DIR__ . '/imap_config.php';
+phpgw::import_class('email.mail_dcom_base');
 
-	defined('PE_IMAP_FT_UID') || define('PE_IMAP_FT_UID', 1);
-	defined('PE_IMAP_FT_PREFETCHTEXT') || define('PE_IMAP_FT_PREFETCHTEXT', 16);
-	defined('PE_IMAP_CP_UID') || define('PE_IMAP_CP_UID', 1);
-	defined('PE_IMAP_SE_UID') || define('PE_IMAP_SE_UID', 1);
-	defined('PE_IMAP_ST_UID') || define('PE_IMAP_ST_UID', 1);
+// Include modern IMAP configuration
+require_once __DIR__ . '/imap_config.php';
 
-	/**
-	* Mail function abstraction for IMAP servers
-	*
-	* @package email
-	*/	
-	class email_mail_dcom extends mail_dcom_base
+defined('PE_IMAP_FT_UID') || define('PE_IMAP_FT_UID', 1);
+defined('PE_IMAP_FT_PREFETCHTEXT') || define('PE_IMAP_FT_PREFETCHTEXT', 16);
+defined('PE_IMAP_CP_UID') || define('PE_IMAP_CP_UID', 1);
+defined('PE_IMAP_SE_UID') || define('PE_IMAP_SE_UID', 1);
+defined('PE_IMAP_ST_UID') || define('PE_IMAP_ST_UID', 1);
+
+/**
+ * Mail function abstraction for IMAP servers
+ *
+ * @package email
+ */
+class email_mail_dcom extends mail_dcom_base
+{
+	function append($stream, $folder, $message, $flags = 0)
 	{
-		function append($stream, $folder, $message, $flags=0)
+		$folder = $this->utf7_encode($folder);
+		return IMAPManager::imap_append($stream, $folder, $message, $flags);
+	}
+
+	function base64($text)
+	{
+		return IMAPManager::imap_base64($text);
+	}
+
+	function close($stream, $flags = 0)
+	{
+		return IMAPManager::imap_close($stream, $flags);
+	}
+
+	function createmailbox($stream, $mailbox)
+	{
+		$mailbox = $this->utf7_encode($mailbox);
+		$this->folder_list_did_change();
+		return IMAPManager::imap_createmailbox($stream, $mailbox);
+	}
+
+	function deletemailbox($stream, $mailbox)
+	{
+		$this->folder_list_did_change();
+		$mailbox = $this->utf7_encode($mailbox);
+		return IMAPManager::imap_deletemailbox($stream, $mailbox);
+	}
+
+	function renamemailbox($stream, $mailbox_old, $mailbox_new)
+	{
+		$this->folder_list_did_change();
+		$mailbox_old = $this->utf7_encode($mailbox_old);
+		$mailbox_new = $this->utf7_encode($mailbox_new);
+		return IMAPManager::imap_renamemailbox($stream, $mailbox_old, $mailbox_new);
+	}
+
+	function delete($stream, $msg_num, $flags = 0)
+	{
+		// do we force use of msg UID's 
+		if (($this->force_msg_uids == True)
+			&& (!($flags & PE_IMAP_FT_UID))
+		)
 		{
-			$folder = $this->utf7_encode($folder);
-			$return = IMAPManager::imap_append($stream, $folder, $message, $flags);
+			$flags |= PE_IMAP_FT_UID;
 		}
+		return IMAPManager::imap_delete($stream, $msg_num, $flags);
+	}
 
-		function base64($text)
+	function expunge($stream)
+	{
+		return IMAPManager::imap_expunge($stream);
+	}
+
+	function empty_trash($stream)
+	{
+		$val = IMAPManager::imap_delete($stream, '1:*');
+		IMAPManager::imap_expunge($stream);
+		return $val;
+	}
+
+	function fetchbody($stream, $msgnr, $partnr, $flags = 0)
+	{
+		// do we force use of msg UID's 
+		if (($this->force_msg_uids == True)
+			&& (!($flags & PE_IMAP_FT_UID))
+		)
 		{
-			return IMAPManager::imap_base64($text);
+			$flags |= PE_IMAP_FT_UID;
 		}
+		return IMAPManager::imap_fetchbody($stream, $msgnr, $partnr, $flags);
+	}
 
-		function close($stream,$flags=0)
+	function header($stream, $msg_nr, $fromlength = 0, $tolength = 0, $defaulthost = '')
+	{
+		$flags = 0;
+		// do we need to temporarily switch to regular msg num sequence for this function?
+		if ($this->force_msg_uids == True)
 		{
-			return IMAPManager::imap_close($stream,$flags);
-		}
-
-		function createmailbox($stream,$mailbox)
-		{
-			$mailbox = $this->utf7_encode($mailbox);
-			$this->folder_list_did_change();
-			return IMAPManager::imap_createmailbox($stream,$mailbox);
-		}
-
-		function deletemailbox($stream,$mailbox)
-		{
-			$this->folder_list_did_change();
-			$mailbox = $this->utf7_encode($mailbox);
-			return IMAPManager::imap_deletemailbox($stream,$mailbox);
-		} 
-
-		function renamemailbox($stream,$mailbox_old,$mailbox_new)
-		{
-			$this->folder_list_did_change();
-			$mailbox_old = $this->utf7_encode($mailbox_old);
-			$mailbox_new = $this->utf7_encode($mailbox_new);
-			return IMAPManager::imap_renamemailbox($stream,$mailbox_old,$mailbox_new);
-		}
-
-		function delete($stream,$msg_num,$flags=0)
-		{
-			// do we force use of msg UID's 
-			if ( ($this->force_msg_uids == True)
-			&& (!($flags & PE_IMAP_FT_UID)) )
+			if (is_string($stream))
 			{
 				$flags |= PE_IMAP_FT_UID;
 			}
-			return IMAPManager::imap_delete($stream,$msg_num,$flags);
-		}
-
-		function expunge($stream)
-		{
-			return IMAPManager::imap_expunge($stream);
-		}
-
-		function empty_trash($stream)
-		{
-			$val = IMAPManager::imap_delete($stream, '1:*');
-			IMAPManager::imap_expunge($stream);
-			return $val;
-		}
-
-		function fetchbody($stream,$msgnr,$partnr,$flags=0)
-		{
-			// do we force use of msg UID's 
-			if ( ($this->force_msg_uids == True)
-			&& (!($flags & PE_IMAP_FT_UID)) )
+			else
 			{
-				$flags |= PE_IMAP_FT_UID;
-			}
-			return IMAPManager::imap_fetchbody($stream,$msgnr,$partnr,$flags);
-		}
-
-		function header($stream,$msg_nr,$fromlength=0,$tolength=0,$defaulthost='')
-		{
-			// do we need to temporarily switch to regular msg num sequence for this function?
-			if ($this->force_msg_uids == True)
-			{
-				// this function can nothandle UIDs, switch to sequence number
-				$new_msg_nr = IMAPManager::imap_msgno($stream,$msg_nr);
+				// Native imap_header() requires a sequence number, not a UID.
+				$new_msg_nr = IMAPManager::imap_msgno($stream, $msg_nr);
 				if ($new_msg_nr)
 				{
 					$msg_nr = $new_msg_nr;
 				}
 			}
-			return IMAPManager::imap_header($stream,$msg_nr,$fromlength,$tolength,$defaulthost);
 		}
-		
-		function headers($stream)
+		return IMAPManager::imap_header($stream, $msg_nr, $fromlength, $tolength, $defaulthost, $flags);
+	}
+
+	function prefetch_message_metadata($stream, array $message_numbers)
+	{
+		$flags = $this->force_msg_uids == True ? PE_IMAP_FT_UID : 0;
+		return IMAPManager::imap_prefetch_message_metadata($stream, $message_numbers, $flags);
+	}
+
+	function fetch_sort_metadata($stream, array $message_numbers)
+	{
+		$flags = $this->force_msg_uids == True ? PE_IMAP_FT_UID : 0;
+		return IMAPManager::imap_fetch_sort_metadata($stream, $message_numbers, $flags);
+	}
+
+	function headers($stream)
+	{
+		return IMAPManager::imap_headers($stream);
+	}
+
+	function fetch_raw_mail($stream, $msg_num, $flags = 0)
+	{
+		$flags |= PE_IMAP_FT_PREFETCHTEXT;
+		// do we force use of msg UID's 
+		if (($this->force_msg_uids == True)
+			&& (!($flags & PE_IMAP_FT_UID))
+		)
 		{
-			return IMAPManager::imap_headers($stream);
-		} 
+			$flags |= PE_IMAP_FT_UID;
+		}
+		return IMAPManager::imap_fetchheader($stream, $msg_num, $flags);
+	}
 
-		function fetch_raw_mail($stream,$msg_num,$flags=0)
+	function fetchheader($stream, $msg_num, $flags = 0)
+	{
+		// do we force use of msg UID's 
+		if (($this->force_msg_uids == True)
+			&& (!($flags & PE_IMAP_FT_UID))
+		)
 		{
-			$flags |= PE_IMAP_FT_PREFETCHTEXT;
-			// do we force use of msg UID's 
-			if ( ($this->force_msg_uids == True)
-			&& (!($flags & PE_IMAP_FT_UID)) )
-			{
-				$flags |= PE_IMAP_FT_UID;
-			}
-			return IMAPManager::imap_fetchheader($stream,$msg_num,$flags);
+			$flags |= PE_IMAP_FT_UID;
 		}
+		return IMAPManager::imap_fetchheader($stream, $msg_num, $flags);
+	}
 
-		function fetchheader($stream,$msg_num,$flags=0)
+	function fetchstructure($stream, $msg_num, $flags = 0)
+	{
+		// do we force use of msg UID's 
+		if (($this->force_msg_uids == True)
+			&& (!($flags & PE_IMAP_FT_UID))
+		)
 		{
-			// do we force use of msg UID's 
-			if ( ($this->force_msg_uids == True)
-			&& (!($flags & PE_IMAP_FT_UID)) )
-			{
-				$flags |= PE_IMAP_FT_UID;
-			}
-			return IMAPManager::imap_fetchheader($stream,$msg_num,$flags);
+			$flags |= PE_IMAP_FT_UID;
 		}
+		return IMAPManager::imap_fetchstructure($stream, $msg_num, $flags);
+	}
 
-		function fetchstructure($stream,$msg_num,$flags=0)
+	function get_body($stream, $msg_num, $flags = 0)
+	{
+		// do we force use of msg UID's 
+		if (($this->force_msg_uids == True)
+			&& (!($flags & PE_IMAP_FT_UID))
+		)
 		{
-			// do we force use of msg UID's 
-			if ( ($this->force_msg_uids == True)
-			&& (!($flags & PE_IMAP_FT_UID)) )
-			{
-				$flags |= PE_IMAP_FT_UID;
-			}
-			return IMAPManager::imap_fetchstructure($stream,$msg_num,$flags);
+			$flags |= PE_IMAP_FT_UID;
 		}
+		return IMAPManager::imap_body($stream, $msg_num, $flags);
+	}
 
-		function get_body($stream,$msg_num,$flags=0)
+	function get_header($stream, $msg_num, $flags)
+	{
+		// alias for compatibility with some old code
+		return $this->fetchheader($stream, $msg_num, $flags);
+	}
+
+	function listmailbox($stream, $ref, $pattern)
+	{
+		if (!$stream)
 		{
-			// do we force use of msg UID's 
-			if ( ($this->force_msg_uids == True)
-			&& (!($flags & PE_IMAP_FT_UID)) )
-			{
-				$flags |= PE_IMAP_FT_UID;
-			}
-			return IMAPManager::imap_body($stream,$msg_num,$flags);
+			return array();
 		}
+		//return imap_listmailbox($stream,$ref,$pattern);
+		$pattern = $this->utf7_encode($pattern);
+		$return_list = IMAPManager::imap_list($stream, $ref, $pattern);
+		return $this->utf7_decode($return_list);
+	}
 
-		function get_header($stream,$msg_num,$flags)
+	function mailboxmsginfo($stream)
+	{
+		return IMAPManager::imap_mailboxmsginfo($stream);
+	}
+
+	function mailcopy($stream, $msg_list, $mailbox, $flags = 0)
+	{
+		// do we force use of msg UID's 
+		if (($this->force_msg_uids == True)
+			&& (!($flags & PE_IMAP_CP_UID))
+		)
 		{
-			// alias for compatibility with some old code
-			return $this->fetchheader($stream,$msg_num,$flags);
+			$flags |= PE_IMAP_CP_UID;
 		}
+		$mailbox = $this->utf7_encode($mailbox);
+		return IMAPManager::imap_mail_copy($stream, $msg_list, $mailbox, $flags);
+	}
 
-		function listmailbox($stream,$ref,$pattern)
+	function mail_move($stream, $msg_list, $mailbox, $flags = 0)
+	{
+		// do we force use of msg UID's 
+		if (($this->force_msg_uids == True)
+			&& (!($flags & PE_IMAP_CP_UID))
+		)
 		{
-			if ( !is_resource($stream) )
-			{
-				return array();
-			}
-			//return imap_listmailbox($stream,$ref,$pattern);
-			$pattern = $this->utf7_encode($pattern);
-			$return_list = IMAPManager::imap_list($stream,$ref,$pattern);
-			return $this->utf7_decode($return_list);
+			$flags |= PE_IMAP_CP_UID;
 		}
+		$mailbox = $this->utf7_encode($mailbox, 'mail_move');
+		return IMAPManager::imap_mail_move($stream, $msg_list, $mailbox, $flags);
+	}
 
-		function mailboxmsginfo($stream)
+	function num_msg($stream) // returns number of messages in the mailbox
+	{
+		return IMAPManager::imap_num_msg($stream);
+	}
+
+	function noop_ping_test($stream)
+	{
+		return IMAPManager::imap_ping($stream);
+	}
+
+	function open($mailbox, $username, $password, $flags = 0, $authentication = 'login')
+	{
+		$mailbox = $this->utf7_encode($mailbox);
+		return IMAPManager::imap_open($mailbox, $username, $password, $flags, 2, ['authentication' => $authentication]);
+	}
+
+	function qprint($message)
+	{
+		// return quoted_printable_decode($message);
+		$str = quoted_printable_decode($message);
+		return str_replace("=\n", '', $str);
+	}
+
+	function reopen($stream, $mailbox, $flags = 0)
+	{
+		$mailbox = $this->utf7_encode($mailbox);
+		return IMAPManager::imap_reopen($stream, $mailbox, $flags);
+	}
+
+	function server_last_error()
+	{
+		// supported in PHP >= 3.0.12
+		return IMAPManager::imap_last_error();
+	}
+
+	function i_search($stream, $criteria, $flags = 0)
+	{
+		// do we force use of msg UID's 
+		if (($this->force_msg_uids == True)
+			&& (!($flags & PE_IMAP_SE_UID))
+		)
 		{
-			return IMAPManager::imap_mailboxmsginfo($stream);
+			$flags |= PE_IMAP_SE_UID;
 		}
+		return IMAPManager::imap_search($stream, $criteria, $flags);
+	}
 
-		function mailcopy($stream,$msg_list,$mailbox,$flags=0)
+	function sort($stream, $criteria, $reverse = 0, $flags = 0)
+	{
+		// do we force use of msg UID's 
+		if (($this->force_msg_uids == True)
+			&& (!($flags & PE_IMAP_SE_UID))
+		)
 		{
-			// do we force use of msg UID's 
-			if ( ($this->force_msg_uids == True)
-			&& (!($flags & PE_IMAP_CP_UID)) )
-			{
-				$flags |= PE_IMAP_CP_UID;
-			}
-			$mailbox = $this->utf7_encode($mailbox);
-			return IMAPManager::imap_mail_copy($stream,$msg_list,$mailbox,$flags);
+			$flags |= PE_IMAP_SE_UID;
 		}
+		//echo 'class dcom: sort: $this->force_msg_uids= '.serialize($this->force_msg_uids).'; $flags: ['.serialize($flags).']<br />';
+		return IMAPManager::imap_sort($stream, $criteria, $reverse, $flags);
+	}
 
-		function mail_move($stream,$msg_list,$mailbox,$flags=0)
+	function status($stream, $mailbox, $options = 0)
+	{
+		if (!($stream))
 		{
-			// do we force use of msg UID's 
-			if ( ($this->force_msg_uids == True)
-			&& (!($flags & PE_IMAP_CP_UID)) )
-			{
-				$flags |= PE_IMAP_CP_UID;
-			}
-			$mailbox = $this->utf7_encode($mailbox, 'mail_move');
-			return IMAPManager::imap_mail_move($stream,$msg_list,$mailbox,$flags);
+			return;
 		}
+		$mailbox = $this->utf7_encode($mailbox);
+		return IMAPManager::imap_status($stream, $mailbox, $options);
+	}
 
-		function num_msg($stream) // returns number of messages in the mailbox
-		{ 
-			return IMAPManager::imap_num_msg($stream);
-		}
-		
-		function noop_ping_test($stream)
-		{ 
-			return IMAPManager::imap_ping($stream);
-		}
+	function construct_folder_str($folder)
+	{
+		/* This is only used by the login() function */
+		// Cyrus style: INBOX.Junque
+		// UWash style: ./aeromail/Junque
+		return \App\modules\email\services\MailMessage::getInstance()->get_folder_long($folder);
+	}
 
-		function open($mailbox,$username,$password,$flags=0)
+	function deconstruct_folder_str($folder)
+	{
+		//  This is only used by the login() function
+		// Cyrus style: INBOX.Junque
+		// UWash style: ./aeromail/Junque
+		return \App\modules\email\services\MailMessage::getInstance()->get_folder_short($folder);
+	}
+
+	function set_flag($stream, $msgnum, $flag)
+	{
+		$uids = 0;
+		if ($this->force_msg_uids == True)
 		{
-			$mailbox = $this->utf7_encode($mailbox);
-			return IMAPManager::imap_open($mailbox, $username, $password, $flags,2);
+			$uids |= PE_IMAP_ST_UID;
 		}
+		return IMAPManager::imap_setflag_full($stream, $msgnum, $flag, $uids);
+	}
 
-		function qprint($message)
-		{
-			// return quoted_printable_decode($message);
-			$str = quoted_printable_decode($message);
-			return str_replace("=\n",'',$str);
-		}
-
-		function reopen($stream,$mailbox,$flags=0)
-		{
-			$mailbox = $this->utf7_encode($mailbox);
-			return IMAPManager::imap_reopen($stream,$mailbox,$flags);
-		}
-
-		function server_last_error()
-		{
-			// supported in PHP >= 3.0.12
-			return IMAPManager::imap_last_error();
-		}
-
-		function i_search($stream,$criteria,$flags=0)
-		{
-			// do we force use of msg UID's 
-			if ( ($this->force_msg_uids == True)
-			&& (!($flags & PE_IMAP_SE_UID)) )
-			{
-				$flags |= PE_IMAP_SE_UID;
-			}
-			return IMAPManager::imap_search($stream,$criteria,$flags);
-		}
-		
-		function sort($stream,$criteria,$reverse=0,$flags=0)
-		{
-			// do we force use of msg UID's 
-			if ( ($this->force_msg_uids == True)
-			&& (!($flags & PE_IMAP_SE_UID)) )
-			{
-				$flags |= PE_IMAP_SE_UID;
-			}
-			//echo 'class dcom: sort: $this->force_msg_uids= '.serialize($this->force_msg_uids).'; $flags: ['.serialize($flags).']<br />';
-			return IMAPManager::imap_sort($stream,$criteria,$reverse,$flags);
-		}
-
-		function status($stream,$mailbox,$options=0)
-		{
-			if ( !is_resource($stream) )
-			{
-				return;
-			}
-			$mailbox = $this->utf7_encode($mailbox);
-			return IMAPManager::imap_status($stream,$mailbox,$options);
-		}
-
-		function construct_folder_str($folder)
-		{ 
-			/* This is only used by the login() function */
-			// Cyrus style: INBOX.Junque
-			// UWash style: ./aeromail/Junque
-			return $GLOBALS['phpgw']->msg->get_folder_long($folder);
-		}
-
-		function deconstruct_folder_str($folder)
-		{
-			//  This is only used by the login() function
-			// Cyrus style: INBOX.Junque
-			// UWash style: ./aeromail/Junque
-			return $GLOBALS['phpgw']->msg->get_folder_short($folder);
-		}
-
-		function set_flag($stream, $msgnum, $flag)
-		{
-			$uids = 0;
-			if($this->force_msg_uids == True)
-			{
-				$uids |= PE_IMAP_ST_UID;
-			}
-			return IMAPManager::imap_setflag_full($stream, $msgnum, $flag, $uids);
-		}
-
-		/* rfc_get_flag() is more "rfc safe", as RFC822 allows
+	/* rfc_get_flag() is more "rfc safe", as RFC822 allows
 			the content of the header to be on several lines.
 
 			Quote from RFC822 3.1.1:
@@ -323,72 +354,75 @@
 			Note:	$flag should _NOT_ begin with a space
 			$field_no should be given strarting at 1
 		*/
-		function rfc_get_flag($stream,$msg_num,$flags=0,$field_no=1)
+	function rfc_get_flag($stream, $msg_num, $flags = 0, $field_no = 1)
+	{
+		// do we force use of msg UID's 
+		if (($this->force_msg_uids == True)
+			&& (!($flags & PE_IMAP_FT_UID))
+		)
 		{
-			// do we force use of msg UID's 
-			if ( ($this->force_msg_uids == True)
-			&& (!($flags & PE_IMAP_FT_UID)) )
-			{
-				$flags |= PE_IMAP_FT_UID;
-			}
-			$fieldCount = 0;
-			$header = IMAPManager::imap_fetchheader ($stream, $msg_num, $flags);
-			$header = explode("\n", $header);
-			$flag = strtolower($flag);
-
-			for ($i=0; $i < count($header); $i++)
-			{
-				// The next check for the $flag _requires_ the field to
-				// start at the first character (unless some person
-				// adds a space in the beginning of $flag.
-				// I believe this is correct according to the RFC.
-
-				if (strcmp (substr(strtolower($header[$i]),0,strlen($flag) + 1), $flag.':')==0)
-				{
-					$fieldFound = true;
-					$fieldCount++;
-				}
-				else
-				{
-					$fieldFound = false;
-				}
-		
-				if ($fieldFound && $fieldCount == $field_no)
-				{
-					// We now need to see if the next lines belong to this  message. 
-					$header_begin = $i;
-					// make sure we don't go too far:)
-					// and if the line begins with a space then
-					// we'll increment the counter with one.
-					$i++;
-
-					while ($i < count($header) 
-						&& strcmp(substr($header[$i],0,1), ' ') == 0)
-					{
-						$i++;
-					}
-
-					// Remove the "field:" from this string.
-					$return_tmp = explode (':', $header[$header_begin]);
-					$tmp_flag = $return_tmp[0];
-					$return_string = trim ($return_tmp[1]);
-
-					if (strcasecmp ($flag, $tmp_flag) != 0)
-					{
-						return false;
-					}
-					// Houston, we have a _problem_
-					// add the rest of the content
-
-					for ($j=$header_begin+1; $j < $i; $j++)
-					{
-						$return_string .= $header[$j];
-					}
-
-					return $return_string;
-				}
-			}
-			// failed to find $flag
-			return false;
+			$flags |= PE_IMAP_FT_UID;
 		}
+		$fieldCount = 0;
+		$header = IMAPManager::imap_fetchheader($stream, $msg_num, $flags);
+		$header = explode("\n", $header);
+		$flag = strtolower($flag);
+
+		for ($i = 0; $i < count($header); $i++)
+		{
+			// The next check for the $flag _requires_ the field to
+			// start at the first character (unless some person
+			// adds a space in the beginning of $flag.
+			// I believe this is correct according to the RFC.
+
+			if (strcmp(substr(strtolower($header[$i]), 0, strlen($flag) + 1), $flag . ':') == 0)
+			{
+				$fieldFound = true;
+				$fieldCount++;
+			}
+			else
+			{
+				$fieldFound = false;
+			}
+
+			if ($fieldFound && $fieldCount == $field_no)
+			{
+				// We now need to see if the next lines belong to this  message. 
+				$header_begin = $i;
+				// make sure we don't go too far:)
+				// and if the line begins with a space then
+				// we'll increment the counter with one.
+				$i++;
+
+				while (
+					$i < count($header)
+					&& strcmp(substr($header[$i], 0, 1), ' ') == 0
+				)
+				{
+					$i++;
+				}
+
+				// Remove the "field:" from this string.
+				$return_tmp = explode(':', $header[$header_begin]);
+				$tmp_flag = $return_tmp[0];
+				$return_string = trim($return_tmp[1]);
+
+				if (strcasecmp($flag, $tmp_flag) != 0)
+				{
+					return false;
+				}
+				// Houston, we have a _problem_
+				// add the rest of the content
+
+				for ($j = $header_begin + 1; $j < $i; $j++)
+				{
+					$return_string .= $header[$j];
+				}
+
+				return $return_string;
+			}
+		}
+		// failed to find $flag
+		return false;
 	}
+}

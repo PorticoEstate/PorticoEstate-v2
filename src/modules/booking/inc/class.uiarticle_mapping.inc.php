@@ -166,6 +166,7 @@ class booking_uiarticle_mapping extends phpgwapi_uicommon
 		$reservation_id		 = Sanitizer::get_var('reservation_id', 'int', 'GET');
 		$alloc_template_id	 = Sanitizer::get_var('alloc_template_id', 'int', 'GET');
 		$collection			 = Sanitizer::get_var('collection', 'bool', 'GET');
+		$edit				 = Sanitizer::get_var('edit', 'bool', 'GET');
 
 		if ($alloc_template_id)
 		{
@@ -208,10 +209,13 @@ class booking_uiarticle_mapping extends phpgwapi_uicommon
 
 
 		// Get purchase orders - handle combined applications if viewing an application
-		if ($application_id && !$reservation_type && !$reservation_id) {
+		if ($application_id && !$reservation_type && !$reservation_id)
+		{
 			// This is an application view - get combined purchase orders
 			$purchase_order = createObject('booking.sopurchase_order')->get_purchase_order_combined($application_id);
-		} else {
+		}
+		else
+		{
 			// This is for editing/creating reservations - use original method
 			$purchase_order = createObject('booking.sopurchase_order')->get_purchase_order($application_id, $reservation_type, $reservation_id, $collection);
 		}
@@ -270,8 +274,10 @@ class booking_uiarticle_mapping extends phpgwapi_uicommon
 		}
 
 		// Filter out articles with no cost when viewing application (not editing)
-		if ($application_id && !$reservation_type && !$reservation_id) {
-			$articles = array_filter($articles, function($article) {
+		if ($application_id && !$reservation_type && !$reservation_id && !$edit)
+		{
+			$articles = array_filter($articles, function ($article)
+			{
 				return !empty($article['selected_sum']) && floatval($article['selected_sum']) > 0;
 			});
 			// Re-index array after filtering

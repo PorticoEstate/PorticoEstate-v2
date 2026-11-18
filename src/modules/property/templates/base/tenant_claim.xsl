@@ -362,8 +362,9 @@
 							<xsl:text> </xsl:text> [ <xsl:value-of select="currency"/> ]
 						</div>
 						<div class="pure-control-group">
-							<!--div id="datatable-container_0"/-->
-							<div class="pure-custom" style="width: 100%;">
+							<label>
+							</label>
+							<div class="pure-custom pure-input-1">
 								<xsl:for-each select="datatable_def">
 									<xsl:if test="container = 'datatable-container_0'">
 										<xsl:call-template name="table_setup">
@@ -545,39 +546,35 @@
 						<xsl:variable name="lang_save">
 							<xsl:value-of select="lang_save"/>
 						</xsl:variable>
-						<input type="submit" class="pure-button pure-button-primary" name="values[save]" value="{$lang_save}" onMouseout="window.status='';return true;">
-							<xsl:attribute name="onMouseover">
-								<xsl:text>window.status='</xsl:text>
+						<input type="submit" class="pure-button pure-button-primary" name="values[save]" value="{$lang_save}" >
+							<xsl:attribute name="title">
 								<xsl:value-of select="lang_save_statustext"/>
-								<xsl:text>'; return true;</xsl:text>
 							</xsl:attribute>
 						</input>
 						<xsl:variable name="lang_apply">
 							<xsl:value-of select="lang_apply"/>
 						</xsl:variable>
-						<input type="submit" class="pure-button pure-button-primary" name="values[apply]" value="{$lang_apply}" onMouseout="window.status='';return true;">
-							<xsl:attribute name="onMouseover">
-								<xsl:text>window.status='</xsl:text>
+						<input type="submit" class="pure-button pure-button-primary" name="values[apply]" value="{$lang_apply}" >
+							<xsl:attribute name="title">
 								<xsl:value-of select="lang_apply_statustext"/>
-								<xsl:text>'; return true;</xsl:text>
 							</xsl:attribute>
 						</input>
 					</xsl:if>
 					<xsl:variable name="lang_cancel">
 						<xsl:value-of select="lang_cancel"/>
 					</xsl:variable>
-					<input type="submit" class="pure-button pure-button-primary" name="values[cancel]" value="{$lang_cancel}" onMouseout="window.status='';return true;">
-						<xsl:attribute name="onMouseover">
-							<xsl:text>window.status='</xsl:text>
+					<input type="submit" class="pure-button pure-button-primary" name="values[cancel]" value="{$lang_cancel}" >
+						<xsl:attribute name="title">
 							<xsl:value-of select="lang_cancel_statustext"/>
-							<xsl:text>'; return true;</xsl:text>
 						</xsl:attribute>
 					</input>
 				</div>
 				<br></br>
 				<fieldset style="border: 1px solid #000;">
 					<div class="pure-control-group">
-						<div class="pure-custom" style="width: 100%;">
+						<label>
+						</label>
+						<div class="pure-custom pure-input-1">
 							<xsl:for-each select="datatable_def">
 								<xsl:if test="container = 'datatable-container_2'">
 									<xsl:call-template name="table_setup">

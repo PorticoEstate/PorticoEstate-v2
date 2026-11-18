@@ -19,6 +19,11 @@ nav:not(.mm-menu)
 	left: 0;
 }
 
+#floating-box.sticky-action-bar
+{
+	top: 60px;
+}
+
 
 .header1 a
 {

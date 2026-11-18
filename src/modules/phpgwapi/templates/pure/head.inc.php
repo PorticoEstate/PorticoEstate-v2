@@ -53,6 +53,7 @@ $template->set_block('head', 'stylesheet', 'stylesheets');
 $template->set_block('head', 'javascript', 'javascripts');
 
 $stylesheets[] = "/phpgwapi/templates/pure/css/global.css";
+$stylesheets[] = "/phpgwapi/templates/pure/css/action-bar.css";
 $stylesheets[] = "/phpgwapi/templates/pure/css/demo_mmenu.css";
 //	$stylesheets[] = "/phpgwapi/templates/pure/css/pure-min.css";
 //	$stylesheets[] = "/phpgwapi/templates/pure/css/pure-extension.css";

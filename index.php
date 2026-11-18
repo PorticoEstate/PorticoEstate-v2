@@ -93,13 +93,17 @@ $errorMiddleware->setDefaultErrorHandler($customErrorHandler);
 // Record the running git commit (first-seen tracking). APCu-guarded so the hot
 // path is a couple of cache reads, and wrapped so it can never interfere with
 // request handling.
-try
+
+if($database_settings)
 {
-	(new \App\modules\booking\services\CommitTracker())->record();
-}
-catch (\Throwable $e)
-{
-	// Non-fatal — version tracking must never break a request.
+	try
+	{
+		(new \App\modules\booking\services\CommitTracker())->record();
+	}
+	catch (\Throwable $e)
+	{
+		// Non-fatal — version tracking must never break a request.
+	}	
 }
 
 // Run the Slim app

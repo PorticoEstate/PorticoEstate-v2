@@ -1,54 +1,57 @@
 <?php
-	/**
-	* EMail - Message Processing Functions for MIME and Display
-	*
-	* @author Angelo (Angles) Puglisi <angles@aminvestments.com>
-	* @copyright Copyright (C) 2001-2002 Angelo Tony Puglisi (Angles)
-	* @copyright Copyright (C) 2003-2005 Free Software Foundation, Inc. http://www.fsf.org/
-	* @license http://www.gnu.org/licenses/lgpl.html GNU Lesser General Public License
-	* @package email
-	* @version $Id$
-	* @internal Based on AngleMail http://www.anglemail.org/
-	*/
 
+/**
+ * EMail - Message Processing Functions for MIME and Display
+ *
+ * @author Angelo (Angles) Puglisi <angles@aminvestments.com>
+ * @copyright Copyright (C) 2001-2002 Angelo Tony Puglisi (Angles)
+ * @copyright Copyright (C) 2003-2005 Free Software Foundation, Inc. http://www.fsf.org/
+ * @license http://www.gnu.org/licenses/lgpl.html GNU Lesser General Public License
+ * @package email
+ * @version $Id$
+ * @internal Based on AngleMail http://www.anglemail.org/
+ */
 
-	/**
-	* Message Processing Functions for MIME and Display
-	*
-	* @package email
-	*/
-	// PHP 8.4+ removed constants - define PorticoEstate IMAP compatibility layer
-	defined('PE_IMAP_TYPETEXT') || define('PE_IMAP_TYPETEXT', 0);
-	defined('PE_IMAP_TYPEMULTIPART') || define('PE_IMAP_TYPEMULTIPART', 1);
-	defined('PE_IMAP_TYPEMESSAGE') || define('PE_IMAP_TYPEMESSAGE', 2);
-	defined('PE_IMAP_TYPEAPPLICATION') || define('PE_IMAP_TYPEAPPLICATION', 3);
-	defined('PE_IMAP_TYPEAUDIO') || define('PE_IMAP_TYPEAUDIO', 4);
-	defined('PE_IMAP_TYPEIMAGE') || define('PE_IMAP_TYPEIMAGE', 5);
-	defined('PE_IMAP_TYPEVIDEO') || define('PE_IMAP_TYPEVIDEO', 6);
-	defined('PE_IMAP_TYPEOTHER') || define('PE_IMAP_TYPEOTHER', 7);
-	defined('PE_IMAP_ENC7BIT') || define('PE_IMAP_ENC7BIT', 0);
-	defined('PE_IMAP_ENC8BIT') || define('PE_IMAP_ENC8BIT', 1);
-	defined('PE_IMAP_ENCBINARY') || define('PE_IMAP_ENCBINARY', 2);
-	defined('PE_IMAP_ENCBASE64') || define('PE_IMAP_ENCBASE64', 3);
-	defined('PE_IMAP_ENCQUOTEDPRINTABLE') || define('PE_IMAP_ENCQUOTEDPRINTABLE', 4);
-	defined('PE_IMAP_ENCOTHER') || define('PE_IMAP_ENCOTHER', 5);
-	
-	class mail_msg extends mail_msg_wrappers
+use App\modules\phpgwapi\services\Settings;
+
+/**
+ * Message Processing Functions for MIME and Display
+ *
+ * @package email
+ */
+// PHP 8.4+ removed constants - define PorticoEstate IMAP compatibility layer
+defined('PE_IMAP_TYPETEXT') || define('PE_IMAP_TYPETEXT', 0);
+defined('PE_IMAP_TYPEMULTIPART') || define('PE_IMAP_TYPEMULTIPART', 1);
+defined('PE_IMAP_TYPEMESSAGE') || define('PE_IMAP_TYPEMESSAGE', 2);
+defined('PE_IMAP_TYPEAPPLICATION') || define('PE_IMAP_TYPEAPPLICATION', 3);
+defined('PE_IMAP_TYPEAUDIO') || define('PE_IMAP_TYPEAUDIO', 4);
+defined('PE_IMAP_TYPEIMAGE') || define('PE_IMAP_TYPEIMAGE', 5);
+defined('PE_IMAP_TYPEVIDEO') || define('PE_IMAP_TYPEVIDEO', 6);
+defined('PE_IMAP_TYPEOTHER') || define('PE_IMAP_TYPEOTHER', 7);
+defined('PE_IMAP_ENC7BIT') || define('PE_IMAP_ENC7BIT', 0);
+defined('PE_IMAP_ENC8BIT') || define('PE_IMAP_ENC8BIT', 1);
+defined('PE_IMAP_ENCBINARY') || define('PE_IMAP_ENCBINARY', 2);
+defined('PE_IMAP_ENCBASE64') || define('PE_IMAP_ENCBASE64', 3);
+defined('PE_IMAP_ENCQUOTEDPRINTABLE') || define('PE_IMAP_ENCQUOTEDPRINTABLE', 4);
+defined('PE_IMAP_ENCOTHER') || define('PE_IMAP_ENCOTHER', 5);
+
+class mail_msg extends mail_msg_wrappers
 {
 
+	//var $userSettings;
 	/*!
 	@function mail_msg
 	@abstract Constructor
 	@discussion normally this would call $this->initialize_mail_msg which is a function in the base class,
 	HOWEVER I had to stop the auto constructor runthrough because preferences class API keeps making
 	copies of this object thus calling the constructor unnecessarily for what the pref API needs, which is
-	only a few functions in this object, SO NOW this class has NO real auto called constructor,
-	instead the initialization function needs to be explicitly called, which it is in the bootstrap class.
+	only a few functions in this object. The automatic constructor only wires the base dependencies;
+	full initialization is explicitly called by the shared-instance factory.
 	*/
 	function __construct()
 	{
-		//$this->initialize_mail_msg();
-		return;
+		parent::__construct();
+		$this->userSettings = Settings::getInstance()->get('user');
 	}
 
 	/*!
@@ -69,11 +72,12 @@
 	Check this function to see what langs are contained here.
 	@author Angles
 	*/
-	function get_common_langs($this_word='##NOTHING##')
+	function get_common_langs($this_word = '##NOTHING##')
 	{
 		// fill array if needed
 		if ((!$this->common_langs)
-		|| (count($this->common_langs) == 0))
+			|| (count($this->common_langs) == 0)
+		)
 		{
 			$this->common_langs = array();
 			$this->common_langs = array(
@@ -95,7 +99,8 @@
 			return $this->common_langs;
 		}
 		elseif ((isset($this->common_langs[$this_word]))
-		&& ($this->common_langs[$this_word]))
+			&& ($this->common_langs[$this_word])
+		)
 		{
 			// param requested a specific lang that we do have, return it
 			return $this->common_langs[$this_word];
@@ -107,542 +112,15 @@
 		}
 	}
 
-	/*!
-	@function common_folder_is
-	@abstract Quick, limited match for folder name matching certain common IMAP folders, such as Sent, INBOX, or Trash.
-	@param $query_fldball (array of type fldball) A fldball with the name of folder you are wondering about.
-	@param $match_fld_name (known string) can be INBOX, Sent, or Trash.
-	@result Boolean True if param $query_fld_name is a match to $match_fld_name, False otherwise.
-	@discussion Certain folder may exist on any IMAP server, such as Sent, INBOX, and Trash.
-	This function is limited to these common folder names only, it is not a generic lookup function.
-	This is a quick way to check if the given folder is in fact one of these common IMAP folders,
-	because these folders often require different handling for their message list display. For example the
-	Sent folder displays who a message is TO, not who the message is FROM, as with all other folders.
-	Also, names such as Sent and Trash depend on user preference values that are not required to be in
-	known "folder long" form, so the string to match to also requires special handling to eventually
-	compare correctly. This function processes each param for accurate matching.
-	@author Angles
-	*/
-	function common_folder_is($query_fldball='##NOTHING##', $match_fld_name='##NOTHING##')
-	{
-		if ($this->debug_args_special_handlers > 0) { $this->dbug->out('mail_msg(_display)('.__LINE__.'): common_folder_is: ENTERING <br />'); }
-		if ($this->debug_args_special_handlers > 1) { $this->dbug->out('mail_msg(_display)('.__LINE__.'): common_folder_is: param $query_fldball ['.htmlspecialchars(serialize($query_fldball)).'] param $match_fld_name ['.htmlspecialchars($match_fld_name).']<br />'); }
-
-		//return 'FIX ME: stub function not completed. mail_msg_display.common_folder_is LINE '.__LINE__;
-		$acctnum = $query_fldball['acctnum'];
-
-		/*
-		if (	$this->get_folder_short($this->get_arg_value('folder'))
-		 != $this->get_folder_short($this->get_pref_value('sent_folder_name')))
-		{
-			// blaaaa
-		}
-		*/
-		if (((string)$query_fldball == $this->nothing)
-		|| ((string)$match_fld_name == $this->nothing))
-		{
-			if ($this->debug_args_special_handlers > 0) { $this->dbug->out('mail_msg(_display)('.__LINE__.'): common_folder_is: LEAVING with Error, not enough param data supplied, so returning False<br />'); }
-			return False;
-		}
-		elseif (($match_fld_name != 'INBOX')
-		&& (strtolower($match_fld_name) != 'trash')
-		&& (strtolower($match_fld_name) != 'sent'))
-		{
-			if ($this->debug_args_special_handlers > 0) { $this->dbug->out('mail_msg(_display)('.__LINE__.'): common_folder_is: LEAVING with Error, param $match_fld_name ['.htmlspecialchars($match_fld_name).'] is not INBOX nor Trash, nor Sent, this function can not test for anything else, so returning False<br />'); }
-			return False;
-		}
-		elseif ($this->is_ball_data($query_fldball, 'any') == False)
-		{
-			if ($this->debug_args_special_handlers > 0) { $this->dbug->out('mail_msg(_display)('.__LINE__.'): common_folder_is: LEAVING with Error, input data fails $this->is_ball_data('.htmlspecialchars(serialize($query_fldball)).', "any"), so returning False<br />'); }
-			return False;
-		}
-		if ($this->debug_args_special_handlers > 1) { $this->dbug->out('mail_msg(_display)('.__LINE__.'): common_folder_is: $query_fldball DUMP:', $query_fldball); }
-
-		// First, handle the easiest test - INBOX
-		if (($match_fld_name == 'INBOX')
-		&& ($query_fldball['folder'] == 'INBOX'))
-		{
-			if ($this->debug_args_special_handlers > 0) { $this->dbug->out('mail_msg(_display)('.__LINE__.'): common_folder_is: LEAVING, returning True, tested for and found INBOX<br />'); }
-			return True;
-		}
-		else
-		{
-			if ($this->debug_args_special_handlers > 0) { $this->dbug->out('mail_msg(_display)('.__LINE__.'): common_folder_is: match_fld_name and $query_fldball["folder"], either one nor both were INBOX, so did not match the test, so continue with more checks...<br />'); }
-		}
-		// continue ...
-		// does the mailserver have folders, if not then there is NO trash folder no matter what
-		if ($this->get_mailsvr_supports_folders($acctnum) == False)
-		{
-			if ($this->debug_args_special_handlers > 0) { $this->dbug->out('mail_msg(_display)('.__LINE__.'): common_folder_is: LEAVING, mailserver does NOT support folders, and not testing for INBOX, so returning False<br />'); }
-			return False;
-		}
-		// continue ...
-
-		// handle looking for Trash match
-		if (strtolower($match_fld_name) == 'trash')
-		{
-			$needle = 'trash';
-		}
-		elseif (strtolower($match_fld_name) == 'sent')
-		{
-			$needle = 'sent';
-		}
-		else
-		{
-			if ($this->debug_args_special_handlers > 0) { $this->dbug->out('mail_msg(_wrappers)('.__LINE__.'): common_folder_is: LEAVING, with ERROR, we should not ever get here because param sanity test is above, param $match_fld_name ['.htmlspecialchars($match_fld_name).'] needs to be either "Trash" or "Sent" at this point in the code, but it is not<br />'); }
-			return False;
-		}
-		// use that $needle to use the same code to handle both Trash and Sent matchings
-		if ($this->debug_args_special_handlers > 1) { $this->dbug->out('mail_msg(_display)('.__LINE__.'): common_folder_is: now testing if input data is "'.$needle.'" folder ...<br />'); }
-		// are we even supposed to use a trash or sent folder
-		if ( (!$this->get_isset_pref('use_'.$needle.'_folder', $acctnum))
-		|| (!$this->get_pref_value('use_'.$needle.'_folder', $acctnum)) )
-		{
-			if ($this->debug_args_special_handlers > 0) { $this->dbug->out('mail_msg(_display)('.__LINE__.'): common_folder_is: [test: '.$needle.'] LEAVING, returning False, testing for '.$needle.' folder but user preferences do NOT even want a '.$needle.' folder<br />'); }
-			return False;
-		}
-
-		// does the trash folder actually exist ?
-		if ($this->debug_args_special_handlers > 1) { $this->dbug->out('mail_msg(_wrappers)('.__LINE__.'): common_folder_is: [test: '.$needle.'] humm... does the "'.$needle.'" folder actually exist :: this->get_pref_value("'.$needle.'_folder_name", '.$acctnum.') = ['.htmlspecialchars($this->get_pref_value($needle.'_folder_name', $acctnum)).']<br />'); }
-		$found_needle_folder_long = $this->folder_lookup('', $this->get_pref_value($needle.'_folder_name', $acctnum));
-		if ($this->debug_args_special_handlers > 1) { $this->dbug->out('mail_msg(_wrappers)('.__LINE__.'): common_folder_is: [test: '.$needle.'] did lookup on pref value for "'.$needle.'" folder, got $found_needle_folder_long ['.htmlspecialchars($found_needle_folder_long).']<br />'); }
-		if ((isset($found_needle_folder_long))
-		&& ($found_needle_folder_long != ''))
-		{
-			$havefolder = True;
-		}
-		else
-		{
-			$havefolder = False;
-		}
-		// do we even need to continue
-		if ($havefolder == False)
-		{
-			if ($this->debug_args_special_handlers > 0) { $this->dbug->out('mail_msg(_display)('.__LINE__.'): common_folder_is: [test: '.$needle.'] LEAVING, returning False, testing for '.$needle.' folder, user preferences DO want a '.$needle.' folder, but that folder does NOT exist, so param certainly can not be a real '.$needle.' folder. <br />'); }
-			return False;
-		}
-		// so the trash folder exists, does it match the param to test against
-		if ($this->debug_args_special_handlers > 1) { $this->dbug->out('mail_msg(_wrappers)('.__LINE__.'): common_folder_is: [test: '.$needle.'] "'.$needle.'" folder exist, does it match a prepped param fldball, get prepped fldball folder string top use for the comparing<br />'); }
-		$query_folder_long = $this->prep_folder_in($query_fldball['folder'], $acctnum);
-		if ($this->debug_args_special_handlers > 1) { $this->dbug->out('mail_msg(_wrappers)('.__LINE__.'): common_folder_is: [test: '.$needle.'] now we have folder long names to compare, does $query_folder_long ['.htmlspecialchars($query_folder_long).'] equal $found_needle_folder_long ['.htmlspecialchars($found_needle_folder_long).'] <br />'); }
-		if ($query_folder_long == $found_needle_folder_long)
-		{
-			if ($this->debug_args_special_handlers > 0) { $this->dbug->out('mail_msg(_wrappers)('.__LINE__.'): common_folder_is: LEAVING, return True, match '.$needle.', and found '.$needle.' folder exists and matched the input ball data <br />'); }
-			return True;
-		}
-		else
-		{
-			if ($this->debug_args_special_handlers > 0) { $this->dbug->out('mail_msg(_wrappers)('.__LINE__.'): common_folder_is: LEAVING, return False, match '.$needle.', and found '.$needle.' folder exists BUT input ball data does not match it. <br />'); }
-			return False;
-		}
-	}
-
-	/*!
-	@function all_folders_listbox
-	@abstract gets a list of all folders available to the user, and makes an HTML listbox widget with that data.
-	BEING PHASED OUT, REPLACED BY HTML WIDGET CLASS, soon to be DEPRECIATED.
-	@param $feed_args[] array or args that you will "feed" into the function, contains the following members
-		['mailsvr_stream'] : integer : the stream where the data communications with the mailserver takes place
-		['pre_select_folder'] : string : if you want a particular folder already selected in the listbox, put that foldername
-			here. Note you must know the name of the folder as it will aooear in the kistbox for this to work.
-		['skip_folder'] : string : if you want a particular folder to NOT appear in the listbox, put that foldername
-			here. Note you must know the name of the folder as it will aooear in the kistbox for this to work.
-		['show_num_new'] : boolean : True = show number of unseen (new) message data with each folder
-			in the listbox. There are some folders the code will not examine, such as "Trash" and "Sent"
-		['widget_name'] : string : name of the select widget : important for form post usage. Default "folder"
-		['embeded_extra_data'] : string : OPTIONAL, if this is specified, the value='' becomes "fake_uri_data"
-			in order to contain the extra data. Mostly used to include the acctnum for the folder.
-			In this case, the "widget_name" is appended with "_fake_uri" which tells the script to
-			use "explode_fake_uri()" to get the data, which it then inserts back into the HTTP_POST_VARS
-			as if the data had never been embeeded. NOTE: such data should be urlencode'd just as if this
-			were a URI, however "prep_folder_out" takes care of this for the folder name automatically.
-		['on_change'] : string : the HTML select widget's "onChange" value. Default: "document.switchbox.submit()'"
-		'[first_line_txt'] : string : the text that initially is displayed in the select widget, used for information only,
-			like a descriptive label, it does not have any important data usage. Default: "lang('switch current folder to')"
-	@result string representing an HTML listbox widget
-	@discussion BEING PHASED OUT, REPLACED BY HTML WIDGET CLASS, altough this function *may*
-	be retaied just to generate the raw data, but not the actual html.
-	@access   private
-	*/
-	function all_folders_listbox($feed_args='')
-	{
-		if(!$feed_args)
-		{
-			$feed_args=array();
-		}
-		//$debug_widget = True;
-		$debug_widget = False;
-
-		$acctnum = $this->get_acctnum();
-		// establish fallback default args
-		$local_args = Array(
-			'acctnum'		=> $acctnum,
-			'mailsvr_stream'	=> $this->get_arg_value('mailsvr_stream', $acctnum),
-			'pre_select_folder'	=> '',
-			'skip_folder'		=> '',
-			'show_num_new'		=> (isset($GLOBALS['phpgw_info']['user']['preferences']['email']['newmsg_combobox'])?$GLOBALS['phpgw_info']['user']['preferences']['email']['newmsg_combobox']:''),
-			'widget_name'		=> 'folder_fake_uri',
-			'folder_key_name'	=> 'folder',
-			'acctnum_key_name'	=> 'acctnum',
-			'on_change'		=> 'document.switchbox.submit()',
-			'first_line_txt'	=> lang('switch current folder to')
-		);		
-		// loop thru $local_args[], replacing defaults with any args specified in $feed_args[]
-		if ($debug_widget) { $this->dbug->out('all_folders_listbox $feed_args data DUMP:', $feed_args); }
-		if (count($feed_args) == 0)
-		{
-			if ($debug_widget) { $this->dbug->out('all_folders_listbox $feed_args is EMPTY<br />'.serialize($feed_args).'<br />'); }
-		}
-		else
-		{
-			//reset($local_args);
-			// the feed args may not be an array, the @ will supress warnings
-			@reset($feed_args);
-			//while(list($key,$value) = each($local_args))
-			foreach($local_args as $key => $value)
-			{
-				// DEBUG
-				if ($debug_widget) { $this->dbug->out('a: local_args: key=['.$key.'] value=['.(string)$value.']<br />'); }
-				if ($debug_widget) { $this->dbug->out('b: feed_args: key=['.$key.'] value=['.(string)$feed_args[$key].']<br />'); }
-				if ((isset($feed_args[$key]))
-				&& ($feed_args[$key] != $value))
-				{
-					if (($key == 'mailsvr_stream')
-					&& ($feed_args[$key] == ''))
-					{
-						// do nothing, keep the default value, can not over write a good default stream with an empty value
-						if ($debug_widget) { $this->dbug->out('* keeping default [mailsvr_stream] value, can not override with a blank string<br />'); }
-					}
-					else
-					{
-						// we have a specified arg that should replace the default value
-						if ($debug_widget) { $this->dbug->out('*** override default value of ['.$local_args[$key] .'] with feed_args['.$key.'] of ['.(string)$feed_args[$key].']<br />'); }
-						$local_args[$key] = $feed_args[$key];
-					}
-				}
-			}
-			reset($local_args);
-			@reset($feed_args);
-		}
-		// at this point, local_args[] has anything that was passed in the feed_args[]
-		if ($debug_widget) { $this->dbug->out('FINAL Listbox Local Args:<br />'.serialize($local_args).'<br />'); }
-		
-		// init some important variables
-		$item_tags = '';
-		//$unseen_prefix = ' &lt;';  $unseen_suffix = ' new&gt;';	
-		//$unseen_prefix = ' &#091;';  $unseen_suffix = ' new&#093;';
-		//$unseen_prefix = ' &#040;';  $unseen_suffix = ' new&#041;';
-		//$unseen_prefix = ' &#045; ';  $unseen_suffix = ' new';
-		//$unseen_prefix = ' &#045;';  $unseen_suffix = '&#045;';	
-		//$unseen_prefix = '&nbsp;&nbsp;&#040;';  $unseen_suffix = ' new&#041;';
-		//$unseen_prefix = '&nbsp;&nbsp;&#091;';  $unseen_suffix = ' new&#093;';
-		$unseen_prefix = '&nbsp;&nbsp;&#060;';
-		$unseen_suffix = ' new&#062;';
-
-		if ($this->get_arg_value('newsmode'))
-		{
-			//while($pref = each($GLOBALS['phpgw_info']['user']['preferences']['nntp']))
-			foreach($GLOBALS['phpgw_info']['user']['preferences']['nntp'] as $key => $value)
-			{
-				$GLOBALS['phpgw']->db->query('SELECT name FROM newsgroups WHERE con='.$key);
-				while($GLOBALS['phpgw']->db->next_record())
-				{
-					$item_tags = $item_tags .'<option value="' . urlencode($GLOBALS['phpgw']->db->f('name')) . '">' . $GLOBALS['phpgw']->db->f('name')
-					  . '</option>';
-				}
-			}
-		}
-		else
-		{
-			// get the actual list of folders we are going to put into the combobox
-			//$folder_list = $this->get_folder_list();
-			$folder_list = $this->get_arg_value('folder_list');
-			//$folder_list =& $this->get_arg_value_ref('folder_list');
-			
-			//echo '$folder_list DUMP<pre>'; print_r($folder_list); echo '</pre>';
-			// Save Origional Folder Name. $folder_status in the for statment below causes us to lose it.
-			// FIXED (angles)
-			//$origional_folder = $GLOBALS['phpgw']->msg->get_folder_short($GLOBALS['phpgw']->msg->prep_folder_out());
-			
-			// iterate thru the folder list, building the HTML tags using that data
-			for ($i=0; $i<count($folder_list);$i++)
-			{
-				$folder_long = $folder_list[$i]['folder_long'];
-				//$folder_long = $this->ensure_one_urlencoding($folder_list[$i]['folder_long']);
-				$folder_short = $folder_list[$i]['folder_short'];
-				$folder_acctnum = $folder_list[$i]['acctnum'];
-				if ($local_args['show_num_new'] == True) {
-					//$folder_status = $GLOBALS['phpgw']->msg->phpgw_status("$folder_long");
-					//$folder_unseen = number_format($folder_status->unseen);
-					// this function caches its data
-					$tmp_fldball = array();
-					$tmp_fldball['folder'] = $folder_long;
-					$tmp_fldball['acctnum'] = $acctnum;
-					$folder_status = $GLOBALS['phpgw']->msg->get_folder_status_info($tmp_fldball);
-					$folder_unseen = number_format($folder_status['number_new']);
-					$tmp_fldball = array();
-				} 
-				
-				
-				// this logic determines if the combobox should be initialized with certain folder already selected
-				if ($folder_short == $this->get_folder_short($local_args['pre_select_folder']))
-				{
-					$sel = ' selected';
-				}
-				else
-				{
-					$sel = '';
-				}
-				// this logic determines we should not include a certain folder in the combobox list
-				if ($folder_short != $this->get_folder_short($local_args['skip_folder']))
-				{
-					// we need to make value="X" imitate URI type data, so we can embed the acctnum data 
-					// for the folder in there with folder name, whereas normally option value="X" can only 
-					// hold no nore than one data item as limited by BOTH html and php 's treatment of a combobox					
-					
-					$option_value =  '&'.$local_args['folder_key_name'].'='.$this->prep_folder_out($folder_long)
-							.'&'.$local_args['acctnum_key_name'].'='.$folder_acctnum;
-					if ($local_args['show_num_new'] == True) {
-					 $item_tags = $item_tags .'<option value="'.$option_value.'"'.$sel.'>' .$folder_short.' ('.$folder_unseen.')';   
-					} else {
-					$item_tags = $item_tags .'<option value="'.$option_value.'"'.$sel.'>' .$folder_short;
-					}
-
-					
-					// "show_num_new" is currently BROKEN
-					// do we show the number of new (unseen) messages for this folder
-					//if (($local_args['show_num_new'])
-					//&& ($this->care_about_unseen($folder_short)))
-					//{
-					//	$mailbox_status = $this->a[$this->acctnum]['dcom']->status($mailsvr_stream,$this->get_arg_value('mailsvr_callstr').$folder_long,SA_ALL);
-					//	if ($mailbox_status->unseen > 0)
-					//	{
-					//		$item_tags = $item_tags . $unseen_prefix . $mailbox_status->unseen . $unseen_suffix;
-					//	}
-					//}
-					$item_tags = $item_tags . "</option>\r\n";
-				}
-			}
-			// this workaroubd no longer needed
-			//if ($local_args['show_num_new'] == True) {
-			//	$folder_status = $GLOBALS['phpgw']->msg->phpgw_status("$origional_folder");
-			//}
-		}
-		// now $item_tags contains the internal folder list
-		// ----  add the HTML tags that surround this internal list data  ----
-		if ((isset($local_args['on_change']))
-		&& ($local_args['on_change'] != ''))
-		{
-			$on_change_tag = 'onChange="'.$local_args['on_change'].'"';
-		}
-		else
-		{
-			$on_change_tag = '';
-		}
-		
-		// the widget_name with "_fake_uri" tells the script what to do with this data
-		$listbox_widget =
-			 '<select name="'.$local_args['widget_name'].'" '.$on_change_tag.'>'
-				.'<option value="">'.$local_args['first_line_txt'].' '
-				. $item_tags
-			.'</select>';
-		// return a pre-built HTML listbox (selectbox) widget
-		return $listbox_widget;
-	}
-
-	/*!
-	@function folders_mega_listbox
-	@abstract like "all_folders_listbox" except it really shows ALL folder from EVERY account. 
-	BEING PHASED OUT, REPLACED BY HTML WIDGET CLASS, soon to be DEPRECIATED. 
-	@param $feed_args[] array or args that you will "feed" into the function ??
-	@result string representing an HTML listbox widget 
-	@discussion BEING PHASED OUT, REPLACED BY HTML WIDGET CLASS, soon to be DEPRECIATED. 
-	@author Angles 
-	@access private
-	*/
-	function folders_mega_listbox($feed_args='')
-	{
-		$debug_mega_listbox = 0;
-		//$debug_mega_listbox = 3;
-		if ($debug_mega_listbox > 0) { $this->dbug->out('folders_mega_listbox('.__LINE__.'): ENTERING<br />'); }
-		
-		if(!$feed_args)
-		{
-			$feed_args=array();
-		}
-
-		$acctnum = $this->get_acctnum();
-		// establish fallback default args
-		$local_args = Array(
-			'acctnum'		=> $acctnum,
-			'mailsvr_stream'	=> $this->get_arg_value('mailsvr_stream', $acctnum),
-			'pre_select_folder'	=> '',
-			'pre_select_folder_acctnum'	=> $acctnum,
-			'skip_folder'		=> '',
-			'show_num_new'		=> False,
-			'widget_name'		=> 'folder_fake_uri',
-			'folder_key_name'	=> 'folder',
-			'acctnum_key_name'	=> 'acctnum',
-			'on_change'		=> 'document.switchbox.submit()',
-			'first_line_txt'	=> lang('switch current folder to')
-		);
-		// loop thru $local_args[], replacing defaults with any args specified in $feed_args[]
-		if ($debug_mega_listbox > 1) { $this->dbug->out('folders_mega_listbox('.__LINE__.'): $feed_args data DUMP:', $feed_args); }
-		if (count($feed_args) == 0)
-		{
-			if ($debug_mega_listbox > 1) { $this->dbug->out('folders_mega_listbox('.__LINE__.'): $feed_args is EMPTY<br />'.serialize($feed_args).'<br />'); }
-		}
-		else
-		{
-			//reset($local_args);
-			// the feed args may not be an array, the @ will supress warnings
-			@reset($feed_args);
-			//while(list($key,$value) = each($local_args))
-			foreach($local_args as $key => $value)
-			{
-				// DEBUG
-				if ($debug_mega_listbox > 1) { $this->dbug->out('folders_mega_listbox('.__LINE__.'): a: local_args: key=['.$key.'] value=['.(string)$value.']<br />'); }
-				if ($debug_mega_listbox > 1) { $this->dbug->out('folders_mega_listbox('.__LINE__.'): b: feed_args: key=['.$key.'] value=['.(string)$feed_args[$key].']<br />'); }
-				if ((isset($feed_args[$key]))
-				&& ($feed_args[$key] != $value))
-				{
-					if (($key == 'mailsvr_stream')
-					&& ($feed_args[$key] == ''))
-					{
-						// do nothing, keep the default value, can not over write a good default stream with an empty value
-						if ($debug_mega_listbox > 1) { $this->dbug->out('folders_mega_listbox('.__LINE__.'): * keeping default [mailsvr_stream] value, can not override with a blank string<br />'); }
-					}
-					else
-					{
-						// we have a specified arg that should replace the default value
-						if ($debug_mega_listbox > 1) { $this->dbug->out('folders_mega_listbox('.__LINE__.'): *** override default value of ['.$local_args[$key] .'] with feed_args['.$key.'] of ['.(string)$feed_args[$key].']<br />'); }
-						$local_args[$key] = $feed_args[$key];
-					}
-				}
-			}
-			reset($local_args);
-			@reset($feed_args);
-		}
-		// at this point, local_args[] has anything that was passed in the feed_args[]
-		if ($debug_mega_listbox > 1) { $this->dbug->out('folders_mega_listbox('.__LINE__.'):FINAL Listbox Local Args:<br />'.serialize($local_args).'<br />'); }
-
-		$item_tags = '';
-
-		// we need the loop to include the default account AS WELL AS the extra accounts
-		for ($x=0; $x < count($this->extra_and_default_acounts); $x++)
-		{
-			$this_acctnum = $this->extra_and_default_acounts[$x]['acctnum'];
-			$this_status = $this->extra_and_default_acounts[$x]['status'];
-			if ($this_status != 'enabled')
-			{
-				// Do Nothing, This account is not in use
-				if ($debug_mega_listbox > 1) { $this->dbug->out('folders_mega_listbox('.__LINE__.'): $this_acctnum ['.$this_acctnum.'] is not in use, so skip folderlist<br />'); }
-			}
-			else
-			{
-				// get the actual list of folders we are going to put into the combobox
-				//$folder_list = $this->get_folder_list($this_acctnum);
-				$folder_list = $this->get_arg_value('folder_list', $this_acctnum);
-				if ($debug_mega_listbox > 1) { $this->dbug->out('folders_mega_listbox('.__LINE__.'): $this_acctnum ['.$this_acctnum.'] IS enabled, got folder list<br />'); }
-				if ($debug_mega_listbox > 2) { $this->dbug->out('folders_mega_listbox('.__LINE__.'): $folder_list for $this_acctnum ['.$this_acctnum.'] DUMP:', $folder_list); }
-				// NNTP = BORKED CODE!!!  (ignore for now) ...
-				if ($this->get_arg_value('newsmode', $this_acctnum))
-				{
-					//while($pref = each($GLOBALS['phpgw_info']['user']['preferences']['nntp']))
-					foreach($GLOBALS['phpgw_info']['user']['preferences']['nntp'] as $key => $value)
-					{
-						$GLOBALS['phpgw']->db->query('SELECT name FROM newsgroups WHERE con='.$key);
-						while($GLOBALS['phpgw']->db->next_record())
-						{
-							$item_tags .= '<option value="' . urlencode($GLOBALS['phpgw']->db->f('name')) . '">' . $GLOBALS['phpgw']->db->f('name')
-							  . '</option>';
-						}
-					}
-					break;
-				}
-				// ... back to working code
-
-				// iterate thru the folder list, building the HTML tags using that data
-				for ($i=0; $i<count($folder_list);$i++)
-				{
-					$folder_long = $folder_list[$i]['folder_long'];
-					$folder_short = $folder_list[$i]['folder_short'];
-					// yes we need $folder_acctnum to help make the "folder ball", yes I know it *should* be the same as $this_acctnum
-					$folder_acctnum = $folder_list[$i]['acctnum'];
-					// this logic determines if the combobox should be initialized with certain folder already selected
-					// we use "folder short" as the comparator because that way at least we know we are comparing syntatic-ally similar items
-					if (($folder_short == $this->get_folder_short($local_args['pre_select_folder'], $local_args['pre_select_folder_acctnum']))
-					&& ($folder_acctnum == $local_args['pre_select_folder_acctnum']))
-					{
-						$sel = ' selected';
-					}
-					else
-					{
-						$sel = '';
-					}
-					// this logic determines we should not include a certain folder in the combobox list
-					if ($folder_short != $this->get_folder_short($local_args['skip_folder']))
-					{
-						// we need to make value="X" imitate URI type data, so we can embed the acctnum data
-						// for the folder in there with folder name, whereas normally option value="X" can only
-						// hold no nore than one data item as limited by BOTH html and php 's treatment of a combobox
-
-						$option_value =  '&'.$local_args['folder_key_name'].'='.$this->prep_folder_out($folder_long)
-								.'&'.$local_args['acctnum_key_name'].'='.$folder_acctnum;
-
-						$text_blurb = '['.$folder_acctnum.'] '.$folder_short;
-
-						$item_tags .= '<option value="'.$option_value.'"'.$sel.'>'.$text_blurb.'</option>'."\r\n";
-					}
-				}
-			}
-		}
-		// now $item_tags contains the internal (i.e. "option" items) folder list for this "select" combobox widget
-
-		// ----  add the HTML tags that surround this internal list data  ----
-		if ((isset($local_args['on_change']))
-		&& ($local_args['on_change'] != ''))
-		{
-			$on_change_tag = 'onChange="'.$local_args['on_change'].'"';
-		}
-		else
-		{
-			$on_change_tag = '';
-		}
-
-		// the widget_name with "_fake_uri" tells the script what to do with this data
-		$listbox_widget =
-			 '<select name="'.$local_args['widget_name'].'" '.$on_change_tag.'>'
-				.'<option value="">'.$local_args['first_line_txt'].' '
-				. $item_tags
-			.'</select>';
-		// return a pre-built HTML listbox (selectbox) widget
-		if ($debug_mega_listbox > 0) { $this->dbug->out('folders_mega_listbox('.__LINE__.'): LEAVING<br />'); }
-		return $listbox_widget;
-	}
-
 
 	// ---- Messages Sort Order Start and Msgnum  -----
-	/*!
-	@function fill_sort_order_start_msgnum
-	@abstract alias to "fill_sort_order_start" because msgnum is NO LONGER handled here, function was renamed.
-	@author Angles
-	@discussion alias function for backward compatibility only, useful only until the rest of the code calls the
-	real function "fill_sort_order_start"
-	*/
-	function fill_sort_order_start_msgnum()
-	{
-		$this->fill_sort_order_start();
-	}
-
 	/*!
 	@function fill_sort_order_start
 	@abstract handles determining what values sort, order, and start should have.
 	@author Angles
 	@discussion if sort, order, and start are available in the GPC vars and are valid (values work, not out of range) then
 	those GPC vars are used as source data. If not, then data is generated accourding to the users prefs for sort and order,
-	abd start is assumed 0 if not otherwise provided in the GPC vars. NOTE: MSGNUM IS NO LONGER HANDLED
-	IN THIS FUNCTION so it was renamed from "fill_sort_order_start_msgnum" to "fill_sort_order_start".
+	and start is assumed 0 if not otherwise provided in the GPC vars. Message numbers are handled separately.
 	@syntax These are the PHP Sorting definitions and what they do and what their int value is.
 	SORTDATE:  0	//This is the Date that the senders email client stanp the message with
 	SORTARRIVAL: 1	 //This is the date your email server's MTA stamps the message with
@@ -656,7 +134,7 @@
 	{
 		//$debug_sort = True;
 		$debug_sort = False;
-	
+
 		// AND ensure $this->get_arg_value('sort')  $this->get_arg_value('order')  and  $this->get_arg_value('start') have usable values
 		/*
 		Sorting defs:
@@ -679,14 +157,16 @@
 		// if not set in the args, then assign some defaults
 		// then store the determination in a class variable $this->get_arg_value('sort')
 		if (($this->get_isset_arg('sort'))
-		&& ($this->get_arg_value('sort') != '')
-		 && (($this->get_arg_value('sort') >= 0) && ($this->get_arg_value('sort') <= 6)) )
+			&& ($this->get_arg_value('sort') != '')
+			&& (($this->get_arg_value('sort') >= 0) && ($this->get_arg_value('sort') <= 6))
+		)
 		{
 			// this is a valid "sort" variable passed as an argument (in a URL, form, or cookie, or external request)
 		}
 		elseif (($this->get_isset_arg('sort'))
-		&& ($this->get_arg_value('sort') != '')
-		  && ($this->get_arg_value('sort') == 'ASC') && ($this->get_isset_arg('newsmode')))
+			&& ($this->get_arg_value('sort') != '')
+			&& ($this->get_arg_value('sort') == 'ASC') && ($this->get_isset_arg('newsmode'))
+		)
 		{
 			// I think this is needed for newsmode because it reads message list that has been
 			// stored locally in a database, in this case it is NOT an arg ment for the NNTP server
@@ -701,13 +181,15 @@
 		// == ORDER ==
 		// (reverse sorting or not)  if specified in the url, then use it, else use defaults
 		if (($this->get_isset_arg('order'))
-		&& ((string)$this->get_arg_value('order') != '')
-		  && (($this->get_arg_value('order') >= 0) && ($this->get_arg_value('order') <= 1)) )
+			&& ((string)$this->get_arg_value('order') != '')
+			&& (($this->get_arg_value('order') >= 0) && ($this->get_arg_value('order') <= 1))
+		)
 		{
 			// this is a valid 'order' variable passed as an arg
 		}
 		elseif (($this->get_isset_pref('default_sorting'))
-		  && ($this->get_pref_value('default_sorting') == "new_old"))
+			&& ($this->get_pref_value('default_sorting') == "new_old")
+		)
 		{
 			// user has a preference set to see new mail first
 			// this is considered "reverse" order because it is "highest to lowest"
@@ -725,7 +207,8 @@
 		// == START ==
 		// when requesting a subset of messages, start will get you there
 		if (($this->get_isset_arg('start'))
-		&& ($this->get_arg_value('start') != ''))
+			&& ($this->get_arg_value('start') != '')
+		)
 		{
 			// this is a valid 'start' variable passed as an arg
 			// you are probably requesting a subset of the available messages
@@ -735,15 +218,8 @@
 			// start at the beginning (relative to your "sort" and "order" of course)
 			$this->set_arg_value('start', 0);
 		}
-		
-		if ($debug_sort)
-		{
-			$this->dbug->out('sort: ['.$this->get_arg_value('sort').']<br />');
-			$this->dbug->out('order: ['.$this->get_arg_value('order').']<br />');
-			$this->dbug->out('start: ['.$this->get_arg_value('start').']<br />');
-		}
 	}
-	
+
 	// ---- Go To Previous / Next Message Logic Handling  -----
 	// NOTE: msgnum int 0 is NOT to be confused with "empty" nor "boolean False"
 	/*!
@@ -752,26 +228,27 @@
 	@discussion Adding ex_acctnum and ex_folder params AS AN EXPERIMENT. 
 	@author Angles
 	*/
-	function prev_next_navigation($old_method_totalmessages=0, $ex_acctnum='', $ex_folder='')
+	function prev_next_navigation($old_method_totalmessages = 0, $ex_acctnum = '', $ex_folder = '')
 	{
 		//$debug_nav = True;
 		//$debug_nav = False;
 		$debug_nav = $this->debug_index_page_display;
-		if ($debug_nav > 0) { $this->dbug->out('mail_msg_display: prev_next_navigation('.__LINE__.'): ENTERING, (try debug_index_page_display = 3 to see data dumps)<br />'); }
-		
+
 		// but we do not want a COPY of this data it can be thousands of items, so we try to get a reference
 		$nav_data = array();
 		$nav_data['msgball_list'] = array();
 		// TESTING THIS AS AN OPTIONAL PARAM HERE
 		// we used to obtain it here no matter what, now it may be passed as a param
 		if ((!isset($ex_acctnum))
-		|| ((string)$ex_acctnum == ''))
+			|| ((string)$ex_acctnum == '')
+		)
 		{
 			$ex_acctnum = $this->get_acctnum();
 		}
 		// TESTING THIS AS AN OPTIONAL PARAM HERE
 		if ((!isset($ex_folder))
-		|| ((string)$ex_folder == ''))
+			|| ((string)$ex_folder == '')
+		)
 		{
 			$ex_folder = $this->prep_folder_out($this->get_arg_value('folder', $this->get_acctnum()));
 		}
@@ -779,10 +256,11 @@
 		//$this->get_msgball_list($ex_acctnum, $ex_folder);
 		// remember the actual msgball_list is a sub element of an array that includes validity info
 		if (($this->session_cache_enabled == True)
-		&& (isset($this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$ex_acctnum]['msgball_list'][$ex_folder]['msgball_list'])))
+			&& (isset($this->getSessionCache()[$ex_acctnum]['msgball_list'][$ex_folder]['msgball_list']))
+		)
 		//&& (isset($GLOBALS['phpgw_session']['phpgw_app_sessions']['email']['dat'][$ex_acctnum]['msgball_list']['msgball_list'][$ex_folder])))
 		{
-			$nav_data['msgball_list'] =& $this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$ex_acctnum]['msgball_list'][$ex_folder]['msgball_list'];
+			$nav_data['msgball_list'] = &$this->getSessionCache()[$ex_acctnum]['msgball_list'][$ex_folder]['msgball_list'];
 		}
 		else
 		{
@@ -790,47 +268,54 @@
 			$nav_data['msgball_list'] = $this->get_msgball_list($ex_acctnum, $ex_folder);
 		}
 		//$nav_data['msgnum_idx'] = $this->array_search_ex($this->get_arg_value('["msgball"]["msgnum"]'), $nav_data['msgball_list']);
-		
-		
+
+
 		// what is the array index number where the message in question is located in the $nav_data['msgball_list'] array
 		// easiest way is to search for the uri in the msgball_list
 		$this_pageview_msgball = $this->get_arg_value('msgball');
 		if ((isset($this_pageview_msgball['uri']))
-		&& ($this_pageview_msgball['uri']))
+			&& ($this_pageview_msgball['uri'])
+		)
 		{
 			// do nothing we have the URI data we need
 		}
 		else
 		{
 			$this_pageview_msgball['uri'] = array(
-				'msgball[msgnum]'=>$this_pageview_msgball['msgnum'],
-				'msgball[folder]'=>$this_pageview_msgball['folder'],
-				'msgball[acctnum]'=>$this_pageview_msgball['acctnum']);
+				'msgball[msgnum]' => $this_pageview_msgball['msgnum'],
+				'msgball[folder]' => $this_pageview_msgball['folder'],
+				'msgball[acctnum]' => $this_pageview_msgball['acctnum']
+			);
 		}
 		// get the pos in the msgball_list that is the array idx for this current pageview msgball
 		$nav_data['msgnum_idx'] = False;
-		
-	//	$nav_data['msgnum_idx'] = array_search($this_pageview_msgball['uri'],$nav_data['msgball_list']);
+
+		//	$nav_data['msgnum_idx'] = array_search($this_pageview_msgball['uri'],$nav_data['msgball_list']);
 		// The uri is now an array.
 		//Fix this: there must be a smarter way...
-		if(isset($this_pageview_msgball['uri']) && is_array($this_pageview_msgball['uri'])
-		 && count($this_pageview_msgball['uri']) > 0
-		 && isset($nav_data['msgball_list']) && is_array($nav_data['msgball_list']))
+		if (
+			isset($this_pageview_msgball['uri']) && is_array($this_pageview_msgball['uri'])
+			&& count($this_pageview_msgball['uri']) > 0
+			&& isset($nav_data['msgball_list']) && is_array($nav_data['msgball_list'])
+		)
 		{
-			for ($i=0; $i < count($nav_data['msgball_list']); $i++)
+			for ($i = 0; $i < count($nav_data['msgball_list']); $i++)
 			{
-				if(count(array_diff_assoc($this_pageview_msgball['uri'],$nav_data['msgball_list'][$i]))==0
-				 && count(array_diff_assoc($nav_data['msgball_list'][$i],$this_pageview_msgball['uri']))==0)
+				if (
+					count(array_diff_assoc($this_pageview_msgball['uri'], $nav_data['msgball_list'][$i])) == 0
+					&& count(array_diff_assoc($nav_data['msgball_list'][$i], $this_pageview_msgball['uri'])) == 0
+				)
 				{
 					$nav_data['msgnum_idx'] = $i;
 					break;
 				}
 			}
 		}
-		
+
 		// NOTE: msgnum_idx int 0 is NOT to be confused with "empty" nor "boolean False"
 		if ((isset($nav_data['msgnum_idx']))
-		&& ((string)$nav_data['msgnum_idx'] != ''))
+			&& ((string)$nav_data['msgnum_idx'] != '')
+		)
 		{
 			$nav_data['active_msgnum_idx'] = $nav_data['msgnum_idx'];
 			$nav_data['lowest_left'] = 0;
@@ -868,7 +353,6 @@
 			$nav_data['method'] = 'old_broken';
 		}
 
-		if ($debug_nav > 2) { $this->dbug->out('mail_msg_display: prev_next_navigation('.__LINE__.'): step1 $nav_data[] DUMP:', $nav_data); }
 
 		// if it's not possible to have a prev message, then make "prev_msg" False
 		if ($nav_data['active_msgnum_idx'] <= $nav_data['lowest_left'])
@@ -882,163 +366,9 @@
 			// we are at the final message in this direction, there is no next message
 			$nav_data['next_msg'] = $this->not_set;
 		}
-		if ($debug_nav > 2) { $this->dbug->out('mail_msg_display: prev_next_navigation('.__LINE__.'): step2 $nav_data[] DUMP:', $nav_data); }
-		if ($debug_nav > 0) { $this->dbug->out('mail_msg_display: prev_next_navigation('.__LINE__.'): LEAVING<br />'); }
 		return $nav_data;
 	}
 
-	/*!
-	@function all_ex_accounts_listbox DEPRECIATED
-	@abstract Creates a listbox with all email accounts.
-	@discussion  Used in the switch account combobox, and the filers page too, I think. The listbox
-	is sort of an HTML widget. For the raw data, see the function, it is easy to get the data without the
-	HTML if you want that. DEPRECIATED now should use function in widgets class.
-	@author Angles
-	*/
-	function all_ex_accounts_listbox($feed_args)
-	{
-		// $this->ex_accounts_count
-		// $this->extra_accounts
-
-		if(!$feed_args)
-		{
-			$feed_args=array();
-		}
-		//$debug_widget = True;
-		$debug_widget = False;
-		
-		// establish fallback default args
-		$acctnum = $this->get_acctnum();
-		$local_args = Array(
-			'pre_select_acctnum'	=> $acctnum,
-			'widget_name'		=> 'fldball_fake_uri',
-			'folder_key_name'	=> 'folder',
-			'acctnum_key_name'	=> 'acctnum',
-			'on_change'			=> 'document.acctbox.submit()',
-			'is_multiple'		=> False,
-			'multiple_rows'		=> '4',
-			'show_status_is'	=> 'enabled,disabled',
-			'pre_select_multi'	=> (string)$acctnum
-		);		
-		// loop thru $local_args[], replacing defaults with any args specified in $feed_args[]
-		if ($debug_widget) { $this->dbug->out('all_ex_accounts_listbox $feed_args data DUMP:', $feed_args); }
-		if (count($feed_args) == 0)
-		{
-			if ($debug_widget) { $this->dbug->out('all_ex_accounts_listbox $feed_args is EMPTY<br />'.serialize($feed_args).'<br />'); }
-		}
-		else
-		{
-			//reset($local_args);
-			// the feed args may not be an array, the @ will supress warnings
-			@reset($feed_args); 
-			//while(list($key,$value) = each($local_args))
-			foreach($local_args as $key => $value)
-			{
-				// DEBUG
-				if ($debug_widget) { $this->dbug->out('* a: local_args: key=['.$key.'] value=['.(string)$value.']<br />'); }
-				if ($debug_widget) { $this->dbug->out('* b: feed_args: key=['.$key.'] value=['.(string)$feed_args[$key].']<br />'); }
-				if ((isset($feed_args[$key]))
-				//&& ($feed_args[$key] != $value))
-				&& ((string)$feed_args[$key] != (string)$value))
-				{
-					// we have a specified arg that should replace the default value
-					if ($debug_widget) { $this->dbug->out('*** override default value of ['.$local_args[$key] .'] with feed_args['.$key.'] of ['.(string)$feed_args[$key].']<br />'); }
-					$local_args[$key] = $feed_args[$key];
-				}
-			}
-			reset($local_args);
-			@reset($feed_args);
-		}
-		// at this point, local_args[] has anything that was passed in the feed_args[]
-		if ($debug_widget) { $this->dbug->out('all_ex_accounts_listbox: FINAL Listbox Local Args:<br />'.serialize($local_args).'<br />'); }
-		
-		$item_tags = '';
-		
-		// iterate thru the ex_accounts list, building the HTML tags using that data
-		for ($i=0; $i < count($this->extra_and_default_acounts); $i++)
-		{
-			$this_acctnum = $this->extra_and_default_acounts[$i]['acctnum'];
-			// is this account "enabled", "disabled", or "empty"
-			if ((stristr($local_args['show_status_is'], 'disabled'))
-			&& ($this->extra_and_default_acounts[$i]['status'] == 'disabled'))
-			{
-				// the option values below are in the form of embedded fake_uri
-				// FUTURE: take user to the extra accounts management page for this particular account
-				// now: put the user back to the default account
-				$option_value =  '&'.$local_args['folder_key_name'].'=INBOX'
-						.'&'.$local_args['acctnum_key_name'].'=0';
-				$option_text = lang('account').' ['.$this_acctnum.'] '.lang('disabled');
-				
-				// note: a disabled account can not be pre-selected
-				$item_tags .= '<option value="'.$option_value.'">'.$option_text.'</option>'."\r\n";
-			}
-			elseif ((stristr($local_args['show_status_is'], 'enabled'))
-			&& ($this->extra_and_default_acounts[$i]['status'] == 'enabled'))
-			{
-				// this logic determines if the combobox should be initialized with certain account already selected
-				if ((!$local_args['is_multiple'])
-				&& ((string)$local_args['pre_select_acctnum'] == (string)$this_acctnum))
-				{
-					$sel = ' selected';
-				}
-				elseif ( ($local_args['is_multiple'])
-				&& (	(strstr((string)$local_args['pre_select_multi'], (string)$this_acctnum))
-						|| ($local_args['pre_select_multi'] == $this_acctnum)
-					)
-				)
-				{
-					$sel = ' selected';
-				}
-				else
-				{
-					$sel = '';
-				}
-				
-				// we need to make value="X" imitate URI type data, so we can embed the acctnum data 
-				// for the folder in there with folder name, whereas normally option value="X" can only 
-				// hold no nore than one data item as limited by BOTH html and php 's treatment of a combobox					
-				
-				$option_value =  '&'.$local_args['folder_key_name'].'=INBOX'
-						.'&'.$local_args['acctnum_key_name'].'='.$this_acctnum;
-				//$option_text = lang('account').' ['.$this_acctnum.']'.' '.lang('as').' &quot;'.$this->get_pref_value('fullname', $this_acctnum).'&quot;';
-				//$option_text = lang('account').' ['.$this_acctnum.']'.'&nbsp;&nbsp;'.$this->get_pref_value('fullname', $this_acctnum);
-				$option_text = lang('account').' '.$this_acctnum.':'.'&nbsp;&nbsp;'.$this->get_pref_value('fullname', $this_acctnum);
-				
-				$item_tags .= '<option value="'.$option_value.'"'.$sel.'>'.$option_text.'</option>'."\r\n";
-			}
-			// if not enabled or disabed, it must be empty, in which case we ignore it
-		}
-		// now $item_tags contains the internal folder list
-		
-		// ----  add the HTML tags that surround this internal list data  ----
-		if ((isset($local_args['on_change']))
-		&& ($local_args['on_change'] != ''))
-		{
-			$on_change_tag = 'onChange="'.$local_args['on_change'].'"';
-		}
-		else
-		{
-			$on_change_tag = '';
-		}
-		
-		// if this is a multi-selectable scroll box, make the necessary tags
-		if (!$local_args['is_multiple'])
-		{
-			$if_multiple_tags = '';
-		}
-		else
-		{
-			$if_multiple_tags = 'size="'.$local_args['multiple_rows'].'" multiple';
-		}
-		// the widget_name with "_fake_uri" tells the script what to do with this data
-		$listbox_widget =
-			 '<select name="'.$local_args['widget_name'].'" '.$on_change_tag.' '.$if_multiple_tags.'>'
-				. $item_tags
-			.'</select>';
-		// return a pre-built HTML listbox (selectbox) widget
-		return $listbox_widget;
-	}
-	
 	/*!
 	@function format_byte_size
 	@abstract 
@@ -1048,7 +378,7 @@
 	{
 		if ($feed_size < 999999)
 		{
-			$nice_size = round(10*($feed_size/1024))/10;
+			$nice_size = round(10 * ($feed_size / 1024)) / 10;
 			// kbytes is small enough that the 1/10 digit is irrelevent
 			$nice_size = round($nice_size);
 			// it looks stupid to report "0 k" as a size, make it "1 k"
@@ -1056,14 +386,14 @@
 			{
 				$nice_size = 1;
 			}
-			$nice_size = round($nice_size).' k';
+			$nice_size = round($nice_size) . ' k';
 		}
 		else
 		{
 			//  round to W.XYZ megs by rounding WX.YZ
-			$nice_size = round($feed_size/(1024*100));
+			$nice_size = round($feed_size / (1024 * 100));
 			// then bring it back one digit and add the MB string
-			$nice_size = ($nice_size/10) .' MB';
+			$nice_size = ($nice_size / 10) . ' MB';
 		}
 		return $nice_size;
 	}
@@ -1074,9 +404,9 @@
 	@abstract 
 	@author Angles and code from previous maintainer
 	*/
-	function get_subject($msg, $desired_prefix='Re: ')
+	function get_subject($msg, $desired_prefix = 'Re: ')
 	{
-		if ( (! $msg->Subject) || ($msg->Subject == '') )
+		if ((! $msg->Subject) || ($msg->Subject == ''))
 		{
 			$subject = lang('no subject');
 		}
@@ -1087,7 +417,7 @@
 
 		// Now all text has to be utf8
 		$subject = $this->ascii2utf($subject);
-		
+
 		// do we add a prefix like Re: or Fw:
 		if ($desired_prefix != '')
 		{
@@ -1108,7 +438,7 @@
 	*/
 	function get_who_wrote($msg)
 	{
-		if ( (!isset($msg->from)) && (!isset($msg->reply_to)) )
+		if ((!isset($msg->from)) && (!isset($msg->reply_to)))
 		{
 			$lang_somebody = 'somebody';
 			return $lang_somebody;
@@ -1123,7 +453,7 @@
 		}
 		if ((!isset($from->personal)) || ($from->personal == ''))
 		{
-			$personal = $from->mailbox.'@'.$from->host;
+			$personal = $from->mailbox . '@' . $from->host;
 			//$personal = 'not set or blank';
 		}
 		else
@@ -1135,7 +465,7 @@
 			////$personal = $this->qprint_rfc_header($personal);
 			// escape certain undesirable chars before HTML display
 			$personal =  $this->htmlspecialchars_encode($personal);
-			$personal = $personal .' ('.$from->mailbox.'@'.$from->host.')';
+			$personal = $personal . ' (' . $from->mailbox . '@' . $from->host . ')';
 		}
 
 		// Now all text has to be utf8
@@ -1205,39 +535,7 @@
 	*/
 	function get_flat_pgw_struct($struct)
 	{
-		if ($this->debug_message_display > 0) { $this->dbug->out('mail_msg(display).get_flat_pgw_struct:  ENTERING <br />'); }
-		//if ($this->debug_message_display > 1) { $this->dbug->out('mail_msg(display).get_flat_pgw_struct:  param $msgball ['.serialize($msgball).']<br />'); }
-		if ($this->debug_message_display > 2) { $this->dbug->out('mail_msg(display).get_flat_pgw_struct:  param $struct DUMP:', $struct); }
 
-		/*
-		// NO NEED TO CACHE THIS DATA, NO CONTACT WITH MAILSERVER IS NEEDED FOR THIS DATA
-		// try to get it from cache, this function handles checking for session_cache_extreme True or False
-		if ($this->session_cache_extreme == True)
-		{
-			if ((isset($msgball['folder']))
-			&& (trim($msgball['folder']) != '')
-			&& (isset($msgball['acctnum']))
-			&& ((string)($msgball['acctnum']) != ''))
-			{
-				$ex_folder = $msgball['folder'];
-				$ex_msgnum = $msgball['msgnum'];
-			}
-			else
-			{
-				$ex_folder = $this->prep_folder_out();
-				$ex_msgnum = $this->get_acctnum();
-			}
-			// the cached data is returned as a ready to use array if it exists, or False if not existing
-			$cache_flat_pgw_struct = $this->read_session_cache_item('flat_pgw_struct', $acctnum, $ex_folder, $ex_msgnum);
-			//echo '** flat_pgw_struct: $specific_key ['.$specific_key.'] :: $cache_flat_pgw_struct DUMP<pre>'; print_r($cache_phpgw_header); echo '</pre>';
-			if ($cache_flat_pgw_struct)
-			{
-				if ($this->debug_message_display > 0) { $this->dbug->out('mail_msg(display).get_flat_pgw_struct:  LEAVING returning cached data<br />'); }
-				return $cache_flat_pgw_struct;
-			}
-		}
-		if ($this->debug_message_display > 1) { $this->dbug->out('mail_msg(display).get_flat_pgw_struct: beginning ... no cached data available or caching is not enabled<br />'); }
-		*/
 
 		if (isset($this->not_set))
 		{
@@ -1264,18 +562,21 @@
 		//echo '<br />INITIAL var part serialized:<br />' .serialize($part) .'<br /><br />';
 
 		$d1_num_parts = count($part);
-		$part_nice = Array();
+		$part_nice = array();
 
 		// get PRIMARY level part information
-		$deepest_level=0;
+		$deepest_level = 0;
 		$array_position = -1;  // it will be advanced to 0 before its used
 		// ---- Flatten Message Structure Array   -----
 		for ($d1 = 0; $d1 < $d1_num_parts; $d1++)
 		{
 			$array_position++;
-			$d1_mime_num = (string)($d1+1);
-			$part_nice[$array_position] = $this->pgw_msg_struct($part[$d1], $not_set, $d1_mime_num, ($d1+1), $d1_num_parts, 1);
-			if ($deepest_level < 1) { $deepest_level=1; }
+			$d1_mime_num = (string)($d1 + 1);
+			$part_nice[$array_position] = $this->pgw_msg_struct($part[$d1], $not_set, $d1_mime_num, ($d1 + 1), $d1_num_parts, 1);
+			if ($deepest_level < 1)
+			{
+				$deepest_level = 1;
+			}
 
 			// get SECONDARY/EMBEDDED level part information
 			$d1_array_pos = $array_position;
@@ -1285,10 +586,13 @@
 				for ($d2 = 0; $d2 < $d2_num_parts; $d2++)
 				{
 					$d2_part = $part_nice[$d1_array_pos]['subpart'][$d2];
-					$d2_mime_num = (string)($d1+1) .'.' .(string)($d2+1);
+					$d2_mime_num = (string)($d1 + 1) . '.' . (string)($d2 + 1);
 					$array_position++;
-					$part_nice[$array_position] = $this->pgw_msg_struct($d2_part, $d1_array_pos, $d2_mime_num, ($d2+1), $d2_num_parts, 2);
-					if ($deepest_level < 2) { $deepest_level=2; }
+					$part_nice[$array_position] = $this->pgw_msg_struct($d2_part, $d1_array_pos, $d2_mime_num, ($d2 + 1), $d2_num_parts, 2);
+					if ($deepest_level < 2)
+					{
+						$deepest_level = 2;
+					}
 
 					// get THIRD/EMBEDDED level part information
 					$d2_array_pos = $array_position;
@@ -1298,10 +602,13 @@
 						for ($d3 = 0; $d3 < $d3_num_parts; $d3++)
 						{
 							$d3_part = $part_nice[$d2_array_pos]['subpart'][$d3];
-							$d3_mime_num = (string)($d1+1) .'.' .(string)($d2+1) .'.' .(string)($d3+1);
+							$d3_mime_num = (string)($d1 + 1) . '.' . (string)($d2 + 1) . '.' . (string)($d3 + 1);
 							$array_position++;
-							$part_nice[$array_position] = $this->pgw_msg_struct($d3_part, $d2_array_pos, $d3_mime_num, ($d3+1), $d3_num_parts, 3);
-							if ($deepest_level < 3) { $deepest_level=3; }
+							$part_nice[$array_position] = $this->pgw_msg_struct($d3_part, $d2_array_pos, $d3_mime_num, ($d3 + 1), $d3_num_parts, 3);
+							if ($deepest_level < 3)
+							{
+								$deepest_level = 3;
+							}
 
 							// get FOURTH/EMBEDDED level part information
 							$d3_array_pos = $array_position;
@@ -1311,10 +618,13 @@
 								for ($d4 = 0; $d4 < $d4_num_parts; $d4++)
 								{
 									$d4_part = $part_nice[$d3_array_pos]['subpart'][$d4];
-									$d4_mime_num = (string)($d1+1) .'.' .(string)($d2+1) .'.' .(string)($d3+1) .'.' .(string)($d4+1);
+									$d4_mime_num = (string)($d1 + 1) . '.' . (string)($d2 + 1) . '.' . (string)($d3 + 1) . '.' . (string)($d4 + 1);
 									$array_position++;
-									$part_nice[$array_position] = $this->pgw_msg_struct($d4_part, $d3_array_pos, $d4_mime_num, ($d4+1), $d4_num_parts, 4);
-									if ($deepest_level < 4) { $deepest_level=4; }
+									$part_nice[$array_position] = $this->pgw_msg_struct($d4_part, $d3_array_pos, $d4_mime_num, ($d4 + 1), $d4_num_parts, 4);
+									if ($deepest_level < 4)
+									{
+										$deepest_level = 4;
+									}
 
 									// get FIFTH LEVEL EMBEDDED level part information
 									$d4_array_pos = $array_position;
@@ -1324,23 +634,29 @@
 										for ($d5 = 0; $d5 < $d5_num_parts; $d5++)
 										{
 											$d5_part = $part_nice[$d4_array_pos]['subpart'][$d5];
-											$d5_mime_num = (string)($d1+1) .'.' .(string)($d2+1) .'.' .(string)($d3+1) .'.' .(string)($d4+1) .'.' .(string)($d5+1);
+											$d5_mime_num = (string)($d1 + 1) . '.' . (string)($d2 + 1) . '.' . (string)($d3 + 1) . '.' . (string)($d4 + 1) . '.' . (string)($d5 + 1);
 											$array_position++;
-											$part_nice[$array_position] = $this->pgw_msg_struct($d5_part, $d4_array_pos, $d5_mime_num, ($d5+1), $d5_num_parts, 5);
-											if ($deepest_level < 5) { $deepest_level=5; }
+											$part_nice[$array_position] = $this->pgw_msg_struct($d5_part, $d4_array_pos, $d5_mime_num, ($d5 + 1), $d5_num_parts, 5);
+											if ($deepest_level < 5)
+											{
+												$deepest_level = 5;
+											}
 
 											// get SIXTH LEVEL EMBEDDED level part information
 											$d5_array_pos = $array_position;
-											if ($d5_part!= $not_set)
+											if ($d5_part != $not_set)
 											{
 												$d6_num_parts = $part_nice[$d5_array_pos]['ex_num_subparts'];
 												for ($d6 = 0; $d6 < $d6_num_parts; $d6++)
 												{
 													$d6_part = $part_nice[$d5_array_pos]['subpart'][$d6];
-													$d6_mime_num = (string)($d1+1) .'.' .(string)($d2+1) .'.' .(string)($d3+1) .'.' .(string)($d4+1) .'.' .(string)($d5+1) .'.' .(string)($d6+1);
+													$d6_mime_num = (string)($d1 + 1) . '.' . (string)($d2 + 1) . '.' . (string)($d3 + 1) . '.' . (string)($d4 + 1) . '.' . (string)($d5 + 1) . '.' . (string)($d6 + 1);
 													$array_position++;
-													$part_nice[$array_position] = $this->pgw_msg_struct($d6_part, $d5_array_pos, $d6_mime_num, ($d6+1), $d6_num_parts, 6);
-													if ($deepest_level < 6) { $deepest_level=6; }
+													$part_nice[$array_position] = $this->pgw_msg_struct($d6_part, $d5_array_pos, $d6_mime_num, ($d6 + 1), $d6_num_parts, 6);
+													if ($deepest_level < 6)
+													{
+														$deepest_level = 6;
+													}
 
 													// get SEVENTH LEVEL EMBEDDED level part information
 													$d6_array_pos = $array_position;
@@ -1350,10 +666,13 @@
 														for ($d7 = 0; $d7 < $d7_num_parts; $d7++)
 														{
 															$d7_part = $part_nice[$d6_array_pos]['subpart'][$d7];
-															$d7_mime_num = (string)($d1+1) .'.' .(string)($d2+1) .'.' .(string)($d3+1) .'.' .(string)($d4+1) .'.' .(string)($d5+1) .'.' .(string)($d6+1) .'.' .(string)($d7+1);
+															$d7_mime_num = (string)($d1 + 1) . '.' . (string)($d2 + 1) . '.' . (string)($d3 + 1) . '.' . (string)($d4 + 1) . '.' . (string)($d5 + 1) . '.' . (string)($d6 + 1) . '.' . (string)($d7 + 1);
 															$array_position++;
-															$part_nice[$array_position] = $this->pgw_msg_struct($d7_part, $d6_array_pos, $d7_mime_num, ($d7+1), $d7_num_parts, 7);
-															if ($deepest_level < 7) { $deepest_level=7; }
+															$part_nice[$array_position] = $this->pgw_msg_struct($d7_part, $d6_array_pos, $d7_mime_num, ($d7 + 1), $d7_num_parts, 7);
+															if ($deepest_level < 7)
+															{
+																$deepest_level = 7;
+															}
 
 															// get EIGTH LEVEL EMBEDDED level part information
 															$d7_array_pos = $array_position;
@@ -1363,10 +682,13 @@
 																for ($d8 = 0; $d8 < $d8_num_parts; $d8++)
 																{
 																	$d8_part = $part_nice[$d7_array_pos]['subpart'][$d8];
-																	$d8_mime_num = (string)($d1+1) .'.' .(string)($d2+1) .'.' .(string)($d3+1) .'.' .(string)($d4+1) .'.' .(string)($d5+1) .'.' .(string)($d6+1) .'.' .(string)($d7+1) .'.' .(string)($d8+1);
+																	$d8_mime_num = (string)($d1 + 1) . '.' . (string)($d2 + 1) . '.' . (string)($d3 + 1) . '.' . (string)($d4 + 1) . '.' . (string)($d5 + 1) . '.' . (string)($d6 + 1) . '.' . (string)($d7 + 1) . '.' . (string)($d8 + 1);
 																	$array_position++;
-																	$part_nice[$array_position] = $this->pgw_msg_struct($d8_part, $d7_array_pos, $d8_mime_num, ($d8+1), $d8_num_parts, 8);
-																	if ($deepest_level < 8) { $deepest_level=8; }
+																	$part_nice[$array_position] = $this->pgw_msg_struct($d8_part, $d7_array_pos, $d8_mime_num, ($d8 + 1), $d8_num_parts, 8);
+																	if ($deepest_level < 8)
+																	{
+																		$deepest_level = 8;
+																	}
 
 																	// get NINTH LEVEL EMBEDDED level part information
 																	$d8_array_pos = $array_position;
@@ -1376,10 +698,13 @@
 																		for ($d9 = 0; $d9 < $d9_num_parts; $d9++)
 																		{
 																			$d9_part = $part_nice[$d8_array_pos]['subpart'][$d9];
-																			$d9_mime_num = (string)($d1+1) .'.' .(string)($d2+1) .'.' .(string)($d3+1) .'.' .(string)($d4+1) .'.' .(string)($d5+1) .'.' .(string)($d6+1) .'.' .(string)($d7+1) .'.' .(string)($d8+1) .'.' .(string)($d9+1);
+																			$d9_mime_num = (string)($d1 + 1) . '.' . (string)($d2 + 1) . '.' . (string)($d3 + 1) . '.' . (string)($d4 + 1) . '.' . (string)($d5 + 1) . '.' . (string)($d6 + 1) . '.' . (string)($d7 + 1) . '.' . (string)($d8 + 1) . '.' . (string)($d9 + 1);
 																			$array_position++;
-																			$part_nice[$array_position] = $this->pgw_msg_struct($d9_part, $d8_array_pos, $d9_mime_num, ($d9+1), $d9_num_parts, 9);
-																			if ($deepest_level < 9) { $deepest_level=9; }
+																			$part_nice[$array_position] = $this->pgw_msg_struct($d9_part, $d8_array_pos, $d9_mime_num, ($d9 + 1), $d9_num_parts, 9);
+																			if ($deepest_level < 9)
+																			{
+																				$deepest_level = 9;
+																			}
 
 																			// get 10th LEVEL EMBEDDED level part information
 																			$d9_array_pos = $array_position;
@@ -1389,10 +714,13 @@
 																				for ($d10 = 0; $d10 < $d10_num_parts; $d10++)
 																				{
 																					$d10_part = $part_nice[$d9_array_pos]['subpart'][$d10];
-																					$d10_mime_num = (string)($d1+1) .'.' .(string)($d2+1) .'.' .(string)($d3+1) .'.' .(string)($d4+1) .'.' .(string)($d5+1) .'.' .(string)($d6+1) .'.' .(string)($d7+1) .'.' .(string)($d8+1) .'.' .(string)($d9+1) .'.' .(string)($d10+1);
+																					$d10_mime_num = (string)($d1 + 1) . '.' . (string)($d2 + 1) . '.' . (string)($d3 + 1) . '.' . (string)($d4 + 1) . '.' . (string)($d5 + 1) . '.' . (string)($d6 + 1) . '.' . (string)($d7 + 1) . '.' . (string)($d8 + 1) . '.' . (string)($d9 + 1) . '.' . (string)($d10 + 1);
 																					$array_position++;
-																					$part_nice[$array_position] = $this->pgw_msg_struct($d10_part, $d9_array_pos, $d10_mime_num, ($d10+1), $d10_num_parts, 10);
-																					if ($deepest_level < 10) { $deepest_level=10; }
+																					$part_nice[$array_position] = $this->pgw_msg_struct($d10_part, $d9_array_pos, $d10_mime_num, ($d10 + 1), $d10_num_parts, 10);
+																					if ($deepest_level < 10)
+																					{
+																						$deepest_level = 10;
+																					}
 
 																					// get 11th LEVEL EMBEDDED level part information
 																					$d10_array_pos = $array_position;
@@ -1402,11 +730,14 @@
 																						for ($d11 = 0; $d11 < $d11_num_parts; $d11++)
 																						{
 																							$d11_part = $part_nice[$d10_array_pos]['subpart'][$d11];
-																							$d11_mime_num = (string)($d1+1) .'.' .(string)($d2+1) .'.' .(string)($d3+1) .'.' .(string)($d4+1) .'.' .(string)($d5+1) .'.' .(string)($d6+1) .'.' .(string)($d7+1) .'.' .(string)($d8+1) .'.' .(string)($d9+1) .'.' .(string)($d10+1) .'.' .(string)($d11+1);
+																							$d11_mime_num = (string)($d1 + 1) . '.' . (string)($d2 + 1) . '.' . (string)($d3 + 1) . '.' . (string)($d4 + 1) . '.' . (string)($d5 + 1) . '.' . (string)($d6 + 1) . '.' . (string)($d7 + 1) . '.' . (string)($d8 + 1) . '.' . (string)($d9 + 1) . '.' . (string)($d10 + 1) . '.' . (string)($d11 + 1);
 																							$array_position++;
-																							$part_nice[$array_position] = $this->pgw_msg_struct($d11_part, $d10_array_pos, $d11_mime_num, ($d11+1), $d11_num_parts, 11);
-																							if ($deepest_level < 11) { $deepest_level=11; }
-																							
+																							$part_nice[$array_position] = $this->pgw_msg_struct($d11_part, $d10_array_pos, $d11_mime_num, ($d11 + 1), $d11_num_parts, 11);
+																							if ($deepest_level < 11)
+																							{
+																								$deepest_level = 11;
+																							}
+
 																							// get 12th LEVEL EMBEDDED level part information
 																							$d11_array_pos = $array_position;
 																							if ($d11_part != $not_set)
@@ -1415,10 +746,13 @@
 																								for ($d12 = 0; $d12 < $d12_num_parts; $d12++)
 																								{
 																									$d12_part = $part_nice[$d11_array_pos]['subpart'][$d12];
-																									$d12_mime_num = (string)($d1+1) .'.' .(string)($d2+1) .'.' .(string)($d3+1) .'.' .(string)($d4+1) .'.' .(string)($d5+1) .'.' .(string)($d6+1) .'.' .(string)($d7+1) .'.' .(string)($d8+1) .'.' .(string)($d9+1) .'.' .(string)($d10+1) .'.' .(string)($d11+1) .'.' .(string)($d12+1);
+																									$d12_mime_num = (string)($d1 + 1) . '.' . (string)($d2 + 1) . '.' . (string)($d3 + 1) . '.' . (string)($d4 + 1) . '.' . (string)($d5 + 1) . '.' . (string)($d6 + 1) . '.' . (string)($d7 + 1) . '.' . (string)($d8 + 1) . '.' . (string)($d9 + 1) . '.' . (string)($d10 + 1) . '.' . (string)($d11 + 1) . '.' . (string)($d12 + 1);
 																									$array_position++;
-																									$part_nice[$array_position] = $this->pgw_msg_struct($d12_part, $d11_array_pos, $d12_mime_num, ($d12+1), $d12_num_parts, 12);
-																									if ($deepest_level < 12) { $deepest_level=12; }
+																									$part_nice[$array_position] = $this->pgw_msg_struct($d12_part, $d11_array_pos, $d12_mime_num, ($d12 + 1), $d12_num_parts, 12);
+																									if ($deepest_level < 12)
+																									{
+																										$deepest_level = 12;
+																									}
 																								}
 																							}
 																						}
@@ -1449,7 +783,7 @@
 		// ANALYSIS LOOP Part 1
 		for ($i = 0; $i < count($part_nice); $i++)
 		{
-			
+
 			/*!
 			@concept ATTACHMENT DETECTION in get_flat_pgw_struct
 			@discussion NOTE: initially I wanted to treat base64 attachments with more "respect", 
@@ -1464,24 +798,24 @@
 			is in the params, make one up. NOTE: we do not use "elseif" in the following logic 
 			because an attachment may be detected in *any* of the following code blocks in no particular, nor predictable, order.
 			*/
-			
+
 			// Fallback / Default: assume No Attachment here
 			//$part_nice['ex_part_name'] = 'unknown.html';
 			$part_nice[$i]['ex_part_name'] = 'attachment.txt';
 			$part_nice[$i]['ex_attachment'] = False;
-			
+
 			// Attachment Detection PART1-A = if a part has a NAME=FOO in the param pairs, then treat as an attachment
 			// notw: "name" is confirmed in PARAMS as the primary attribute used to specify a filename for an attachment
 			// UPDATE: "filename" is NOT confirmed used in PARAMS (is confirmed for dparams)
 			if (($part_nice[$i]['ex_num_param_pairs'] > 0)
-			&& ($part_nice[$i]['ex_attachment'] == False))
+				&& ($part_nice[$i]['ex_attachment'] == False)
+			)
 			{
 				for ($p = 0; $p < $part_nice[$i]['ex_num_param_pairs']; $p++)
 				{
-					if
-					(
+					if (
 						(($part_nice[$i]['params'][$p]['attribute'] == 'name')
-						|| ($part_nice[$i]['params'][$p]['attribute'] == 'filename'))
+							|| ($part_nice[$i]['params'][$p]['attribute'] == 'filename'))
 
 						&& ($part_nice[$i]['params'][$p]['value'] != $not_set)
 					)
@@ -1495,14 +829,14 @@
 			// Attachment Detection PART1-B = if a part has a NAME=FOO in the dparam pairs, then treat as an attachment
 			// UPDATE: "filename" is confirmed used in dparams, I think "name" is too in dparams but I am not sure
 			if (($part_nice[$i]['ex_num_dparam_pairs'] > 0)
-			&& ($part_nice[$i]['ex_attachment'] == False))
+				&& ($part_nice[$i]['ex_attachment'] == False)
+			)
 			{
 				for ($p = 0; $p < $part_nice[$i]['ex_num_dparam_pairs']; $p++)
 				{
-					if
-					(
+					if (
 						(($part_nice[$i]['dparams'][$p]['attribute'] == 'name')
-						|| ($part_nice[$i]['dparams'][$p]['attribute'] == 'filename'))
+							|| ($part_nice[$i]['dparams'][$p]['attribute'] == 'filename'))
 
 						&& ($part_nice[$i]['dparams'][$p]['value'] != $not_set)
 					)
@@ -1517,7 +851,8 @@
 			// Attachment Detection PART2 = if a part has encoding=base64 , then treat as an attachment
 			//	eventhough the above code did not find a name for the part
 			if (($part_nice[$i]['encoding'] == 'base64')
-			&& ($part_nice[$i]['ex_attachment'] == False))
+				&& ($part_nice[$i]['ex_attachment'] == False)
+			)
 			{
 				// NOTE: if a part has a name in the params, the above code would have found it, so to get here means
 				// we MUST have a base64 part with NO NAME - but it still should be treated as an attachment
@@ -1564,8 +899,9 @@
 			// Attachment Detection PART3 = if "disposition" header has a value of "attachment" , then treat as an attachment
 			// PROVIDED it is not type "message" - in that case the attachment is *inside* the message, not the message itself
 			if (($part_nice[$i]['disposition'] == 'attachment')
-			&& ($part_nice[$i]['type'] != 'message')
-			&& ($part_nice[$i]['ex_attachment'] == False))
+				&& ($part_nice[$i]['type'] != 'message')
+				&& ($part_nice[$i]['ex_attachment'] == False)
+			)
 			{
 				// NOTE: if a part has a name in the params, the above code would have found it, so to get here means
 				// we MUST have a attachment with NO NAME - but it still should be treated as an attachment
@@ -1601,10 +937,11 @@
 					// does the "attachment" have a name with "image"type extension
 					for ($p = 0; $p < count($part_nice[$i]['params']); $p++)
 					{
-						if ( (stristr($part_nice[$i]['params'][$p]['attribute'], 'name'))
-						&& ((stristr($part_nice[$i]['params'][$p]['value'], '.JPG'))
-						  || (stristr($part_nice[$i]['params'][$p]['value'], '.GIF'))
-						  || (stristr($part_nice[$i]['params'][$p]['value'], '.PNG')) ) )
+						if ((stristr($part_nice[$i]['params'][$p]['attribute'], 'name'))
+							&& ((stristr($part_nice[$i]['params'][$p]['value'], '.JPG'))
+								|| (stristr($part_nice[$i]['params'][$p]['value'], '.GIF'))
+								|| (stristr($part_nice[$i]['params'][$p]['value'], '.PNG')))
+						)
 						{
 							// we should attempt to inline display images
 							$part_nice[$i]['m_description'] = 'presentable/image';
@@ -1636,16 +973,17 @@
 			// at least for now, keywords "plain" and "html" are needed below
 			$part_nice[$i]['m_keywords'] = '';
 			if ((stristr($part_nice[$i]['subtype'], 'plain'))
-			|| (stristr($part_nice[$i]['subtype'], 'html'))
-			// enriched = part of APPLE MAIL multipart / alternative subpart where the html part usually is
-			|| (stristr($part_nice[$i]['subtype'], 'enriched')))
+				|| (stristr($part_nice[$i]['subtype'], 'html'))
+				// enriched = part of APPLE MAIL multipart / alternative subpart where the html part usually is
+				|| (stristr($part_nice[$i]['subtype'], 'enriched'))
+			)
 			{
-				$part_nice[$i]['m_keywords'] .= $part_nice[$i]['subtype'] .' ';
+				$part_nice[$i]['m_keywords'] .= $part_nice[$i]['subtype'] . ' ';
 			}
 			// encoding keyword is used below as well
 			if ($part_nice[$i]['encoding'] != $not_set)
 			{
-				$part_nice[$i]['m_keywords'] .= $part_nice[$i]['encoding'] .' ';
+				$part_nice[$i]['m_keywords'] .= $part_nice[$i]['encoding'] . ' ';
 			}
 
 			// keyword "alt_hide"
@@ -1676,47 +1014,47 @@
 				// flat array, which is more typical.
 				$presentable_parent_idx = $part_nice[$i]['ex_parent_flat_idx'];
 				if (
-				   ($part_nice[$i]['type'] == 'text')
-				&& ($part_nice[$i]['subtype'] == 'plain')
-				&& ($part_nice[$i]['ex_parent_flat_idx'] == $not_set)
-				//&& (stristr($struct->type, 'multipart'))
-				&& ((string)$struct->type == '1')  // "1" = "multipart"
-				&& (stristr($struct->subtype, 'alternative'))
+					($part_nice[$i]['type'] == 'text')
+					&& ($part_nice[$i]['subtype'] == 'plain')
+					&& ($part_nice[$i]['ex_parent_flat_idx'] == $not_set)
+					//&& (stristr($struct->type, 'multipart'))
+					&& ((string)$struct->type == '1')  // "1" = "multipart"
+					&& (stristr($struct->subtype, 'alternative'))
 				)
 				{
 					// SET THIS FLAG: then, in presentation loop, we can decide not to show it
-					$part_nice[$i]['m_keywords'] .= 'alt_hide' .' ';
+					$part_nice[$i]['m_keywords'] .= 'alt_hide' . ' ';
 				}
 				// scanario (2) as outlined above
 				elseif (
-				   ($part_nice[$i]['type'] == 'text')
-				&& ($part_nice[$i]['subtype'] == 'plain')
-				&& (isset($part_nice[$presentable_parent_idx]['ex_parent_flat_idx']) && $part_nice[$presentable_parent_idx]['ex_parent_flat_idx'] == $not_set)
-				&& (stristr($struct->type, 'multipart'))
-				// SHOULD BE THIS   && ((string)$struct->type == '1')  // "1" = "multipart"
-				&& (stristr($struct->subtype, 'alternative'))
-				//&& ($part_nice[$i+1]['type'] == 'text')
-				//&& ($part_nice[$i+1]['subtype'] == 'html')
+					($part_nice[$i]['type'] == 'text')
+					&& ($part_nice[$i]['subtype'] == 'plain')
+					&& (isset($part_nice[$presentable_parent_idx]['ex_parent_flat_idx']) && $part_nice[$presentable_parent_idx]['ex_parent_flat_idx'] == $not_set)
+					&& (stristr($struct->type, 'multipart'))
+					// SHOULD BE THIS   && ((string)$struct->type == '1')  // "1" = "multipart"
+					&& (stristr($struct->subtype, 'alternative'))
+					//&& ($part_nice[$i+1]['type'] == 'text')
+					//&& ($part_nice[$i+1]['subtype'] == 'html')
 				)
 				{
 					// SET THIS FLAG: then, in presentation loop, we can decide not to show it
-					$part_nice[$i]['m_keywords'] .= 'alt_hide' .' ';
+					$part_nice[$i]['m_keywords'] .= 'alt_hide' . ' ';
 				}
 				// scenario (3) as outlined above
 				// same as (1) above but we do not need to look all the way back to the top level headers
 				// i.e. because the parent part is included in the flat parts array
 				elseif (
-				   ($part_nice[$i]['ex_level_debth'] > 1)
-				&& ($part_nice[$i]['type'] == 'text')
-				&& ($part_nice[$i]['subtype'] == 'plain')
-				&& ($part_nice[$presentable_parent_idx]['type'] == 'multipart')
-				&& ($part_nice[$presentable_parent_idx]['subtype'] == 'alternative')
-				//&& ($part_nice[$i+1]['type'] == 'text')
-				//&& ($part_nice[$i+1]['subtype'] == 'html')
+					($part_nice[$i]['ex_level_debth'] > 1)
+					&& ($part_nice[$i]['type'] == 'text')
+					&& ($part_nice[$i]['subtype'] == 'plain')
+					&& ($part_nice[$presentable_parent_idx]['type'] == 'multipart')
+					&& ($part_nice[$presentable_parent_idx]['subtype'] == 'alternative')
+					//&& ($part_nice[$i+1]['type'] == 'text')
+					//&& ($part_nice[$i+1]['subtype'] == 'html')
 				)
 				{
 					// SET THIS FLAG: then, in presentation loop, we can decide not to show it
-					$part_nice[$i]['m_keywords'] .= 'alt_hide' .' ';
+					$part_nice[$i]['m_keywords'] .= 'alt_hide' . ' ';
 				}
 			}
 			// more keyword "alt_hide"
@@ -1735,26 +1073,26 @@
 				// flat array, which is more typical.
 				$presentable_parent_idx = $part_nice[$i]['ex_parent_flat_idx'];
 				if (
-				   //ok I am an image, is my parent the top level headers
-				   ($part_nice[$i]['ex_parent_flat_idx'] == $not_set)
-				&& ((string)$struct->type == '1')  // "1" = "multipart"
-				&& (stristr($struct->subtype, 'related'))
+					//ok I am an image, is my parent the top level headers
+					($part_nice[$i]['ex_parent_flat_idx'] == $not_set)
+					&& ((string)$struct->type == '1')  // "1" = "multipart"
+					&& (stristr($struct->subtype, 'related'))
 				)
 				{
 					//echo '('.__LINE__.') presentable/image , alt_hide related to top level<br />';
 					// SET THIS FLAG: then, in presentation loop, we can decide not to show it
-					$part_nice[$i]['m_keywords'] .= 'alt_hide' .' ';
+					$part_nice[$i]['m_keywords'] .= 'alt_hide' . ' ';
 				}
 				// same as above but we do not need to look all the way back to the top level headers
 				// ie because the parent part is included in the flat parts array
 				elseif (
-				   ($part_nice[$i]['ex_level_debth'] > 1)
-				&& ($part_nice[$presentable_parent_idx]['type'] == 'multipart')
-				&& ($part_nice[$presentable_parent_idx]['subtype'] == 'related')
+					($part_nice[$i]['ex_level_debth'] > 1)
+					&& ($part_nice[$presentable_parent_idx]['type'] == 'multipart')
+					&& ($part_nice[$presentable_parent_idx]['subtype'] == 'related')
 				)
 				{
 					// SET THIS FLAG: then, in presentation loop, we can decide not to show it
-					$part_nice[$i]['m_keywords'] .= 'alt_hide' .' ';
+					$part_nice[$i]['m_keywords'] .= 'alt_hide' . ' ';
 				}
 			}
 
@@ -1776,12 +1114,12 @@
 			// level 1 has no parent in part_nice because we skip to presentable stuff
 			// so in that case we need to check top level headers
 			if (
-			   ($part_nice[$i]['type'] == 'text')
-			&& ($part_nice[$i]['subtype'] == 'html')
-			&& (isset($part_nice[$parent_idx]['type']) && ($part_nice[$parent_idx]['type'] == 'multipart'))
-			&& ($part_nice[$parent_idx]['subtype'] == 'alternative')
-			&& ($part_nice[$parent_idx]['ex_parent_flat_idx'] == $not_set)
-			&& (stristr($struct->subtype, 'RELATED'))
+				($part_nice[$i]['type'] == 'text')
+				&& ($part_nice[$i]['subtype'] == 'html')
+				&& (isset($part_nice[$parent_idx]['type']) && ($part_nice[$parent_idx]['type'] == 'multipart'))
+				&& ($part_nice[$parent_idx]['subtype'] == 'alternative')
+				&& ($part_nice[$parent_idx]['ex_parent_flat_idx'] == $not_set)
+				&& (stristr($struct->subtype, 'RELATED'))
 			)
 			{
 				// SET THIS FLAG: then, in presentation loop, see if a HTML part
@@ -1789,16 +1127,16 @@
 				// http... mime reference(s). Example: MS Stationary mail's image background
 				$part_nice[$parent_idx]['m_html_related_kids'] = True;
 				//$part_nice[$i]['m_keywords'] .= 'id_swap' .' ';
-				$part_nice[$i]['m_keywords'] .= 'related' .' ';
+				$part_nice[$i]['m_keywords'] .= 'related' . ' ';
 			}
 			// same as above but we do not need to look all the way back to the top level headers
 			// ie an html part with a parent that is explicitly set as RELATED
 			elseif (
-			   ($part_nice[$i]['ex_level_debth'] > 1)
-			&& ($part_nice[$i]['type'] == 'text')
-			&& ($part_nice[$i]['subtype'] == 'html')
-			&& ($part_nice[$parent_idx]['type'] == 'multipart')
-			&& ($part_nice[$parent_idx]['subtype'] == 'related')
+				($part_nice[$i]['ex_level_debth'] > 1)
+				&& ($part_nice[$i]['type'] == 'text')
+				&& ($part_nice[$i]['subtype'] == 'html')
+				&& ($part_nice[$parent_idx]['type'] == 'multipart')
+				&& ($part_nice[$parent_idx]['subtype'] == 'related')
 			)
 			{
 				// SET THIS FLAG: then, in presentation loop, see if a HTML part
@@ -1806,7 +1144,7 @@
 				// http... mime reference(s). Example: MS Stationary mail's image background
 				$part_nice[$parent_idx]['m_html_related_kids'] = True;
 				//$part_nice[$i]['m_keywords'] .= 'id_swap' .' ';
-				$part_nice[$i]['m_keywords'] .= 'related' .' ';
+				$part_nice[$i]['m_keywords'] .= 'related' . ' ';
 			}
 			// (1b) Exception: multipart/RELATED: for ex. Outl00k Stationary handling
 			// where an HTML part has references to other parts (images) in it
@@ -1814,19 +1152,20 @@
 			// similar to above but more serious, MANIPULATE "container" vs. "packagelist"
 			// while also determining is it has related html style child parts
 			elseif (($part_nice[$i]['ex_level_debth'] > 1)  // does not apply to level1, b/c level1 has no parent
-			&& ($part_nice[$i]['type'] == 'multipart')
-			&& ($part_nice[$i]['subtype'] == 'alternative')
-			&& ($part_nice[$parent_idx]['type'] == 'multipart')
-			&& ($part_nice[$parent_idx]['subtype'] == 'related'))
+				&& ($part_nice[$i]['type'] == 'multipart')
+				&& ($part_nice[$i]['subtype'] == 'alternative')
+				&& ($part_nice[$parent_idx]['type'] == 'multipart')
+				&& ($part_nice[$parent_idx]['subtype'] == 'related')
+			)
 			{
 				// NOTE: treat it's *child* multipart/alternative as "container", not as "packagelist"
 				$part_nice[$i]['m_description'] = 'container';
-				$part_nice[$i]['m_keywords'] .= 'Force Container, id_swap' .' ';
+				$part_nice[$i]['m_keywords'] .= 'Force Container, id_swap' . ' ';
 				// SET THIS FLAG: then, in presentation loop, see if a HTML part
 				// has a parent with this flag - if so, replace "id" reference(s) with
 				// http... mime reference(s). Example: MS Stationary mail's image background
 				$part_nice[$i]['m_html_related_kids'] = True;
-				$part_nice[$i]['m_keywords'] .= 'id_swap' .' ';
+				$part_nice[$i]['m_keywords'] .= 'id_swap' . ' ';
 			}
 			// (1c) Exception: multipart/RELATED: for ex.  "courier-users digest, Vol 1 #2565 - 6 msgs" segment 3.1
 			// DAMN this is similar to exception 1b, I wonder if I screwed 1b up and 1c is the real thing?
@@ -1841,28 +1180,30 @@
 			// ---- 3.1.2.1 html part of the related segment (text / html)
 			// ---- 3.1.2.2 image part of the related subsegment  (image / gif)
 			elseif (($part_nice[$i]['ex_level_debth'] > 1)  // does not apply to level1, b/c level1 has no parent
-			&& ($part_nice[$i]['type'] == 'multipart')
-			&& ($part_nice[$i]['subtype'] == 'related')
-			&& ($part_nice[$parent_idx]['type'] == 'multipart')
-			&& ($part_nice[$parent_idx]['subtype'] == 'alternative'))
+				&& ($part_nice[$i]['type'] == 'multipart')
+				&& ($part_nice[$i]['subtype'] == 'related')
+				&& ($part_nice[$parent_idx]['type'] == 'multipart')
+				&& ($part_nice[$parent_idx]['subtype'] == 'alternative')
+			)
 			{
 				// NOTE: treat it's *child* multipart/alternative as "container", not as "packagelist"
 				$part_nice[$i]['m_description'] = 'container';
-				$part_nice[$i]['m_keywords'] .= 'Force Container, id_swap' .' ';
+				$part_nice[$i]['m_keywords'] .= 'Force Container, id_swap' . ' ';
 				// SET THIS FLAG: then, in presentation loop, see if a HTML part
 				// has a parent with this flag - if so, replace "id" reference(s) with
 				// http... mime reference(s). Example: MS Stationary mail's image background
 				$part_nice[$i]['m_html_related_kids'] = True;
-				$part_nice[$i]['m_keywords'] .= 'id_swap' .' ';
+				$part_nice[$i]['m_keywords'] .= 'id_swap' . ' ';
 			}
 
 			// (2) Exception: multipart/APPLEDOUBLE  (ex. mac thru X.400 gateway)
 			// treat as "container", not as "packagelist"
 			if (($part_nice[$i]['type'] == 'multipart')
-			&& ($part_nice[$i]['subtype'] == 'appledouble'))
+				&& ($part_nice[$i]['subtype'] == 'appledouble')
+			)
 			{
 				$part_nice[$i]['m_description'] = 'container';
-				$part_nice[$i]['m_keywords'] .= 'Force Container' .' ';
+				$part_nice[$i]['m_keywords'] .= 'Force Container' . ' ';
 			}
 
 			// ------  MAKE "SMART" MIME PART NUMBER  -------
@@ -1876,9 +1217,12 @@
 
 			// TEMPORARY HACK FOR SOCKET POP3 CLASS - feed it DUMB mime part numbers
 
-			if ((isset($GLOBALS['phpgw_dcom_'.$this->acctnum]->dcom->imap_builtin))
-			&& ($GLOBALS['phpgw_dcom_'.$this->acctnum]->dcom->imap_builtin == False)
-			&& (stristr($this->get_pref_value('mail_server_type'), 'pop3')))
+			if (
+				$this->hasTransport((int) $this->acctnum)
+				&& (isset($this->getTransport($this->acctnum)->imap_builtin))
+				&& ($this->getTransport($this->acctnum)->imap_builtin == False)
+				&& (stristr($this->get_pref_value('mail_server_type'), 'pop3'))
+			)
 			{
 				// Make ***DUMB*** Mime Number THE PRIMARY MIME NUMBER we will use
 				$part_nice[$i]['m_part_num_mime'] = $part_nice[$i]['ex_mime_number_dumb'];
@@ -1899,8 +1243,6 @@
 		}
 
 		// finally, return the customized flat phpgw msg structure array
-		if ($this->debug_message_display > 2) { $this->dbug->out('mail_msg(display).get_flat_pgw_struct: returning $part_nice DUMP:', $part_nice); }
-		if ($this->debug_message_display > 0) { $this->dbug->out('mail_msg(display).get_flat_pgw_struct: LEAVING we made a $part_nice, returning it<br />'); }
 		return $part_nice;
 	}
 
@@ -1930,7 +1272,6 @@
 		}
 
 		//echo 'BEGIN pgw_msg_struct<br />';
-		//echo var_dump($part);
 		//echo '<br />';
 
 		// TRANSLATE PART STRUCTURE CONSTANTS INTO STRINGS OR TRUE/FALSE
@@ -1940,27 +1281,46 @@
 		$part_nice['type'] = $not_set; // Default value if not filled
 		// note that 0 (the number ZERO) IS A VALID possible value here, so 0 != not filled !
 		if ((isset($part->type))
-		&& (trim((string)$part->type) != ''))
+			&& (trim((string)$part->type) != '')
+		)
 		{
 			switch ((int)$part->type)
 			{
-				case PE_IMAP_TYPETEXT		: $part_type = 'text'; break;
-				case PE_IMAP_TYPEMULTIPART	: $part_type = 'multipart'; break;
-				case PE_IMAP_TYPEMESSAGE		: $part_type = 'message'; break;
-				case PE_IMAP_TYPEAPPLICATION	: $part_type = 'application'; break;
-				case PE_IMAP_TYPEAUDIO		: $part_type = 'audio'; break;
-				case PE_IMAP_TYPEIMAGE		: $part_type = 'image'; break;
-				case PE_IMAP_TYPEVIDEO		: $part_type = 'video'; break;
+				case PE_IMAP_TYPETEXT:
+					$part_type = 'text';
+					break;
+				case PE_IMAP_TYPEMULTIPART:
+					$part_type = 'multipart';
+					break;
+				case PE_IMAP_TYPEMESSAGE:
+					$part_type = 'message';
+					break;
+				case PE_IMAP_TYPEAPPLICATION:
+					$part_type = 'application';
+					break;
+				case PE_IMAP_TYPEAUDIO:
+					$part_type = 'audio';
+					break;
+				case PE_IMAP_TYPEIMAGE:
+					$part_type = 'image';
+					break;
+				case PE_IMAP_TYPEVIDEO:
+					$part_type = 'video';
+					break;
 				//case TYPEMODEL:		$part_type = "model"; break;
 				// TYPEMODEL is not supported as of php v 4
-				case PE_IMAP_TYPEOTHER		: $part_type = 'other'; break;
-				default			: $part_type = 'unknown';
+				case PE_IMAP_TYPEOTHER:
+					$part_type = 'other';
+					break;
+				default:
+					$part_type = 'unknown';
 			}
 			$part_nice['type'] = $part_type;
 		}
 		// RFC SAYS TYPE "TEXT" IS *DEFAULT* AND MAY BE *ASSUMED* IN THE ABSENCE OF IT BEING SPECIFIED
 		if (($part_nice['type'] == 'unknown')
-		|| ($part_nice['type'] == $not_set))
+			|| ($part_nice['type'] == $not_set)
+		)
 		{
 			$part_nice['type'] = 'text';
 		}
@@ -1969,19 +1329,35 @@
 		$part_nice['encoding'] = $not_set; // Default value if not filled
 		// note that 0 (the number ZERO) IS A VALID possible value here, so 0 != not filled !
 		if ((isset($part->encoding))
-		&& (trim((string)$part->encoding) != ''))
+			&& (trim((string)$part->encoding) != '')
+		)
 		{
 			switch ((int)$part->encoding)
 			{
-				case PE_IMAP_ENC7BIT		: $part_encoding = '7bit'; break;
-				case PE_IMAP_ENC8BIT		: $part_encoding = '8bit'; break;
-				case PE_IMAP_ENCBINARY		: $part_encoding = 'binary';  break;
-				case PE_IMAP_ENCBASE64		: $part_encoding = 'base64'; break;
+				case PE_IMAP_ENC7BIT:
+					$part_encoding = '7bit';
+					break;
+				case PE_IMAP_ENC8BIT:
+					$part_encoding = '8bit';
+					break;
+				case PE_IMAP_ENCBINARY:
+					$part_encoding = 'binary';
+					break;
+				case PE_IMAP_ENCBASE64:
+					$part_encoding = 'base64';
+					break;
 				//case PE_IMAP_ENCQUOTEDPRINTABLE : $part_encoding = 'quoted-printable'; break;
-				case PE_IMAP_ENCQUOTEDPRINTABLE 	: $part_encoding = 'qprint'; break;
-				case PE_IMAP_ENCOTHER		: $part_encoding = 'other';  break;
-				case ENCUU		: $part_encoding = 'uu';  break;
-				default			: $part_encoding = 'other';
+				case PE_IMAP_ENCQUOTEDPRINTABLE:
+					$part_encoding = 'qprint';
+					break;
+				case PE_IMAP_ENCOTHER:
+					$part_encoding = 'other';
+					break;
+				case ENCUU:
+					$part_encoding = 'uu';
+					break;
+				default:
+					$part_encoding = 'other';
 			}
 			$part_nice['encoding'] = $part_encoding;
 		}
@@ -1989,7 +1365,8 @@
 		// 4: MIME subtype if the above is true, already in string form
 		$part_nice['subtype'] = $not_set; // Default value if not filled
 		if ((isset($part->ifsubtype)) && ($part->ifsubtype)
-		&& (isset($part->subtype)) && ($part->subtype) )
+			&& (isset($part->subtype)) && ($part->subtype)
+		)
 		{
 			$part_nice['subtype'] = $part->subtype;
 			// this header item is not case sensitive
@@ -1999,15 +1376,17 @@
 		// 6: Content Description String, if the above is true
 		$part_nice['description'] = $not_set; // Default value if not filled
 		if ((isset($part->ifdescription)) && ($part->ifdescription)
-		&& (isset($part->description)) && ($part->description) )
+			&& (isset($part->description)) && ($part->description)
+		)
 		{
 			$part_nice['description'] = $part->description;
 		}
 		// 7:  ifid : True if there is an identification string (SKIP)
 		// 8: id : Identification string  , if the above is true
 		$part_nice['id'] = $not_set; // Default value if not filled
-		if ( (isset($part->ifid)) && ($part->ifid)
-		&& (isset($part->id)) && ($part->id) )
+		if ((isset($part->ifid)) && ($part->ifid)
+			&& (isset($part->id)) && ($part->id)
+		)
 		{
 			$part_nice['id'] = trim($part->id);
 		}
@@ -2026,8 +1405,9 @@
 		// 11:  ifdisposition : True if there is a disposition string (SKIP)
 		// 12:  disposition : Disposition string  ,  if the above is true
 		$part_nice['disposition'] = $not_set; // Default value if not filled
-		if ( (isset($part->ifdisposition)) && ($part->ifdisposition)
-		&& (isset($part->disposition)) && ($part->disposition) )
+		if ((isset($part->ifdisposition)) && ($part->ifdisposition)
+			&& (isset($part->disposition)) && ($part->disposition)
+		)
 		{
 			$part_nice['disposition'] = $part->disposition;
 			// this header item is not case sensitive
@@ -2038,8 +1418,10 @@
 		// *not* SKIPPED, although parameters is more useful (I think), dparameters may sometimes hold an attachment name
 		// ex_num_dparam_pairs defaults to 0 (no dparams)
 		$part_nice['ex_num_dparam_pairs'] = 0;
-		if ( (isset($part->ifdparameters)) && ($part->ifdparameters)
-		&& (isset($part->dparameters)) && ($part->dparameters) )
+		$part_nice['dparams'] = array();
+		if ((isset($part->ifdparameters)) && ($part->ifdparameters)
+			&& (isset($part->dparameters)) && ($part->dparameters)
+		)
 		{
 			// Custom/Extra Information (ex_):  ex_num_dparam_pairs
 			$part_nice['ex_num_dparam_pairs'] = count($part->dparameters);
@@ -2066,8 +1448,10 @@
 		// 16:  parameters : MIME parameters array  - this *may* have more than a single attribute / value pair  but I'm not sure
 		// ex_num_param_pairs defaults to 0 (no params)
 		$part_nice['ex_num_param_pairs'] = 0;
-		if ( (isset($part->ifparameters)) && ($part->ifparameters)
-		&& (isset($part->parameters)) && ($part->parameters) )
+		$part_nice['params'] = array();
+		if ((isset($part->ifparameters)) && ($part->ifparameters)
+			&& (isset($part->parameters)) && ($part->parameters)
+		)
 		{
 			// Custom/Extra Information (ex_):  ex_num_param_pairs
 			$part_nice['ex_num_param_pairs'] = count($part->parameters);
@@ -2094,7 +1478,7 @@
 		// (i.e. embedded MIME part(s) within a wrapper MIME part)
 		// key 'ex_' = CUSTOM/EXTRA information
 		$part_nice['ex_num_subparts'] = $not_set;
-		$part_nice['subpart'] = Array();
+		$part_nice['subpart'] = array();
 		if (isset($part->parts) && $part->parts)
 		{
 			$num_subparts = count($part->parts);
@@ -2116,7 +1500,6 @@
 		$part_nice['ex_level_debth'] = $feed_debth;
 
 		//echo 'BEGIN DUMP<br />';
-		//echo var_dump($part_nice);
 		//echo '<br />END DUMP<br />';
 
 		return $part_nice;
@@ -2153,9 +1536,6 @@
 		//	$debug = True;
 		//}
 
-		if ($debug) { $this->dbug->out('ENTER mime_number_smart<br />'); }
-		if ($debug) { $this->dbug->out('fed var flat_idx: '. $flat_idx.'<br />'); }
-		if ($debug) { $this->dbug->out('fed var new_mime_dumb: '. $new_mime_dumb.'<br />'); }
 		//error check
 		if ($new_mime_dumb == $not_set)
 		{
@@ -2163,15 +1543,13 @@
 		}
 
 		// explode new_mime_dumb into an array
-		$exploded_mime_dumb = Array();
+		$exploded_mime_dumb = array();
 		if (strlen($new_mime_dumb) == 1)
 		{
-			if ($debug) { $this->dbug->out('strlen(new_mime_dumb) = 1 :: TRUE ; FIRST debth level<br />'); }
 			$exploded_mime_dumb[0] = (int)$new_mime_dumb;
 		}
 		else
 		{
-			if ($debug) { $this->dbug->out('strlen(new_mime_dumb) = 1 :: FALSE<br />'); }
 			$exploded_mime_dumb = explode('.', $new_mime_dumb);
 		}
 
@@ -2180,30 +1558,23 @@
 		{
 			$exploded_mime_dumb[$i] = (int)$exploded_mime_dumb[$i];
 		}
-		if ($debug) { $this->dbug->out('exploded_mime_dumb '.serialize($exploded_mime_dumb).'<br />'); }
 
 		// make an array of all parts of this family tree,  from the current part (the outermost) to innermost (closest to debth level 1)
-		$dumbs_part_nice = Array();
+		$dumbs_part_nice = array();
 		//loop BACKWARDS
 		for ($i = count($exploded_mime_dumb) - 1; $i > -1; $i--)
 		{
-			if ($debug) { $this->dbug->out('exploded_mime_dumb reverse loop i=['.$i.']<br />'); }
 			// is this the outermost (current) part ?
 			if ($i == (count($exploded_mime_dumb) - 1))
 			{
 				$dumbs_part_nice[$i] = $part_nice[$flat_idx];
-				if ($debug) { $this->dbug->out('(outermost/current part) dumbs_part_nice[i('.$i.')] = part_nice[flat_idx('.$flat_idx.')]<br />'); }
-				//if ($debug) { $this->dbug->out(' - prev_parent_flat_idx: '.$prev_parent_flat_idx.'<br />'); }
 			}
 			else
 			{
-				$this_dumbs_idx = $dumbs_part_nice[$i+1]['ex_parent_flat_idx'];
+				$this_dumbs_idx = $dumbs_part_nice[$i + 1]['ex_parent_flat_idx'];
 				$dumbs_part_nice[$i] = $part_nice[$this_dumbs_idx];
-				if ($debug) { $this->dbug->out('dumbs_part_nice[i('.$i.')] = part_nice[this_dumbs_idx('.$this_dumbs_idx.')]<br />'); }
 			}
 		}
-		//if ($debug) { $this->dbug->out('dumbs_part_nice serialized: '.serialize($dumbs_part_nice) .'<br />'); }
-		//if ($debug) { $this->dbug->out('serialize exploded_mime_dumb: '.serialize($exploded_mime_dumb).'<br />'); }
 
 		// NOTE:  Packagelist -> Container EXCEPTION Conversions
 		// a.k.a "Exceptions for Less-Standart Subtypes"
@@ -2218,11 +1589,12 @@
 		//	(c) for 2 "packagelist"s in sucession, the first one gets a "1", not ommitted
 
 		// apply the rules
-		$smart_mime_number_array = Array();
+		$smart_mime_number_array = array();
 		for ($i = 0; $i < count($dumbs_part_nice); $i++)
 		{
 			if (((int)$dumbs_part_nice[$i]['ex_level_debth'] == 1)
-			|| ($i == 0))
+				|| ($i == 0)
+			)
 			{
 				// debth 1 part numbers are never altered
 				$smart_mime_number_array[$i] = $exploded_mime_dumb[$i];
@@ -2262,10 +1634,11 @@
 		for ($i = 0; $i < count($dumbs_part_nice); $i++)
 		{
 			if (($i > 0) // not innermost
-			&& ($dumbs_part_nice[$i]['m_description'] == 'packagelist')
-			&& ($dumbs_part_nice[$i-1]['m_description'] == 'packagelist'))
+				&& ($dumbs_part_nice[$i]['m_description'] == 'packagelist')
+				&& ($dumbs_part_nice[$i - 1]['m_description'] == 'packagelist')
+			)
 			{
-				$smart_mime_number_array[$i-1] = 1;
+				$smart_mime_number_array[$i - 1] = 1;
 			}
 		}
 
@@ -2284,7 +1657,6 @@
 				}
 			}
 		}
-		if ($debug) { $this->dbug->out('FINAL smart_mime_number: '.$smart_mime_number.'<br /><br />'); }
 		return $smart_mime_number;
 	}
 
@@ -2304,52 +1676,21 @@
 
 		$part_name = $part_nice['ex_part_name'];
 
-		// make a URL to directly access this part
-		if ($part_nice['type'] != $not_set)
-		{
-			$url_part_type = $part_nice['type'];
-		}
-		else
-		{
-			$url_part_type = 'unknown';
-		}
-		if ($part_nice['subtype'] != $not_set)
-		{
-			$url_part_subtype = $part_nice['subtype'];
-		}
-		else
-		{
-			$url_part_subtype = 'unknown';
-		}
-		if ($part_nice['encoding'] != $not_set)
-		{
-			$url_part_encoding = $part_nice['encoding'];
-		}
-		else
-		{
-			$url_part_encoding = 'other';
-		}
-		// make a URL to directly access this part
-		$url_part_name = urlencode($part_name);
-		// ex_part_href
-		$ex_part_href = phpgw::link(
-			'/index.php',array(
-			'menuaction'=>'email.boaction.get_attach',
-			'msgball[part_no]'=>$m_part_num_mime,
-			'type'=> $url_part_type,
-			'subtype'=>$url_part_subtype,
-			'name'=> $url_part_name,
-			'encoding'=>$url_part_encoding)
-			+$msgball['uri']);
+		$ex_part_href = phpgw::link('/email/api/attachment', [
+			'msgball[acctnum]' => $msgball['acctnum'] ?? 0,
+			'msgball[folder]' => $msgball['folder'] ?? $this->get_arg_value('folder'),
+			'msgball[msgnum]' => $msgball['msgnum'] ?? 0,
+			'msgball[part_no]' => $m_part_num_mime,
+		], true);
 		// Make CLICKABLE link directly to this attachment or part
 		$href_part_name = $this->decode_header_string($part_name);
 		// escape certain undesirable chars before HTML display
 		$href_part_name = $this->htmlspecialchars_encode($href_part_name);
 		$href_part_name = $this->ascii2utf($href_part_name);
 		// ex_part_clickable
-		$ex_part_clickable = '<a href="'.$ex_part_href.'">'.$href_part_name.'</a>';
+		$ex_part_clickable = '<a href="' . $ex_part_href . '">' . $href_part_name . '</a>';
 		// put these two vars in an array, and pass it back to the calling process
-		$click_info = Array();
+		$click_info = array();
 		$click_info['part_href'] = $ex_part_href;
 		$click_info['part_clickable'] = $ex_part_clickable;
 		return $click_info;
@@ -2366,26 +1707,29 @@
 	*/
 	function make_clickable($data, $folder)
 	{
-		if(empty($data))
+		if (empty($data))
 		{
 			return $data;
 		}
 
 		$newText = '';
-		$lines = explode("\n",$data);
+		$lines = explode("\n", $data);
 
-		//while ( list ($key,$line) = each ($lines))
-		foreach($lines as $key => $line)
+		$currentapp = Settings::getInstance()->get('flags')['currentapp'];
+		$compose_url = phpgw::link("/" . $currentapp . "/view/compose", array('folder' => $this->prep_folder_out($folder)));
+		foreach ($lines as $line)
 		{
-			$line = preg_replace("/([ \t]|^)www\./i"," http://www.",$line);
-			$line = preg_replace("/([ \t]|^)ftp\./'"," ftp://ftp.",$line);
-			$line = preg_replace("/(http:\/\/[^ )\r\n]+)/i","<A href=\"\\1\" target=\"_new\">\\1</A>",$line);
-			$line = preg_replace("/(https:\/\/[^ )\r\n]+)/i","<A href=\"\\1\" target=\"_new\">\\1</A>",$line);
-			$line = preg_replace("/(ftp:\/\/[^ )\r\n]+)/i","<A href=\"\\1\" target=\"_new\">\\1</A>",$line);
-			$line = preg_replace("/(irc:\/\/[^ )\r\n]+)/i","<A href=\"\\1\">\\1</A>",$line);//added by skwashd for chatzilla :)
-			$line = preg_replace("/([-a-z0-9_]+(\.[_a-z0-9-]+)*@([a-z0-9-]+(\.[a-z0-9-]+)+))/i",
-				"<a href=\"".phpgw::link("/".$GLOBALS['phpgw_info']['flags']['currentapp']."/compose.php",array('folder'=>$this->prep_folder_out($folder)))
-				."&to=\\1\">\\1</a>", $line);
+			$line = preg_replace("/([ \t]|^)www\./i", " http://www.", $line);
+			$line = preg_replace("/([ \t]|^)ftp\./i", " ftp://ftp.", $line);
+			$line = preg_replace("/(http:\/\/[^ )\r\n]+)/i", "<A href=\"\\1\" target=\"_new\">\\1</A>", $line);
+			$line = preg_replace("/(https:\/\/[^ )\r\n]+)/i", "<A href=\"\\1\" target=\"_new\">\\1</A>", $line);
+			$line = preg_replace("/(ftp:\/\/[^ )\r\n]+)/i", "<A href=\"\\1\" target=\"_new\">\\1</A>", $line);
+			$line = preg_replace("/(irc:\/\/[^ )\r\n]+)/i", "<A href=\"\\1\">\\1</A>", $line); //added by skwashd for chatzilla :)
+			$line = preg_replace(
+				"/([-a-z0-9_]+(\.[_a-z0-9-]+)*@([a-z0-9-]+(\.[a-z0-9-]+)+))/i",
+				"<a href=\"" . $compose_url . "&to=\\1\">\\1</a>",
+				$line
+			);
 
 			$newText .= $line . "\n";
 		}
@@ -2403,11 +1747,12 @@
 	function looks for the attribute, if it exists or not. If it does exist, you may be interested in its 
 	associated value, but that another issue.
 	*/
-	function has_this_param($param_array, $needle='')
+	function has_this_param($param_array, $needle = '')
 	{
 		if ((!isset($param_array))
-		|| (count($param_array) < 1)
-		|| ($needle == ''))
+			|| (count($param_array) < 1)
+			|| ($needle == '')
+		)
 		{
 			return False;
 		}
@@ -2439,181 +1784,6 @@
 		{
 			return False;
 		}
-	}
-
-	/*!
-	@function array_keys_str
-	@abstract debug function, report all "keys" in an associative array of "key - value"
-	@param $my_array
-	@author Angles
-	*/
-	function array_keys_str($my_array)
-	{
-		$all_keys = Array();
-		$all_keys = array_keys($my_array);
-		return implode(', ',$all_keys);
-	}
-
-	/*!
-	@function report_moved_or_deleted
-	@abstract if mail was moved or deleted, we should report to the user what happened
-	@param none, it uses the class args described below in "discussion"
-	@result string which has either (a) a langed report to show the user about the move or delete that just occured
-	or (b) an empty string indicating no move or delete actions were taken, so none need to report anything
-	@discussion See the example for the discussion.
-	@example This is really the discussion. This function uses the following class args
-	  ['args']['td']	"td" means "Total Deleted", if it's filled it contains the number of messages that were deleted
-	  ['args']['tm']	"tm" means "Total Moved", if it's filled it contains the number of messages that were moved
-	  ['args']['tf']	"tf" means "To Folder", if it's filled it contains the name of the folder that messages were moved to
-	if the user requests a delete, then arg "td" SHOULD/MUST be filled with that information
-	if the user requests a move, then BOTH args "tm" AND "tf" SHOULD/MUST be filled with that information
-	"tm" is the number of messages moved, and it's most useful to know where they were moved to, hence "tf"
-	*/
-	function report_moved_or_deleted()
-	{
-		// initialize return report string
-		$report_this = '';
-		// "td" means "Total Deleted", if it's filled it contains the number of messages that were deleted
-		// when user deleted mail this arg should be filled with that information
-		if (($this->get_isset_arg('td'))
-		&& ($this->get_arg_value('td') != ''))
-		{
-			// report on number of messages DELETED (if any)
-			if ($this->get_arg_value('td') == 1) 
-			{
-				$report_this = lang("1 message has been deleted",$this->get_arg_value('td'));
-			}
-			else
-			{
-				$report_this = lang("%1 messages have been deleted",$this->get_arg_value('td'));
-			}
-		}
-		elseif (($this->get_isset_arg('tm'))
-		&& ($this->get_arg_value('tm') != ''))
-		{
-			// report on number of messages MOVED (if any)
-			// "tm" means "Total Moved", if it's filled it contains the number of messages that were moved
-			// if the user moves messages this arg should be filled with that information			
-			
-			// "tf" means "To Folder", if it's filled it contains the name of the folder that messages were moved to
-			// if the user moves messages this arg should be filled with that information
-			// if "tm" is filled then "tf" SHOULD/MUST also be filled
-			if (($this->get_isset_arg('tf'))
-			&& ($this->get_arg_value('tf') != ''))
-			{
-				$_tf = $this->prep_folder_in($this->get_arg_value('tf'));
-				// NOTE if the folder name has html unfriendly chars, like " or <, we need to do this just in case
-				//echo '$this->htmlspecialchars_encode($_tf) ['.$this->htmlspecialchars_encode($_tf).'] <br />';
-				$_tf = $this->htmlspecialchars_encode($_tf);
-			}
-			else
-			{
-				$_tf = 'empty';
-			}
-			// with the name of the "To Folder" we can build our report string
-			if ($this->get_arg_value('tm') == 0)
-			{
-				// these args are filled, indicating a MOVE was attempted
-				// but since 0 messages were in fact moved, there must have been an error
-				$report_this = lang('Error moving messages to').' '.$_tf;
-			}
-			elseif ($this->get_arg_value('tm') == 1)
-			{
-				$report_this = lang('1 message has been moved to').' '.$_tf;
-			}
-			else
-			{
-				$report_this = $this->get_arg_value('tm').' '.lang('messages have been moved to').' '.$_tf;
-			}
-		}
-		else
-		{
-			// nothing deleted or moved, so there's nothing to report (blank string)
-			$report_this = '';
-		}
-		return $report_this;
-	}
-	
-	/*!
-	@function report_total_foldersize
-	@abstract ALIAS to report_total_foldersize_conditional
-	@param See the real function 
-	@discussion This function is being rewritten, so it not points to the new replacement function 
-	only for backward compat until all old function names are replaced. 
-	@author Angles
-	*/
-	function report_total_foldersize($force_showsize='')
-	{
-		// the OLD version of this function took an array as the param, the NEW function does not
-		// old function calls are adapted to the new function by fropping the old arg array.
-		if (is_array($force_showsize))
-		{
-			// drop this param value, it is for the OLD funtion that is replaced. 
-			$force_showsize = '';
-		}
-		return $this->report_total_foldersize_conditional($force_showsize);
-	}
-	
-	/*!
-	@function report_total_foldersize_conditional
-	@abstract MAYBE get the total of all messges sizes in a folder added up to "folder size" ONLY IF SPECIFIED.
-	@param $force_showsize (boolean) OPTIONAL, if not provided the arg value "force_showsize" is used, if available,
-	which is usually submitted via GPC by the user. However, if this param IS provided, it is used instead
-	of the arg value (overriding the arg value). In which case, if True, then we really so get the size, if False this function
-	does NOT get the size. If neither the arg value not this param are specified, the default is False, do not
-	get size data.
-	@result string, either (a) folder size nicely formatted for human readability, or (b) an empty string
-	if it was not OK to obtain the data according to the speed skip test
-	@discussion  total size of all emails in this folder added up, if its OK to get that data.
-	Getting folder size *can* take long time if alot of mail is in the folder, which put unneeded load on the IMAP server,
-	Additionally, there are 2 ways to get folder stats about a folder, one way ALWAYS requests the size from
-	the mailserver, the other way does NOT request the size from the mailserver. For speed reasons,
-	we only use the way that does NOT ask for the size, and additionally we may cache that data too.
-	However, if the user specifically requests the folder size, only then do we actually use the IMAP function
-	that will return the size. If various logic determines we are specifically to get the size data, then we
-	get the data and return it in human formatted format. Otherwise we do NOT get the size, and return
-	an empty string.
-	@author Angles
-	*/
-	function report_total_foldersize_conditional($force_showsize='##NOTHING##')
-	{
-		// fallback value
-		$do_show_size = False;
-		// ----  Is It OK To Get The Folder Size?  ----
-		if (($force_showsize != $this->nothing)
-		&& ($force_showsize))
-		{
-			// a param not "##NOTHING## means USE THE PARAM as the determining value
-			// we use the value of the param, it superceeds the GPC arg value.
-			$do_show_size = True;
-			// it is also possible that param was passed as false, in which case $do_show_size never gets set to true in this logic block
-		}
-		elseif (($force_showsize == $this->nothing)
-		&& ($this->get_isset_arg('force_showsize'))
-		&& ($this->get_arg_value('force_showsize') != ''))
-		{
-			// no param was specified, so we use the arg value "force_showsize", its an external CPG aquired arg
-			// in this case, user has requested override of this speed skip option
-			$do_show_size = True;
-		}
-		elseif ($this->get_isset_pref('show_foldersize'))
-		{
-			// user has set the pref to always show the size of the folder
-			$do_show_size = True;
-		}
-		// if we get to here and $do_show_size  has not specifically been set to True, then False is the fallback default
-
-		// if it's ok to obtain size, and size IS obtained, this $return_folder_size will be filled
-		$return_folder_size = '';
-
-		// ----  Get The Folder Size if it's OK  ----
-		if ($do_show_size)
-		{
-			// FOLDER SIZE info obtained now
-			$raw_folder_size = $this->get_folder_size();
-			$return_folder_size = $this->format_byte_size($raw_folder_size);
-		}
-		return $return_folder_size;
 	}
 
 	/*!
@@ -2672,46 +1842,47 @@
 		If the message arrived within one day, this will be the time of arrival with NO date.
 	@access private
 	*/
-	function get_msg_list_display($folder_info='', $msgball_list='')
+	function get_msg_list_display($folder_info = '', $msgball_list = '', $pre_paginated = False)
 	{
 		//$debug_msg_list_display = 3;
 		$debug_msg_list_display = $this->debug_index_page_display;
-		if ($debug_msg_list_display > 0) { $this->dbug->out('mail_msg_display: get_msg_list_display('.__LINE__.'): ENTERING<br />'); }
 
-		if(!$folder_info)
+		if (!$folder_info)
 		{
-			$folder_info=array();
+			$folder_info = array();
 		}
-		if(!$msgball_list)
+		if (!$msgball_list && !$pre_paginated)
 		{
 			$msgball_list = array();
 		}
 		// obtain required data that is not passed into this function
 		// if no $folder_info was passed as an arg, then $folder_info will be an array with 0 elements
 		if (count($folder_info) == 0)
-		if (!$folder_info)
-		{
-			// use API-like high level function for this:
-			$folder_info = array();
-			$folder_info = $this->get_folder_status_info();
-			/*!
-			@capability get_folder_status_info info used in the get_msg_list_display function.
-			@discussion Duhhh, why is this document info here, it belongs with the
-			"get_folder_status_info" itself. Anyway, here goes.
-			Recall that the "get_folder_status_info" function returns this array.
-			UPDATE ME this has changed some.
-			@example UPDATE ME this should be moved to the "get_folder_status_info" doc string itself.
-			folder_info["is_imap"] boolean - pop3 server do not know what is "new" or not, IMAP servers do
-			folder_info["folder_checked"] string - the folder checked, as processed by the msg class, which may have done a lookup on the folder name
-			folder_info["alert_string"] string - langd string to show the user about status of new messages in this folder
-			folder_info["number_new"] integer - for IMAP the number "recent" and/or "unseen"messages, for POP3 the total number of messages
-			folder_info["number_all"] integer - for IMAP and POP3 the total number messages in the folder
-			and some validity data used for caching.
-			*/
-		}
+        {
+			if (!$folder_info)
+			{
+				// use API-like high level function for this:
+				$folder_info = array();
+				$folder_info = $this->get_folder_status_info();
+				/*!
+				@capability get_folder_status_info info used in the get_msg_list_display function.
+				@discussion Duhhh, why is this document info here, it belongs with the
+				"get_folder_status_info" itself. Anyway, here goes.
+				Recall that the "get_folder_status_info" function returns this array.
+				UPDATE ME this has changed some.
+				@example UPDATE ME this should be moved to the "get_folder_status_info" doc string itself.
+				folder_info["is_imap"] boolean - pop3 server do not know what is "new" or not, IMAP servers do
+				folder_info["folder_checked"] string - the folder checked, as processed by the msg class, which may have done a lookup on the folder name
+				folder_info["alert_string"] string - langd string to show the user about status of new messages in this folder
+				folder_info["number_new"] integer - for IMAP the number "recent" and/or "unseen"messages, for POP3 the total number of messages
+				folder_info["number_all"] integer - for IMAP and POP3 the total number messages in the folder
+				and some validity data used for caching.
+				*/
+			}
+        }
 
 		// initialize return structure
-		$msg_list_display = Array();
+		$msg_list_display = array();
 		// if no message are available to show, return an empty aray
 		if ($folder_info['number_all'] == 0)
 		{
@@ -2721,7 +1892,7 @@
 		// we have messages to list, continue...
 		// if we were passed an array of message numbers to show, use that, if not then
 		// get a numbered array list of all message numbers in that folder, sorted and ordered
-		if (!$msgball_list)
+		if (!$msgball_list && !$pre_paginated)
 		{
 			// NOW WE USE FOLDER NAME ALSO IN THE DATA KEY FOR MSGBALL_LIST
 			$ex_folder = $folder_info['fldball']['folder'];
@@ -2733,51 +1904,77 @@
 			//$ex_acctnum = $this->get_acctnum();
 			// TESTING get the acctnum from the folder info
 			$ex_acctnum = $folder_info['fldball']['acctnum'];
-			if (($this->session_cache_enabled == True)
-			&& (isset($this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$ex_acctnum]['msgball_list'][$ex_folder]['msgball_list'])))
-			//&& (isset($GLOBALS['phpgw_session']['phpgw_app_sessions']['email']['dat'][$ex_acctnum]['msgball_list']['msgball_list'])))
+			$msgball_list = $this->get_msgball_list($ex_acctnum, $ex_folder);
+		}
+
+		if ($pre_paginated)
+		{
+			$start = 0;
+			$totaltodisplay = count($msgball_list);
+		}
+		else
+		{
+			if ($folder_info['number_all'] < $this->userSettings['preferences']['common']['maxmatchs'])
 			{
-				$msgball_list =& $this->ref_SESSION['phpgw_session']['phpgw_app_sessions']['email']['dat'][$ex_acctnum]['msgball_list'][$ex_folder]['msgball_list'];
-				//$msgball_list =& $GLOBALS['phpgw_session']['phpgw_app_sessions']['email']['dat'][$ex_acctnum]['msgball_list']['msgball_list'];
-				//{ echo 'mail_msg_display: get_msg_list_display('.__LINE__.'): $msgball_list *REFERENCE* DUMP:<pre>'; print_r($msgball_list); echo '</pre>'; }
-				//$msgball_list = $GLOBALS['phpgw_session']['phpgw_app_sessions']['email']['dat'][$ex_acctnum]['msgball_list']['msgball_list'];
+				$totaltodisplay = $folder_info['number_all'];
+			}
+			elseif (($folder_info['number_all'] - $this->get_arg_value('start')) > $this->userSettings['preferences']['common']['maxmatchs'])
+			{
+				$totaltodisplay = $this->get_arg_value('start') + $this->userSettings['preferences']['common']['maxmatchs'];
 			}
 			else
 			{
-				// ok we could not obtain a reference for some reason, get a COPY then
-				//$msgball_list = $this->get_msgball_list();
-				// EXPERIMENT with passing arge to this
-				$msgball_list = $this->get_msgball_list($ex_acctnum, $ex_folder);
+				$totaltodisplay = $folder_info['number_all'];
+			}
+
+			if ($this->get_isset_arg('start'))
+			{
+				$start = $this->get_arg_value('start');
+			}
+			else
+			{
+				$start = 0;
 			}
 		}
-
-		if ($folder_info['number_all'] < $GLOBALS['phpgw_info']['user']['preferences']['common']['maxmatchs'])
+		if (!empty($folder_info['is_imap']) && $totaltodisplay > $start)
 		{
-			$totaltodisplay = $folder_info['number_all'];
-		}
-		elseif (($folder_info['number_all'] - $this->get_arg_value('start')) > $GLOBALS['phpgw_info']['user']['preferences']['common']['maxmatchs'])
-		{
-			$totaltodisplay = $this->get_arg_value('start') + $GLOBALS['phpgw_info']['user']['preferences']['common']['maxmatchs'];
-		}
-		else
-		{
-			$totaltodisplay = $folder_info['number_all'];
-		}
-
-		if ($this->get_isset_arg('start'))
-		{
-			$start = $this->get_arg_value('start');
-		}
-		else
-		{
-			$start = 0;
+			$acctnum = (int) ($folder_info['fldball']['acctnum'] ?? $this->get_acctnum());
+			$mailsvr_stream = $this->get_arg_value('mailsvr_stream', $acctnum);
+			if (is_string($mailsvr_stream) && $mailsvr_stream !== '')
+			{
+				$message_numbers = array();
+				for ($metadata_index = $start; $metadata_index < $totaltodisplay; $metadata_index++)
+				{
+					if (isset($msgball_list[$metadata_index]))
+					{
+						$page_msgball = $this->ball_data_parse_str($msgball_list[$metadata_index]);
+						$message_numbers[] = (int) ($page_msgball['msgnum'] ?? 0);
+					}
+				}
+				$found_message_numbers = $this->getTransport($acctnum)->prefetch_message_metadata($mailsvr_stream, $message_numbers);
+				if (is_array($found_message_numbers) && array_diff($message_numbers, $found_message_numbers))
+				{
+					$this->expire_session_cache_item('msgball_list', $acctnum);
+					$msgball_list = $this->get_msgball_list($acctnum, $ex_folder);
+					$message_numbers = array();
+					for ($metadata_index = $start; $metadata_index < $totaltodisplay; $metadata_index++)
+					{
+						if (isset($msgball_list[$metadata_index]))
+						{
+							$page_msgball = $this->ball_data_parse_str($msgball_list[$metadata_index]);
+							$message_numbers[] = (int) ($page_msgball['msgnum'] ?? 0);
+						}
+					}
+					$this->getTransport($acctnum)->prefetch_message_metadata($mailsvr_stream, $message_numbers);
+				}
+			}
 		}
 		// keep track of how many loops we've done, for the return array, will be advanced to 0 before it's used
 		$x = -1;
-		for ($i=$start; $i < $totaltodisplay; $i++)
+		$common = null;
+		for ($i = $start; $i < $totaltodisplay; $i++)
 		{
 			$this_loop_msgball = $this->ball_data_parse_str($msgball_list[$i]);
-			if ($debug_msg_list_display > 2) { $this->dbug->out('mail_msg_display: get_msg_list_display: $msgball_list['.$i.'] ['.$msgball_list[$i].'] $this_loop_msgball data DUMP:', $this_loop_msgball); }
 			// we use $x to sequentially fill the $msg_list_display array
 			//$x++;
 			$x = $x + 1;
@@ -2785,7 +1982,7 @@
 			// place the delmov form header tags ONLY ONCE, blank string all subsequent loops
 			//$msg_list_display[$x]['first_item'] = ($i == $this->get_arg_value('start'));
 			// place the delmov form header tags ONLY ONCE, blank string all subsequent loops
-			if (($x-1) < 0)
+			if (($x - 1) < 0)
 			{
 				$msg_list_display[$x]['first_item'] = True;
 			}
@@ -2795,8 +1992,8 @@
 			}
 
 			// ROW BACK COLOR
-		//	$msg_list_display[$x]['back_color'] = (($i + 1)/2 == floor(($i + 1)/2)) ? $GLOBALS['phpgw_info']['theme']['row_off'] : $GLOBALS['phpgw_info']['theme']['row_on'];
-			$msg_list_display[$x]['back_color_class'] = (($i + 1)/2 == floor(($i + 1)/2)) ? 'row_off' : 'row_on';
+			//	$msg_list_display[$x]['back_color'] = (($i + 1)/2 == floor(($i + 1)/2)) ? $GLOBALS['phpgw_info']['theme']['row_off'] : $GLOBALS['phpgw_info']['theme']['row_on'];
+			$msg_list_display[$x]['back_color_class'] = (($i + 1) / 2 == floor(($i + 1) / 2)) ? 'row_off' : 'row_on';
 			////$msg_list_display[$x]['back_color'] = $GLOBALS['phpgw']->nextmatchs->alternate_row_color($msg_list_display[$x-1]['back_color']);
 
 			/*!
@@ -2813,7 +2010,8 @@
 			// ... but ...
 			// 	THIS skips attachment check for ALL POP3 situations
 			// 	it is WAY SLOW to check for attachments like this with POP3
-			if (stristr($this->get_pref_value('mail_server_type'), 'pop3'))
+			if (stristr($this->get_pref_value('mail_server_type'), 'pop3')
+				&& !($this->getTransport((int) $this_loop_msgball['acctnum']) instanceof \mail_dcom_pop3_local))
 			{
 				// do Nothing - socket class pop3 not ready for this stress yet
 				$msg_list_display[$x]['has_attachment'] = False;
@@ -2832,11 +2030,11 @@
 			/*
 			// begin GMT handling by "acros"
 			// pongo bien la hora de los correos (GMT)
-#			echo"hora inicial $hdr_envelope->date<br />";
-#						echo"hora inicial $hdr_envelope->udate<br />";
-///modificacion
-$msg_date2=$hdr_envelope->date;
-$comma = strpos($msg_date2,',');
+			#           echo"hora inicial $hdr_envelope->date<br />";
+			#                       echo"hora inicial $hdr_envelope->udate<br />";
+			///modificacion
+			$msg_date2=$hdr_envelope->date;
+			$comma = strpos($msg_date2,',');
 			if($comma)
 			{
 				$msg_date2 = substr($msg_date2,$comma + 2);
@@ -2852,13 +2050,13 @@ $comma = strpos($msg_date2,',');
 				$tzoffset = substr($dta[4],0,1);
 				(int)$tzhours = substr($dta[4],1,2);
 				(int)$tzmins = substr($dta[4],3,2);
-#echo"$ta[0] y $tzoffset";
+			#echo"$ta[0] y $tzoffset";
 				switch ($tzoffset)
 				{
 					case '+':
 						(int)$ta[0] -= (int)$tzhours;
 						(int)$ta[1] -= (int)$tzmins;
-#echo"$ta[0]";
+			#echo"$ta[0]";
 						break;
 					case '-':
 						(int)$ta[0] += (int)$tzhours;
@@ -2867,15 +2065,15 @@ $comma = strpos($msg_date2,',');
 				}
 			}
 
-			$new_time = mktime($ta[0],$ta[1],$ta[2],$GLOBALS['month_array'][strtolower($dta[1])],$dta[0],$dta[2]) - ((60 * 60) * intval($GLOBALS['phpgw_info']['user']['preferences']['common']['tzoffset']));
-$new_time2=gmdate("D, d M Y H:m:s",$new_time)." GMT";
-$hdr_envelope->date = $new_time2;
-$hdr_envelope->udate = $new_time;
-#echo"hora final $hdr_envelope->udate<br />";
-#echo"hora final $hdr_envelope->date<br />";
+			$new_time = mktime($ta[0],$ta[1],$ta[2],$GLOBALS['month_array'][strtolower($dta[1])],$dta[0],$dta[2]) - ((60 * 60) * intval($this->userSettings['preferences']['common']['tzoffset']));
+			$new_time2=gmdate("D, d M Y H:m:s",$new_time)." GMT";
+			$hdr_envelope->date = $new_time2;
+			$hdr_envelope->udate = $new_time;
+			#echo"hora final $hdr_envelope->udate<br />";
+			#echo"hora final $hdr_envelope->date<br />";
 			#$message_date = $GLOBALS['phpgw']->common->show_date($msg_headers->udate);
-//fin modificacion
-// end GMT handling by "acros"
+			//fin modificacion
+			// end GMT handling by "acros"
 			*/
 			// MESSAGE REFERENCE (a) NUMBER (b) FOLDER (c) ACCTNUM and (d) FAKE_URL EMBEDDED MULTI DATA
 			$msg_list_display[$x]['msgnum'] = $this_loop_msgball['msgnum'];
@@ -2885,16 +2083,17 @@ $hdr_envelope->udate = $new_time;
 
 			// SUBJECT
 			// NOTE: the acctnum MUST be matched to this individual message and folder
-			$msg_list_display[$x]['subject'] = $this->get_subject($hdr_envelope,'');
+			$msg_list_display[$x]['subject'] = $this->get_subject($hdr_envelope, '');
 			$msg_list_display[$x]['subject_link'] = phpgw::link(
-							'/index.php',array
-							(
-								'menuaction'=>'email.uimessage.message',
-								'sort'=>$this->get_arg_value('sort'),
-								'order'=>$this->get_arg_value('order'),
-								'start'=>$this->get_arg_value('start')
-							)
-							+ $this_loop_msgball['uri']);
+				'/email/view/message',
+				array(
+					'sort' => $this->get_arg_value('sort'),
+					'order' => $this->get_arg_value('order'),
+					'start' => $this->get_arg_value('start')
+				)
+					+ $this_loop_msgball['uri'],
+				true
+			);
 
 			// SIZE
 			if ($this->newsmode)
@@ -2960,7 +2159,7 @@ $hdr_envelope->udate = $new_time;
 				$reply = $hdr_envelope->from[0];
 			}
 			//$replyto = $this->make_rfc2822_address($reply);
-			$replyto = $reply->mailbox.'@'.$reply->host;
+			$replyto = $reply->mailbox . '@' . $reply->host;
 
 			/*!
 			@capability FROM DISPLAYABLE String
@@ -2985,7 +2184,7 @@ $hdr_envelope->udate = $new_time;
 			if (!isset($from->personal) || !$from->personal)
 			{
 				// no "personal" info available, only can show plain address
-				$personal = $from->mailbox.'@'.$from->host;
+				$personal = $from->mailbox . '@' . $from->host;
 			}
 			else
 			{
@@ -2999,8 +2198,10 @@ $hdr_envelope->udate = $new_time;
 			$personal = $this->htmlspecialchars_encode($personal);
 			$personal = $this->ascii2utf($personal);
 
-			if (($this->get_pref_value('show_addresses') == 'from')
-			&& ($personal != $from->mailbox.'@'.$from->host))
+			$show_addresses = $this->get_pref_value('show_addresses');
+			if (($show_addresses == 'from')
+				&& ($personal != $from->mailbox . '@' . $from->host)
+			)
 			{
 				/*!
 				@capabability "From String" is Personal data AND the "plain address" of the From person
@@ -3009,11 +2210,12 @@ $hdr_envelope->udate = $new_time;
 				as the "From String" that is displated to the user.
 				Additionally, we checked and made sure both those pieces of data are available.
 				*/
-				$msg_list_display[$x]['display_address_from'] = '('.$from->mailbox.'@'.$from->host.')';
-				$msg_list_display[$x]['who_to'] = $from->mailbox.'@'.$from->host;
+				$msg_list_display[$x]['display_address_from'] = '(' . $from->mailbox . '@' . $from->host . ')';
+				$msg_list_display[$x]['who_to'] = $from->mailbox . '@' . $from->host;
 			}
-			elseif (($this->get_pref_value('show_addresses') == 'replyto')
-			&& ($personal != $from->mailbox.'@'.$from->host))
+			elseif (($show_addresses == 'replyto')
+				&& ($personal != $from->mailbox . '@' . $from->host)
+			)
 			{
 				/*!
 				@capabability From String includes ReplyTo plain address
@@ -3025,8 +2227,8 @@ $hdr_envelope->udate = $new_time;
 				with it the plain address from the ReplyTo header. This is how this preference works :)
 				Of course, if no ReplyTo address is present, we can not fulfill this user perference
 				*/
-				$msg_list_display[$x]['display_address_from'] = '&lt;'.$replyto.'&gt;';
-				$msg_list_display[$x]['who_to'] = $from->mailbox.'@'.$from->host;
+				$msg_list_display[$x]['display_address_from'] = '&lt;' . $replyto . '&gt;';
+				$msg_list_display[$x]['who_to'] = $from->mailbox . '@' . $from->host;
 			}
 			else
 			{
@@ -3039,7 +2241,7 @@ $hdr_envelope->udate = $new_time;
 				From person was not available in the email headers.
 				*/
 				$msg_list_display[$x]['display_address_from'] = '';
-				$msg_list_display[$x]['who_to'] = $from->mailbox.'@'.$from->host;
+				$msg_list_display[$x]['who_to'] = $from->mailbox . '@' . $from->host;
 			}
 
 			// ----  From Name ----
@@ -3055,33 +2257,21 @@ $hdr_envelope->udate = $new_time;
 			// the original email is included in this Compose page. Also note that the email app's
 			// message list page, email/index.php, does not have a "reply to" button anywhere on it,
 			// said button is in the "show the message contents" page, email/message.php
-			$msg_list_display[$x]['from_link'] = phpgw::link(
-								'/'.$GLOBALS['phpgw_info']['flags']['currentapp'].'/compose.php',
-								 array(
-									'sort'=>$this->get_arg_value('sort'),
-									'order'=>$this->get_arg_value('order'),
-									'start'=>$this->get_arg_value('start'),
-									'to'=>urlencode($msg_list_display[$x]['who_to'])
-									)
-								+$this_loop_msgball['uri']);
-			if ($personal != $from->mailbox.'@'.$from->host)
-			{
-				$msg_list_display[$x]['from_link'] = $msg_list_display[$x]['from_link'] .'&personal='.urlencode($personal);
-			}
-
 			// if it's a long plain address with no spaces, then add a space to the TD can wrap the text
 			if ((!strstr($msg_list_display[$x]['from_name'], " "))
-			&& (strlen($msg_list_display[$x]['from_name']) > 15)
-			&& (strstr($msg_list_display[$x]['from_name'], "@")))
+				&& (strlen($msg_list_display[$x]['from_name']) > 15)
+				&& (strstr($msg_list_display[$x]['from_name'], "@"))
+			)
 			{
-				$msg_list_display[$x]['from_name'] = str_replace('@',' @',$msg_list_display[$x]['from_name']);
+				$msg_list_display[$x]['from_name'] = str_replace('@', ' @', $msg_list_display[$x]['from_name']);
 			}
 
 			// DATE
 			// date_time has both date and time, which probably is long enough to make a TD cell wrap text to 2 lines
-			$msg_date_time = $GLOBALS['phpgw']->common->show_date($hdr_envelope->udate);
-//echo"$msg_date_time";
-			if($GLOBALS['phpgw']->common->show_date($hdr_envelope->udate,'Ymd') != date('Ymd'))
+			$common ??= $this->getCommon();
+			$msg_date_time = $common->show_date($hdr_envelope->udate);
+			//echo"$msg_date_time";
+			if ($common->show_date($hdr_envelope->udate, 'Ymd') != date('Ymd'))
 			{
 				// this strips the time part, leaving only the date, better for single line TD cells
 				$msg_list_display[$x]['msg_date'] = preg_replace("/ - .*$/", '', $msg_date_time);
@@ -3114,7 +2304,7 @@ $hdr_envelope->udate = $new_time;
 				for ($z = 0; $z < $to_loops; $z++)
 				{
 					$topeople = $hdr_envelope->to[$z];
-					$to_plain = $topeople->mailbox.'@'.$topeople->host;
+					$to_plain = $topeople->mailbox . '@' . $topeople->host;
 					if ((!isset($topeople->personal)) || (!$topeople->personal))
 					{
 						$to_person = $to_plain;
@@ -3129,35 +2319,11 @@ $hdr_envelope->udate = $new_time;
 					$to_data_array[$z] = $to_person;
 				}
 				// throw a spacer comma in between addresses, if more than one
-				$to_data_final = implode(', ',$to_data_array);
+				$to_data_final = implode(', ', $to_data_array);
 			}
 			$msg_list_display[$x]['to_data_final'] = $to_data_final;
-
 		}
-		if ($debug_msg_list_display > 2) { $this->dbug->out('mail_msg_display: get_msg_list_display: exiting $msg_list_display[] DUMP', $msg_list_display); }
-		if ($debug_msg_list_display > 0) { $this->dbug->out('mail_msg_display: get_msg_list_display('.__LINE__.'): LEAVING<br />'); }
 		return $msg_list_display;
-	}
-
-	/*!
-	@function _image_on
-	@abstract temp replacement for phpgwapi  image_on until it supports images in different dirs.
-	@discussion Email themes have a group of similar looking images grouped into a directory with
-	somewhat standard names that AngleMail understands as a themed image set. phpgwapi does not
-	currently support subdirectories under the template images directory. Params are only to match the
-	phpgw api function, we do not really use them. As of this writting, Feb 2003, images used for all themes,
-	i.e. are not in a theme subdir but are used, are check and attach on the index page, they are not even
-	sized, and, these are sized but not themed, on the message view page, are view_nofmt, view_formatted,
-	view_headers, view_raw, and view_printable. Remember if these are themed they must be moved
-	into the subdirs, all of them, even if they are copies, and removed from the main images dir, so it is
-	obvious if they are group themed or not.
-	@author Angles
-	*/
-	function _image_on($appname,$image,$extension='_on',$navbar=False)
-	{
-		//$prefer_ext = '.gif';
-		$prefer_ext = '.png';
-		return $GLOBALS['phpgw_info']['server']['webserver_url'].'/email/templates/base/images/'.$image.$prefer_ext;
 	}
 
 } // end class mail_msg

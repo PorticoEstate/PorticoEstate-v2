@@ -9,13 +9,13 @@
 			</xsl:if>
 		</span>
 
-		<select id="choose-building-on-property" class="form-select">
+		<select id="choose-building-on-property" >
 			<xsl:choose>
 				<xsl:when test="cases_view = 'open_cases' or cases_view = 'closed_cases'">
-					<xsl:attribute name="class">view-cases form-select ms-3</xsl:attribute>
+					<xsl:attribute name="class">view-cases ms-3</xsl:attribute>
 				</xsl:when>
 				<xsl:otherwise>
-					<xsl:attribute name="class">add-case required form-select ms-3</xsl:attribute>
+					<xsl:attribute name="class">add-case required ms-3</xsl:attribute>
 				</xsl:otherwise>
 			</xsl:choose>
     

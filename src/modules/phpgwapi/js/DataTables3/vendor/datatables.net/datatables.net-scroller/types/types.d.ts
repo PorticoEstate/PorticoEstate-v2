@@ -168,7 +168,7 @@ declare class Scroller {
 }
 
 declare module 'datatables.net' {
-    interface Config {
+    interface Options {
         /**
          * Scroller extension options
          */
@@ -197,7 +197,16 @@ declare module 'datatables.net' {
          */
         Scroller: typeof Scroller;
     }
+    interface State {
+        /** Scroller positioning information */
+        scroller?: {
+            topRow: number;
+            baseRowTop: number;
+            scrollTop: number;
+        };
+    }
     interface StateLoad {
+        /** Scroller positioning information */
         scroller?: {
             topRow: number;
             baseRowTop: number;

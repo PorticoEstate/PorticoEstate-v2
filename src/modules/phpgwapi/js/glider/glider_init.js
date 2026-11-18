@@ -94,7 +94,7 @@ this.refresh_glider = function (strURL)
 						var div = document.createElement('div');
 						var img = document.createElement('img');
 						img.setAttribute('data-src', v.img_url.replace(/\&amp;/g, '&'));
-						img.alt = v.file_name;
+						img.alt = v.img_alt ?? v.file_name;
 						div.appendChild(img);
 						glider.addItem(div);
 					}

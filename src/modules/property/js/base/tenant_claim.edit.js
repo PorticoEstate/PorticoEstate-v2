@@ -42,6 +42,10 @@ this.refresh_files = function ()
 	var oArgs = base_java_url;
 	var strURL = phpGWLink('index.php', oArgs, true);
 	JqueryPortico.updateinlineTableHelper('datatable-container_1', strURL);
+	if (typeof refresh_glider === 'function')
+	{
+		refresh_glider(strURL);
+	}
 };
 
 // wait for the DOM to be loaded

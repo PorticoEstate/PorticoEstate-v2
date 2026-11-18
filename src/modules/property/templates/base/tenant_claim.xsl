@@ -535,11 +535,31 @@
 						</xsl:for-each>
 					</div>
 				</div>
+				<!-- Keep the gallery available for the first image uploaded to an existing claim. -->
+				<xsl:if test="value_claim_id != '' and value_claim_id != '0'">
+					<div class="pure-control-group">
+						<div class="wrapperForGlider" style="display:none;">
+							<div class="glider-contain">
+								<div class="glider">
+									<xsl:for-each select="content_files[img_url]">
+										<div>
+											<img data-src="{img_url}" alt="{img_alt}"/>
+										</div>
+									</xsl:for-each>
+								</div>
+								<button type="button" class="glider-prev" aria-label="{php:function('lang', 'previous')}">&#171;</button>
+								<button type="button" class="glider-next" aria-label="{php:function('lang', 'next')}">&#187;</button>
+								<div role="tablist" class="dots"></div>
+							</div>
+						</div>
+					</div>
+				</xsl:if>
 				<xsl:choose>
 					<xsl:when test="value_claim_id!='' and mode='edit'">
 						<xsl:call-template name="file_upload"/>
 					</xsl:when>
 				</xsl:choose>
+
 				<br></br>
 				<div class="pure-control-group">
 					<xsl:if test="mode='edit'">

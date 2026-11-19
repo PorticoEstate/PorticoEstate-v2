@@ -2456,3 +2456,26 @@ garbage	property	no	Avfallshåndtering
 fire alarm	property	no	Brannalarm
 refund	property	no	Refusjon
 claim type	property	no	Kravtype
+boei import candidates	property	no	BOEI importkandidater
+refresh candidates	property	no	Oppdater kandidater
+save draft	property	no	Lagre utkast
+save and approve	property	no	Lagre og godkjenn
+import approved candidates	property	no	Importer godkjente kandidater
+house number and letter	property	no	Husnummer og bokstav
+confirm import of approved candidates.	property	no	Bekreft import av godkjente kandidater.
+no candidates. refresh candidates after boei synchronization.	property	no	Ingen kandidater. Oppdater kandidatlisten etter BOEI-synkronisering.
+missing from current boei source	property	no	Mangler i gjeldende BOEI-grunnlag
+boei address (reference only)	property	no	BOEI-adresse (kun referanse)
+keep boei objekt_id and leie_id. enter building number, national street code, house number and adf manually. save drafts or approve completed candidates.	property	no	Behold BOEI Objekt_ID og Leie_ID. Registrer bygningsnummer, nasjonal gatekode, husnummer og ADF manuelt. Lagre utkast eller godkjenn komplette kandidater.
+invalid form token. reload the page.	property	no	Ugyldig skjemanøkkel. Last siden på nytt.
+candidates refreshed. manual values and approvals were preserved.	property	no	Kandidatlisten er oppdatert. Manuelle verdier og godkjenninger er bevart.
+candidate saved	property	no	Kandidaten er lagret
+imported rental units: %1	property	no	Importerte leieobjekter: %1
+boei import failed. check the property database upgrade and server log.	property	no	BOEI-import feilet. Kontroller databaseoppgradering for property og serverloggen.
+object	property	no	Objekt
+rental unit	property	no	Leieobjekt
+street code	property	no	Gatekode
+invalid action	property	no	Ugyldig handling
+pending	property	no	Venter
+imported	property	no	Importert
+existing	property	no	Eksisterende

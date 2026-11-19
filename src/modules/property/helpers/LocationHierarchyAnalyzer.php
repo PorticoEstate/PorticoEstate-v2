@@ -1976,7 +1976,7 @@ class LocationHierarchyAnalyzer
 	 * If multiple streets: "Street1 15A, 15B, Street2 20, 22"
 	 * Maximum 256 characters.
 	 */
-	private function generateLoc2Name($addresses)
+	public static function generateLoc2Name($addresses)
 	{
 		$name_parts = [];
 		
@@ -1991,9 +1991,9 @@ class LocationHierarchyAnalyzer
 		$loc2_name = trim(implode(", ", $name_parts));
 		
 		// Truncate to 256 characters
-		if (strlen($loc2_name) > 256)
+		if (mb_strlen($loc2_name) > 256)
 		{
-			$loc2_name = substr($loc2_name, 0, 253) . "...";
+			$loc2_name = mb_substr($loc2_name, 0, 253) . "...";
 		}
 		
 		return $loc2_name;

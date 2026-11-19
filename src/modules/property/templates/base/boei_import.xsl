@@ -65,7 +65,7 @@
 			<section class="boei-card">
 				<h3><xsl:value-of select="../labels/unit"/><xsl:text> </xsl:text><xsl:value-of select="objekt_id"/> / <xsl:value-of select="leie_id"/></h3>
 				<p><xsl:value-of select="../labels/status"/>: <xsl:value-of select="status_label"/> <xsl:value-of select="location_code"/></p>
-				<p><xsl:value-of select="../labels/source"/>: <xsl:value-of select="source_street_id"/> / <xsl:value-of select="source_address"/></p>
+				<p class="boei-source-address"><xsl:value-of select="../labels/source"/>: <xsl:value-of select="source_street_name"/><xsl:text> </xsl:text><xsl:value-of select="source_address"/><xsl:text> (ID: </xsl:text><xsl:value-of select="source_street_id"/><xsl:text>)</xsl:text></p>
 				<xsl:if test="source_present = 0"><p role="alert"><xsl:value-of select="../labels/source_missing"/></p></xsl:if>
 				<form method="post" action="{../action_url}">
 					<input type="hidden" name="token" value="{../token}"/>

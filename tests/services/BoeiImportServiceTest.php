@@ -90,18 +90,25 @@ final class BoeiImportServiceTest extends TestCase
 	public function testNewCandidatesCopySourceAddressWithoutOverwritingManualCorrections(): void
 	{
 		$this->sourceUnit('001');
+		$this->insert('fm_streetaddress', ['id' => 999, 'nasjonalid' => 1999, 'descr' => 'Source road']);
 		$this->service->refreshCandidates();
 		$unit = $this->service->listUnits('5000')[0];
 		$this->assertSame(999, (int)$unit['street_id']);
 		$this->assertSame('999Z', $unit['street_number']);
+		$this->assertSame('Source road', $unit['source_street_name']);
 		$this->assertSame('pending', $unit['status']);
 
 		$this->service->saveUnit('5000', '001', $this->values(), false, 7);
+		$this->insert('fm_streetaddress', ['id' => 888, 'nasjonalid' => 1888, 'descr' => 'Updated source road']);
 		$this->db->exec("UPDATE boei_leieobjekt SET gateadresse_id = 888, gatenr = '88B'");
 		$this->service->refreshCandidates();
 		$unit = $this->service->listUnits('5000')[0];
 		$this->assertSame(11, (int)$unit['street_id']);
 		$this->assertSame('10A', $unit['street_number']);
+		$this->assertSame("King's road", $unit['street_name']);
+		$this->assertSame(888, (int)$unit['source_street_id']);
+		$this->assertSame('88B', $unit['source_address']);
+		$this->assertSame('Updated source road', $unit['source_street_name']);
 	}
 
 	public function testDraftsSurviveRefreshAndCannotBeImportedUntilBothLevelsAreApproved(): void

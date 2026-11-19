@@ -54,12 +54,13 @@ final class BoeiImportService
 
 	public function listUnits(string $loc1): array
 	{
-		return $this->rows("SELECT c.*, s.descr AS street_name,
+		return $this->rows("SELECT c.*, s.descr AS street_name, source_street.descr AS source_street_name,
 			b.gatenr AS source_address, b.gateadresse_id AS source_street_id,
 			CASE WHEN b.objekt_id IS NULL THEN 0 ELSE 1 END AS source_present
 			FROM boei_leieobjekt_candidate c
 			LEFT JOIN boei_leieobjekt b ON b.objekt_id = c.objekt_id AND b.leie_id = c.leie_id
 			LEFT JOIN fm_streetaddress s ON s.id = c.street_id
+			LEFT JOIN fm_streetaddress source_street ON source_street.id = b.gateadresse_id
 			WHERE c.objekt_id = :loc1 ORDER BY c.leie_id", ['loc1' => $loc1]);
 	}
 

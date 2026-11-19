@@ -25,6 +25,8 @@ BOEI-oppsettet med tilhørende egenskaper på lokasjonstabellene og
    Eksisterende objekter kan få nye leieobjekter uten ny objektgodkjenning.
 4. Registrer bygningsnummer, nasjonal gatekode, husnummer/bokstav og ADF på
    hvert leieobjekt. Gatekoden må finnes entydig i gateregisteret.
+   BOEI-adressen vises som referanse med gatenavn fra `fm_streetaddress.descr`
+   (koblet via BOEIs `gateadresse_id`), husnummer/bokstav og gate-ID.
    **Lagre utkast** tillater ufullstendige opplysninger og opphever eventuell
    godkjenning. **Lagre og godkjenn** krever komplette opplysninger.
 5. Bekreft og importer godkjente kandidater fra siden, eller la neste

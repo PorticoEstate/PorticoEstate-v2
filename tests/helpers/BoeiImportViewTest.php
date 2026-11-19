@@ -13,7 +13,8 @@ final class BoeiImportViewTest extends TestCase
 			<action_url>/portico/?menuaction=property.uianalyze_location.boei&amp;loc1=5000</action_url>
 			<labels><title>BOEI candidates</title><building>Building</building></labels>
 			<objects><objekt_id>5000</objekt_id><status>approved</status><navn>Test</navn></objects>
-			<units><objekt_id>5000</objekt_id><leie_id>001</leie_id><status>pending</status><adf>&lt;test&gt;</adf></units>
+			<units><objekt_id>5000</objekt_id><leie_id>001</leie_id><status>pending</status><adf>&lt;test&gt;</adf>
+				<source_street_name>Source &amp; road</source_street_name><source_address>10A</source_address><source_street_id>999</source_street_id></units>
 			<units><objekt_id>5000</objekt_id><leie_id>002</leie_id><status>imported</status></units>
 			</boei></data>');
 		$stylesheet = new DOMDocument();
@@ -30,6 +31,7 @@ final class BoeiImportViewTest extends TestCase
 		$this->assertSame(1, $xpath->query($unit . '/input[@name="token" and @value="test-token"]')->length);
 		$this->assertSame(1, $xpath->query($unit . '//button[@value="approve_unit"]')->length);
 		$this->assertSame('<test>', $xpath->evaluate('string(' . $unit . '//input[@name="adf"]/@value)'));
+		$this->assertSame(': Source & road 10A (ID: 999)', $xpath->evaluate('string((//p[@class="boei-source-address"])[1])'));
 		$this->assertSame(1, $xpath->query('//form[input[@name="leie_id" and @value="002"]]/fieldset[@disabled]')->length);
 		$this->assertSame(0, $xpath->query('//form//form')->length);
 		$this->assertSame(1, $xpath->query('//input[@name="confirm_import" and @required]')->length);

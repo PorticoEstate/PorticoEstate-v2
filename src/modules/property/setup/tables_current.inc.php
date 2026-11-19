@@ -11,6 +11,37 @@
 	 * @version $Id$
 	*/
 	$phpgw_baseline = array(
+		'boei_objekt_candidate' => array(
+			'fd' => array(
+				'objekt_id' => array('type' => 'varchar', 'precision' => 4, 'nullable' => false),
+				'gnr' => array('type' => 'int', 'precision' => 4, 'nullable' => true),
+				'bnr' => array('type' => 'int', 'precision' => 4, 'nullable' => true),
+				'status' => array('type' => 'varchar', 'precision' => 10, 'nullable' => false, 'default' => 'pending'),
+				'approved_by' => array('type' => 'int', 'precision' => 4, 'nullable' => true),
+				'approved_at' => array('type' => 'int', 'precision' => 8, 'nullable' => true),
+				'imported_at' => array('type' => 'int', 'precision' => 8, 'nullable' => true),
+			),
+			'pk' => array('objekt_id'), 'fk' => array(), 'ix' => array(), 'uc' => array()
+		),
+		'boei_leieobjekt_candidate' => array(
+			'fd' => array(
+				'objekt_id' => array('type' => 'varchar', 'precision' => 4, 'nullable' => false),
+				'leie_id' => array('type' => 'varchar', 'precision' => 3, 'nullable' => false),
+				'bygningsnr' => array('type' => 'int', 'precision' => 4, 'nullable' => true),
+				'gate_kode' => array('type' => 'int', 'precision' => 4, 'nullable' => true),
+				'street_id' => array('type' => 'int', 'precision' => 4, 'nullable' => true),
+				'street_number' => array('type' => 'varchar', 'precision' => 10, 'nullable' => true),
+				'adf' => array('type' => 'varchar', 'precision' => 20, 'nullable' => true),
+				'status' => array('type' => 'varchar', 'precision' => 10, 'nullable' => false, 'default' => 'pending'),
+				'approved_by' => array('type' => 'int', 'precision' => 4, 'nullable' => true),
+				'approved_at' => array('type' => 'int', 'precision' => 8, 'nullable' => true),
+				'imported_at' => array('type' => 'int', 'precision' => 8, 'nullable' => true),
+				'location_code' => array('type' => 'varchar', 'precision' => 50, 'nullable' => true),
+			),
+			'pk' => array('objekt_id', 'leie_id'),
+			'fk' => array('boei_objekt_candidate' => array('objekt_id' => 'objekt_id')),
+			'ix' => array(), 'uc' => array()
+		),
 		'fm_district' => array(
 			'fd' => array(
 				'id' => array('type' => 'int', 'precision' => '2', 'nullable' => False),
@@ -278,7 +309,7 @@
 				'location_code' => array('type' => 'varchar', 'precision' => '50', 'nullable' => False),
 				'loc1' => array('type' => 'varchar', 'precision' => '6', 'nullable' => False),
 				'loc2' => array('type' => 'varchar', 'precision' => '4', 'nullable' => False),
-				'loc2_name' => array('type' => 'varchar', 'precision' => '50', 'nullable' => True),
+				'loc2_name' => array('type' => 'varchar', 'precision' => '256', 'nullable' => True),
 				'entry_date' => array('type' => 'int', 'precision' => 8, 'nullable' => True),
 				'category' => array('type' => 'int', 'precision' => '4', 'nullable' => True),
 				'user_id' => array('type' => 'int', 'precision' => '4', 'nullable' => True),
@@ -359,7 +390,7 @@
 				'loc1' => array('type' => 'varchar', 'precision' => '6', 'nullable' => False),
 				'loc2' => array('type' => 'varchar', 'precision' => '4', 'nullable' => False),
 				'loc3' => array('type' => 'varchar', 'precision' => '4', 'nullable' => False),
-				'loc3_name' => array('type' => 'varchar', 'precision' => '50', 'nullable' => True),
+				'loc3_name' => array('type' => 'varchar', 'precision' => '256', 'nullable' => True),
 				'entry_date' => array('type' => 'int', 'precision' => 8, 'nullable' => True),
 				'category' => array('type' => 'int', 'precision' => '4', 'nullable' => True),
 				'user_id' => array('type' => 'int', 'precision' => '4', 'nullable' => True),
@@ -437,6 +468,9 @@
 				'loc3' => array('type' => 'varchar', 'precision' => '4', 'nullable' => False),
 				'loc4' => array('type' => 'varchar', 'precision' => '4', 'nullable' => False),
 				'loc4_name' => array('type' => 'varchar', 'precision' => '50', 'nullable' => True),
+				'bygningsnr' => array('type' => 'int', 'precision' => 4, 'nullable' => true),
+				'gate_kode' => array('type' => 'int', 'precision' => 4, 'nullable' => true),
+				'adf' => array('type' => 'varchar', 'precision' => 20, 'nullable' => true),
 				'entry_date' => array('type' => 'int', 'precision' => 8, 'nullable' => True),
 				'category' => array('type' => 'int', 'precision' => '4', 'nullable' => True),
 				'user_id' => array('type' => 'int', 'precision' => '4', 'nullable' => True),

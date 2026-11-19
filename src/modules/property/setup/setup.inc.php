@@ -11,7 +11,7 @@
 	 * @version $Id$
 	*/
 	$setup_info['property']['name']			= 'property';
-	$setup_info['property']['version']		= '0.9.17.767';
+	$setup_info['property']['version']		= '0.9.17.768';
 	$setup_info['property']['app_order']	= 8;
 	$setup_info['property']['enable']		= 1;
 	$setup_info['property']['app_group']	= 'office';
@@ -77,6 +77,8 @@
 		);
 
 	$setup_info['property']['tables'] = array(
+		'boei_objekt_candidate',
+		'boei_leieobjekt_candidate',
 		'fm_district',
 		'fm_part_of_town',
 		'fm_gab_location',

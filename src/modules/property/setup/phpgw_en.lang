@@ -1677,6 +1677,7 @@ confirm import of approved candidates.	property	en	Confirm import of approved ca
 no candidates. refresh candidates after boei synchronization.	property	en	No candidates. Refresh candidates after BOEI synchronization.
 missing from current boei source	property	en	Missing from current BOEI source
 boei address (reference only)	property	en	BOEI address (reference only)
+approved or imported rental units	property	en	Approved or imported rental units
 fill missing building number, street code and adf for later candidates at the same address. saving with approval also approves completed candidates.	property	en	Fill missing building number, street code and ADF for later candidates at the same address. Saving with approval also approves completed candidates.
 keep boei objekt_id and leie_id. enter building number, national street code, house number and adf manually. save drafts or approve completed candidates.	property	en	Keep BOEI Objekt_ID and Leie_ID. Enter building number, national street code, house number and ADF manually. Save drafts or approve completed candidates.
 invalid form token. reload the page.	property	en	Invalid form token. Reload the page.

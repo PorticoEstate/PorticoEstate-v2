@@ -44,8 +44,15 @@ final class BoeiImportService
 	public function listObjects(string $loc1 = ''): array
 	{
 		return $this->rows("SELECT c.*, o.navn,
+			COALESCE(u.total_units, 0) AS total_units, COALESCE(u.pending_units, 0) AS pending_units,
+			COALESCE(u.approved_units, 0) AS approved_units, COALESCE(u.imported_units, 0) AS imported_units,
 			CASE WHEN o.objekt_id IS NULL THEN 0 ELSE 1 END AS source_present
 			FROM boei_objekt_candidate c LEFT JOIN boei_objekt o ON o.objekt_id = c.objekt_id
+			LEFT JOIN (SELECT objekt_id, COUNT(*) AS total_units,
+				COUNT(*) FILTER (WHERE status = 'pending') AS pending_units,
+				COUNT(*) FILTER (WHERE status = 'approved') AS approved_units,
+				COUNT(*) FILTER (WHERE status = 'imported') AS imported_units
+				FROM boei_leieobjekt_candidate GROUP BY objekt_id) u ON u.objekt_id = c.objekt_id
 			WHERE (:filter = '' OR c.objekt_id = :loc1)
 			AND (c.status != 'existing' OR EXISTS (SELECT 1 FROM boei_leieobjekt_candidate u
 				WHERE u.objekt_id = c.objekt_id AND u.status != 'imported'))

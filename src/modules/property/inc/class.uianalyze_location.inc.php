@@ -122,6 +122,9 @@ class property_uianalyze_location extends phpgwapi_uicommon_jquery
 			foreach ($data['objects'] as &$object)
 			{
 				$object['status_label'] = lang($object['status']);
+				$object['completed_units'] = (int)$object['approved_units'] + (int)$object['imported_units'];
+				$object['completion_percent'] = (int)$object['total_units'] > 0
+					? (int)round(100 * $object['completed_units'] / (int)$object['total_units']) : 0;
 				$object['url'] = phpgw::link('/index.php', [
 					'menuaction' => 'property.uianalyze_location.boei', 'loc1' => $object['objekt_id'],
 				]);
@@ -178,6 +181,8 @@ class property_uianalyze_location extends phpgwapi_uicommon_jquery
 			'empty' => 'No candidates. Refresh candidates after BOEI synchronization.',
 			'source_missing' => 'Missing from current BOEI source', 'open' => 'Open', 'source' => 'BOEI address (reference only)',
 			'propagate' => 'Fill missing building number, street code and ADF for later candidates at the same address. Saving with approval also approves completed candidates.',
+			'completion' => 'Approved or imported rental units', 'pending' => 'pending',
+			'approved' => 'approved', 'imported' => 'imported',
 			'instructions' => 'Keep BOEI Objekt_ID and Leie_ID. Enter building number, national street code, house number and ADF manually. Save drafts or approve completed candidates.',
 		] as $key => $label)
 		{

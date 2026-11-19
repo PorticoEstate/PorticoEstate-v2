@@ -36,6 +36,19 @@
 				<xsl:if test="source_present = 0"><p role="alert"><xsl:value-of select="../labels/source_missing"/></p></xsl:if>
 				<xsl:choose>
 					<xsl:when test="../loc1 = ''">
+						<p class="boei-completion">
+							<xsl:value-of select="../labels/completion"/><xsl:text>: </xsl:text>
+							<strong><xsl:value-of select="completed_units"/> / <xsl:value-of select="total_units"/></strong>
+							<xsl:if test="total_units &gt; 0"><xsl:text> (</xsl:text><xsl:value-of select="completion_percent"/><xsl:text>%)</xsl:text></xsl:if>
+						</p>
+						<xsl:if test="total_units &gt; 0">
+							<progress value="{completed_units}" max="{total_units}" aria-label="{../labels/completion}"><xsl:value-of select="completion_percent"/>%</progress>
+						</xsl:if>
+						<p class="boei-completion-status">
+							<xsl:value-of select="../labels/pending"/><xsl:text>: </xsl:text><xsl:value-of select="pending_units"/>
+							<xsl:text> / </xsl:text><xsl:value-of select="../labels/approved"/><xsl:text>: </xsl:text><xsl:value-of select="approved_units"/>
+							<xsl:text> / </xsl:text><xsl:value-of select="../labels/imported"/><xsl:text>: </xsl:text><xsl:value-of select="imported_units"/>
+						</p>
 						<a href="{url}"><xsl:value-of select="../labels/open"/></a>
 					</xsl:when>
 					<xsl:otherwise>

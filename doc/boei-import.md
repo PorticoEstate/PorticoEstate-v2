@@ -22,6 +22,10 @@ BOEI-oppsettet med tilhørende egenskaper på lokasjonstabellene.
    innleste rådata, uten å kontakte BOEI.
 3. Åpne objektet. For nye objekter: registrer gnr./bnr. og godkjenn objektet.
    Eksisterende objekter kan få nye leieobjekter uten ny objektgodkjenning.
+   Når ingen objekter er valgt, viser oversikten antall godkjente/importerte
+   leieobjektkandidater av totalt antall, prosentvis fremdrift og separate
+   antall ventende, godkjente og importerte. Fremdriften gjelder godkjenning
+   av kandidatene, ikke hvor mange som er importert.
 4. Registrer bygningsnummer, nasjonal gatekode, husnummer/bokstav og ADF på
    hvert leieobjekt. Gatekoden er en offentlig referanse og trenger ikke
    finnes i gateregisteret. Intern `street_id` bevares fra BOEI, kan ikke

@@ -201,6 +201,24 @@ final class BoeiImportServiceTest extends TestCase
 		$this->assertNull($unit['approved_at']);
 	}
 
+	public function testObjectOverviewCountsEachCandidateStatusWithoutMixingObjects(): void
+	{
+		$this->insert('boei_objekt', ['objekt_id' => '6000', 'navn' => 'Empty property']);
+		foreach (['001', '002', '003', '004'] as $id)
+		{
+			$this->sourceUnit($id);
+		}
+		$this->service->refreshCandidates();
+		$this->service->saveUnit('5000', '002', $this->values(), true, 7);
+		$this->service->saveUnit('5000', '003', $this->values(), true, 7);
+		$this->db->exec("UPDATE boei_leieobjekt_candidate SET status = 'imported' WHERE leie_id = '004'");
+		$objects = array_column($this->service->listObjects(), null, 'objekt_id');
+		$fields = ['total_units', 'pending_units', 'approved_units', 'imported_units'];
+		$this->assertSame([4, 1, 2, 1], array_map(fn($field) => (int)$objects['5000'][$field], $fields));
+		$this->assertSame([0, 0, 0, 0], array_map(fn($field) => (int)$objects['6000'][$field], $fields));
+		$this->assertCount(1, $this->service->listObjects('5000'));
+	}
+
 	public function testMissingRequiredFieldsCannotBeApproved(): void
 	{
 		$this->sourceUnit('001');

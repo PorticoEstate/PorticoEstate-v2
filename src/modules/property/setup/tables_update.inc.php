@@ -13056,28 +13056,43 @@ function property_upgrade0_9_17_767($oProc)
 {
 	require __DIR__ . '/tables_current.inc.php';
 	$oProc->m_odb->transaction_begin();
-	foreach (['boei_objekt_candidate', 'boei_leieobjekt_candidate'] as $table)
+	try
 	{
-		$oProc->CreateTable($table, $phpgw_baseline[$table]);
-	}
-	foreach ([2, 3] as $level)
-	{
-		$oProc->AlterColumn("fm_location{$level}", "loc{$level}_name", [
-			'type' => 'varchar',
-			'precision' => 256,
-			'nullable' => true
-		]);
-	}
-	$columns = $oProc->m_odb->metadata('fm_location4');
-	foreach (['bygningsnr', 'gate_kode', 'adf'] as $column)
-	{
-		if (!isset($columns[$column]))
+		foreach (['boei_objekt_candidate', 'boei_leieobjekt_candidate'] as $table)
 		{
-			$oProc->AddColumn('fm_location4', $column, $phpgw_baseline['fm_location4']['fd'][$column]);
+			$oProc->CreateTable($table, $phpgw_baseline[$table]);
+		}
+
+		foreach ([2, 3] as $level)
+		{
+			$oProc->AlterColumn("fm_location{$level}", "loc{$level}_name", [
+				'type' => 'varchar',
+				'precision' => 256,
+				'nullable' => true
+			], true, true);
+
+			$oProc->AlterColumn("fm_location{$level}_history", "loc{$level}_name", [
+				'type' => 'varchar',
+				'precision' => 256,
+				'nullable' => true
+			], true, true);
+		}
+		$columns = $oProc->m_odb->metadata('fm_location4');
+		foreach (['bygningsnr', 'gate_kode', 'adf'] as $column)
+		{
+			if (!isset($columns[$column]))
+			{
+				$oProc->AddColumn('fm_location4', $column, $phpgw_baseline['fm_location4']['fd'][$column]);
+			}
+		}
+		if ($oProc->m_odb->transaction_commit())
+		{
+			return '0.9.17.768';
 		}
 	}
-	if ($oProc->m_odb->transaction_commit())
+	catch (\Throwable $e)
 	{
-		return '0.9.17.768';
+		$oProc->m_odb->transaction_abort();
+		throw $e;
 	}
 }

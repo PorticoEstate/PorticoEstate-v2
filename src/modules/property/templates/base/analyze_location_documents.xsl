@@ -12,6 +12,7 @@
 				<p class="pure-text-muted">Previously selected mappings are shown below. Click "Start Analysis" to include additional candidates.</p>
 				<form method="post" action="" class="pure-form">
 					<input type="hidden" name="save_files_to_move" value="yes" />
+					<input type="hidden" name="move_token" value="{move_token}" />
 					<table class="pure-table pure-table-bordered">
 						<tr>
 							<th>
@@ -29,7 +30,7 @@
 						<xsl:for-each select="previously_selected">
 							<tr>
 								<td>
-									<xsl:if test="files_moved != 1">
+									<xsl:if test="files_moved = 0">
 										<label class="pure-checkbox">
 											<input type="checkbox" name="mapping_keys[]" value="{selection_key}" checked="checked" />
 										</label>
@@ -54,6 +55,8 @@
 								<td>
 									<xsl:choose>
 										<xsl:when test="files_moved = 1">yes</xsl:when>
+										<xsl:when test="files_moved = 2">Cleanup pending</xsl:when>
+										<xsl:when test="files_moved = 3">Preparing</xsl:when>
 										<xsl:otherwise>no</xsl:otherwise>
 									</xsl:choose>
 								</td>
@@ -94,8 +97,6 @@
 						<th>Old location_code</th>
 						<th>New location_code</th>
 						<th>Status</th>
-						<th>VFS rows updated</th>
-						<th>Filesystem moves</th>
 						<th>Message</th>
 					</tr>
 					<xsl:for-each select="execution_results">
@@ -103,8 +104,6 @@
 							<td><xsl:value-of select="old_location_code" /></td>
 							<td><xsl:value-of select="new_location_code" /></td>
 							<td><xsl:value-of select="status" /></td>
-							<td><xsl:value-of select="updated_rows" /></td>
-							<td><xsl:value-of select="moved_directories" /></td>
 							<td><xsl:value-of select="message" /></td>
 						</tr>
 					</xsl:for-each>
@@ -129,6 +128,7 @@
 		<h4>Step 1: Analyze and select mappings to move</h4>
 		<form method="post" action="" class="pure-form">
 			<input type="hidden" name="save_files_to_move" value="yes" />
+			<input type="hidden" name="move_token" value="{move_token}" />
 			<table class="pure-table pure-table-bordered">
 				<tr>
 					<th>
@@ -146,7 +146,7 @@
 				<xsl:for-each select="candidates[directory_count &gt; 0]">
 					<tr>
 						<td>
-						<xsl:if test="files_moved != 1">
+						<xsl:if test="files_moved = 0">
 							<label class="pure-checkbox">
 								<input type="checkbox" name="mapping_keys[]" value="{selection_key}">
 									<xsl:if test="files_to_move = 1">
@@ -175,6 +175,8 @@
 						<td>
 							<xsl:choose>
 								<xsl:when test="files_moved = 1">yes</xsl:when>
+								<xsl:when test="files_moved = 2">Cleanup pending</xsl:when>
+								<xsl:when test="files_moved = 3">Preparing</xsl:when>
 								<xsl:otherwise>no</xsl:otherwise>
 							</xsl:choose>
 						</td>
@@ -195,14 +197,16 @@
 		]]>
 		</script>
 
-		<h4>Step 2: Execute selected moves</h4>
+		<h4>Step 2: Execute / Resume selected moves</h4>
+		<p>Keep documents at both locations unchanged until the move is complete. If execution stops, return to this page and resume.</p>
 		<form method="post" action="" class="pure-form">
 			<input type="hidden" name="execute_move" value="yes" />
+			<input type="hidden" name="move_token" value="{move_token}" />
 			<label class="pure-checkbox">
-				<input type="checkbox" name="confirm_execute" value="1" />
-				Confirm execution of move/rename for mappings where files_to_move = 1 and files_moved = 0
+				<input type="checkbox" name="confirm_execute" value="1" required="required" />
+				Confirm move or resume of selected mappings
 			</label>
-			<button type="submit" class="pure-button pure-button-primary">Execute selected moves</button>
+			<button type="submit" class="pure-button pure-button-primary">Execute / Resume</button>
 		</form>
 
 		<h4>VFS Directory Repair</h4>

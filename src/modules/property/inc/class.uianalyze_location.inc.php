@@ -13,6 +13,7 @@
 use App\modules\phpgwapi\services\Settings;
 use App\modules\property\helpers\LocationHierarchyAnalyzer;
 use App\modules\property\helpers\LocationHierarchyDocumentAnalyzer;
+use App\modules\property\helpers\BoeiImportService;
 use App\modules\phpgwapi\security\Acl;
 
 phpgw::import_class('phpgwapi.uicommon_jquery');
@@ -27,6 +28,7 @@ class property_uianalyze_location extends phpgwapi_uicommon_jquery
 	var $public_functions = array(
 		'index' => true,
 		'documents' => true,
+		'boei' => true,
 	);
 
 	public function __construct()
@@ -48,6 +50,167 @@ class property_uianalyze_location extends phpgwapi_uicommon_jquery
 
 	public function query()
 	{
+	}
+
+	public function boei()
+	{
+		Settings::getInstance()->update('flags', [
+			'app_header' => lang('BOEI import candidates'),
+			'menu_selection' => 'admin::property::location::boei_import',
+			'xslt_app' => true,
+		]);
+		phpgwapi_xslttemplates::getInstance()->add_file(['boei_import']);
+		$_SESSION['boei_import_token'] ??= bin2hex(random_bytes(32));
+		$loc1 = Sanitizer::get_var('loc1', 'string', 'REQUEST', '');
+		$data = ['loc1' => $loc1, 'token' => $_SESSION['boei_import_token'], 'objects' => [], 'units' => []];
+		$service = new BoeiImportService();
+		$failed = false;
+		try
+		{
+			if ($_SERVER['REQUEST_METHOD'] === 'POST')
+			{
+				$token = $_POST['token'] ?? null;
+				if (!is_string($token) || !hash_equals($_SESSION['boei_import_token'], $token))
+				{
+					throw new DomainException(lang('Invalid form token. Reload the page.'));
+				}
+				$action = Sanitizer::get_var('action', 'string', 'POST');
+				switch ($action)
+				{
+					case 'refresh':
+						$service->refreshCandidates();
+						$data['message'] = lang('Candidates refreshed. Manual values and approvals were preserved.');
+						break;
+					case 'save_object':
+					case 'approve_object':
+						$service->saveObject($loc1, $_POST, $action === 'approve_object', (int)$this->account);
+						$data['message'] = lang('Candidate saved');
+						break;
+					case 'save_unit':
+					case 'approve_unit':
+						$service->saveUnit(
+							$loc1,
+							Sanitizer::get_var('leie_id', 'string', 'POST'),
+							$_POST,
+							$action === 'approve_unit',
+							(int)$this->account,
+							($_POST['propagate'] ?? '') === '1'
+						);
+						$data['message'] = lang('Candidate saved');
+						break;
+					case 'import':
+						if (($_POST['confirm_import'] ?? '') !== '1')
+						{
+							throw new DomainException(lang('Confirm import of approved candidates.'));
+						}
+						$data['message'] = lang('Imported rental units: %1', $service->importApproved($loc1));
+						break;
+					default:
+						throw new DomainException(lang('Invalid action'));
+				}
+			}
+		}
+		catch (DomainException $e)
+		{
+			$failed = true;
+			$data['error'] = $e->getMessage();
+		}
+		catch (Throwable $e)
+		{
+			$failed = true;
+			error_log('BOEI candidate import: ' . $e->getMessage());
+			$data['error'] = lang('BOEI import failed. Check the property database upgrade and server log.');
+		}
+		try
+		{
+			$data['objects'] = $service->listObjects($loc1);
+			$data['units'] = $loc1 !== '' ? $service->listUnits($loc1) : [];
+			foreach ($data['objects'] as &$object)
+			{
+				$object['status_label'] = lang($object['status']);
+				$object['completed_units'] = (int)$object['approved_units'] + (int)$object['imported_units'];
+				$object['completion_percent'] = (int)$object['total_units'] > 0
+					? (int)round(100 * $object['completed_units'] / (int)$object['total_units']) : 0;
+				$object['url'] = phpgw::link('/index.php', [
+					'menuaction' => 'property.uianalyze_location.boei',
+					'loc1' => $object['objekt_id'],
+				]);
+			}
+			unset($object);
+			foreach ($data['units'] as &$unit)
+			{
+				$unit['status_label'] = lang($unit['status']);
+			}
+			unset($unit);
+		}
+		catch (Throwable $e)
+		{
+			error_log('BOEI candidate listing: ' . $e->getMessage());
+			$data['error'] = lang('BOEI import failed. Check the property database upgrade and server log.');
+		}
+		if ($failed && isset($_POST['action']) && is_string($_POST['action']))
+		{
+			foreach ($data['objects'] as &$object)
+			{
+				if (in_array($_POST['action'], ['save_object', 'approve_object'], true))
+				{
+					foreach (['gnr', 'bnr'] as $field)
+					{
+						if (isset($_POST[$field]) && is_string($_POST[$field]))
+						{
+							$object[$field] = $_POST[$field];
+						}
+					}
+				}
+			}
+			unset($object);
+			foreach ($data['units'] as &$unit)
+			{
+				if ($unit['leie_id'] === ($_POST['leie_id'] ?? null))
+				{
+					foreach (['bygningsnr', 'gate_kode', 'street_number', 'adf'] as $field)
+					{
+						if (isset($_POST[$field]) && is_string($_POST[$field]))
+						{
+							$unit[$field] = $_POST[$field];
+						}
+					}
+				}
+			}
+			unset($unit);
+		}
+		$data['action_url'] = phpgw::link('/index.php', ['menuaction' => 'property.uianalyze_location.boei', 'loc1' => $loc1]);
+		foreach (
+			[
+				'title' => 'BOEI import candidates',
+				'refresh' => 'Refresh candidates',
+				'filter' => 'Filter',
+				'object' => 'Object',
+				'unit' => 'Rental unit',
+				'status' => 'Status',
+				'save' => 'Save draft',
+				'approve' => 'Save and approve',
+				'import' => 'Import approved candidates',
+				'building' => 'Building number',
+				'street' => 'Street code',
+				'number' => 'House number and letter',
+				'confirm' => 'Confirm import of approved candidates.',
+				'empty' => 'No candidates. Refresh candidates after BOEI synchronization.',
+				'source_missing' => 'Missing from current BOEI source',
+				'open' => 'Open',
+				'source' => 'BOEI address (reference only)',
+				'propagate' => 'Fill missing building number, street code and ADF for later candidates at the same address. Saving with approval also approves completed candidates.',
+				'completion' => 'Approved or imported rental units',
+				'pending' => 'pending',
+				'approved' => 'approved',
+				'imported' => 'imported',
+				'instructions' => 'Keep BOEI Objekt_ID and Leie_ID. Enter building number, national street code, house number and ADF manually. Save drafts or approve completed candidates.',
+			] as $key => $label
+		)
+		{
+			$data['labels'][$key] = lang($label);
+		}
+		phpgwapi_xslttemplates::getInstance()->set_var('phpgw', ['boei' => $data]);
 	}
 
 	public function index()
@@ -162,7 +325,9 @@ class property_uianalyze_location extends phpgwapi_uicommon_jquery
 		$analyzer = new LocationHierarchyDocumentAnalyzer();
 		$data = [];
 		$data['analysis_ran'] = false;
-		
+		$_SESSION['location_document_move_token'] ??= bin2hex(random_bytes(32));
+		$data['move_token'] = $_SESSION['location_document_move_token'];
+
 		$data['vfs_repair_analysis'] = [];
 		$data['vfs_repair_execution_results'] = [];
 
@@ -173,21 +338,45 @@ class property_uianalyze_location extends phpgwapi_uicommon_jquery
 		}
 		else if (isset($_POST['save_files_to_move']) && $_POST['save_files_to_move'] == 'yes')
 		{
-			$selectedMappings = isset($_POST['mapping_keys']) && is_array($_POST['mapping_keys'])
-				? $_POST['mapping_keys']
-				: [];
-
-			$analyzer->updateFilesToMoveSelection($selectedMappings);
-			$data['selection_saved'] = true;
-			$data['selection_count'] = count($selectedMappings);
-			$data['analysis_ran'] = true;
+			$token = $_POST['move_token'] ?? null;
+			if (!is_string($token) || !hash_equals($data['move_token'], $token))
+			{
+				$data['execution_warning'] = 'Invalid form token. Reload the page before saving the selection.';
+			}
+			else
+			{
+				$selectedMappings = isset($_POST['mapping_keys']) && is_array($_POST['mapping_keys'])
+					? $_POST['mapping_keys']
+					: [];
+				$analyzer->updateFilesToMoveSelection($selectedMappings);
+				$data['selection_saved'] = true;
+				$data['selection_count'] = count($selectedMappings);
+				$data['analysis_ran'] = true;
+			}
 		}
 
 		if (isset($_POST['execute_move']) && $_POST['execute_move'] == 'yes')
 		{
-			if (!empty($_POST['confirm_execute']))
+			$token = $_POST['move_token'] ?? null;
+			if (!is_string($token) || !hash_equals($data['move_token'], $token))
 			{
-				$data['execution_results'] = $analyzer->executeMovesForSelectedMappings();
+				$data['execution_warning'] = 'Invalid form token. Reload the page before resuming.';
+			}
+			elseif (!empty($_POST['confirm_execute']))
+			{
+				try
+				{
+					$data['execution_results'] = $analyzer->executeMovesForSelectedMappings();
+				}
+				catch (\DomainException $e)
+				{
+					$data['execution_warning'] = $e->getMessage();
+				}
+				catch (\PDOException | \RuntimeException $e)
+				{
+					error_log('Location document move: ' . $e->getMessage());
+					$data['execution_warning'] = 'Document move stopped. Check the server log before resuming.';
+				}
 			}
 			else
 			{
@@ -231,7 +420,7 @@ class property_uianalyze_location extends phpgwapi_uicommon_jquery
 			'completed_moves' => 0,
 		];
 
-		if(!$data['analysis_ran'])
+		if (!$data['analysis_ran'] || isset($_POST['execute_move']))
 		{
 			$data['previously_selected'] = $analyzer->getPreviouslySelectionMappings();
 		}
@@ -240,7 +429,7 @@ class property_uianalyze_location extends phpgwapi_uicommon_jquery
 		{
 			$summary['total_candidates']++;
 			$summary['selected_for_move']++;
-			if (!empty($candidate['files_moved']))
+			if ((int)$candidate['files_moved'] === 1)
 			{
 				$summary['completed_moves']++;
 			}

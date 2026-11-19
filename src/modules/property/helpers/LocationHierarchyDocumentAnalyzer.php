@@ -9,6 +9,12 @@ use App\modules\phpgwapi\services\Vfs\Vfs;
 
 class LocationHierarchyDocumentAnalyzer
 {
+	// Keep legacy files_moved values 0 (queued) and 1 (complete).
+	private const MOVE_COMPLETE = 1;
+	private const MOVE_CLEANUP = 2;
+	private const MOVE_PREPARING = 3;
+	private const MOVE_LOCK = 1846275207;
+
 	private $db;
 	private $db2;
 	private $basedir;
@@ -110,8 +116,7 @@ class LocationHierarchyDocumentAnalyzer
 		$selectedPairs = $this->parseSelectedMappingKeys($selectedKeys);
 
 		// Reset current selection for mappings that are not already completed.
-		// Keep files_to_move = 1 for files_moved = 1 rows so the history remains visible
-		// when new items are added from a later analysis run.
+		// Keep in-progress moves selected, as well as completed history.
 		$sqlReset = "UPDATE location_mapping
 			SET files_to_move = 0
 			WHERE COALESCE(old_location_code, '') <> ''
@@ -132,74 +137,239 @@ class LocationHierarchyDocumentAnalyzer
 		}
 	}
 
-	/**
-	 * Step 2: Execute moves for all rows flagged with files_to_move = 1 and not moved yet.
-	 * The process is isolated per location code pair in a dedicated DB transaction.
-	 */
 	public function executeMovesForSelectedMappings()
 	{
 		$results = [];
-		$this->vfs->override_acl = 1;
-
-		foreach ($this->getMappingsMarkedForMove() as $mapping)
+		$deadline = hrtime(true) + 10_000_000_000;
+		if (!$this->moveSql('SELECT pg_try_advisory_lock(?)', [self::MOVE_LOCK])->fetchColumn())
 		{
-			$oldCode = $mapping['old_location_code'];
-			$newCode = $mapping['new_location_code'];
-
-			$from_dir = $this->rootdir . '/' . $oldCode;
-			$to_dir = $this->rootdir . '/' . $newCode;
-
-
-			if ($this->vfs->file_exists(array(
-				'string'	 => $from_dir,
-				'relatives'	 => array(RELATIVE_NONE)
-			)))
+			throw new \DomainException('Another document move is running. Try again when it finishes.');
+		}
+		try
+		{
+			foreach ($this->getMappingsMarkedForMove() as $mapping)
 			{
-				$this->db->transaction_begin();
-				
-				if($this->vfs->mv(
-					array(
-						'from'		 => $from_dir,
-						'to'		 => $to_dir,
-						'relatives'	 => array(RELATIVE_ALL, RELATIVE_ALL)
-					)
-				))
+				if (hrtime(true) >= $deadline)
 				{
-					// Mark as moved in DB only if VFS move succeeded to keep history accurate for any future runs	
-					$this->markFilesMoved($oldCode, $newCode);
-					$results[] = [
-						'old_location_code' => $oldCode,
-						'new_location_code' => $newCode,
-						'status' => 'success',
-						'message' => "Moved directory '{$from_dir}' to '{$to_dir}' using VFS",
-					];
-					$this->db->transaction_commit();
+					$results[] = $mapping + ['status' => 'paused', 'message' => 'Click Execute / Resume to continue.'];
+					break;
 				}
-				else
+				try
 				{
-					$this->db->transaction_abort();
-					$results[] = [
-						'old_location_code' => $oldCode,
-						'new_location_code' => $newCode,
-						'status' => 'failed',
-						'message' => "Failed to move directory '{$from_dir}' to '{$to_dir}' using VFS",
-					];
-					continue;
+					$complete = $this->resumeMove($mapping['old_location_code'], $mapping['new_location_code'], $deadline);
+					$results[] = $mapping + ['status' => $complete ? 'success' : 'paused',
+						'message' => $complete ? 'Document move and cleanup completed.' : 'Click Execute / Resume to continue.'];
+					if (!$complete)
+					{
+						break;
+					}
 				}
-		
+				catch (\DomainException $e)
+				{
+					$results[] = $mapping + ['status' => 'blocked', 'message' => $e->getMessage()];
+				}
 			}
-			else
+		}
+		finally
+		{
+			$this->moveSql('SELECT pg_advisory_unlock(?)', [self::MOVE_LOCK]);
+		}
+		return $results;
+	}
+
+	private function resumeMove(string $old, string $new, int $deadline): bool
+	{
+		foreach ([$old, $new] as $code)
+		{
+			if (!preg_match('/\A[A-Za-z0-9_-]+\z/', $code))
 			{
-				$results[] = [
-					'old_location_code' => $oldCode,
-					'new_location_code' => $newCode,
-					'status' => 'skipped',
-					'message' => "Source directory '{$from_dir}' does not exist, skipping move",
-				];
+				throw new \DomainException('Unsupported location code for a document move.');
+			}
+		}
+		$from = $this->rootdir . '/' . $old;
+		$to = $this->rootdir . '/' . $new;
+		$filesystem = (bool)$this->vfs->file_actions;
+		$source = $this->basedir . $from;
+		$target = $this->basedir . $to;
+		if ($filesystem)
+		{
+			$base = realpath($this->basedir);
+			$parent = realpath($this->basedir . $this->rootdir);
+			if (!$base || $parent !== $base . $this->rootdir)
+			{
+				throw new \DomainException('The document root is missing or is a symbolic link.');
+			}
+		}
+		foreach ([$from => $source, $to => $target] as $path => $physicalPath)
+		{
+			$parts = $this->vfs->path_parts(['string' => $path, 'relatives' => [RELATIVE_NONE]]);
+			if ($parts->outside || $parts->real_full_path !== $physicalPath)
+			{
+				throw new \DomainException('Linked VFS locations cannot be moved by this tool.');
 			}
 		}
 
-		return $results;
+		$files = new LocationDocumentMoveFiles();
+		$this->db->beginTransaction();
+		try
+		{
+			$states = $this->moveSql('SELECT COALESCE(files_moved, 0) FROM location_mapping
+				WHERE old_location_code = ? AND new_location_code = ? AND files_to_move = 1 FOR UPDATE',
+				[$old, $new])->fetchAll(\PDO::FETCH_COLUMN);
+			$unfinished = array_diff(array_map('intval', $states), [self::MOVE_COMPLETE]);
+			if (!$unfinished)
+			{
+				$this->db->commit();
+				return true;
+			}
+			$this->moveSql('LOCK TABLE phpgw_vfs IN SHARE ROW EXCLUSIVE MODE NOWAIT');
+			if (in_array(self::MOVE_CLEANUP, $unfinished, true))
+			{
+				if ($filesystem && !$this->moveSql("SELECT 1 FROM phpgw_vfs
+					WHERE directory = ? AND name = ? AND mime_type = 'Directory'", [$this->rootdir, $new])->fetchColumn())
+				{
+					throw new \DomainException("Destination VFS directory is missing: {$to}");
+				}
+				$complete = !$filesystem || $files->cleanup($source, $target, $deadline);
+				if ($complete)
+				{
+					$this->setMoveState($old, $new, self::MOVE_COMPLETE);
+				}
+				$this->db->commit();
+				return $complete;
+			}
+			if ($this->moveSql('SELECT 1 FROM location_mapping WHERE files_to_move = 1
+				AND (old_location_code <> ? OR new_location_code <> ?)
+				AND ((COALESCE(files_moved, 0) <> 1 AND (old_location_code IN (?, ?) OR new_location_code = ?))
+					OR (files_moved IN (2, 3) AND
+						(old_location_code IN (?, ?) OR new_location_code IN (?, ?))))',
+				[$old, $new, $old, $new, $old, $old, $new, $old, $new])->fetchColumn())
+			{
+				throw new \DomainException('This move overlaps another selected move. Finish the active move or deselect conflicting mappings.');
+			}
+			$plan = $this->planVfsMove($old, $new);
+			// Persist the preparation phase before the first filesystem change.
+			if ($filesystem && !in_array(self::MOVE_PREPARING, $unfinished, true))
+			{
+				if (hrtime(true) >= $deadline)
+				{
+					$this->db->commit();
+					return false;
+				}
+				$this->setMoveState($old, $new, self::MOVE_PREPARING);
+				$this->db->commit();
+				return $this->resumeMove($old, $new, $deadline);
+			}
+			if ($filesystem && !$files->prepare($source, $target, $deadline))
+			{
+				$this->db->commit();
+				return false;
+			}
+			foreach ($plan as [$id, $directory, $name])
+			{
+				if ($directory === null)
+				{
+					$this->moveSql('DELETE FROM phpgw_vfs WHERE file_id = ?', [$id]);
+				}
+				else
+				{
+					$this->moveSql('UPDATE phpgw_vfs SET directory = ?, name = ? WHERE file_id = ?', [$directory, $name, $id]);
+				}
+			}
+			$this->setMoveState($old, $new, $filesystem ? self::MOVE_CLEANUP : self::MOVE_COMPLETE);
+			$this->db->commit();
+			return !$filesystem || $this->resumeMove($old, $new, $deadline);
+		}
+		finally
+		{
+			if ($this->db->inTransaction())
+			{
+				$this->db->rollBack();
+			}
+		}
+	}
+
+	private function planVfsMove(string $old, string $new): array
+	{
+		$from = $this->rootdir . '/' . $old;
+		$to = $this->rootdir . '/' . $new;
+		$read = fn($code, $path) => $this->moveSql("SELECT file_id, directory, name, mime_type, link_directory, link_name
+			FROM phpgw_vfs WHERE (directory = ? AND name = ?) OR directory = ? OR directory LIKE ? ESCAPE '!'",
+			[$this->rootdir, $code, $path, str_replace('_', '!_', $path) . '/%'])->fetchAll(\PDO::FETCH_ASSOC);
+		$existing = [];
+		foreach ($read($new, $to) as $row)
+		{
+			if (!in_array($row['mime_type'], ['journal', 'journal-deleted'], true))
+			{
+				if ($row['link_directory'] || $row['link_name'])
+				{
+					throw new \DomainException("Linked destination VFS path: {$row['directory']}/{$row['name']}");
+				}
+				$existing[$row['directory'] . '/' . $row['name']][] = $row;
+			}
+		}
+		$plan = [];
+		$hasRoot = false;
+		$seen = [];
+		foreach ($read($old, $from) as $row)
+		{
+			$path = $row['directory'] . '/' . $row['name'];
+			$isRoot = $path === $from;
+			$isDirectory = $row['mime_type'] === 'Directory';
+			$isJournal = in_array($row['mime_type'], ['journal', 'journal-deleted'], true);
+			if ($isRoot && $isJournal)
+			{
+				continue;
+			}
+			if ($row['link_directory'] || $row['link_name'] || (!$isJournal && isset($seen[$path])))
+			{
+				throw new \DomainException("Linked or duplicate VFS path: {$path}");
+			}
+			if ($isRoot)
+			{
+				$hasRoot = $isDirectory;
+			}
+			$directory = $isRoot ? $this->rootdir : $to . substr($row['directory'], strlen($from));
+			$name = $isRoot ? $new : $row['name'];
+			if (!$isJournal)
+			{
+				$seen[$path] = true;
+				$matches = $existing[$directory . '/' . $name] ?? [];
+				if ($matches)
+				{
+					if (count($matches) !== 1 || !$isDirectory || $matches[0]['mime_type'] !== 'Directory'
+						|| $matches[0]['link_directory'] || $matches[0]['link_name'])
+					{
+						throw new \DomainException("Destination VFS path conflict: {$directory}/{$name}");
+					}
+					$directory = null;
+				}
+				if (!$isDirectory && $this->vfs->file_actions)
+				{
+					$physical = $this->basedir . str_replace("''", "'", $path);
+					if (!is_file($physical) || is_link($physical) || realpath($physical) !== realpath($this->basedir) . substr($physical, strlen($this->basedir)))
+					{
+						throw new \DomainException("VFS source file is missing or linked: {$path}. Check for an interrupted legacy move.");
+					}
+				}
+			}
+			$plan[] = [$row['file_id'], $directory, $name];
+		}
+		if (!$hasRoot)
+		{
+			throw new \DomainException("Source VFS directory is missing: {$from}. Check for an interrupted legacy move.");
+		}
+		return $plan;
+	}
+
+	private function moveSql(string $sql, array $params = []): \PDOStatement
+	{
+		$stmt = $this->db->prepare($sql);
+		if (!$stmt || !$stmt->execute($params))
+		{
+			throw new \RuntimeException('Document move database operation failed.');
+		}
+		return $stmt;
 	}
 
 	/**
@@ -571,38 +741,24 @@ class LocationHierarchyDocumentAnalyzer
 
 	private function getMappingsMarkedForMove()
 	{
-		$sql = "SELECT DISTINCT old_location_code, new_location_code
+		$sql = "SELECT old_location_code, new_location_code
 			FROM location_mapping
 			WHERE COALESCE(files_to_move, 0) = 1
-				AND COALESCE(files_moved, 0) = 0
+				AND COALESCE(files_moved, 0) <> 1
 				AND COALESCE(old_location_code, '') <> ''
 				AND COALESCE(new_location_code, '') <> ''
 				AND old_location_code <> new_location_code
-			ORDER BY old_location_code, new_location_code";
+			GROUP BY old_location_code, new_location_code
+			ORDER BY MIN(CASE files_moved WHEN 2 THEN 0 WHEN 3 THEN 1 ELSE 2 END), old_location_code, new_location_code";
 
-		$this->db->query($sql, __LINE__, __FILE__);
-		$rows = [];
-		while ($this->db->next_record())
-		{
-			$rows[] = [
-				'old_location_code' => $this->db->f('old_location_code'),
-				'new_location_code' => $this->db->f('new_location_code'),
-			];
-		}
-		return $rows;
+		return $this->moveSql($sql)->fetchAll(\PDO::FETCH_ASSOC);
 	}
 
-	private function markFilesMoved($oldLocationCode, $newLocationCode)
+	private function setMoveState(string $old, string $new, int $state): void
 	{
-		$old = addslashes($oldLocationCode);
-		$new = addslashes($newLocationCode);
-		$sql = "UPDATE location_mapping
-			SET files_moved = 1,
-				update_timestamp = NOW()
-			WHERE old_location_code = '{$old}'
-				AND new_location_code = '{$new}'
-				AND COALESCE(files_to_move, 0) = 1";
-		$this->db->query($sql, __LINE__, __FILE__);
+		$this->moveSql('UPDATE location_mapping SET files_moved = ?, update_timestamp = NOW()
+			WHERE old_location_code = ? AND new_location_code = ? AND files_to_move = 1 AND COALESCE(files_moved, 0) <> 1',
+			[$state, $old, $new]);
 	}
 
 	private function findDirectoriesForLocationCode($oldLocationCode)
@@ -649,5 +805,4 @@ class LocationHierarchyDocumentAnalyzer
 		}
 		return $pairs;
 	}
-
 }

@@ -609,6 +609,10 @@
 					'text'	=> lang('Analyze Location Hierarchy'),
 					'url'	=> phpgw::link('/index.php', array('menuaction' => 'property.uianalyze_location.index')),
 				);
+				$admin_children_location['boei_import'] = array(
+					'text' => lang('BOEI import candidates'),
+					'url' => phpgw::link('/index.php', array('menuaction' => 'property.uianalyze_location.boei')),
+				);
 
 				$admin_children_location['analyze_location_documents'] = array(
 					'text'	=> lang('Analyze Location Hierarchy Documents'),

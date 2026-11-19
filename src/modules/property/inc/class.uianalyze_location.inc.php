@@ -325,6 +325,8 @@ class property_uianalyze_location extends phpgwapi_uicommon_jquery
 		$analyzer = new LocationHierarchyDocumentAnalyzer();
 		$data = [];
 		$data['analysis_ran'] = false;
+		$_SESSION['location_document_move_token'] ??= bin2hex(random_bytes(32));
+		$data['move_token'] = $_SESSION['location_document_move_token'];
 
 		$data['vfs_repair_analysis'] = [];
 		$data['vfs_repair_execution_results'] = [];
@@ -336,21 +338,45 @@ class property_uianalyze_location extends phpgwapi_uicommon_jquery
 		}
 		else if (isset($_POST['save_files_to_move']) && $_POST['save_files_to_move'] == 'yes')
 		{
-			$selectedMappings = isset($_POST['mapping_keys']) && is_array($_POST['mapping_keys'])
-				? $_POST['mapping_keys']
-				: [];
-
-			$analyzer->updateFilesToMoveSelection($selectedMappings);
-			$data['selection_saved'] = true;
-			$data['selection_count'] = count($selectedMappings);
-			$data['analysis_ran'] = true;
+			$token = $_POST['move_token'] ?? null;
+			if (!is_string($token) || !hash_equals($data['move_token'], $token))
+			{
+				$data['execution_warning'] = 'Invalid form token. Reload the page before saving the selection.';
+			}
+			else
+			{
+				$selectedMappings = isset($_POST['mapping_keys']) && is_array($_POST['mapping_keys'])
+					? $_POST['mapping_keys']
+					: [];
+				$analyzer->updateFilesToMoveSelection($selectedMappings);
+				$data['selection_saved'] = true;
+				$data['selection_count'] = count($selectedMappings);
+				$data['analysis_ran'] = true;
+			}
 		}
 
 		if (isset($_POST['execute_move']) && $_POST['execute_move'] == 'yes')
 		{
-			if (!empty($_POST['confirm_execute']))
+			$token = $_POST['move_token'] ?? null;
+			if (!is_string($token) || !hash_equals($data['move_token'], $token))
 			{
-				$data['execution_results'] = $analyzer->executeMovesForSelectedMappings();
+				$data['execution_warning'] = 'Invalid form token. Reload the page before resuming.';
+			}
+			elseif (!empty($_POST['confirm_execute']))
+			{
+				try
+				{
+					$data['execution_results'] = $analyzer->executeMovesForSelectedMappings();
+				}
+				catch (\DomainException $e)
+				{
+					$data['execution_warning'] = $e->getMessage();
+				}
+				catch (\PDOException | \RuntimeException $e)
+				{
+					error_log('Location document move: ' . $e->getMessage());
+					$data['execution_warning'] = 'Document move stopped. Check the server log before resuming.';
+				}
 			}
 			else
 			{
@@ -394,7 +420,7 @@ class property_uianalyze_location extends phpgwapi_uicommon_jquery
 			'completed_moves' => 0,
 		];
 
-		if (!$data['analysis_ran'])
+		if (!$data['analysis_ran'] || isset($_POST['execute_move']))
 		{
 			$data['previously_selected'] = $analyzer->getPreviouslySelectionMappings();
 		}
@@ -403,7 +429,7 @@ class property_uianalyze_location extends phpgwapi_uicommon_jquery
 		{
 			$summary['total_candidates']++;
 			$summary['selected_for_move']++;
-			if (!empty($candidate['files_moved']))
+			if ((int)$candidate['files_moved'] === 1)
 			{
 				$summary['completed_moves']++;
 			}

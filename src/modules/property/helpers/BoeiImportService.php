@@ -77,20 +77,61 @@ final class BoeiImportService
 		});
 	}
 
-	public function saveUnit(string $loc1, string $loc4, array $values, bool $approve, int $account): void
+	public function saveUnit(string $loc1, string $loc4, array $values, bool $approve, int $account, bool $propagate = false): void
 	{
-		$this->transaction(function () use ($loc1, $loc4, $values, $approve, $account) {
+		$this->transaction(function () use ($loc1, $loc4, $values, $approve, $account, $propagate) {
 			$this->one('SELECT objekt_id FROM boei_objekt_candidate WHERE objekt_id = ? FOR UPDATE', [$loc1]);
 			$candidate = $this->one('SELECT * FROM boei_leieobjekt_candidate'
 				. ' WHERE objekt_id = ? AND leie_id = ? FOR UPDATE', [$loc1, $loc4]);
 			$this->assertEditable($candidate);
 			$data = $this->validateUnit(array_replace($values, ['street_id' => $candidate['street_id']]), $approve);
-			$this->execute('UPDATE boei_leieobjekt_candidate SET bygningsnr = ?, gate_kode = ?,'
-				. ' street_number = ?, adf = ?, status = ?, approved_by = ?, approved_at = ?'
-				. ' WHERE objekt_id = ? AND leie_id = ?',
-				[$data['bygningsnr'], $data['gate_kode'], $data['street_number'], $data['adf'],
-					$approve ? 'approved' : 'pending', $approve ? $account : null, $approve ? time() : null, $loc1, $loc4]);
+			if ($propagate && ($data['street_id'] === null || $data['street_number'] === ''))
+			{
+				throw new DomainException('A street ID and house number are required to propagate candidate values.');
+			}
+			$this->storeUnit($loc1, $loc4, $data, $approve, $account);
+			if (!$propagate)
+			{
+				return;
+			}
+			$targets = $this->rows("SELECT * FROM boei_leieobjekt_candidate
+				WHERE objekt_id = ? AND leie_id > ? AND street_id = ?
+				AND status IN ('pending', 'approved') ORDER BY leie_id FOR UPDATE",
+				[$loc1, $loc4, $data['street_id']]);
+			foreach ($targets as $target)
+			{
+				if (self::normalizeStreetNumber($target['street_number'] ?? '') !== $data['street_number'])
+				{
+					continue;
+				}
+				$changed = false;
+				foreach (['bygningsnr', 'gate_kode', 'adf'] as $field)
+				{
+					if (trim((string)$target[$field]) === '' && $data[$field] !== null && $data[$field] !== '')
+					{
+						$target[$field] = $data[$field];
+						$changed = true;
+					}
+				}
+				if ($changed)
+				{
+					$complete = $target['bygningsnr'] !== null && $target['gate_kode'] !== null
+						&& trim((string)$target['adf']) !== '' && $data['street_number'] !== '';
+					$approveTarget = $approve && $complete;
+					$targetData = $this->validateUnit($target, $approveTarget);
+					$this->storeUnit($loc1, $target['leie_id'], $targetData, $approveTarget, $account);
+				}
+			}
 		});
+	}
+
+	private function storeUnit(string $loc1, string $loc4, array $data, bool $approve, int $account): void
+	{
+		$this->execute('UPDATE boei_leieobjekt_candidate SET bygningsnr = ?, gate_kode = ?,'
+			. ' street_number = ?, adf = ?, status = ?, approved_by = ?, approved_at = ?'
+			. ' WHERE objekt_id = ? AND leie_id = ?',
+			[$data['bygningsnr'], $data['gate_kode'], $data['street_number'], $data['adf'],
+				$approve ? 'approved' : 'pending', $approve ? $account : null, $approve ? time() : null, $loc1, $loc4]);
 	}
 
 	public function importApproved(string $loc1): int

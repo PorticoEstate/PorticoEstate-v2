@@ -31,6 +31,12 @@ BOEI-oppsettet med tilhørende egenskaper på lokasjonstabellene.
    (koblet via BOEIs `gateadresse_id`), husnummer/bokstav og gate-ID.
    **Lagre utkast** tillater ufullstendige opplysninger og opphever eventuell
    godkjenning. **Lagre og godkjenn** krever komplette opplysninger.
+   Kryss av for videreføring for å fylle manglende bygningsnummer, gatekode
+   og ADF på kandidater med høyere Leie_ID i samme objekt og samme interne
+   `street_id` og normaliserte husnummer/bokstav. Utfylte verdier og
+   importerte kandidater endres ikke. Ved **Lagre og godkjenn** godkjennes
+   også oppdaterte kandidater som blir komplette; ellers lagres de som utkast.
+   Hele lagringen skjer i én transaksjon.
 5. Bekreft og importer godkjente kandidater fra siden, eller la neste
    synkronisering importere dem. Et objekt med sine godkjente leieobjekter
    importeres i én transaksjon. Feil gir tilbakerulling og lar godkjenningene

@@ -89,7 +89,7 @@ class property_uianalyze_location extends phpgwapi_uicommon_jquery
 					case 'save_unit':
 					case 'approve_unit':
 						$service->saveUnit($loc1, Sanitizer::get_var('leie_id', 'string', 'POST'), $_POST,
-							$action === 'approve_unit', (int)$this->account);
+							$action === 'approve_unit', (int)$this->account, ($_POST['propagate'] ?? '') === '1');
 						$data['message'] = lang('Candidate saved');
 						break;
 					case 'import':
@@ -177,6 +177,7 @@ class property_uianalyze_location extends phpgwapi_uicommon_jquery
 			'street' => 'Street code', 'number' => 'House number and letter', 'confirm' => 'Confirm import of approved candidates.',
 			'empty' => 'No candidates. Refresh candidates after BOEI synchronization.',
 			'source_missing' => 'Missing from current BOEI source', 'open' => 'Open', 'source' => 'BOEI address (reference only)',
+			'propagate' => 'Fill missing building number, street code and ADF for later candidates at the same address. Saving with approval also approves completed candidates.',
 			'instructions' => 'Keep BOEI Objekt_ID and Leie_ID. Enter building number, national street code, house number and ADF manually. Save drafts or approve completed candidates.',
 		] as $key => $label)
 		{

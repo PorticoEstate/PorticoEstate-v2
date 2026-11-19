@@ -135,6 +135,72 @@ final class BoeiImportServiceTest extends TestCase
 		$this->assertSame(1, $this->service->importApproved('5000'));
 	}
 
+	public function testPropagationOnlyFillsLaterMatchingUnimportedCandidatesAndApprovesUpdatedUnits(): void
+	{
+		foreach (['001', '002', '003', '004', '005', '006', '007', '008'] as $id)
+		{
+			$this->sourceUnit($id);
+		}
+		$this->db->exec("UPDATE boei_leieobjekt SET gatenr = '10 a'");
+		$this->db->exec("UPDATE boei_leieobjekt SET gatenr = '20' WHERE leie_id = '005'");
+		$this->db->exec("UPDATE boei_leieobjekt SET gateadresse_id = 12 WHERE leie_id = '006'");
+		$this->service->refreshCandidates();
+		$this->service->saveUnit('5000', '004', ['bygningsnr' => 456, 'street_number' => '10A'], false, 7);
+		$this->service->saveUnit('5000', '008', $this->values(789), false, 7);
+		$this->db->exec("UPDATE boei_leieobjekt_candidate SET status = 'imported' WHERE leie_id = '007'");
+		$this->insert('boei_objekt_candidate', ['objekt_id' => '6000', 'status' => 'existing']);
+		$this->insert('boei_leieobjekt_candidate', ['objekt_id' => '6000', 'leie_id' => '009',
+			'street_id' => 11, 'street_number' => '10A']);
+
+		$this->service->saveUnit('5000', '002', $this->values(), true, 7, true);
+		$units = array_column($this->service->listUnits('5000'), null, 'leie_id');
+		foreach (['003' => 123, '004' => 456] as $id => $building)
+		{
+			$this->assertSame($building, (int)$units[$id]['bygningsnr']);
+			$this->assertSame(1001, (int)$units[$id]['gate_kode']);
+			$this->assertSame('ADF-1', $units[$id]['adf']);
+			$this->assertSame('approved', $units[$id]['status']);
+			$this->assertSame(7, (int)$units[$id]['approved_by']);
+			$this->assertNotNull($units[$id]['approved_at']);
+		}
+		foreach (['001', '005', '006', '007'] as $id)
+		{
+			$this->assertNull($units[$id]['bygningsnr']);
+		}
+		$this->assertSame('imported', $units['007']['status']);
+		$this->assertSame(789, (int)$units['008']['bygningsnr']);
+		$this->assertSame('pending', $units['008']['status']);
+		$this->assertNull($this->service->listUnits('6000')[0]['bygningsnr']);
+	}
+
+	public function testPropagationIsOptionalAndDraftPropagationDoesNotApproveTargets(): void
+	{
+		$this->sourceUnit('001');
+		$this->sourceUnit('002');
+		$this->service->refreshCandidates();
+		$values = ['bygningsnr' => 123, 'street_number' => '999Z'];
+		try
+		{
+			$this->service->saveUnit('5000', '001', ['bygningsnr' => 123], false, 7, true);
+			$this->fail('An incomplete address must not propagate values.');
+		}
+		catch (DomainException $e)
+		{
+			$this->assertStringContainsString('house number', $e->getMessage());
+			$this->assertNull($this->service->listUnits('5000')[0]['bygningsnr']);
+		}
+		$this->service->saveUnit('5000', '001', $values, false, 7);
+		$this->assertNull($this->service->listUnits('5000')[1]['bygningsnr']);
+		$this->service->saveUnit('5000', '001', $values, false, 7, true);
+		$unit = $this->service->listUnits('5000')[1];
+		$this->assertSame(123, (int)$unit['bygningsnr']);
+		$this->assertNull($unit['gate_kode']);
+		$this->assertSame('', $unit['adf']);
+		$this->assertSame('pending', $unit['status']);
+		$this->assertNull($unit['approved_by']);
+		$this->assertNull($unit['approved_at']);
+	}
+
 	public function testMissingRequiredFieldsCannotBeApproved(): void
 	{
 		$this->sourceUnit('001');

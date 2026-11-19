@@ -2466,6 +2466,7 @@ confirm import of approved candidates.	property	no	Bekreft import av godkjente k
 no candidates. refresh candidates after boei synchronization.	property	no	Ingen kandidater. Oppdater kandidatlisten etter BOEI-synkronisering.
 missing from current boei source	property	no	Mangler i gjeldende BOEI-grunnlag
 boei address (reference only)	property	no	BOEI-adresse (kun referanse)
+fill missing building number, street code and adf for later candidates at the same address. saving with approval also approves completed candidates.	property	no	Fyll ut manglende bygningsnummer, gatekode og ADF for senere kandidater med samme adresse. Lagring med godkjenning godkjenner også komplette kandidater.
 keep boei objekt_id and leie_id. enter building number, national street code, house number and adf manually. save drafts or approve completed candidates.	property	no	Behold BOEI Objekt_ID og Leie_ID. Registrer bygningsnummer, nasjonal gatekode, husnummer og ADF manuelt. Lagre utkast eller godkjenn komplette kandidater.
 invalid form token. reload the page.	property	no	Ugyldig skjemanøkkel. Last siden på nytt.
 candidates refreshed. manual values and approvals were preserved.	property	no	Kandidatlisten er oppdatert. Manuelle verdier og godkjenninger er bevart.

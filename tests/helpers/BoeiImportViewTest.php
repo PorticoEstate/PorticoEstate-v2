@@ -31,6 +31,8 @@ final class BoeiImportViewTest extends TestCase
 		$this->assertSame(1, $xpath->query($unit . '/input[@name="token" and @value="test-token"]')->length);
 		$this->assertSame(1, $xpath->query($unit . '//button[@value="approve_unit"]')->length);
 		$this->assertSame(0, $xpath->query($unit . '//input[@name="street_id"]')->length);
+		$this->assertSame(1, $xpath->query($unit . '//input[@name="propagate" and @value="1" and not(@checked)]')->length);
+		$this->assertSame(1, $xpath->query('//input[@name="propagate"]')->length);
 		$this->assertSame('<test>', $xpath->evaluate('string(' . $unit . '//input[@name="adf"]/@value)'));
 		$this->assertSame(': Source & road 10A (ID: 999)', $xpath->evaluate('string((//p[@class="boei-source-address"])[1])'));
 		$this->assertSame(1, $xpath->query('//form[input[@name="leie_id" and @value="002"]]/fieldset[@disabled]')->length);

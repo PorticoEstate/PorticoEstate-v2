@@ -80,6 +80,7 @@
 						</div>
 						<p><xsl:value-of select="street_name"/></p>
 						<xsl:if test="status != 'imported'">
+							<label class="pure-checkbox"><input type="checkbox" name="propagate" value="1"/> <xsl:value-of select="../labels/propagate"/></label>
 							<div class="boei-actions">
 								<button class="pure-button" name="action" value="save_unit" type="submit"><xsl:value-of select="../labels/save"/></button>
 								<button class="pure-button pure-button-primary" name="action" value="approve_unit" type="submit"><xsl:value-of select="../labels/approve"/></button>

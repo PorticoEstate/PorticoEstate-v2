@@ -16,6 +16,9 @@ BOEI-oppsettet med tilhørende egenskaper på lokasjonstabellene og
    direkte fra BOEIs Objekt, Bygg, Seksjon eller Leieobjekt.
 2. Nye leieobjekter legges i `boei_leieobjekt_candidate`, unikt på
    `(objekt_id, leie_id)`. Objektstatus lagres i `boei_objekt_candidate`.
+   Nye kandidater får `street_id` fra `boei_leieobjekt.gateadresse_id` og
+   `street_number` fra `boei_leieobjekt.gatenr`. Senere oppdateringer
+   overskriver ikke disse kandidatverdiene.
    Knappen **Oppdater kandidater** kan også oppdatere kandidatlisten fra siste
    innleste rådata, uten å kontakte BOEI.
 3. Åpne objektet. For nye objekter: registrer gnr./bnr. og godkjenn objektet.

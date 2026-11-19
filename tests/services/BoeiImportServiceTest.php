@@ -87,6 +87,23 @@ final class BoeiImportServiceTest extends TestCase
 		$this->assertCount(4, $this->service->listUnits('5000'));
 	}
 
+	public function testNewCandidatesCopySourceAddressWithoutOverwritingManualCorrections(): void
+	{
+		$this->sourceUnit('001');
+		$this->service->refreshCandidates();
+		$unit = $this->service->listUnits('5000')[0];
+		$this->assertSame(999, (int)$unit['street_id']);
+		$this->assertSame('999Z', $unit['street_number']);
+		$this->assertSame('pending', $unit['status']);
+
+		$this->service->saveUnit('5000', '001', $this->values(), false, 7);
+		$this->db->exec("UPDATE boei_leieobjekt SET gateadresse_id = 888, gatenr = '88B'");
+		$this->service->refreshCandidates();
+		$unit = $this->service->listUnits('5000')[0];
+		$this->assertSame(11, (int)$unit['street_id']);
+		$this->assertSame('10A', $unit['street_number']);
+	}
+
 	public function testDraftsSurviveRefreshAndCannotBeImportedUntilBothLevelsAreApproved(): void
 	{
 		$this->sourceUnit('001');

@@ -33,8 +33,8 @@ final class BoeiImportService
 				SELECT o.objekt_id, CASE WHEN l.loc1 IS NULL THEN 'pending' ELSE 'existing' END
 				FROM boei_objekt o LEFT JOIN fm_location1 l ON l.loc1 = o.objekt_id
 				ON CONFLICT (objekt_id) DO NOTHING");
-			$this->execute("INSERT INTO boei_leieobjekt_candidate (objekt_id, leie_id)
-				SELECT b.objekt_id, b.leie_id FROM boei_leieobjekt b
+			$this->execute("INSERT INTO boei_leieobjekt_candidate (objekt_id, leie_id, street_id, street_number)
+				SELECT b.objekt_id, b.leie_id, b.gateadresse_id, b.gatenr FROM boei_leieobjekt b
 				WHERE NOT EXISTS (SELECT 1 FROM fm_location4 l
 					WHERE l.loc1 = b.objekt_id AND l.loc4 = b.leie_id)
 				ON CONFLICT (objekt_id, leie_id) DO NOTHING");

@@ -7,8 +7,7 @@ Administrasjon -> Eiendom -> Lokasjon -> **BOEI importkandidater**
 
 Oppgrader property-skjemaet til `0.9.17.768` via ordinær databaseoppgradering.
 Oppdater språkfilene via ordinær språkadministrasjon. Integrasjonen forutsetter
-BOEI-oppsettet med tilhørende egenskaper på lokasjonstabellene og
-`fm_streetaddress.nasjonalid` som nasjonal gatekode.
+BOEI-oppsettet med tilhørende egenskaper på lokasjonstabellene.
 
 ## Arbeidsflyt
 
@@ -24,7 +23,10 @@ BOEI-oppsettet med tilhørende egenskaper på lokasjonstabellene og
 3. Åpne objektet. For nye objekter: registrer gnr./bnr. og godkjenn objektet.
    Eksisterende objekter kan få nye leieobjekter uten ny objektgodkjenning.
 4. Registrer bygningsnummer, nasjonal gatekode, husnummer/bokstav og ADF på
-   hvert leieobjekt. Gatekoden må finnes entydig i gateregisteret.
+   hvert leieobjekt. Gatekoden er en offentlig referanse og trenger ikke
+   finnes i gateregisteret. Intern `street_id` bevares fra BOEI, kan ikke
+   endres i skjemaet og må finnes i `fm_streetaddress.id` ved godkjenning
+   og import. Gatekoden brukes ikke til å utlede eller endre `street_id`.
    BOEI-adressen vises som referanse med gatenavn fra `fm_streetaddress.descr`
    (koblet via BOEIs `gateadresse_id`), husnummer/bokstav og gate-ID.
    **Lagre utkast** tillater ufullstendige opplysninger og opphever eventuell

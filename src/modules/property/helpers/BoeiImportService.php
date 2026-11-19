@@ -84,11 +84,11 @@ final class BoeiImportService
 			$candidate = $this->one('SELECT * FROM boei_leieobjekt_candidate'
 				. ' WHERE objekt_id = ? AND leie_id = ? FOR UPDATE', [$loc1, $loc4]);
 			$this->assertEditable($candidate);
-			$data = $this->validateUnit($values, $approve);
+			$data = $this->validateUnit(array_replace($values, ['street_id' => $candidate['street_id']]), $approve);
 			$this->execute('UPDATE boei_leieobjekt_candidate SET bygningsnr = ?, gate_kode = ?,'
-				. ' street_id = ?, street_number = ?, adf = ?, status = ?, approved_by = ?, approved_at = ?'
+				. ' street_number = ?, adf = ?, status = ?, approved_by = ?, approved_at = ?'
 				. ' WHERE objekt_id = ? AND leie_id = ?',
-				[$data['bygningsnr'], $data['gate_kode'], $data['street_id'], $data['street_number'], $data['adf'],
+				[$data['bygningsnr'], $data['gate_kode'], $data['street_number'], $data['adf'],
 					$approve ? 'approved' : 'pending', $approve ? $account : null, $approve ? time() : null, $loc1, $loc4]);
 		});
 	}
@@ -118,10 +118,6 @@ final class BoeiImportService
 			foreach ($units as $unit)
 			{
 				$data = $this->validateUnit($unit, true);
-				if ((int)$unit['street_id'] !== $data['street_id'])
-				{
-					throw new DomainException('The street code has changed. Save and approve the candidate again.');
-				}
 				$sources = $this->rows('SELECT b.*, t.navn AS tv_signal FROM boei_leieobjekt b
 					LEFT JOIN boei_leieobjekt_tv_signal t ON t.id = b.tv_signal_id
 					WHERE b.objekt_id = ? AND b.leie_id = ?', [$loc1, $unit['leie_id']]);
@@ -318,15 +314,10 @@ final class BoeiImportService
 		{
 			throw new DomainException('ADF must contain 1-20 characters before approval.');
 		}
-		$streetId = null;
-		if ($gate !== null)
+		$streetId = $this->positiveNumber($values['street_id'] ?? '', 'Street ID', $required);
+		if ($required && !$this->one('SELECT id FROM fm_streetaddress WHERE id = ?', [$streetId]))
 		{
-			$streets = $this->rows('SELECT id FROM fm_streetaddress WHERE nasjonalid = ?', [$gate]);
-			if (count($streets) !== 1)
-			{
-				throw new DomainException('Gatekode must identify exactly one street in the street register.');
-			}
-			$streetId = (int)$streets[0]['id'];
+			throw new DomainException('Street ID from BOEI must exist in the street register.');
 		}
 		return ['bygningsnr' => $building, 'gate_kode' => $gate, 'street_id' => $streetId, 'street_number' => $number, 'adf' => $adf];
 	}

@@ -90,6 +90,7 @@ final class BoeiImportServiceTest extends TestCase
 	public function testNewCandidatesCopySourceAddressWithoutOverwritingManualCorrections(): void
 	{
 		$this->sourceUnit('001');
+		$this->db->exec('UPDATE boei_leieobjekt SET gateadresse_id = 999');
 		$this->insert('fm_streetaddress', ['id' => 999, 'nasjonalid' => 1999, 'descr' => 'Source road']);
 		$this->service->refreshCandidates();
 		$unit = $this->service->listUnits('5000')[0];
@@ -103,9 +104,9 @@ final class BoeiImportServiceTest extends TestCase
 		$this->db->exec("UPDATE boei_leieobjekt SET gateadresse_id = 888, gatenr = '88B'");
 		$this->service->refreshCandidates();
 		$unit = $this->service->listUnits('5000')[0];
-		$this->assertSame(11, (int)$unit['street_id']);
+		$this->assertSame(999, (int)$unit['street_id']);
 		$this->assertSame('10A', $unit['street_number']);
-		$this->assertSame("King's road", $unit['street_name']);
+		$this->assertSame('Source road', $unit['street_name']);
 		$this->assertSame(888, (int)$unit['source_street_id']);
 		$this->assertSame('88B', $unit['source_address']);
 		$this->assertSame('Updated source road', $unit['source_street_name']);
@@ -134,13 +135,13 @@ final class BoeiImportServiceTest extends TestCase
 		$this->assertSame(1, $this->service->importApproved('5000'));
 	}
 
-	public function testMissingRequiredFieldsAndUnknownStreetCannotBeApproved(): void
+	public function testMissingRequiredFieldsCannotBeApproved(): void
 	{
 		$this->sourceUnit('001');
 		$this->service->refreshCandidates();
 		foreach ([
 			array_replace($this->values(), ['bygningsnr' => '']),
-			array_replace($this->values(), ['gate_kode' => 99999]),
+			array_replace($this->values(), ['gate_kode' => '']),
 			array_replace($this->values(), ['adf' => '']),
 			array_replace($this->values(), ['street_number' => '']),
 		] as $values)
@@ -154,6 +155,51 @@ final class BoeiImportServiceTest extends TestCase
 			{
 				$this->assertSame('pending', $this->service->listUnits('5000')[0]['status']);
 			}
+		}
+	}
+
+	public function testPublicStreetCodeDoesNotResolveOrReplaceInternalStreetId(): void
+	{
+		$this->sourceUnit('001');
+		$this->service->refreshCandidates();
+		$this->service->saveObject('5000', ['gnr' => 1, 'bnr' => 2], true, 7);
+		$values = array_replace($this->values(), ['gate_kode' => 99999, 'street_id' => 999]);
+		$this->service->saveUnit('5000', '001', $values, true, 7);
+		$this->assertSame(11, (int)$this->service->listUnits('5000')[0]['street_id']);
+		$this->assertSame(1, $this->service->importApproved('5000'));
+		$this->assertSame(11, (int)$this->scalar('SELECT street_id FROM fm_location4'));
+		$this->assertSame(99999, (int)$this->scalar('SELECT gate_kode FROM fm_location4'));
+	}
+
+	public function testUnknownInternalStreetBlocksApprovalAndImport(): void
+	{
+		$this->sourceUnit('001');
+		$this->service->refreshCandidates();
+		$this->service->saveObject('5000', ['gnr' => 1, 'bnr' => 2], true, 7);
+		$this->db->exec('DELETE FROM fm_streetaddress WHERE id = 11');
+		try
+		{
+			$this->service->saveUnit('5000', '001', $this->values(), true, 7);
+			$this->fail('An unknown internal street must block approval.');
+		}
+		catch (DomainException $e)
+		{
+			$this->assertStringContainsString('Street ID', $e->getMessage());
+			$this->assertSame('pending', $this->service->listUnits('5000')[0]['status']);
+		}
+		$this->insert('fm_streetaddress', ['id' => 11, 'nasjonalid' => 1001, 'descr' => "King's road"]);
+		$this->service->saveUnit('5000', '001', $this->values(), true, 7);
+		$this->db->exec('DELETE FROM fm_streetaddress WHERE id = 11');
+		try
+		{
+			$this->service->importApproved('5000');
+			$this->fail('An unknown internal street must block import.');
+		}
+		catch (DomainException $e)
+		{
+			$this->assertStringContainsString('Street ID', $e->getMessage());
+			$this->assertSame('approved', $this->service->listUnits('5000')[0]['status']);
+			$this->assertSame(0, (int)$this->scalar('SELECT COUNT(*) FROM fm_location4'));
 		}
 	}
 
@@ -210,10 +256,11 @@ final class BoeiImportServiceTest extends TestCase
 		$this->sourceUnit('001');
 		$this->sourceUnit('002');
 		$this->insert('fm_streetaddress', ['id' => 12, 'nasjonalid' => 1002, 'descr' => 'Second road']);
+		$this->db->exec("UPDATE boei_leieobjekt SET gateadresse_id = 12 WHERE leie_id = '002'");
 		$this->service->refreshCandidates();
 		$this->service->saveObject('5000', ['gnr' => 1, 'bnr' => 2], true, 7);
 		$this->service->saveUnit('5000', '001', $this->values(), true, 7);
-		$this->service->saveUnit('5000', '002', array_replace($this->values(), ['gate_kode' => 1002]), true, 7);
+		$this->service->saveUnit('5000', '002', $this->values(), true, 7);
 		$this->assertSame(2, $this->service->importApproved('5000'));
 		$this->assertSame(1, (int)$this->scalar('SELECT COUNT(*) FROM fm_location2'));
 		$this->assertSame(2, (int)$this->scalar('SELECT COUNT(*) FROM fm_location3'));
@@ -294,7 +341,7 @@ final class BoeiImportServiceTest extends TestCase
 	{
 		$this->insert('boei_leieobjekt', ['objekt_id' => '5000', 'leie_id' => $id,
 			'bygg_id' => $building, 'seksjons_id' => '99', 'formaal_id' => 1, 'etasje' => 'H01',
-			'gateadresse_id' => 999, 'gatenr' => '999Z', 'tv_signal_id' => 1, 'boareal' => 50,
+			'gateadresse_id' => 11, 'gatenr' => '999Z', 'tv_signal_id' => 1, 'boareal' => 50,
 			'leietaker_id' => 7, 'flyttenr' => 1, 'driftsstatus_id' => 1, 'antallrom' => 2, 'heis' => 0, 'livslopsstd' => 0]);
 	}
 

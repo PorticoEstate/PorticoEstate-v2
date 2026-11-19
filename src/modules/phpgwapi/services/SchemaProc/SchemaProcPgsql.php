@@ -586,8 +586,21 @@
 			return !!$result;
 		}
 
-		function AlterColumn($oProc, &$aTables, $sTableName, $sColumnName, &$aColumnDef, $bCopyData = true)
+		function AlterColumn($oProc, &$aTables, $sTableName, $sColumnName, &$aColumnDef, $bCopyData = true, $bRebuildViews = false)
 		{
+			if ($bRebuildViews)
+			{
+				return (new PostgresViewDependencies())->alterColumn(
+					$oProc->m_odb,
+					$sTableName,
+					$sColumnName,
+					function () use ($oProc, &$aTables, $sTableName, $sColumnName, &$aColumnDef, $bCopyData)
+					{
+						return $this->AlterColumn($oProc, $aTables, $sTableName, $sColumnName, $aColumnDef, $bCopyData);
+					}
+				);
+			}
+
 			$sType = '';
 			$iPrecision = 0;
 			$iScale = 0;
@@ -625,8 +638,10 @@
 			$query = "ALTER TABLE {$sTableName} ALTER COLUMN {$sColumnName} TYPE {$sFieldSQL}";
 			$result = $oProc->m_odb->exec($query) !== false;
 
-
-			$Ok = !!$result;
+			if (!$result)
+			{
+				return false;
+			}
 
 			if($bNullable === False || $bNullable === 'False')
 			{
@@ -639,6 +654,10 @@
 
 			$query = "ALTER TABLE {$sTableName} ALTER COLUMN {$sColumnName} {$sFieldSQL}";
 			$Ok = $oProc->m_odb->exec($query) !== false;
+			if (!$Ok)
+			{
+				return false;
+			}
 
 			if($sDefault == '0')
 			{

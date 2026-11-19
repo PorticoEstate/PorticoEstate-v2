@@ -20,7 +20,8 @@ final class BoeiImportService
 
 	public function refreshCandidates(): void
 	{
-		$this->transaction(function () {
+		$this->transaction(function ()
+		{
 			$this->execute('LOCK TABLE boei_objekt, boei_leieobjekt IN SHARE MODE');
 			$duplicates = $this->rows('SELECT objekt_id, leie_id FROM boei_leieobjekt'
 				. ' GROUP BY objekt_id, leie_id HAVING COUNT(*) > 1');
@@ -73,20 +74,24 @@ final class BoeiImportService
 
 	public function saveObject(string $loc1, array $values, bool $approve, int $account): void
 	{
-		$this->transaction(function () use ($loc1, $values, $approve, $account) {
+		$this->transaction(function () use ($loc1, $values, $approve, $account)
+		{
 			$candidate = $this->one('SELECT * FROM boei_objekt_candidate WHERE objekt_id = ? FOR UPDATE', [$loc1]);
 			$this->assertEditable($candidate);
 			$gnr = $this->positiveNumber($values['gnr'] ?? '', 'Gnr', $approve);
 			$bnr = $this->positiveNumber($values['bnr'] ?? '', 'Bnr', $approve);
-			$this->execute('UPDATE boei_objekt_candidate SET gnr = ?, bnr = ?, status = ?,'
-				. ' approved_by = ?, approved_at = ? WHERE objekt_id = ?',
-				[$gnr, $bnr, $approve ? 'approved' : 'pending', $approve ? $account : null, $approve ? time() : null, $loc1]);
+			$this->execute(
+				'UPDATE boei_objekt_candidate SET gnr = ?, bnr = ?, status = ?,'
+					. ' approved_by = ?, approved_at = ? WHERE objekt_id = ?',
+				[$gnr, $bnr, $approve ? 'approved' : 'pending', $approve ? $account : null, $approve ? time() : null, $loc1]
+			);
 		});
 	}
 
 	public function saveUnit(string $loc1, string $loc4, array $values, bool $approve, int $account, bool $propagate = false): void
 	{
-		$this->transaction(function () use ($loc1, $loc4, $values, $approve, $account, $propagate) {
+		$this->transaction(function () use ($loc1, $loc4, $values, $approve, $account, $propagate)
+		{
 			$this->one('SELECT objekt_id FROM boei_objekt_candidate WHERE objekt_id = ? FOR UPDATE', [$loc1]);
 			$candidate = $this->one('SELECT * FROM boei_leieobjekt_candidate'
 				. ' WHERE objekt_id = ? AND leie_id = ? FOR UPDATE', [$loc1, $loc4]);
@@ -101,10 +106,12 @@ final class BoeiImportService
 			{
 				return;
 			}
-			$targets = $this->rows("SELECT * FROM boei_leieobjekt_candidate
+			$targets = $this->rows(
+				"SELECT * FROM boei_leieobjekt_candidate
 				WHERE objekt_id = ? AND leie_id > ? AND street_id = ?
 				AND status IN ('pending', 'approved') ORDER BY leie_id FOR UPDATE",
-				[$loc1, $loc4, $data['street_id']]);
+				[$loc1, $loc4, $data['street_id']]
+			);
 			foreach ($targets as $target)
 			{
 				if (self::normalizeStreetNumber($target['street_number'] ?? '') !== $data['street_number'])
@@ -134,16 +141,28 @@ final class BoeiImportService
 
 	private function storeUnit(string $loc1, string $loc4, array $data, bool $approve, int $account): void
 	{
-		$this->execute('UPDATE boei_leieobjekt_candidate SET bygningsnr = ?, gate_kode = ?,'
-			. ' street_number = ?, adf = ?, status = ?, approved_by = ?, approved_at = ?'
-			. ' WHERE objekt_id = ? AND leie_id = ?',
-			[$data['bygningsnr'], $data['gate_kode'], $data['street_number'], $data['adf'],
-				$approve ? 'approved' : 'pending', $approve ? $account : null, $approve ? time() : null, $loc1, $loc4]);
+		$this->execute(
+			'UPDATE boei_leieobjekt_candidate SET bygningsnr = ?, gate_kode = ?,'
+				. ' street_number = ?, adf = ?, status = ?, approved_by = ?, approved_at = ?'
+				. ' WHERE objekt_id = ? AND leie_id = ?',
+			[
+				$data['bygningsnr'],
+				$data['gate_kode'],
+				$data['street_number'],
+				$data['adf'],
+				$approve ? 'approved' : 'pending',
+				$approve ? $account : null,
+				$approve ? time() : null,
+				$loc1,
+				$loc4
+			]
+		);
 	}
 
 	public function importApproved(string $loc1): int
 	{
-		return $this->transaction(function () use ($loc1) {
+		return $this->transaction(function () use ($loc1)
+		{
 			// Serialize allocation within an Objekt, including imports from cron and the admin UI.
 			$object = $this->one('SELECT * FROM boei_objekt_candidate WHERE objekt_id = ? FOR UPDATE', [$loc1]);
 			if (!$object || !in_array($object['status'], ['approved', 'existing', 'imported'], true))
@@ -182,15 +201,30 @@ final class BoeiImportService
 				$loc3 = $this->findEntrance($loc1, $loc2, $data);
 				$code = "{$loc1}-{$loc2}-{$loc3}-{$unit['leie_id']}";
 				$this->insert('fm_location4', [
-					'location_code' => $code, 'loc1' => $loc1, 'loc2' => $loc2, 'loc3' => $loc3, 'loc4' => $unit['leie_id'],
-					'bygningsnr' => $data['bygningsnr'], 'gate_kode' => $data['gate_kode'], 'adf' => $data['adf'],
-					'street_id' => $data['street_id'], 'street_number' => $data['street_number'],
-					'category' => $source['formaal_id'], 'etasje' => $source['etasje'], 'loc4_name' => $source['etasje'],
-					'antallrom' => $source['antallrom'], 'boareal' => $source['boareal'],
-					'livslopsstd' => $source['livslopsstd'], 'heis' => $source['heis'],
-					'driftsstatus_id' => $source['driftsstatus_id'], 'tenant_id' => $source['leietaker_id'],
-					'beregnet_boa' => $source['beregnet_boa'], 'flyttenr' => $source['flyttenr'], 'tv_signal' => $source['tv_signal'],
-					'user_id' => $unit['approved_by'], 'entry_date' => time(),
+					'location_code' => $code,
+					'loc1' => $loc1,
+					'loc2' => $loc2,
+					'loc3' => $loc3,
+					'loc4' => $unit['leie_id'],
+					'bygningsnr' => $data['bygningsnr'],
+					'gate_kode' => $data['gate_kode'],
+					'adf' => $data['adf'],
+					'street_id' => $data['street_id'],
+					'street_number' => $data['street_number'],
+					'category' => $source['formaal_id'],
+					'etasje' => $source['etasje'],
+					'loc4_name' => $source['etasje'],
+					'antallrom' => $source['antallrom'],
+					'boareal' => $source['boareal'],
+					'livslopsstd' => $source['livslopsstd'],
+					'heis' => $source['heis'],
+					'driftsstatus_id' => $source['driftsstatus_id'],
+					'tenant_id' => $source['leietaker_id'],
+					'beregnet_boa' => $source['beregnet_boa'],
+					'flyttenr' => $source['flyttenr'],
+					'tv_signal' => $source['tv_signal'],
+					'user_id' => $unit['approved_by'],
+					'entry_date' => time(),
 				]);
 				$this->registerLocation(4, $code, $loc1, $source['etasje']);
 				$this->updateNames($loc1, $loc2, $loc3);
@@ -233,10 +267,17 @@ final class BoeiImportService
 		$service = (int)$source['tjenestested'];
 		$mva = ($service === 26555 || ($ownerType !== 5 && $service === 26550)) ? 0 : 75;
 		$this->insert('fm_location1', [
-			'location_code' => $loc1, 'loc1' => $loc1, 'loc1_name' => $source['navn'],
-			'part_of_town_id' => $source['bydel_id'], 'owner_id' => $source['eier_id'],
-			'kostra_id' => $service, 'zip_code' => $source['postnr_id'], 'category' => 1, 'mva' => $mva,
-			'entry_date' => time(), 'user_id' => $candidate['approved_by'],
+			'location_code' => $loc1,
+			'loc1' => $loc1,
+			'loc1_name' => $source['navn'],
+			'part_of_town_id' => $source['bydel_id'],
+			'owner_id' => $source['eier_id'],
+			'kostra_id' => $service,
+			'zip_code' => $source['postnr_id'],
+			'category' => 1,
+			'mva' => $mva,
+			'entry_date' => time(),
+			'user_id' => $candidate['approved_by'],
 		]);
 		$this->registerLocation(1, $loc1, $loc1, $source['navn']);
 		$this->execute("UPDATE boei_objekt_candidate SET status = 'imported', imported_at = ? WHERE objekt_id = ?", [time(), $loc1]);
@@ -262,7 +303,10 @@ final class BoeiImportService
 		}
 		$loc2 = $this->nextNumber($this->rows('SELECT loc2 AS number FROM fm_location2 WHERE loc1 = ?', [$loc1]));
 		$this->insert('fm_location2', [
-			'location_code' => "{$loc1}-{$loc2}", 'loc1' => $loc1, 'loc2' => $loc2, 'category' => 98,
+			'location_code' => "{$loc1}-{$loc2}",
+			'loc1' => $loc1,
+			'loc2' => $loc2,
+			'category' => 98,
 		]);
 		return $loc2;
 	}
@@ -273,8 +317,10 @@ final class BoeiImportService
 		$matches = [];
 		foreach ($rows as $row)
 		{
-			if ((int)$row['street_id'] === $data['street_id']
-				&& self::normalizeStreetNumber((string)$row['street_number']) === $data['street_number'])
+			if (
+				(int)$row['street_id'] === $data['street_id']
+				&& self::normalizeStreetNumber((string)$row['street_number']) === $data['street_number']
+			)
 			{
 				$matches[$row['loc3']] = true;
 			}
@@ -298,7 +344,11 @@ final class BoeiImportService
 		}
 		$loc3 = $this->nextNumber($this->rows('SELECT loc3 AS number FROM fm_location3 WHERE loc1 = ? AND loc2 = ?', [$loc1, $loc2]));
 		$this->insert('fm_location3', [
-			'location_code' => "{$loc1}-{$loc2}-{$loc3}", 'loc1' => $loc1, 'loc2' => $loc2, 'loc3' => $loc3, 'category' => 98,
+			'location_code' => "{$loc1}-{$loc2}-{$loc3}",
+			'loc1' => $loc1,
+			'loc2' => $loc2,
+			'loc3' => $loc3,
+			'category' => 98,
 		]);
 		return $loc3;
 	}
@@ -320,9 +370,11 @@ final class BoeiImportService
 	{
 		$addresses = [];
 		$entranceName = null;
-		foreach ($this->rows('SELECT l.loc3, l.street_number, s.descr FROM fm_location4 l
+		foreach (
+			$this->rows('SELECT l.loc3, l.street_number, s.descr FROM fm_location4 l
 			JOIN fm_streetaddress s ON s.id = l.street_id WHERE l.loc1 = ? AND l.loc2 = ?
-			ORDER BY s.descr, l.street_number', [$loc1, $loc2]) as $row)
+			ORDER BY s.descr, l.street_number', [$loc1, $loc2]) as $row
+		)
 		{
 			$number = self::normalizeStreetNumber($row['street_number']);
 			$addresses[$row['descr']][$number] = $number;

@@ -156,8 +156,8 @@ class LocationHierarchyDocumentAnalyzer
 			)))
 			{
 				$this->db->transaction_begin();
-				
-				if($this->vfs->mv(
+
+				if ($this->vfs->mv(
 					array(
 						'from'		 => $from_dir,
 						'to'		 => $to_dir,
@@ -186,7 +186,6 @@ class LocationHierarchyDocumentAnalyzer
 					];
 					continue;
 				}
-		
 			}
 			else
 			{
@@ -649,5 +648,4 @@ class LocationHierarchyDocumentAnalyzer
 		}
 		return $pairs;
 	}
-
 }

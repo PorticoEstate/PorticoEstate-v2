@@ -258,7 +258,7 @@ class LocationHierarchyAnalyzer
 			// Normalize street_number: trim and collapse multiple spaces to single space
 			$normalized_street_number = trim(preg_replace('/\s+/', ' ', $row['street_number']));
 			$streetkey = "{$row['street_id']}" . '_' . $normalized_street_number;
-			
+
 			if (!isset($dominantLoc3PerStreet[$loc1][$loc2][$streetkey]))
 			{
 				$dominantLoc3PerStreet[$loc1][$loc2][$streetkey] = [];
@@ -290,7 +290,7 @@ class LocationHierarchyAnalyzer
 			foreach ($loc2s as $loc2 => $streetkeys)
 			{
 				$assignedLoc3InLoc2 = [];
-				
+
 				$existingLoc3List = [];
 				if (isset($this->loc3Refs[$loc1][$loc2]) && is_array($this->loc3Refs[$loc1][$loc2]))
 				{
@@ -357,8 +357,10 @@ class LocationHierarchyAnalyzer
 						for ($newLoc3 = 1; $newLoc3 <= 99; $newLoc3++)
 						{
 							$new_loc3_str = str_pad($newLoc3, 2, '0', STR_PAD_LEFT);
-							if (!isset($this->loc3Refs[$loc1][$loc2][$new_loc3_str]) &&
-								!in_array($new_loc3_str, $assignedLoc3InLoc2))
+							if (
+								!isset($this->loc3Refs[$loc1][$loc2][$new_loc3_str]) &&
+								!in_array($new_loc3_str, $assignedLoc3InLoc2)
+							)
 							{
 								$loc3 = $new_loc3_str;
 								$this->debug("  streetkey=$streetkey: creating new loc3=$loc3");
@@ -493,7 +495,7 @@ class LocationHierarchyAnalyzer
 			foreach ($bygningsnrs as $bygningsnr => $loc2)
 			{
 				$loc2 = $this->normalizeLoc2($loc2);
-				
+
 				// Collect all addresses for this loc2
 				$addresses = []; // street_name => [street_numbers]
 				foreach ($requiredLoc3 as $l1 => $loc2s)
@@ -523,13 +525,13 @@ class LocationHierarchyAnalyzer
 						}
 					}
 				}
-				
+
 				// Generate loc2_name from collected addresses
 				if (!empty($addresses))
 				{
 					$generated_loc2_name = $this->generateLoc2Name($addresses);
 					$current_loc2_name = $this->loc2Names[$loc1][$loc2] ?? null;
-					
+
 					if ($current_loc2_name === null || trim((string)$current_loc2_name) !== $generated_loc2_name)
 					{
 						$this->sqlStatements['loc2_name_updates'][] =
@@ -568,7 +570,7 @@ class LocationHierarchyAnalyzer
 			$loc4 = $row['loc4'];
 			$old_code = "{$loc1}-{$loc2_actual}-{$loc3_actual}-{$loc4}";
 			$new_code = "{$loc1}-{$loc2_expected}-{$loc3_expected}-{$loc4}";
-			
+
 			// Normalize for comparison to avoid type mismatches
 			$loc2_actual_normalized = $this->normalizeLoc2($loc2_actual);
 			$loc2_expected_normalized = $this->normalizeLoc2($loc2_expected);
@@ -588,12 +590,12 @@ class LocationHierarchyAnalyzer
 				$loc4CountByLoc2[$actual_loc2_code] = 0;
 			}
 			$loc4CountByLoc2[$actual_loc2_code]++;
-			
+
 			if ($loc2_actual_normalized != $loc2_expected_normalized || $loc3_actual_normalized != $loc3_expected_normalized)
 			{
 				$this->sqlStatements['location4_updates'][] =
 					"-- Move {$old_code} to {$new_code}\nUPDATE fm_location4 SET location_code='{$new_code}', loc2='{$loc2_expected}', loc3='{$loc3_expected}' WHERE location_code='{$old_code}';";
-				
+
 				$mapping_key = "{$old_code}->{$new_code}->location_hierarchy_update";
 				if (!isset($inserted_mappings[$mapping_key]))
 				{
@@ -651,7 +653,7 @@ class LocationHierarchyAnalyzer
 			{
 				continue;
 			}
-			
+
 			arsort($newTargets); // Highest count first
 			$best_new_code = array_key_first($newTargets);
 			if ($best_new_code === null)
@@ -678,7 +680,7 @@ class LocationHierarchyAnalyzer
 
 			$this->sqlStatements['corrections'][] =
 				"INSERT INTO location_mapping (old_location_code, new_location_code, loc1, old_loc2, new_loc2, old_loc3, new_loc3, change_type) VALUES ('{$old_loc3_code}', '{$best_new_code}', '{$loc1}', '{$old_loc2}', '{$new_loc2}', '{$old_loc3}', '{$new_loc3}', 'location3_loc3_update');";
-			
+
 			$inserted_mappings[$mapping_key] = true;
 			$processed_loc3_codes[$old_loc3_code] = true;
 		}
@@ -726,7 +728,7 @@ class LocationHierarchyAnalyzer
 		// 5b. Prepare fm_location3 loc2 updates (ensure parent records match fm_location4 loc2 changes)
 		$this->sqlStatements['location3_loc2_updates'] = [];
 		$loc3Loc2UpdateCounts = []; // old loc3 code => new loc3 code => count
-		
+
 		foreach ($this->locationData as $row)
 		{
 			$loc1 = $row['loc1'];
@@ -738,16 +740,17 @@ class LocationHierarchyAnalyzer
 
 			$loc2_actual = $row['loc2'];
 			$loc3_actual = $row['loc3'];
-			
+
 			// Normalize for comparison
 			$loc2_actual_normalized = $this->normalizeLoc2($loc2_actual);
 			$loc2_expected_normalized = $this->normalizeLoc2($loc2_expected);
 			$loc3_actual_normalized = $this->normalizeLoc2($loc3_actual);
 			$loc3_expected_normalized = $this->normalizeLoc2($loc3_expected);
-			
+
 			// Only update fm_location3 when the current loc3 exists in the database
 			if (($loc2_actual_normalized != $loc2_expected_normalized || $loc3_actual_normalized != $loc3_expected_normalized)
-				&& !empty($this->loc3Refs[$loc1][$loc2_actual_normalized][$loc3_actual_normalized]))
+				&& !empty($this->loc3Refs[$loc1][$loc2_actual_normalized][$loc3_actual_normalized])
+			)
 			{
 				$old_loc3_code = "{$loc1}-{$loc2_actual_normalized}-{$loc3_actual_normalized}";
 				$new_loc3_code = "{$loc1}-{$loc2_expected_normalized}-{$loc3_expected_normalized}";
@@ -762,7 +765,7 @@ class LocationHierarchyAnalyzer
 				$loc3Loc2UpdateCounts[$old_loc3_code][$new_loc3_code]++;
 			}
 		}
-		
+
 		// Generate UPDATE statements for fm_location3 entries that need loc2 updates
 		foreach ($loc3Loc2UpdateCounts as $old_loc3_code => $newTargets)
 		{
@@ -785,11 +788,11 @@ class LocationHierarchyAnalyzer
 			list($_loc1_unused, $new_loc2, $new_loc3) = explode('-', $best_new_code);
 			$old_code = $old_loc3_code;
 			$new_code = $best_new_code;
-			
+
 			// Update fm_location3 location_code, loc2, and loc3 only when target does not already exist
 			$this->sqlStatements['location3_loc2_updates'][] =
 				"UPDATE fm_location3 SET location_code = '{$new_code}', loc2 = '{$new_loc2}', loc3 = '{$new_loc3}' WHERE location_code = '{$old_code}' AND NOT EXISTS (SELECT 1 FROM fm_location3 WHERE loc1 = '{$loc1}' AND loc2 = '{$new_loc2}' AND loc3 = '{$new_loc3}');";
-			
+
 			// Add mapping entry for reference
 			$mapping_key = "{$old_code}->{$new_code}->location3_loc2_update";
 			$loc3_mapping_key = "{$old_code}->{$new_code}->location3_loc3_update";
@@ -862,7 +865,7 @@ class LocationHierarchyAnalyzer
 				'location4_updates' => [],
 				'corrections' => [],
 				'delete_redundant_locations' => [],
-				],
+			],
 		];
 		foreach ($loc1s as $loc1)
 		{
@@ -921,7 +924,7 @@ class LocationHierarchyAnalyzer
 			{
 				continue;
 			}
-			
+
 			$updatefields = [];
 			$filterfields = [];
 			$level = 0;
@@ -929,7 +932,7 @@ class LocationHierarchyAnalyzer
 			{
 				$updatefields[] = "location_code = location_mapping.new_location_code";
 			}
-			
+
 			if (in_array('loc1', $columns))
 			{
 				$level = 1;
@@ -953,7 +956,7 @@ class LocationHierarchyAnalyzer
 				$filterfields[] = "{$table}.loc4 = location_mapping.loc4";
 			}
 
-			if($level === 1 && !in_array('location_code', $columns))
+			if ($level === 1 && !in_array('location_code', $columns))
 			{
 				// skip
 				continue;
@@ -967,7 +970,7 @@ class LocationHierarchyAnalyzer
 			}
 			else
 			{
-			 // If there's no location_code column, we need to join on loc1, loc2, loc3, loc4 to identify the correct records to update	
+				// If there's no location_code column, we need to join on loc1, loc2, loc3, loc4 to identify the correct records to update	
 				$sql .= " FROM location_mapping WHERE " . implode(' AND ', $filterfields) . ";";
 			}
 			$sqlStatements[] = $sql;
@@ -975,13 +978,13 @@ class LocationHierarchyAnalyzer
 
 		$sqlStatements2 = $this->updateFmLocationsFromMapping();
 		$sqlStatements = array_merge($sqlStatements, $sqlStatements2);
-		
+
 		$sqlStatements3 = $this->updateFmGabLocationFromMapping();
 		$sqlStatements = array_merge($sqlStatements, $sqlStatements3);
 
 		$sqlStatements4 = $this->updateFmBimItemFromMapping();
 		$sqlStatements = array_merge($sqlStatements, $sqlStatements4);
-		
+
 		$this->sqlStatements['update_location_from_mapping'] = $sqlStatements;
 		return $sqlStatements; // Add explicit return
 	}
@@ -1170,13 +1173,13 @@ class LocationHierarchyAnalyzer
 			. "            jsonb_set("
 			. "              jsonb_set("
 			. "                jsonb_set(COALESCE(fm_bim_item.json_representation, '{}'::jsonb), '{location_code}', to_jsonb(location_mapping.new_location_code::text), false), "
-			. "                '{loc1}', to_jsonb(split_part(location_mapping.new_location_code, '-', 1)::text), false" 
+			. "                '{loc1}', to_jsonb(split_part(location_mapping.new_location_code, '-', 1)::text), false"
 			. "              ), "
-			. "              '{loc2}', to_jsonb(split_part(location_mapping.new_location_code, '-', 2)::text), false" 
+			. "              '{loc2}', to_jsonb(split_part(location_mapping.new_location_code, '-', 2)::text), false"
 			. "            ), "
-			. "            '{loc3}', to_jsonb(split_part(location_mapping.new_location_code, '-', 3)::text), false" 
+			. "            '{loc3}', to_jsonb(split_part(location_mapping.new_location_code, '-', 3)::text), false"
 			. "          ), "
-			. "          '{loc4}', to_jsonb(split_part(location_mapping.new_location_code, '-', 4)::text), false" 
+			. "          '{loc4}', to_jsonb(split_part(location_mapping.new_location_code, '-', 4)::text), false"
 			. "        ) "
 			. "      WHEN jsonb_exists(COALESCE(fm_bim_item.json_representation, '{}'::jsonb), 'loc3') "
 			. "        AND array_length(regexp_split_to_array(location_mapping.new_location_code, '-'), 1) >= 3 THEN "
@@ -1184,26 +1187,26 @@ class LocationHierarchyAnalyzer
 			. "          jsonb_set("
 			. "            jsonb_set("
 			. "              jsonb_set(COALESCE(fm_bim_item.json_representation, '{}'::jsonb), '{location_code}', to_jsonb(location_mapping.new_location_code::text), false), "
-			. "              '{loc1}', to_jsonb(split_part(location_mapping.new_location_code, '-', 1)::text), false" 
+			. "              '{loc1}', to_jsonb(split_part(location_mapping.new_location_code, '-', 1)::text), false"
 			. "            ), "
-			. "            '{loc2}', to_jsonb(split_part(location_mapping.new_location_code, '-', 2)::text), false" 
+			. "            '{loc2}', to_jsonb(split_part(location_mapping.new_location_code, '-', 2)::text), false"
 			. "          ), "
-			. "          '{loc3}', to_jsonb(split_part(location_mapping.new_location_code, '-', 3)::text), false" 
+			. "          '{loc3}', to_jsonb(split_part(location_mapping.new_location_code, '-', 3)::text), false"
 			. "        ) "
 			. "      WHEN jsonb_exists(COALESCE(fm_bim_item.json_representation, '{}'::jsonb), 'loc2') "
 			. "        AND array_length(regexp_split_to_array(location_mapping.new_location_code, '-'), 1) >= 2 THEN "
 			. "        jsonb_set("
 			. "          jsonb_set("
 			. "            jsonb_set(COALESCE(fm_bim_item.json_representation, '{}'::jsonb), '{location_code}', to_jsonb(location_mapping.new_location_code::text), false), "
-			. "            '{loc1}', to_jsonb(split_part(location_mapping.new_location_code, '-', 1)::text), false" 
+			. "            '{loc1}', to_jsonb(split_part(location_mapping.new_location_code, '-', 1)::text), false"
 			. "          ), "
-			. "          '{loc2}', to_jsonb(split_part(location_mapping.new_location_code, '-', 2)::text), false" 
+			. "          '{loc2}', to_jsonb(split_part(location_mapping.new_location_code, '-', 2)::text), false"
 			. "        ) "
 			. "      WHEN jsonb_exists(COALESCE(fm_bim_item.json_representation, '{}'::jsonb), 'loc1') "
 			. "        AND array_length(regexp_split_to_array(location_mapping.new_location_code, '-'), 1) >= 1 THEN "
 			. "        jsonb_set("
 			. "          jsonb_set(COALESCE(fm_bim_item.json_representation, '{}'::jsonb), '{location_code}', to_jsonb(location_mapping.new_location_code::text), false), "
-			. "          '{loc1}', to_jsonb(split_part(location_mapping.new_location_code, '-', 1)::text), false" 
+			. "          '{loc1}', to_jsonb(split_part(location_mapping.new_location_code, '-', 1)::text), false"
 			. "        ) "
 			. "      WHEN jsonb_exists(COALESCE(fm_bim_item.json_representation, '{}'::jsonb), 'location_code') THEN "
 			. "        jsonb_set(COALESCE(fm_bim_item.json_representation, '{}'::jsonb), '{location_code}', to_jsonb(location_mapping.new_location_code::text), false) "
@@ -1561,7 +1564,7 @@ class LocationHierarchyAnalyzer
 		$this->loc3Refs = [];
 		$this->loc3Names = [];
 		$sql = "SELECT loc1, loc2, loc3, loc4, bygningsnr, street_id, street_number FROM fm_location4 WHERE loc1 !='0000'";
-		if ($filterLoc1) 
+		if ($filterLoc1)
 		{
 			$sql .= " AND loc1 = '{$filterLoc1}'";
 		}
@@ -1668,7 +1671,7 @@ class LocationHierarchyAnalyzer
 	private function buildBygningsnrToLoc2MapFromDatabase($filterLoc1 = null)
 	{
 		$this->bygningsnrToLoc2Map = [];
-		
+
 		// DEBUG: Show what bygningsnr exist in locationData
 		$bygningsnrSample = [];
 		foreach ($this->locationData as $row)
@@ -1679,7 +1682,7 @@ class LocationHierarchyAnalyzer
 			}
 		}
 		$this->debug("locationData sample bygningsnr: " . json_encode(array_unique($bygningsnrSample)));
-		
+
 		// First, try to infer bygningsnr from fm_location3 names
 		// by matching streets in loc3_name to streets in fm_location4
 		$bygningsnrFromLoc3 = []; // loc1 => loc2 => loc3 => [streetkeys that should be here]
@@ -1689,7 +1692,7 @@ class LocationHierarchyAnalyzer
 			$sql .= " WHERE loc1 = '{$filterLoc1}'";
 		}
 		$this->db->query($sql, __LINE__, __FILE__);
-		
+
 		// Extract streets from loc3_name (format: "Street Number A" or similar)
 		while ($this->db->next_record())
 		{
@@ -1697,7 +1700,7 @@ class LocationHierarchyAnalyzer
 			$loc2 = $this->db->f('loc2');
 			$loc3 = $this->db->f('loc3');
 			$loc3_name = $this->db->f('loc3_name');
-			
+
 			// Try to extract street_number from loc3_name
 			// Common patterns: "Street N A", "Street NA", etc.
 			preg_match('/\s+([0-9]+\s*[A-Z]?)$/i', $loc3_name, $matches);
@@ -1711,7 +1714,7 @@ class LocationHierarchyAnalyzer
 				$bygningsnrFromLoc3[$loc1][$loc2][$loc3][] = $street_number;
 			}
 		}
-		
+
 		// Now match these streets to bygningsnr in fm_location4
 		// For each loc2 in fm_location3, find which bygningsnr has streets matching its loc3 entries
 		foreach ($bygningsnrFromLoc3 as $loc1 => $loc2s)
@@ -1724,7 +1727,7 @@ class LocationHierarchyAnalyzer
 				{
 					$loc2StreetNumbers = array_merge($loc2StreetNumbers, $streetNumbers);
 				}
-				
+
 				// Find which bygningsnr in fm_location4 has these street_numbers
 				if (!empty($loc2StreetNumbers))
 				{
@@ -1755,7 +1758,7 @@ class LocationHierarchyAnalyzer
 				}
 			}
 		}
-		
+
 		// Fallback: if fm_location3 doesn't help, build map from fm_location4
 		// Build map of ALL loc2 values where each bygningsnr currently exists
 		$bygningsnrInLoc2 = []; // loc1 => bygningsnr => [loc2 values]
@@ -1764,7 +1767,7 @@ class LocationHierarchyAnalyzer
 			$loc1 = $row['loc1'];
 			$loc2 = $row['loc2'];
 			$bygningsnr = $row['bygningsnr'];
-			
+
 			if (!empty($bygningsnr))
 			{
 				// Only use fm_location4 mapping if not already found from fm_location3
@@ -1781,7 +1784,7 @@ class LocationHierarchyAnalyzer
 				}
 			}
 		}
-		
+
 		// Store fallback loc2 values (sorted) for each bygningsnr
 		foreach ($bygningsnrInLoc2 as $loc1 => $bygningsnrs)
 		{
@@ -1789,7 +1792,7 @@ class LocationHierarchyAnalyzer
 			{
 				// Sort to get consistent ordering
 				sort($loc2Values, SORT_STRING);
-				
+
 				if (!isset($this->bygningsnrToLoc2Map[$loc1]))
 				{
 					$this->bygningsnrToLoc2Map[$loc1] = [];
@@ -1797,7 +1800,7 @@ class LocationHierarchyAnalyzer
 				$this->bygningsnrToLoc2Map[$loc1][$bygningsnr] = $loc2Values;
 			}
 		}
-		
+
 		// Ensure all entries in bygningsnrToLoc2Map are arrays and sorted
 		foreach ($this->bygningsnrToLoc2Map as $loc1 => $bygningsnrs)
 		{
@@ -1806,7 +1809,9 @@ class LocationHierarchyAnalyzer
 				if (!is_array($loc2Values))
 				{
 					$this->bygningsnrToLoc2Map[$loc1][$bygningsnr] = [$loc2Values];
-				} else {
+				}
+				else
+				{
 					// Sort to get consistent ordering (prefer lower loc2 numbers)
 					sort($loc2Values, SORT_STRING);
 					$this->bygningsnrToLoc2Map[$loc1][$bygningsnr] = $loc2Values;
@@ -1916,7 +1921,7 @@ class LocationHierarchyAnalyzer
 	private function buildStreetToLoc3MapFromLocation4()
 	{
 		$this->streetToLoc3Map = [];
-		
+
 		// FIRST: Build authoritative street-to-loc3 mapping from fm_location4
 		// Use the first loc4 entry for each loc1/loc2/loc3 to derive streetkey
 		$sql = "SELECT loc1, loc2, loc3, street_id, street_number FROM fm_location4";
@@ -1925,9 +1930,9 @@ class LocationHierarchyAnalyzer
 			$sql .= " WHERE loc1 = '{$this->currentFilterLoc1}'";
 		}
 		$sql .= " ORDER BY loc1, loc2, loc3, loc4";
-		
+
 		$this->db->query($sql, __LINE__, __FILE__);
-		
+
 		// Track first streetkey per loc3
 		$firstStreetKeyByLoc3 = []; // loc1 => loc2 => loc3 => streetkey
 		while ($this->db->next_record())
@@ -1937,7 +1942,7 @@ class LocationHierarchyAnalyzer
 			$loc3 = $this->db->f('loc3');
 			$street_id = $this->db->f('street_id');
 			$street_number = $this->db->f('street_number');
-			
+
 			if ($street_id && $street_number)
 			{
 				$normalized_street_number = trim(preg_replace('/\s+/', ' ', $street_number));
@@ -1948,7 +1953,7 @@ class LocationHierarchyAnalyzer
 				}
 			}
 		}
-		
+
 		// Build streetToLoc3Map from firstStreetKeyByLoc3
 		foreach ($firstStreetKeyByLoc3 as $loc1 => $loc2s)
 		{
@@ -1979,7 +1984,7 @@ class LocationHierarchyAnalyzer
 	public static function generateLoc2Name($addresses)
 	{
 		$name_parts = [];
-		
+
 		foreach ($addresses as $street_name => $street_numbers)
 		{
 			// Sort street numbers naturally (15, 15A, 15B, 16, etc.)
@@ -1987,15 +1992,15 @@ class LocationHierarchyAnalyzer
 			$address_str = "{$street_name} " . implode(", ", $street_numbers);
 			$name_parts[] = $address_str;
 		}
-		
+
 		$loc2_name = trim(implode(", ", $name_parts));
-		
+
 		// Truncate to 256 characters
 		if (mb_strlen($loc2_name) > 256)
 		{
 			$loc2_name = mb_substr($loc2_name, 0, 253) . "...";
 		}
-		
+
 		return $loc2_name;
 	}
 
@@ -2025,7 +2030,8 @@ class LocationHierarchyAnalyzer
 		$this->db->transaction_begin();
 
 		// Only create location_mapping table if requested
-		if (in_array('schema', $sqlTypes)) {
+		if (in_array('schema', $sqlTypes))
+		{
 			$this->createLocationMappingTableIfNotExists();
 			$results['schema'] = 'Location mapping table created.';
 		}
@@ -2057,12 +2063,12 @@ class LocationHierarchyAnalyzer
 			}
 			$results[$sqlType] = $count;
 		}
-		
+
 		if ($this->db->get_transaction())
 		{
 			$this->db->transaction_commit();
 		}
-		
+
 		return $results;
 	}
 

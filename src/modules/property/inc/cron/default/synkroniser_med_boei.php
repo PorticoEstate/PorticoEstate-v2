@@ -1648,7 +1648,7 @@ SQL;
 		$this->cron_log($msg);
 	}
 
-	
+
 	function oppdater_navn()
 	{
 		//oppdater lo1_name i fm_location1 fra boei_objekt.navn som en oppdateringsspørring med join
@@ -1661,9 +1661,8 @@ SQL;
 		$msg						 = $this->db->affected_rows() . ' Objekt navn er oppdatert fra boei_objekt.navn';
 		$this->receipt['message'][]	 = array('msg' => $msg);
 		$this->cron_log($msg);
-
 	}
-	
+
 	function oppdater_boa_objekt()
 	{
 		$metadata = $this->db->metadata('fm_location1');

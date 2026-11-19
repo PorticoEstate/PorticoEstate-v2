@@ -290,12 +290,22 @@
 			return $retVal && $this->m_oTranslator->RenameColumn($this, $this->m_aTables, $sTableName, $sOldColumnName, $sNewColumnName, $bCopyData);
 		}
 
-		function AlterColumn($sTableName, $sColumnName, $aColumnDef, $bCopyData=True)
+		/**
+		 * PostgreSQL: opt in to rebuilding dependent views with $bRebuildViews.
+		 * Unsupported metadata (including explicit grants and materialized-view indexes)
+		 * aborts the change. Populated materialized views are refreshed.
+		 */
+		function AlterColumn($sTableName, $sColumnName, $aColumnDef, $bCopyData=True, $bRebuildViews=False)
 		{
 			$retVal = $this->m_oDeltaProc->AlterColumn($this, $this->m_aTables, $sTableName, $sColumnName, $aColumnDef, $bCopyData);
 			if($this->m_bDeltaOnly)
 			{
 				return $retVal;
+			}
+
+			if ($this->dbms === 'postgres' && $bRebuildViews)
+			{
+				return $retVal && $this->m_oTranslator->AlterColumn($this, $this->m_aTables, $sTableName, $sColumnName, $aColumnDef, $bCopyData, true);
 			}
 
 			return $retVal && $this->m_oTranslator->AlterColumn($this, $this->m_aTables, $sTableName, $sColumnName, $aColumnDef, $bCopyData);

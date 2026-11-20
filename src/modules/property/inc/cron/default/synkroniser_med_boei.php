@@ -36,6 +36,7 @@
 
 use App\Database\Db2;
 use App\modules\phpgwapi\services\Settings;
+use App\modules\property\helpers\BoeiImportService;
 
 include_class('property', 'cron_parent', 'inc/cron/');
 
@@ -109,14 +110,13 @@ class synkroniser_med_boei extends property_cron_parent
 		$this->legg_til_formaal();
 		$this->legg_til_eier_phpgw();
 		$this->legg_til_gateadresse_phpgw();
-		$this->legg_til_objekt_phpgw();
-		$this->legg_til_bygg_phpgw();
-		$this->legg_til_seksjon_phpgw();
-		$this->legg_til_leieobjekt_phpgw();
+		$this->legg_til_zip_code_phpgw();
 		$this->legg_til_leietaker_phpgw();
+		$import = new BoeiImportService($this->db);
+		$import->refreshCandidates();
+		$this->cron_log('Godkjente BOEI-kandidater importert: ' . $import->importAllApproved());
 		$this->oppdater_leieobjekt();
 		$this->oppdater_boa_objekt();
-		$this->legg_til_zip_code_phpgw();
 		$this->oppdater_boa_bygg();
 		$this->oppdater_boa_del();
 		$this->oppdater_oppsagtdato();
@@ -195,10 +195,18 @@ class synkroniser_med_boei extends property_cron_parent
 		$this->update_table_eier();
 		$this->update_table_gateadresse();
 		$this->update_table_poststed();
-		$this->update_table_Objekt();
-		$this->update_table_Bygg();
-		$this->update_table_seksjon();
-		$this->update_table_leieobjekt();
+		$this->db->transaction_begin();
+		try
+		{
+			$this->update_table_Objekt();
+			$this->update_table_leieobjekt();
+			$this->db->transaction_commit();
+		}
+		catch (Throwable $e)
+		{
+			$this->db->transaction_abort();
+			throw $e;
+		}
 		$this->update_table_leietaker();
 		$this->update_table_reskontro();
 	}
@@ -1616,8 +1624,12 @@ SQL;
 				. " category = '" . $this->db->f('formaal_id') . "',"
 				. " etasje = '" . $this->db->f('etasje') . "',"
 				. " loc4_name = '" . $this->db->f('etasje') . "',"
-				. " street_id = '" . $this->db->f('gateadresse_id') . "',"
-				. " street_number = '" . $this->db->f('gatenr') . "',"
+				. " street_id = CASE WHEN EXISTS (SELECT 1 FROM boei_leieobjekt_candidate c"
+				. " WHERE c.objekt_id = fm_location4.loc1 AND c.leie_id = fm_location4.loc4 AND c.status = 'imported')"
+				. " THEN fm_location4.street_id ELSE '" . $this->db->f('gateadresse_id') . "' END,"
+				. " street_number = CASE WHEN EXISTS (SELECT 1 FROM boei_leieobjekt_candidate c"
+				. " WHERE c.objekt_id = fm_location4.loc1 AND c.leie_id = fm_location4.loc4 AND c.status = 'imported')"
+				. " THEN fm_location4.street_number ELSE '" . $this->db->f('gatenr') . "' END,"
 				. " driftsstatus_id = '" . $this->db->f('driftsstatus_id') . "',"
 				. " boareal = '" . $this->db->f('boareal') . "',"
 				. " flyttenr = '" . $this->db->f('flyttenr') . "',"
@@ -1636,7 +1648,7 @@ SQL;
 		$this->cron_log($msg);
 	}
 
-	
+
 	function oppdater_navn()
 	{
 		//oppdater lo1_name i fm_location1 fra boei_objekt.navn som en oppdateringsspørring med join
@@ -1649,31 +1661,8 @@ SQL;
 		$msg						 = $this->db->affected_rows() . ' Objekt navn er oppdatert fra boei_objekt.navn';
 		$this->receipt['message'][]	 = array('msg' => $msg);
 		$this->cron_log($msg);
-
-		//opdater loc2_name i fm_location2 fra boei_bygg.byggnavn som en oppdateringsspørring med join
-		$sql = " UPDATE fm_location2 SET loc2_name = boei_bygg.byggnavn"
-			. " FROM boei_bygg"
-			. " WHERE fm_location2.loc1 = boei_bygg.objekt_id"
-			. " AND fm_location2.loc2 = boei_bygg.bygg_id"
-			. " AND fm_location2.loc2_name != boei_bygg.byggnavn";
-		$this->db->query($sql, __LINE__, __FILE__);
-		$msg						 = $this->db->affected_rows() . ' Bygg navn er oppdatert fra boei_bygg.byggnavn';
-		$this->receipt['message'][]	 = array('msg' => $msg);
-		$this->cron_log($msg);
-		//oppdater loc3_name i fm_location3 fra boei_seksjon.beskrivelse som en oppdateringsspørring med join
-		$sql = " UPDATE fm_location3 SET loc3_name = boei_seksjon.beskrivelse"
-			. " FROM boei_seksjon"
-			. " WHERE fm_location3.loc1 = boei_seksjon.objekt_id"
-			. " AND fm_location3.loc2 = boei_seksjon.bygg_id"
-			. " AND fm_location3.loc3 = boei_seksjon.seksjons_id"
-			. " AND fm_location3.loc3_name != boei_seksjon.beskrivelse";
-		$this->db->query($sql, __LINE__, __FILE__);
-		$msg						 = $this->db->affected_rows() . ' Seksjon navn er oppdatert fra boei_seksjon.beskrivelse';
-		$this->receipt['message'][]	 = array('msg' => $msg);
-		$this->cron_log($msg);
-
 	}
-	
+
 	function oppdater_boa_objekt()
 	{
 		$metadata = $this->db->metadata('fm_location1');
@@ -1770,10 +1759,9 @@ SQL;
 			$this->db2->query($sql2, __LINE__, __FILE__);
 		}
 
-		$sql = " SELECT sum(boei_leieobjekt.boareal) as sum_boa, count(leie_id) as ant_leieobjekt,"
-			. " boei_objekt.objekt_id FROM  boei_objekt {$this->join} boei_leieobjekt ON boei_objekt.objekt_id = boei_leieobjekt.objekt_id"
-			. " WHERE boei_leieobjekt.formaal_id NOT IN (99)"
-			. " GROUP BY boei_objekt.objekt_id";
+		$sql = "SELECT sum(l.boareal) AS sum_boa, count(l.loc4) AS ant_leieobjekt, l.loc1 AS objekt_id"
+			. " FROM fm_location4 l JOIN boei_objekt o ON o.objekt_id = l.loc1"
+			. " WHERE l.category NOT IN (99) GROUP BY l.loc1";
 
 		$this->db->query($sql, __LINE__, __FILE__);
 
@@ -1798,11 +1786,10 @@ SQL;
 
 	function oppdater_boa_bygg()
 	{
-		$sql = " SELECT sum(boei_leieobjekt.boareal) as sum_boa, count(leie_id) as ant_leieobjekt,"
-			. " boei_bygg.objekt_id,boei_bygg.bygg_id , byggnavn  FROM  boei_bygg $this->join boei_leieobjekt "
-			. " ON boei_bygg.objekt_id = boei_leieobjekt.objekt_id AND boei_bygg.bygg_id = boei_leieobjekt.bygg_id"
-			. " WHERE boei_leieobjekt.formaal_id NOT IN (99)"
-			. " GROUP BY boei_bygg.objekt_id,boei_bygg.bygg_id ,byggnavn";
+		$sql = "SELECT sum(l.boareal) AS sum_boa, count(l.loc4) AS ant_leieobjekt,"
+			. " l.loc1 AS objekt_id, l.loc2 AS bygg_id FROM fm_location4 l"
+			. " JOIN boei_objekt o ON o.objekt_id = l.loc1"
+			. " WHERE l.category NOT IN (99) GROUP BY l.loc1, l.loc2";
 
 		$this->db->query($sql, __LINE__, __FILE__);
 
@@ -1812,7 +1799,6 @@ SQL;
 		while ($this->db->next_record())
 		{
 			$sql2 = " UPDATE fm_location2 SET "
-				. " loc2_name = '" . $this->db->f('byggnavn') . "',"
 				. " sum_boa = '" . $this->db->f('sum_boa') . "',"
 				. " ant_leieobjekt = '" . $this->db->f('ant_leieobjekt') . "'"
 				. " WHERE  loc1 = '" . $this->db->f('objekt_id') . "'  AND  loc2= '" . $this->db->f('bygg_id') . "'";
@@ -1829,14 +1815,10 @@ SQL;
 
 	function oppdater_boa_del()
 	{
-		$sql = " SELECT sum(boei_leieobjekt.boareal) as sum_boa, count(leie_id) as ant_leieobjekt,"
-			. " boei_seksjon.objekt_id,boei_seksjon.bygg_id,boei_seksjon.seksjons_id , beskrivelse"
-			. " FROM  boei_seksjon {$this->join} boei_leieobjekt "
-			. " ON boei_seksjon.objekt_id = boei_leieobjekt.objekt_id"
-			. " AND boei_seksjon.bygg_id = boei_leieobjekt.bygg_id"
-			. " AND boei_seksjon.seksjons_id = boei_leieobjekt.seksjons_id"
-			. " WHERE boei_leieobjekt.formaal_id NOT IN (99)"
-			. " GROUP BY boei_seksjon.objekt_id,boei_seksjon.bygg_id,boei_seksjon.seksjons_id,beskrivelse";
+		$sql = "SELECT sum(l.boareal) AS sum_boa, count(l.loc4) AS ant_leieobjekt,"
+			. " l.loc1 AS objekt_id, l.loc2 AS bygg_id, l.loc3 AS seksjons_id FROM fm_location4 l"
+			. " JOIN boei_objekt o ON o.objekt_id = l.loc1"
+			. " WHERE l.category NOT IN (99) GROUP BY l.loc1, l.loc2, l.loc3";
 
 		$this->db->query($sql, __LINE__, __FILE__);
 
@@ -1847,7 +1829,6 @@ SQL;
 		while ($this->db->next_record())
 		{
 			$sql2 = "UPDATE fm_location3 SET "
-				. " loc3_name = '" . $this->db->f('beskrivelse') . "',"
 				. " sum_boa = '" . $this->db->f('sum_boa') . "',"
 				. " ant_leieobjekt = '" . $this->db->f('ant_leieobjekt') . "'"
 				. " WHERE  loc1 = '" . $this->db->f('objekt_id') . "'  AND  loc2= '" . $this->db->f('bygg_id') . "'  AND  loc3= '" . $this->db->f('seksjons_id') . "'";

@@ -47,6 +47,7 @@ namespace App\helpers
 		private $stylesheet;
 
 		public function __construct($path) {}
+		public function set_root($path) {}
 		public function set_unknowns($value) {}
 		public function set_file($name, $file) {}
 		public function set_block($name, $block, $target) {}
@@ -98,6 +99,6 @@ namespace
 	}
 	catch (StylesheetsCollected $exception)
 	{
-		echo json_encode($_SERVER['argv'][1] === 'portico' ? $template->stylesheets : $cssUris, JSON_THROW_ON_ERROR);
+		echo json_encode(in_array($_SERVER['argv'][1], array('portico', 'mobilefrontend'), true) ? $template->stylesheets : $cssUris, JSON_THROW_ON_ERROR);
 	}
 }

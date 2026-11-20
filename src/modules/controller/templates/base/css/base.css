@@ -2400,6 +2400,14 @@ p.no_items_msg {
 	width: 140px;
 }
 
+#perform_control_on_selected
+{
+	width: auto;
+	max-width: calc(100% - 0.5rem);
+	white-space: normal;
+	overflow-wrap: anywhere;
+}
+
 
 /* Can be any width and height */
 .block {

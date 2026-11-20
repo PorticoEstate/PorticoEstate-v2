@@ -21,20 +21,6 @@ $(function ()
 	});
 
 
-//	var test_for_child = $("#choose-child-on-component");
-//
-//	if(test_for_child)
-//	{
-//		if(test_for_child.val())
-//		{
-//			$("#view_cases").show();
-//		}
-//		else
-//		{
-//			$("#view_cases").hide();
-//		}
-//	}
-
 
 	$(".add_picture_to_case_form").on("submit", function (e)
 	{
@@ -42,18 +28,18 @@ $(function ()
 		e.preventDefault();
 
 		var thisForm = $(this);
-//		var submitBnt = $(thisForm).find("button[type='submit']");
-//		submitBnt.prop('disabled', true);
+		//		var submitBnt = $(thisForm).find("button[type='submit']");
+		//		submitBnt.prop('disabled', true);
 
 		$('<div id="spinner" class="text-center mt-2  ml-2">')
 			.append($('<div class="spinner-border" role="status">')
 				.append($('<span class="sr-only">Loading...</span>')))
 			.insertAfter(thisForm);
 
-		var oArgs = {menuaction: 'controller.uicase.add_case_image'};
+		var oArgs = { menuaction: 'controller.uicase.add_case_image' };
 		var requestUrl = phpGWLink('index.php', oArgs, true);
 
-//		var requestUrl = $(thisForm).attr("action");
+		//		var requestUrl = $(thisForm).attr("action");
 
 		var case_id = $("form").prev().find("input[name='case_id']").val();
 
@@ -94,7 +80,7 @@ $(function ()
 							$(obj).siblings(".custom-file-label").removeClass("selected").html('Nytt bilde');
 						});
 						show_case_picture(case_id, thisForm);
-//						submitBnt.prop('disabled', false);
+						//						submitBnt.prop('disabled', false);
 					}
 					else
 					{
@@ -110,12 +96,21 @@ $(function ()
 		});
 	});
 
-	// Template-independent modal handling for #inspectObject (no Bootstrap plugin needed).
 	var $inspectModal = $('#inspectObject');
+	var inspectModalPlaceholder = document.createComment('inspectObject');
+
+	function resize_inspect_textareas()
+	{
+		$inspectModal.find('textarea:visible').each(function ()
+		{
+			autoResizeTextarea(this);
+		});
+	}
 
 	function hide_inspect_modal()
 	{
 		$inspectModal.css('display', 'none').attr('aria-hidden', 'true');
+		inspectModalPlaceholder.replaceWith($inspectModal[0]);
 		$('#inspectObjectBackdrop').remove();
 		$('body').removeClass('modal-open');
 		$inspectModal.trigger('hidden.bs.modal');
@@ -123,16 +118,21 @@ $(function ()
 
 	$(document).on('click', '#perform_control_on_selected', function ()
 	{
+		if ($inspectModal.find('.modal-header [data-bs-dismiss="modal"]').length)
+		{
+			bootstrap.Modal.getOrCreateInstance($inspectModal[0]).show();
+			return;
+		}
+
+		$inspectModal.before(inspectModalPlaceholder).appendTo('body');
 		$('body').addClass('modal-open')
 			.append('<div class="modal-backdrop show" id="inspectObjectBackdrop"></div>');
 		$inspectModal.css('display', 'block').attr('aria-hidden', 'false');
-		$inspectModal.find('textarea:visible').each(function ()
-		{
-			autoResizeTextarea(this);
-		});
+		resize_inspect_textareas();
 	});
 
-	$inspectModal.on('click', '.modal-header .btn-close', hide_inspect_modal);
+	$inspectModal.on('click', '.modal-header .btn-close:not([data-bs-dismiss="modal"])', hide_inspect_modal);
+	$inspectModal.on('shown.bs.modal', resize_inspect_textareas);
 
 	$inspectModal.on('hidden.bs.modal', function (e)
 	{
@@ -192,30 +192,6 @@ $(function ()
 							var add_picture_to_case_container = thisForm.next('.add_picture_to_case');
 							$(add_picture_to_case_container).show();
 
-//							clear_form(thisForm);
-
-//							var selects = $(thisForm).find("select");
-//							var  select = null;
-//							for(var i = 0, len = selects.length; i < len; i++)
-//							{
-//								select = selects[i];
-//								console.log(select);
-//
-//								$.each(select, function (i, option)
-//								{
-//									if(i==0)
-//									{
-//										$(option).attr('selected', true);
-//									}
-//									else
-//									{
-//										$(option).removeAttr('selected');
-//									}
-//								});
-//							}
-
-
-//							 $(thisForm).find("input[name='case_id']").val(jsonObj.case_id);
 							$("#cache_case_id").val(jsonObj.case_id);
 
 							// Changes text on save button back to original
@@ -239,25 +215,16 @@ $(function ()
 								}
 
 
-//
-//								$(submitBnt).addClass("case_saved");
-//								$(submitBnt).attr("disabled", true);
 							}, 500);
 
 							$("#reset_form").val('Ny sak');
-							/*
-							 $(thisForm).delay(1500).slideUp(500, function(){
-							 $(thisForm).parents("ul.expand_list").find("h4 img").attr("src", "controller/images/arrow_right.png");
-							 });
-							 */
-
 						}
 					}
 				}
 			});
 
 			var check_list_id = $(thisForm).find("input[name=check_list_id]").val();
-			var oArgs = {menuaction: 'controller.uicase.get_case_data_ajax', check_list_id: check_list_id, location_code: location_code};
+			var oArgs = { menuaction: 'controller.uicase.get_case_data_ajax', check_list_id: check_list_id, location_code: location_code };
 			var requestUrl = phpGWLink('index.php', oArgs, true);
 
 			var htmlString = "";
@@ -270,8 +237,7 @@ $(function ()
 				{
 					if (data != null)
 					{
-//						var obj = JSON.parse(data);
-						//returned as json
+
 						var obj = data;
 
 						$.each(obj, function (i, control_group)
@@ -604,15 +570,6 @@ $(function ()
 	});
 
 
-	/*
-	 $("#choose-building-on-property.view-cases").on("change", function () {
-	 var location_code = $(this).val();
-
-	 var reloadPageUrl = location.pathname + location.search + "&location_code=" + location_code;
-	 alert(reloadPageUrl);
-	 location.href = reloadPageUrl;
-	 });
-	 */
 });
 
 function validate_form(formObj)
@@ -697,7 +654,7 @@ function deleteValueFromRegulationReference(control_item_id)
 	$.ajax({
 		type: 'POST',
 		url: requestUrl,
-		data: {regulation_value: regulation_value},
+		data: { regulation_value: regulation_value },
 		success: function (data)
 		{
 			if (data)
@@ -780,9 +737,9 @@ function addNewValueToRegulationReference(control_item_id, input_text, lang_new_
 				alertify.error('Cancel');
 			}
 		}
-	, function ()
-	{
-		alertify.error('Cancel')
-	});
+		, function ()
+		{
+			alertify.error('Cancel')
+		});
 
 }

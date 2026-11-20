@@ -17,10 +17,12 @@ class SessionsMiddleware implements MiddlewareInterface
 	protected $container;
 	private $routePath;
 	private $settings;
+	private $requireJsonSession;
 
-	public function __construct($container)
+	public function __construct($container, bool $requireJsonSession = false)
 	{
 		$this->settings = $container->get('settings');
+		$this->requireJsonSession = $requireJsonSession;
 	}
 
 	public function process(Request $request, RequestHandler $handler): Response
@@ -77,6 +79,10 @@ class SessionsMiddleware implements MiddlewareInterface
 		if(!$verified && !empty($_GET['api_mode']))
 		{
 			return $this->sendErrorResponse(['msg' => 'A valid session could not be found'], 401);
+		}
+		if (!$verified && $this->requireJsonSession && $this->isJsonRequest($request))
+		{
+			return $this->sendSessionExpiredResponse();
 		}
 
 		if ($currentApp == 'login' && isset($_POST['login']) && isset($_POST['passwd']))

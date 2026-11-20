@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- BEGIN head -->
-<html lang="{userlang}">
+<html class="template-bootstrap" lang="{userlang}">
 	<head>
 		<meta charset="utf-8">
 		<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" >

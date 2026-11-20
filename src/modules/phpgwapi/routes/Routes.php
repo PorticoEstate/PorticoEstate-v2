@@ -363,7 +363,7 @@ $app->get('/api/tabledata/{table}', function ($request, $response, $args) use ($
 /**
  * Routes for passkey management
  */
-$app->group('/passkey', function ($group)
+$passkeyRoutes = function ($group)
 {
 	// Main passkey management page
 	$group->get('', 'App\modules\phpgwapi\controllers\Passkey_Management_Controller:index');
@@ -383,4 +383,9 @@ $app->group('/passkey', function ($group)
 
 	// API endpoint for deleting a passkey
 	$group->post('/delete', 'App\modules\phpgwapi\controllers\Passkey_Management_Controller:deletePasskey');
-})->add(new SessionsMiddleware($app->getContainer()));
+};
+
+foreach (['/passkey', '/mobilefrontend/passkey'] as $passkeyPrefix)
+{
+	$app->group($passkeyPrefix, $passkeyRoutes)->add(new SessionsMiddleware($app->getContainer(), true));
+}

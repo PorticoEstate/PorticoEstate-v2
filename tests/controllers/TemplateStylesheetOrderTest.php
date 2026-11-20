@@ -14,7 +14,7 @@ class TemplateStylesheetOrderTest extends TestCase
 		$sharedApi = "{$prefix}/phpgwapi/templates/base/css/base.css";
 		$templateApi = "{$prefix}/phpgwapi/templates/{$template}/css/base.css";
 		$this->assertSame(1, count(array_keys($stylesheets, $sharedApi, true)));
-		if ($module === 'frontend' && $template !== 'portico')
+		if ($module === 'frontend' && in_array($template, array('bootstrap', 'digdir'), true))
 		{
 			$this->assertNotContains($templateApi, $stylesheets);
 		}
@@ -88,6 +88,18 @@ class TemplateStylesheetOrderTest extends TestCase
 		$this->assertLessThan(strpos($headTemplate, '<!-- BEGIN stylesheet -->'), strpos($headTemplate, '{css}'));
 		$this->assertStringNotContainsString('DataTables3/vendor/datatables.net/datatables.net-dt/css/dataTables.dataTables.min.css', $headLoader);
 		$this->assertStringContainsString('DataTables3/vendor/datatables.net/datatables.net-dt/css/dataTables.dataTables.min.css', $widgetLoader);
+	}
+
+	public function testMobileWidgetStylesPrecedeTemplateOverridesAndDataTablesIsNotDuplicated(): void
+	{
+		$headTemplate = file_get_contents(__DIR__ . '/../../src/modules/phpgwapi/templates/mobilefrontend/head.tpl');
+		$headLoader = file_get_contents(__DIR__ . '/../../src/modules/phpgwapi/templates/mobilefrontend/head.inc.php');
+
+		$this->assertIsString($headTemplate);
+		$this->assertIsString($headLoader);
+		$this->assertStringContainsString('class="template-bootstrap"', $headTemplate);
+		$this->assertLessThan(strpos($headTemplate, '<!-- BEGIN stylesheet -->'), strpos($headTemplate, '{css}'));
+		$this->assertStringNotContainsString('DataTables3/vendor/datatables.net/datatables.net-dt/css/dataTables.dataTables.min.css', $headLoader);
 	}
 
 	public function testDigdirKeepsResponsivePureWidthsAndPorticoDeclaresViewport(): void
@@ -170,9 +182,9 @@ class TemplateStylesheetOrderTest extends TestCase
 	public static function templateAndModule(): array
 	{
 		$cases = array();
-		foreach (array('bootstrap', 'digdir', 'portico') as $template)
+		foreach (array('bootstrap', 'digdir', 'portico', 'mobilefrontend') as $template)
 		{
-			foreach (array('property', 'booking', 'phpgwapi', 'frontend') as $module)
+			foreach (array('property', 'booking', 'phpgwapi', 'frontend', 'controller') as $module)
 			{
 				foreach (array('framework', 'no-framework') as $framework)
 				{

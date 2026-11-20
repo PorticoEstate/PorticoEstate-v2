@@ -4,22 +4,9 @@
 
 }
 
-table.dataTable tbody tr.priority1:not(.selected),
-table.dataTable tbody tr.odd.priority1:not(.selected)
+#passkey-list-container
 {
-	background-color: #dababa
-}
-
-table.dataTable tbody tr.priority2:not(.selected),
-table.dataTable tbody tr.odd.priority2:not(.selected)
-{
-	background-color: #dadada;
-}
-
-table.dataTable tbody tr.priority3:not(.selected),
-table.dataTable tbody tr.odd.priority3:not(.selected)
-{
-
+	overflow-x: auto;
 }
 
 body {
@@ -284,17 +271,4 @@ button.dt-button.disabled, div.dt-button.disabled, a.dt-button.disabled
 }
 .pastable.pastable-focus{
 	box-shadow: 0 0 10px black;
-}
-/* Kept here: mobilefrontend does not load phpgwapi/templates/base/css/base.css, where shared Select2 rules live. */
-.select2-selection__rendered
-{
-    line-height: 33px !important;
-}
-.select2-container .select2-selection--single
-{
-    height: 36px !important;
-}
-.select2-selection__arrow
-{
-    height: 35px !important;
 }

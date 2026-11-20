@@ -35,6 +35,13 @@ class Passkey_Management_Controller
 
 	public function __construct()
 	{
+		$flags = Settings::getInstance()->get('flags');
+		if (($flags['custom_frontend'] ?? '') === 'mobilefrontend')
+		{
+			Settings::getInstance()->update('flags', ['template_set' => 'mobilefrontend']);
+			Settings::getInstance()->update('server', ['template_set' => 'mobilefrontend']);
+		}
+
 		require_once SRC_ROOT_PATH . '/helpers/LegacyObjectHandler.php';
 		$this->db = \App\Database\Db::getInstance();
 		$this->legacyView = new LegacyViewHelper();

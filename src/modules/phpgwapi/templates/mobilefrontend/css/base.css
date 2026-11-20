@@ -4,6 +4,11 @@
 
 }
 
+#passkey-list-container
+{
+	overflow-x: auto;
+}
+
 body {
 
 /*	padding-top: 70px;*/

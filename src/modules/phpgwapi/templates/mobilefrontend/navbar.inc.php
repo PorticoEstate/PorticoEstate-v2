@@ -88,6 +88,17 @@ HTML;
 
 	if ($acl->check('run', ACL_READ, 'controller'))
 	{
+		if (!$anonymous)
+		{
+			$passkey_url = phpgw::link('/passkey');
+			$passkey_text = lang('Passkey Management');
+			$topmenu .= <<<HTML
+				<li class="nav-item">
+					<a href="{$passkey_url}" class="nav-link"><i class="fas fa-fingerprint" aria-hidden="true"></i>&nbsp;{$passkey_text}</a>
+				</li>
+HTML;
+		}
+
 		$topmenu .= <<<HTML
 				<li class="nav-item">
 					<a href="{$controller_url}" class="nav-link"><i class="fa fa-check-square-o" aria-hidden="true"></i>&nbsp;{$controller_text}</a>

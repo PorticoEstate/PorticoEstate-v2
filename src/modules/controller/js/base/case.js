@@ -96,9 +96,16 @@ $(function ()
 		});
 	});
 
-	// Template-independent modal handling for #inspectObject (no Bootstrap plugin needed).
 	var $inspectModal = $('#inspectObject');
 	var inspectModalPlaceholder = document.createComment('inspectObject');
+
+	function resize_inspect_textareas()
+	{
+		$inspectModal.find('textarea:visible').each(function ()
+		{
+			autoResizeTextarea(this);
+		});
+	}
 
 	function hide_inspect_modal()
 	{
@@ -111,17 +118,21 @@ $(function ()
 
 	$(document).on('click', '#perform_control_on_selected', function ()
 	{
+		if ($inspectModal.find('.modal-header [data-bs-dismiss="modal"]').length)
+		{
+			bootstrap.Modal.getOrCreateInstance($inspectModal[0]).show();
+			return;
+		}
+
 		$inspectModal.before(inspectModalPlaceholder).appendTo('body');
 		$('body').addClass('modal-open')
 			.append('<div class="modal-backdrop show" id="inspectObjectBackdrop"></div>');
 		$inspectModal.css('display', 'block').attr('aria-hidden', 'false');
-		$inspectModal.find('textarea:visible').each(function ()
-		{
-			autoResizeTextarea(this);
-		});
+		resize_inspect_textareas();
 	});
 
-	$inspectModal.on('click', '.modal-header .btn-close', hide_inspect_modal);
+	$inspectModal.on('click', '.modal-header .btn-close:not([data-bs-dismiss="modal"])', hide_inspect_modal);
+	$inspectModal.on('shown.bs.modal', resize_inspect_textareas);
 
 	$inspectModal.on('hidden.bs.modal', function (e)
 	{

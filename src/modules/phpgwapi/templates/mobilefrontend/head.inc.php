@@ -51,16 +51,19 @@ $stylesheets[] = "/phpgwapi/templates/pure/css/action-bar.css";
 $stylesheets[] = "/phpgwapi/templates/pure/css/version_3/pure-min.css";
 $stylesheets[] = "/phpgwapi/templates/pure/css/pure-extension.css";
 $stylesheets[] = "/phpgwapi/templates/pure/css/version_3/grids-responsive-min.css";
-$stylesheets[] = "/phpgwapi/js/DataTables3/vendor/datatables.net/datatables.net-dt/css/dataTables.dataTables.min.css";
-
 $stylesheets[]	 = "/phpgwapi/js/bootstrap5/vendor/twbs/bootstrap/dist/css/bootstrap.min.css";
 
-//	$stylesheets[] = "/{$app}/templates/base/css/base.css";
-$stylesheets[] = "/{$app}/templates/mobilefrontend/css/base.css";
-//	$stylesheets[] = "/{$app}/templates/mobilefrontend/css/{$userSettings['preferences']['common']['theme']}.css";
-$stylesheets[] = "/phpgwapi/templates/mobilefrontend/css/base.css";
-//	$stylesheets[] = "/phpgwapi/templates/bookingfrontend/css/fontawesome.all.css";
 $stylesheets[] = "/phpgwapi/templates/base/css/fontawesome/css/all.min.css";
+$stylesheets[] = "/phpgwapi/templates/base/css/base.css";
+if ($app != 'phpgwapi')
+{
+	$stylesheets[] = "/{$app}/templates/base/css/base.css";
+}
+$stylesheets[] = "/phpgwapi/templates/mobilefrontend/css/base.css";
+if ($app != 'phpgwapi')
+{
+	$stylesheets[] = "/{$app}/templates/mobilefrontend/css/base.css";
+}
 
 foreach ($stylesheets as $stylesheet)
 {

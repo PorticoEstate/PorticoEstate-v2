@@ -28,16 +28,10 @@ function parse_navbar($force = False)
 	}
 
 	$config_controller = CreateObject('phpgwapi.config', 'controller')->read();
-	if (isset($config_controller['home_alternative']) && $config_controller['home_alternative'] == 1)
-	{
-		$controller_url = phpgw::link('/index.php', array('menuaction' => 'controller.uicomponent.index'));
-	}
-	else
-	{
-		$controller_url = phpgw::link('/index.php', array('menuaction' => 'controller.uicontrol.control_list'));
-	}
+	$controller_url = phpgw::link('/index.php', array('menuaction' => 'controller.uicomponent.index'));
 
 	$controller_test_url = phpgw::link('/index.php', array('menuaction' => 'controller.uicalendar_planner.start_inspection'));
+	$controller_planner_url = phpgw::link('/index.php', array('menuaction' => 'controller.uicalendar_planner.index'));
 
 	$extra_vars = array();
 	foreach ($_GET as $name => $value)
@@ -78,9 +72,8 @@ function parse_navbar($force = False)
 	}
 
 	$landing = <<<HTML
-		<div class="mt-5 row">
-			<div class="container">
-				<div class="row">
+		<div class="container">
+			<div class="row mt-4">
 HTML;
 
 	$app_menu = '';
@@ -100,25 +93,8 @@ HTML;
 					<a href="{$controller_url}" class="nav-link"><i class="fa fa-check-square-o" aria-hidden="true"></i>&nbsp;{$controller_text}</a>
 				</li>
 HTML;
-		$landing .= <<<HTML
-				<!-- CARD #1 -->
-					 <div class="col">
-						<div class="mb-5 card" style="width: 18rem;">
-						  <div class="text-center card-body">
-							<h5 class="mx-auto card-title">{$controller_text}</h5>
-							<a href="{$controller_url}" class="btn btn-primary">Gå til {$controller_text}</a>
-						  </div>
-						</div>
-					 </div>
-					 <div class="col">
-						<div class="mb-5 card" style="width: 18rem;">
-						  <div class="text-center card-body">
-							<h5 class="mx-auto card-title">Kontroll av utstyr og lekeplasser</h5>
-							<a href="{$controller_test_url}" class="btn btn-warning">Gå til kontroll</a>
-						  </div>
-						</div>
-					 </div>
-HTML;
+		$landing .= render_mobile_home_card($controller_url, $controller_text, 'fas fa-clipboard-check');
+		$landing .= render_mobile_home_card($controller_planner_url, 'Kontroll av utstyr og lekeplasser', 'fas fa-child');
 
 		if ('controller' == $flags['currentapp'])
 		{
@@ -144,17 +120,7 @@ HTML;
 					<a href="{$tts_url}" class="nav-link"><i class="fa fa-bolt" aria-hidden="true"></i>&nbsp;{$tts_text}</a>
 				</li>
 HTML;
-		$landing .= <<<HTML
-				<!-- CARD #2 -->
-					 <div class="col">
-						<div class="mb-5 card" style="width: 18rem;">
-						  <div class="text-center card-body">
-							<h5 class="mx-auto card-title">{$tts_text}</h5>
-							<a href="{$tts_url}" class="btn btn-primary">Gå til {$tts_text}</a>
-						  </div>
-						</div>
-					 </div>
-HTML;
+		$landing .= render_mobile_home_card($tts_url, $tts_text, 'fas fa-bolt');
 	}
 	if ($acl->check('.project.condition_survey', ACL_READ, 'property'))
 	{
@@ -163,17 +129,7 @@ HTML;
 					<a href="{$condition_survey_url}" class="nav-link"><i class="fa fa-thermometer-three-quarters" aria-hidden="true"></i>&nbsp;{$condition_survey_text}</a>
 				</li>
 HTML;
-		$landing .= <<<HTML
-				<!-- CARD #3 -->
-					 <div class="col">
-						<div class="mb-5 card" style="width: 18rem;">
-						  <div class="text-center card-body">
-							<h5 class="mx-auto card-title">{$condition_survey_text}</h5>
-							<a href="{$condition_survey_url}" class="btn btn-primary">Gå til {$condition_survey_text}</a>
-						  </div>
-						</div>
-					 </div>
-HTML;
+		$landing .= render_mobile_home_card($condition_survey_url, $condition_survey_text, 'fas fa-thermometer-three-quarters');
 	}
 	if ($acl->check('.movein', ACL_READ, 'rental'))
 	{
@@ -182,17 +138,7 @@ HTML;
 					<a href="{$movein_url}" class="nav-link"><i class="fa fa-suitcase" aria-hidden="true"></i>&nbsp;{$movein_text}</a>
 				</li>
 HTML;
-		$landing .= <<<HTML
-				<!-- CARD #3 -->
-					 <div class="col">
-						<div class="mb-5 card" style="width: 18rem;">
-						  <div class="text-center card-body">
-							<h5 class="mx-auto card-title">{$movein_text}</h5>
-							<a href="{$movein_url}" class="btn btn-primary">Gå til {$movein_text}</a>
-						  </div>
-						</div>
-					 </div>
-HTML;
+		$landing .= render_mobile_home_card($movein_url, $movein_text, 'fas fa-sign-in-alt');
 	}
 	if ($acl->check('.moveout', ACL_READ, 'rental'))
 	{
@@ -201,17 +147,7 @@ HTML;
 					<a href="{$moveout_url}" class="nav-link"><i class="fa fa-suitcase" aria-hidden="true"></i>&nbsp;{$moveout_text}</a>
 				</li>
 HTML;
-		$landing .= <<<HTML
-				<!-- CARD #4 -->
-					 <div class="col">
-						<div class="mb-5 card" style="width: 18rem;">
-						  <div class="text-center card-body">
-							<h5 class="mx-auto card-title">{$moveout_text}</h5>
-							<a href="{$moveout_url}" class="btn btn-primary">Gå til {$moveout_text}</a>
-						  </div>
-						</div>
-					 </div>
-HTML;
+		$landing .= render_mobile_home_card($moveout_url, $moveout_text, 'fas fa-sign-out-alt');
 	}
 
 	if ($acl->check('run', ACL_READ, 'frontend'))
@@ -225,17 +161,7 @@ HTML;
 				</li>
 HTML;
 
-		$landing .= <<<HTML
-				<!-- CARD #5 -->
-					 <div class="col">
-						<div class="mb-5 card" style="width: 18rem;">
-						  <div class="text-center card-body">
-							<h5 class="mx-auto card-title">{$rental_frontend_text}</h5>
-							<a href="{$rental_frontend_url}" class="btn btn-primary">Gå til {$rental_frontend_text}</a>
-						  </div>
-						</div>
-					 </div>
-HTML;
+		$landing .= render_mobile_home_card($rental_frontend_url, $rental_frontend_text, 'fas fa-home');
 	}
 
 	if ($acl->check('.document.import', ACL_ADD, 'property'))
@@ -249,17 +175,7 @@ HTML;
 				</li>
 HTML;
 
-		$landing .= <<<HTML
-				<!-- CARD #6 -->
-					 <div class="col">
-						<div class="mb-5 card" style="width: 18rem;">
-						  <div class="text-center card-body">
-							<h5 class="mx-auto card-title">{$property_documents_text}</h5>
-							<a href="{$property_documents_url}" class="btn btn-primary">Gå til {$property_documents_text}</a>
-						  </div>
-						</div>
-					 </div>
-HTML;
+		$landing .= render_mobile_home_card($property_documents_url, $property_documents_text, 'fas fa-file-import');
 	}
 
 	if ($acl->check('run', ACL_READ, 'helpdesk'))
@@ -281,17 +197,7 @@ HTML;
 					<a href="{$helpdesk_url}" class="nav-link"><i class="fa fa-bolt" aria-hidden="true"></i>&nbsp;{$helpdesk_text}</a>
 				</li>
 HTML;
-		$landing .= <<<HTML
-				<!-- CARD #7 -->
-					 <div class="col">
-						<div class="card" style="width: 18rem;">
-						  <div class="text-center card-body">
-							<h5 class="mx-auto card-title">{$helpdesk_text}</h5>
-							<a href="{$helpdesk_url}" class="btn btn-primary">Gå til {$helpdesk_text}</a>
-						  </div>
-						</div>
-					 </div>
-HTML;
+		$landing .= render_mobile_home_card($helpdesk_url, $helpdesk_text, 'fas fa-headset');
 
 		if ('helpdesk' == $flags['currentapp'])
 		{
@@ -320,7 +226,6 @@ HTML;
 
 	$landing .= <<<HTML
 
-	</div>
 	</div>
 </div>
 HTML;
@@ -472,6 +377,25 @@ HTML;
 
 	(new Hooks())->process('after_navbar');
 	register_shutdown_function('parse_footer_end');
+}
+
+function render_mobile_home_card($url, $title, $icon)
+{
+	$url = htmlspecialchars($url, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8', false);
+	$title = htmlspecialchars($title, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+
+	return <<<HTML
+				<div class="col-6 col-md-4 mb-3">
+					<a href="{$url}" class="text-secondary text-decoration-none d-block h-100">
+						<div class="card shadow h-100">
+							<div class="card-block text-center flex-grow-1">
+								<div class="h1 p-3 mb-0" aria-hidden="true"><i class="{$icon} fa-2x text-secondary"></i></div>
+							</div>
+							<div class="card-footer text-center text-break">{$title}</div>
+						</div>
+					</a>
+				</div>
+HTML;
 }
 
 function get_sub_menu($children = array(), $selection = array(), $level = '')

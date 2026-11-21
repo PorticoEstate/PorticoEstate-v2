@@ -1,5 +1,5 @@
 # Use an official PHP-FPM base image
-FROM php:8.5-fpm-bookworm
+FROM php:8.6-fpm-trixie
 
 LABEL maintainer="Sigurd Nes <sigurdne@gmail.com>"
 
@@ -21,11 +21,6 @@ ENV https_proxy=${https_proxy}
 #    && chmod +x /usr/local/bin/install-php-extensions
 COPY --from=mlocati/php-extension-installer /usr/bin/install-php-extensions /usr/local/bin/
 
-# Configure PEAR
-RUN if [ -n "${http_proxy}" ]; then pear config-set http_proxy ${http_proxy}; fi && \
-    pear config-set php_ini $PHP_INI_DIR/php.ini
-
-
 # Conditionally install Oracle support
 RUN if [ "${INSTALL_ORACLE}" = "true" ]; then \
     echo "Installing Oracle support..."; \
@@ -36,9 +31,7 @@ else \
 fi
 
 # Add contrib and non-free repositories
-RUN echo "deb http://deb.debian.org/debian bookworm main contrib non-free" > /etc/apt/sources.list \
-    && echo "deb http://deb.debian.org/debian-security bookworm-security main contrib non-free" >> /etc/apt/sources.list \
-    && echo "deb http://deb.debian.org/debian bookworm-updates main contrib non-free" >> /etc/apt/sources.list
+RUN sed -i 's/^Components: main$/Components: main contrib non-free non-free-firmware/' /etc/apt/sources.list.d/debian.sources
 
 # Install necessary packages
 RUN apt-get update && apt-get install -y \
@@ -51,7 +44,7 @@ RUN apt-get update && apt-get install -y \
     sudo \
     gnupg \
     unzip \
-    libaio1 locales wget \
+    libaio1t64 locales wget \
     libmagickwand-dev --no-install-recommends \
     apache2 libapache2-mod-fcgid ssl-cert \
     cron \
@@ -80,12 +73,40 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg
 RUN docker-php-ext-install -j$(nproc) curl intl xsl pdo_pgsql pdo_mysql gd \
     shmop soap zip mbstring ftp calendar exif
 
-RUN install-php-extensions imap
-RUN install-php-extensions pspell
+# IMAP 1.0.3 does not compile on PHP 8.6; use the upstream compatibility fix.
+# Pspell 1.0.1 still uses the XtOffsetOf alias removed in PHP 8.6.
+RUN if php -r 'exit(PHP_VERSION_ID >= 80600 ? 0 : 1);'; then \
+    install-php-extensions php/pecl-mail-imap@c441c79add125f5a01f88332805221edeebe47b0; \
+else \
+    install-php-extensions imap; \
+fi
+RUN if php -r 'exit(PHP_VERSION_ID >= 80600 ? 0 : 1);'; then \
+    mkdir /tmp/pspell-src && \
+    curl -fsSL https://github.com/php/pecl-text-pspell/archive/9b574cddfe93dedef0c6d258d8aef99e5e9bd656.tar.gz \
+        | tar -xz -C /tmp/pspell-src --strip-components=1 && \
+    grep -q 'XtOffsetOf' /tmp/pspell-src/pspell.c && \
+    sed -i 's/XtOffsetOf/offsetof/g' /tmp/pspell-src/pspell.c && \
+    install-php-extensions /tmp/pspell-src && \
+    rm -rf /tmp/pspell-src; \
+else \
+    install-php-extensions pspell; \
+fi
 
-# Install PECL extensions
-RUN pecl install apcu && docker-php-ext-enable apcu
-RUN pecl install redis && docker-php-ext-enable redis
+# The installer bootstraps PECL when it is missing from the PHP image.
+# Use upstream PHP 8.6 fixes until compatible PECL releases are available.
+RUN if php -r 'exit(PHP_VERSION_ID >= 80600 ? 0 : 1);'; then \
+    install-php-extensions krakjoe/apcu@66300e28647c16fef7672a5add532f4262b23a75 && \
+    git init /tmp/redis-src && \
+    git -C /tmp/redis-src remote add origin https://github.com/phpredis/phpredis.git && \
+    git -C /tmp/redis-src fetch --depth 1 origin a6ce1e60b3e81ce3b25174aa5aaefd5590dc64fd && \
+    git -C /tmp/redis-src checkout --detach FETCH_HEAD && \
+    git -C /tmp/redis-src submodule update --init --recursive && \
+    (cd /tmp/redis-src && phpize && ./configure && make -j"$(nproc)" && make install) && \
+    docker-php-ext-enable redis && \
+    rm -rf /tmp/redis-src; \
+else \
+    install-php-extensions apcu redis; \
+fi
 
 # Add APCu configuration
 RUN echo "apc.shm_size=64M" >> /usr/local/etc/php/conf.d/docker-php-ext-apcu.ini \
@@ -104,7 +125,11 @@ RUN echo "opcache.enable=1" >> /usr/local/etc/php/conf.d/docker-php-ext-opcache.
     && echo "opcache.fast_shutdown=1" >> /usr/local/etc/php/conf.d/docker-php-ext-opcache.ini
 
 # Install Imagick
-RUN install-php-extensions imagick
+RUN if php -r 'exit(PHP_VERSION_ID >= 80600 ? 0 : 1);'; then \
+    install-php-extensions Imagick/imagick@b580a705e2c879924bfaee2e1ed3a93c9cb3fcfb; \
+else \
+    install-php-extensions imagick; \
+fi
 
 # Install Composer
 RUN curl -sS https://getcomposer.org/installer -o /tmp/composer-setup.php
@@ -120,7 +145,7 @@ RUN if [ "${INSTALL_MSSQL}" = "true" ]; then \
             case "${VERSION_CODENAME}" in \
                 bookworm) MS_VER="12" ;; \
                 bullseye) MS_VER="11" ;; \
-                trixie)   MS_VER="12" ;; \
+                trixie)   MS_VER="13" ;; \
                 *)        MS_VER="12" ;; \
             esac; \
             apt-get update && apt-get install -y --no-install-recommends ca-certificates gnupg wget apt-transport-https unixodbc-dev; \
@@ -134,7 +159,11 @@ RUN if [ "${INSTALL_MSSQL}" = "true" ]; then \
 
 # PHP configuration
 RUN if [ "${INSTALL_XDEBUG}" = "true" ]; then \
-    pecl install xdebug && docker-php-ext-enable xdebug; \
+    if php -r 'exit(PHP_VERSION_ID >= 80600 ? 0 : 1);'; then \
+        install-php-extensions xdebug/xdebug@5e19866c1766e38c527f9f94faa170370dc4209f; \
+    else \
+        install-php-extensions xdebug; \
+    fi && \
     echo 'xdebug.mode=debug,develop' >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini \
     && echo 'xdebug.discover_client_host=1' >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini \
     && echo 'xdebug.client_host=host.docker.internal' >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini \
@@ -155,7 +184,7 @@ RUN echo 'post_max_size = 55M' >> /usr/local/etc/php/php.ini
 RUN echo 'upload_max_filesize = 50M' >> /usr/local/etc/php/php.ini
 
 # Install Java
-RUN apt-get update && apt-get install -y openjdk-17-jdk
+RUN apt-get update && apt-get install -y openjdk-21-jdk
 
 ## Verify Java installation
 RUN java -version

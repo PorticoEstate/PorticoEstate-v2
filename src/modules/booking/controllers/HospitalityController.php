@@ -210,6 +210,26 @@ class HospitalityController
 	}
 
 	/**
+	 * RULING (operator, 47045 (a)): the main resource of a hospitality cannot also be one of its delivery locations.
+	 * The main resource is already on the Resources tab, so adding it as a delivery location would list it twice.
+	 * addRemoteLocation() asks the direct-booking rule first, as it does for every delivery location.
+	 *
+	 * @param array $existing the stored hospitality row
+	 * @return array{code: string, error: string}|null null = allowed
+	 */
+	private function remoteIsMainResourceRefusal(array $existing, int $resourceId): ?array
+	{
+		if ((int)$existing['resource_id'] !== $resourceId) {
+			return null;
+		}
+		$name = $this->directBookingGuard->resourcesById([$resourceId])[$resourceId]['name'] ?? (string)$resourceId;
+		return [
+			'code' => 'remote_location_is_main_resource',
+			'error' => lang('booking.remote_location_is_main_resource', $name),
+		];
+	}
+
+	/**
 	 * Has the row been modified after the version the client holds (X-If-Modified-Since)?
 	 *
 	 * `modified` is stored as naive UTC, so it is read as UTC here instead of in whatever zone PHP
@@ -613,6 +633,12 @@ class HospitalityController
 			$refusal = $this->directBookingGuard->checkRemoteLocation($existing, (int)$body['resource_id'], true);
 			if ($refusal !== null) {
 				return $this->refuseDirectBookingConflict($response, $refusal);
+			}
+
+			// The main resource cannot also be a delivery location of its hospitality (operator ruling, 47045 (a)).
+			$refusal = $this->remoteIsMainResourceRefusal($existing, (int)$body['resource_id']);
+			if ($refusal !== null) {
+				return $this->refuse($response, $refusal);
 			}
 
 			$this->repository->addRemoteLocation($id, (int)$body['resource_id']);

@@ -1412,3 +1412,4 @@ allocation_change_mail_new_time	booking	no	Ny tid
 allocation_change_mail_resource	booking	no	Ressurs
 allocation_change_mail_date	booking	no	Dato
 allocation_change_mail_applicant_comment	booking	no	Kommentar fra søker
+remote_location_is_main_resource	booking	no	Ressursen «%1» er hovedressursen for denne bevertningen og kan ikke samtidig være ekstern lokasjon.

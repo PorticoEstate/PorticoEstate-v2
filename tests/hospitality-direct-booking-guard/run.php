@@ -637,6 +637,29 @@ $controllerOn = static function (HarnessWorld $w): HospitalityController {
             $this->w->row = array_replace($this->w->row, $data);
             return true;
         }
+
+        public function addRemoteLocation(int $hospitalityId, int $resourceId): bool
+        {
+            $this->w->writes[] = ['addRemote', $hospitalityId, $resourceId];
+            return true;
+        }
+
+        public function removeRemoteLocation(int $hospitalityId, int $resourceId): bool
+        {
+            $this->w->writes[] = ['removeRemote', $hospitalityId, $resourceId];
+            return true;
+        }
+
+        public function toggleRemoteLocation(int $hospitalityId, int $resourceId, bool $active): bool
+        {
+            $this->w->writes[] = ['toggleRemote', $hospitalityId, $resourceId, $active];
+            return true;
+        }
+
+        public function getRemoteLocations(int $hospitalityId): array
+        {
+            return [];
+        }
     });
     $inject('orderRepository', new class($w) extends HospitalityOrderRepository {
         public function __construct(private HarnessWorld $w)
@@ -673,17 +696,32 @@ $streamFactory = new Slim\Psr7\Factory\StreamFactory();
  * then decodes itself. Returns what a client and the database would have seen: the status and body, every repository write
  * and Q1 count in order, and every WebSocket broadcast. An Error out of the controller (a mutant that breaks it) is returned
  * as `threw`, so it turns a row red instead of ending the run.
+ * Actions: store, update (the hospitality), addRemote, removeRemote, toggleRemote (the delivery locations of hospitality 7;
+ * $resourceId is the one in the path of removeRemote and toggleRemote).
  */
-$drive = static function (string $action, $body, ?HarnessWorld $world = null) use ($newWorld, $controllerOn, $requestFactory, $responseFactory, $streamFactory): array {
+$drive = static function (string $action, $body, ?HarnessWorld $world = null, int $resourceId = 11) use ($newWorld, $controllerOn, $requestFactory, $responseFactory, $streamFactory): array {
     $w = $world ?? $newWorld();
     HarnessWebSocketHelper::$sent = [];
     $controller = $controllerOn($w);
-    $request = $requestFactory->createServerRequest($action === 'store' ? 'POST' : 'PUT', '/booking/hospitality' . ($action === 'store' ? '' : '/7'));
+    [$method, $path] = match ($action) {
+        'store' => ['POST', '/booking/hospitality'],
+        'update' => ['PUT', '/booking/hospitality/7'],
+        'addRemote' => ['POST', '/booking/hospitality/7/remote-locations'],
+        'removeRemote' => ['DELETE', "/booking/hospitality/7/remote-locations/{$resourceId}"],
+        'toggleRemote' => ['PATCH', "/booking/hospitality/7/remote-locations/{$resourceId}"],
+    };
+    $request = $requestFactory->createServerRequest($method, $path);
     $request = is_array($body) ? $request->withParsedBody($body) : $request->withBody($streamFactory->createStream($body));
     $previous = error_reporting(E_ALL & ~E_DEPRECATED); // SerializableTrait still calls setAccessible(), deprecated since PHP 8.5
     try {
         $response = $responseFactory->createResponse();
-        $response = $action === 'store' ? $controller->store($request, $response) : $controller->update($request, $response, ['id' => '7']);
+        $response = match ($action) {
+            'store' => $controller->store($request, $response),
+            'update' => $controller->update($request, $response, ['id' => '7']),
+            'addRemote' => $controller->addRemoteLocation($request, $response, ['id' => '7']),
+            'removeRemote' => $controller->removeRemoteLocation($request, $response, ['id' => '7', 'resourceId' => (string)$resourceId]),
+            'toggleRemote' => $controller->toggleRemoteLocation($request, $response, ['id' => '7', 'resourceId' => (string)$resourceId]),
+        };
         $raw = (string)$response->getBody();
         return ['status' => $response->getStatusCode(), 'raw' => $raw, 'body' => json_decode($raw, true), 'threw' => null,
             'writes' => $w->writes, 'counts' => $w->counts, 'broadcasts' => HarnessWebSocketHelper::$sent];
@@ -868,6 +906,32 @@ $o = $drive('update', ['resource_id' => '11'], $w);
 $expect('move/a valid move: saves, ONE repository update with resource_id 11 as an int, the other admins told to rebuild the Resources tab',
     $move($o), $saved200(['resource_id' => 11, 'modified_by' => 5], 'main_resource'));
 $expect('move/a valid move: Q1 counted the OLD main (7 at 10), not the new one and not the hospitality id', $o['counts'], [[7, 10]]);
+
+// ── (a) the main resource is not added as a delivery location of its own hospitality (47045 (a)) ─────────────────
+// Main resource 10 (Kjokken). Refused after the direct-booking check, before the repository write.
+$remoteOutcome = static fn(array $o): array => [
+    'status' => $o['threw'] ?? $o['status'],
+    'code' => $o['body']['code'] ?? null,
+    'error' => $o['body']['error'] ?? null,
+    'writes' => $o['writes'],
+    'broadcasts' => $o['broadcasts'],
+];
+$mainRefusal = ['status' => 422, 'code' => 'remote_location_is_main_resource', 'error' => 'booking.remote_location_is_main_resource|Kjokken', 'writes' => [], 'broadcasts' => []];
+$expect('remote/a MAIN resource added as its own delivery location: 422 remote_location_is_main_resource, the name is in the text, NO write, no broadcast',
+    $remoteOutcome($drive('addRemote', ['resource_id' => 10])), $mainRefusal);
+$expect('remote/a MAIN resource given as the string "10": the same refusal',
+    $remoteOutcome($drive('addRemote', ['resource_id' => '10'])), $mainRefusal);
+$o = $drive('addRemote', ['resource_id' => 11]);
+$expect('remote/control: another resource (11) is added as a delivery location: 201, one addRemoteLocation write, the other admins told',
+    [$o['status'], $o['writes'], $o['broadcasts']], [201, [['addRemote', 7, 11]], [['hospitality', 7, 'updated', 'resources']]]);
+$o = $drive('addRemote', ['resource_id' => 20], $newWorld(['row' => ['resource_id' => 20]]));
+$expect('remote/the direct-booking refusal speaks first when the main itself has direct booking: resource_has_direct_booking, NO write',
+    [$o['status'], $o['body']['code'] ?? null, $o['writes']], [422, 'resource_has_direct_booking', []]);
+$addSource = $methodSource('addRemoteLocation');
+$expect('remote/source order: addRemoteLocation() asks the direct-booking guard before the main-resource rule',
+    $firstBefore($addSource, 'directBookingGuard->checkRemoteLocation(', '$this->remoteIsMainResourceRefusal('), true);
+$expect('remote/source order: addRemoteLocation() asks the main-resource rule before the repository write',
+    $firstBefore($addSource, '$this->remoteIsMainResourceRefusal(', 'repository->addRemoteLocation('), true);
 
 // The doubles are meant to leave nothing to the real database. Db::getInstance() would create the singleton (in a CLI with no
 // configuration that is a silent in-memory SQLite, which answers every query with nothing), so a path that reached for it

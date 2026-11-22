@@ -394,6 +394,18 @@ MUTANTS = [
     ("M77", "a move of the main resource is detected the wrong way round (`===`: a real move is a no-change, a no-change is a move; OM2 of fact 45960)",
      "$body['resource_id'] !== (int)$existing['resource_id'];", "$body['resource_id'] === (int)$existing['resource_id'];",
      ['move/Q1 a main move with open orders at the old main', 'move/no main change, the same resource_id (int) sent back with the rest of the row'], "controller"),
+    # (a) 47045: the main resource is not added as a delivery location of its own hospitality
+    ("M78", "(a) the main-resource rule never fires (its predicate is dropped)",
+     "if ((int)$existing['resource_id'] !== $resourceId) {", "if (true) {",
+     ['remote/a MAIN resource added as its own delivery location'], "controller"),
+    ("M79", "(a) the write happens BEFORE the main-resource rule (the refusal comes after the write)",
+     "\t\t\t// The main resource cannot also be a delivery location of its hospitality (operator ruling, 47045 (a)).\n\t\t\t$refusal = $this->remoteIsMainResourceRefusal($existing, (int)$body['resource_id']);\n\t\t\tif ($refusal !== null) {\n\t\t\t\treturn $this->refuse($response, $refusal);\n\t\t\t}\n\n\t\t\t$this->repository->addRemoteLocation($id, (int)$body['resource_id']);",
+     "\t\t\t$this->repository->addRemoteLocation($id, (int)$body['resource_id']);\n\t\t\t$refusal = $this->remoteIsMainResourceRefusal($existing, (int)$body['resource_id']);\n\t\t\tif ($refusal !== null) {\n\t\t\t\treturn $this->refuse($response, $refusal);\n\t\t\t}",
+     ['remote/a MAIN resource added as its own delivery location'], "controller"),
+    ("M80", "(a) the main-resource rule is asked BEFORE the direct-booking check (a direct-booking main answers with the wrong refusal)",
+     "\t\t\t$refusal = $this->directBookingGuard->checkRemoteLocation($existing, (int)$body['resource_id'], true);\n\t\t\tif ($refusal !== null) {\n\t\t\t\treturn $this->refuseDirectBookingConflict($response, $refusal);\n\t\t\t}\n\n\t\t\t// The main resource cannot also be a delivery location of its hospitality (operator ruling, 47045 (a)).\n\t\t\t$refusal = $this->remoteIsMainResourceRefusal($existing, (int)$body['resource_id']);\n\t\t\tif ($refusal !== null) {\n\t\t\t\treturn $this->refuse($response, $refusal);\n\t\t\t}\n",
+     "\t\t\t$refusal = $this->remoteIsMainResourceRefusal($existing, (int)$body['resource_id']);\n\t\t\tif ($refusal !== null) {\n\t\t\t\treturn $this->refuse($response, $refusal);\n\t\t\t}\n\n\t\t\t$refusal = $this->directBookingGuard->checkRemoteLocation($existing, (int)$body['resource_id'], true);\n\t\t\tif ($refusal !== null) {\n\t\t\t\treturn $this->refuseDirectBookingConflict($response, $refusal);\n\t\t\t}\n",
+     ['remote/the direct-booking refusal speaks first when the main itself has direct booking', 'remote/source order: addRemoteLocation() asks the direct-booking guard before the main-resource rule'], "controller"),
 ]
 
 

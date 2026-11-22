@@ -1411,3 +1411,4 @@ allocation_change_mail_new_time	booking	en	New time
 allocation_change_mail_resource	booking	en	Resource
 allocation_change_mail_date	booking	en	Date
 allocation_change_mail_applicant_comment	booking	en	Comment from the applicant
+remote_location_is_main_resource	booking	en	The resource “%1” is the main resource of this hospitality and cannot also be a remote location.

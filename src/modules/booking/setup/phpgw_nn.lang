@@ -1388,3 +1388,4 @@ allocation_change_mail_date	booking	nn	Dato
 allocation_change_mail_applicant_comment	booking	nn	Kommentar frå søkjar
 remote_location_is_main_resource	booking	nn	Ressursen «%1» er hovudressursen for denne bevertninga og kan ikkje samtidig vere ekstern lokasjon.
 remote_location_has_open_orders	booking	nn	Lokasjonen kan ikkje fjernast eller setjast inaktiv så lenge det finst opne bestillingar som skal leverast dit (%1). Avlys dei eller set dei som leverte først.
+hospitality_description_not_string	booking	nn	Skildringa må vere tekst.

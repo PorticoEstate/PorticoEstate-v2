@@ -304,11 +304,10 @@ MUTANTS = [
      "return is_string($description) && mb_strlen($description, 'UTF-8') > self::DESCRIPTION_MAX_LENGTH;",
      "return $description === null || $description === '' || (is_string($description) && mb_strlen($description, 'UTF-8') > self::DESCRIPTION_MAX_LENGTH);",
      ['desc/update NULL', 'desc/store NULL', 'desc/update the empty string', 'desc/store the empty string'], "model"),
-    ("M64", "description: a non-string, non-null value is refused too (the pinned current behaviour flips)",
+    ("M64", "description: descriptionTooLong counts a non-string as too long (it judges LENGTH only; the type is descriptionNotText's)",
      "return is_string($description) && mb_strlen($description, 'UTF-8') > self::DESCRIPTION_MAX_LENGTH;",
      "return is_string($description) ? mb_strlen($description, 'UTF-8') > self::DESCRIPTION_MAX_LENGTH : $description !== null;",
-     ['desc/update pinned, see RECORD 45803: a non-string description (int 5)', 'desc/store pinned, see RECORD 45803: a non-string description (int 5)',
-      'desc/update pinned, see RECORD 45803: a non-string description (an empty array)'], "model"),
+     ['desc/model: descriptionTooLong judges LENGTH only'], "model"),
     ("M65", "description: update() judges the STORED description when the body does not carry one",
      T*3 + "if (array_key_exists('resource_id', $body) && !$this->repository->resourceExists($body['resource_id'])) {\n"
        + T*4 + "return $this->refuseResourceId($response, 'unknown_resource');\n" + T*3 + "}\n\n" + T*3 + "if (self::descriptionRefused($body)) {",
@@ -317,12 +316,12 @@ MUTANTS = [
        + T*3 + "if (self::descriptionRefused($body + ['description' => $existing['description'] ?? null])) {",
      ['desc/update a name-only PUT on an offer whose STORED description is 128 code points'], "controller"),
     ("M66", "description: store() does not judge the description at all",
-     T*3 + "if (self::descriptionRefused($body)) {\n" + T*4 + "return $this->refuseDescriptionTooLong($response);\n" + T*3 + "}\n\n"
+     T*3 + "if (self::descriptionRefused($body)) {\n" + T*4 + "return $this->refuseDescription($response, $body['description']);\n" + T*3 + "}\n\n"
        + T*3 + "// A resource with direct booking cannot be linked to hospitality (operator 2026-11-11).",
      T*3 + "// A resource with direct booking cannot be linked to hospitality (operator 2026-11-11).",
      ['desc/store 71 x "a" (one over)', 'desc/store 71 x emoji (71 code points)'], "controller"),
     ("M67", "description: update() does not judge the description at all",
-     T*3 + "if (self::descriptionRefused($body)) {\n" + T*4 + "return $this->refuseDescriptionTooLong($response);\n" + T*3 + "}\n\n"
+     T*3 + "if (self::descriptionRefused($body)) {\n" + T*4 + "return $this->refuseDescription($response, $body['description']);\n" + T*3 + "}\n\n"
        + T*3 + "// Moving the hospitality to a resource, or re-activating it, links resources to it again:",
      T*3 + "// Moving the hospitality to a resource, or re-activating it, links resources to it again:",
      ['desc/update 71 x "a" (one over)', 'desc/update 71 x emoji (71 code points)'], "controller"),
@@ -429,6 +428,22 @@ MUTANTS = [
      "\t\t\tif (!(bool)$body['active']) {\n\t\t\t\t$refusal = $this->openOrdersAtRemoteRefusal($id, $resourceId);\n\t\t\t\tif ($refusal !== null) {\n\t\t\t\t\treturn $this->refuse($response, $refusal);\n\t\t\t\t}\n\t\t\t}\n\n\t\t\t$this->repository->toggleRemoteLocation($id, $resourceId, (bool)$body['active']);",
      "\t\t\t$this->repository->toggleRemoteLocation($id, $resourceId, (bool)$body['active']);\n\t\t\tif (!(bool)$body['active']) {\n\t\t\t\t$refusal = $this->openOrdersAtRemoteRefusal($id, $resourceId);\n\t\t\t\tif ($refusal !== null) {\n\t\t\t\t\treturn $this->refuse($response, $refusal);\n\t\t\t\t}\n\t\t\t}",
      ['remote/b SWITCH OFF a delivery location with 2 open orders', 'remote/b source order: toggleRemoteLocation() asks the open-order rule before the repository write'], "controller"),
+    # (c) 47045: a description that is not text is refused before the direct-booking check and before the write; null stays allowed
+    ("M87", "(c) the null exemption is dropped: NULL (which clears the field) is refused too",
+     "return $description !== null && !is_string($description);", "return !is_string($description);",
+     ['desc/store NULL', 'desc/update NULL'], "model"),
+    ("M88", "(c) the check is made only in store(), not in update()",
+     "\t\t\tif (self::descriptionRefused($body)) {\n\t\t\t\treturn $this->refuseDescription($response, $body['description']);\n\t\t\t}\n\n\t\t\t// Moving the hospitality to a resource",
+     "\t\t\tif (false) {\n\t\t\t\treturn $this->refuseDescription($response, $body['description']);\n\t\t\t}\n\n\t\t\t// Moving the hospitality to a resource",
+     ['desc/update a non-string description (int 5)', 'desc/update a non-text description moving onto a resource WITH direct booking', 'desc/update over the wire, a JSON object'], "controller"),
+    ("M89", "(c) store() writes BEFORE the description rule (the refusal comes after the create)",
+     "\t\t\tif (self::descriptionRefused($body)) {\n\t\t\t\treturn $this->refuseDescription($response, $body['description']);\n\t\t\t}\n\n\t\t\t// A resource with direct booking cannot be linked to hospitality (operator 2026-11-11).\n\t\t\t$refusal = $this->directBookingGuard->checkHospitalityCreate($body);\n\t\t\tif ($refusal !== null) {\n\t\t\t\treturn $this->refuseDirectBookingConflict($response, $refusal);\n\t\t\t}\n\n\t\t\t$body['created_by'] = (int)$this->userSettings['account_id'];\n\n\t\t\t$id = $this->repository->create($body);",
+     "\t\t\t// A resource with direct booking cannot be linked to hospitality (operator 2026-11-11).\n\t\t\t$refusal = $this->directBookingGuard->checkHospitalityCreate($body);\n\t\t\tif ($refusal !== null) {\n\t\t\t\treturn $this->refuseDirectBookingConflict($response, $refusal);\n\t\t\t}\n\n\t\t\t$body['created_by'] = (int)$this->userSettings['account_id'];\n\n\t\t\t$id = $this->repository->create($body);\n\t\t\tif (self::descriptionRefused($body)) {\n\t\t\t\treturn $this->refuseDescription($response, $body['description']);\n\t\t\t}",
+     ['desc/store a non-string description (int 5)', 'desc/source order: store() asks the description rule before the repository write'], "controller"),
+    ("M90", "(c) the non-string check is dropped: descriptionNotText answers false, so the pinned non-string values are saved again",
+     "return $description !== null && !is_string($description);", "return false;",
+     ['desc/store a non-string description (int 5)', 'desc/update a non-string description (int 5)',
+      'desc/store a non-string description (an empty array)', 'desc/update a non-string description (an array holding a 500-character string)'], "model"),
 ]
 
 

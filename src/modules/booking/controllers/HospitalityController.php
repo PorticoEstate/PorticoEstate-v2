@@ -91,7 +91,8 @@ class HospitalityController
 	}
 
 	/**
-	 * Does the body carry a description that is too long (Hospitality::descriptionTooLong)? Judged only when
+	 * Does the body carry a description that cannot be saved: too long (Hospitality::descriptionTooLong) or not text
+	 * (Hospitality::descriptionNotText)? Judged only when
 	 * the body has the key: the admin saves one field per request, so an offer whose stored text predates
 	 * the limit still gets every other field saved, and the limit bites when the description itself is edited.
 	 *
@@ -99,7 +100,25 @@ class HospitalityController
 	 */
 	public static function descriptionRefused(array $body): bool
 	{
-		return array_key_exists('description', $body) && Hospitality::descriptionTooLong($body['description']);
+		return array_key_exists('description', $body)
+			&& (Hospitality::descriptionTooLong($body['description']) || Hospitality::descriptionNotText($body['description']));
+	}
+
+	/**
+	 * 422 for a description that descriptionRefused() refuses: not text (description_not_string, operator ruling 47045 (c)),
+	 * or over the limit (description_too_long, below). The two are exclusive, so their order does not matter.
+	 *
+	 * @param mixed $description the description as the body carries it
+	 */
+	private function refuseDescription(Response $response, $description): Response
+	{
+		if (Hospitality::descriptionNotText($description)) {
+			return $this->refuse($response, [
+				'code' => 'description_not_string',
+				'error' => lang('booking.hospitality_description_not_string'),
+			]);
+		}
+		return $this->refuseDescriptionTooLong($response);
 	}
 
 	/**
@@ -351,7 +370,7 @@ class HospitalityController
 			}
 
 			if (self::descriptionRefused($body)) {
-				return $this->refuseDescriptionTooLong($response);
+				return $this->refuseDescription($response, $body['description']);
 			}
 
 			// A resource with direct booking cannot be linked to hospitality (operator 2026-11-11).
@@ -487,7 +506,7 @@ class HospitalityController
 			}
 
 			if (self::descriptionRefused($body)) {
-				return $this->refuseDescriptionTooLong($response);
+				return $this->refuseDescription($response, $body['description']);
 			}
 
 			// Moving the hospitality to a resource, or re-activating it, links resources to it again:

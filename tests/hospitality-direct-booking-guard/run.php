@@ -802,6 +802,7 @@ $descriptionOutcome = static function (array $o, $sent): string {
     return sprintf('%d | %d write(s): %s %s', $o['status'], count($o['writes']), $write[0] ?? '-', $what);
 };
 $tooLong = '422 description_too_long (booking.hospitality_description_too_long|70) | 0 write(s)';
+$notText = '422 description_not_string (booking.hospitality_description_not_string) | 0 write(s)';
 $saved = ['store' => '201 | 1 write(s): create description handed on as sent', 'update' => '200 | 1 write(s): update description handed on as sent'];
 $withDescription = static fn(string $action, $value): array => $action === 'store'
     ? ['resource_id' => 10, 'name' => 'Kantina', 'description' => $value]
@@ -814,18 +815,36 @@ foreach ($descriptionCases as [$label, $value, $verdict]) {
     }
 }
 
-// PINNED CURRENT BEHAVIOUR, not a ruling (RECORD 45803, forum/pe-backlog/45803): Hospitality::descriptionTooLong() answers false
-// for anything that is not a string, so a non-string description is not refused by this rule, and the controller hands it to the
-// repository exactly as it came: the repository double RECEIVES the array, the int, the bool. Where RECORD 45803 expects a 422
-// for a non-string, non-null description, these rows are the ones that go red, deliberately. What the REAL repository then does
-// with the value (the PDO bind; RECORD 45803 reads it as a 500) is not shown here: a double takes anything.
+// RULING (operator, 47045 (c); pe-pm 47054): a description that is not text (an array, a number, a boolean) is refused with
+// 422 description_not_string, before the direct-booking check and before the repository. null stays allowed: it clears the field.
+// Until this ruling these rows pinned the opposite (RECORD 45803: the value reached the repository as it came; fact 46048: 'Array' stored).
 foreach ([['int 5', 5], ['float 1.5', 1.5], ['true', true], ['false', false], ['an empty array', []],
     ['an array holding a 500-character string', ['x' => str_repeat('a', 500)]]] as [$label, $value]) {
     foreach (['store', 'update'] as $action) {
-        $expect("desc/{$action} pinned, see RECORD 45803: a non-string description ({$label}) is not judged, the repository receives it as it came",
-            $descriptionOutcome($drive($action, $withDescription($action, $value)), $value), $saved[$action]);
+        $expect("desc/{$action} a non-string description ({$label}) is refused: 422 description_not_string, nothing written",
+            $descriptionOutcome($drive($action, $withDescription($action, $value)), $value), $notText);
     }
 }
+
+// A non-text description is judged before the direct-booking check and before any write, in store and update.
+$o = $drive('store', ['resource_id' => 20, 'name' => 'Kantina', 'description' => 5]);
+$expect('desc/store a non-text description on a resource WITH direct booking: description_not_string first, not resource_has_direct_booking, nothing written',
+    [$o['status'], $o['body']['code'] ?? null, $o['writes']], [422, 'description_not_string', []]);
+$o = $drive('update', ['resource_id' => 20, 'description' => 5]);
+$expect('desc/update a non-text description moving onto a resource WITH direct booking: description_not_string first, nothing written',
+    [$o['status'], $o['body']['code'] ?? null, $o['writes']], [422, 'description_not_string', []]);
+$o = $drive('update', json_encode(['description' => ['x' => 'a']]));
+$expect('desc/update over the wire, a JSON object as the description: 422 description_not_string, nothing written',
+    [$o['status'], $o['body']['code'] ?? null, $o['writes']], [422, 'description_not_string', []]);
+// The model's rule on its own. method_exists keeps these rows RED, not a fatal error, on a base that has no such method.
+$notTextOf = static fn($v) => method_exists(Hospitality::class, 'descriptionNotText') ? Hospitality::descriptionNotText($v) : 'method missing';
+$expect('desc/model: null is NOT refused (it clears the field)', $notTextOf(null), false);
+$expect('desc/model: a string and the empty string are NOT refused', [$notTextOf('a'), $notTextOf('')], [false, false]);
+$expect('desc/model: an int, a float, true, false and an array are each refused',
+    [$notTextOf(5), $notTextOf(1.5), $notTextOf(true), $notTextOf(false), $notTextOf([])], [true, true, true, true, true]);
+// The other rule keeps its own job: descriptionTooLong measures LENGTH, so a non-string is not "too long" (it is judged by its type).
+$expect('desc/model: descriptionTooLong judges LENGTH only: a non-string is not "too long" (descriptionNotText judges the type)',
+    [Hospitality::descriptionTooLong(5), Hospitality::descriptionTooLong([]), Hospitality::descriptionTooLong(false)], [false, false, false]);
 
 // The key is judged only when it is there.
 $storedLong = $newWorld(['row' => ['description' => str_repeat('a', 128)]]); // an offer saved before the limit existed
@@ -975,6 +994,15 @@ $expect('remote/b source order: toggleRemoteLocation() asks the direct-booking g
     $firstBefore($toggleSource, 'directBookingGuard->checkRemoteLocation(', 'openOrdersAtRemoteRefusal('), true);
 $expect('remote/b source order: toggleRemoteLocation() asks the open-order rule before the repository write',
     $firstBefore($toggleSource, 'openOrdersAtRemoteRefusal(', 'repository->toggleRemoteLocation('), true);
+
+// (c) source order: the description rule is asked after the resource check, before the direct-booking guard and before the write.
+$storeSource = $methodSource('store');
+$expect('desc/source order: store() asks the description rule after the resource check', $firstBefore($storeSource, 'repository->resourceExists(', 'self::descriptionRefused('), true);
+$expect('desc/source order: store() asks the description rule before the direct-booking guard', $firstBefore($storeSource, 'self::descriptionRefused(', 'directBookingGuard->checkHospitalityCreate('), true);
+$expect('desc/source order: store() asks the description rule before the repository write', $firstBefore($storeSource, 'self::descriptionRefused(', 'repository->create('), true);
+$expect('desc/source order: update() asks the description rule after the resource check', $firstBefore($updateSource, 'repository->resourceExists(', 'self::descriptionRefused('), true);
+$expect('desc/source order: update() asks the description rule before the direct-booking guard', $firstBefore($updateSource, 'self::descriptionRefused(', 'directBookingGuard->checkHospitalityUpdate('), true);
+$expect('desc/source order: update() asks the description rule before the repository write', $firstBefore($updateSource, 'self::descriptionRefused(', 'repository->update('), true);
 
 // The doubles are meant to leave nothing to the real database. Db::getInstance() would create the singleton (in a CLI with no
 // configuration that is a silent in-memory SQLite, which answers every query with nothing), so a path that reached for it

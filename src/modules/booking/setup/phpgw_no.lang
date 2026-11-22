@@ -1414,3 +1414,4 @@ allocation_change_mail_date	booking	no	Dato
 allocation_change_mail_applicant_comment	booking	no	Kommentar fra søker
 remote_location_is_main_resource	booking	no	Ressursen «%1» er hovedressursen for denne bevertningen og kan ikke samtidig være ekstern lokasjon.
 remote_location_has_open_orders	booking	no	Lokasjonen kan ikke fjernes eller settes inaktiv så lenge det finnes åpne bestillinger som skal leveres dit (%1). Avlys dem eller sett dem som levert først.
+hospitality_description_not_string	booking	no	Beskrivelsen må være tekst.

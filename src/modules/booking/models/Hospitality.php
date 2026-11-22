@@ -36,6 +36,18 @@ class Hospitality
     }
 
     /**
+     * Is this description present but not text (an array, a number, a boolean)? Such a value cannot be stored as a
+     * description, so it is refused rather than handed to the repository. NULL is allowed: it clears the field
+     * (operator ruling, 47045 (c)).
+     *
+     * @param mixed $description
+     */
+    public static function descriptionNotText($description): bool
+    {
+        return $description !== null && !is_string($description);
+    }
+
+    /**
      * @OA\Property(type="integer")
      * @Expose
      */

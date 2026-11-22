@@ -1413,3 +1413,4 @@ allocation_change_mail_date	booking	en	Date
 allocation_change_mail_applicant_comment	booking	en	Comment from the applicant
 remote_location_is_main_resource	booking	en	The resource “%1” is the main resource of this hospitality and cannot also be a remote location.
 remote_location_has_open_orders	booking	en	The delivery location cannot be removed or switched off while open orders are to be served there (%1). Cancel them or mark them as delivered first.
+hospitality_description_not_string	booking	en	The description must be text.

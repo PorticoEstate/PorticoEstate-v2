@@ -23,7 +23,7 @@ import AsyncCreatableSelect from "react-select/async-creatable";
 import RegulationDocuments from './regulation-documents';
 import {ExternalPaymentEligibilityResponse} from "@/service/api/api-utils";
 import VippsCheckoutButton from './VippsCheckoutButton';
-import {IApplication} from "@/service/types/api/application.types";
+import {IApplication, RecurringInfoUtils} from "@/service/types/api/application.types";
 import {BrregOrganization, IOrganization} from "@/service/types/api/organization.types";
 import Dialog from '@/components/dialog/mobile-dialog';
 import BillingPartyCards, {BillingPartyOption} from './billing-party-cards';
@@ -642,7 +642,7 @@ const BillingForm: FC<BillingFormProps> = ({
 	// Recurring applications with an organisation keep it when the applications are sent in
 	// (ApplicationService::updateApplicationsWithContactInfo), whatever is chosen here
 	const recurringOrganizationApplications = useMemo(() => applications.filter(app =>
-		!!app.recurring_info && app.recurring_info.trim() !== '' && app.customer_identifier_type === 'organization_number'
+		RecurringInfoUtils.isServerNonEmpty(app.recurring_info) && app.customer_identifier_type === 'organization_number'
 	), [applications]);
 
 	const recurringOrganizationLabel = (app: IApplication) => {

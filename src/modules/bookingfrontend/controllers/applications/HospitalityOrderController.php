@@ -320,7 +320,8 @@ class HospitalityOrderController
 	 * officer. Called after the write has gone through; neither part can fail the request.
 	 *
 	 * No bb_application row is touched (the application process is frozen) and no application
-	 * comment is written (that path mails the whole group and bumps frontend_modified).
+	 * comment is written (that path mails the whole group and bumps frontend_modified); the admin
+	 * «Historikk» shows these entries by reading them (booking ApplicationController::showComments).
 	 * `modified` («Sist endret») is deliberately left alone: the operator ruled 2026-11-23 (task
 	 * 47036) that a catering change does not move it — it also dates the applicant's own status
 	 * timeline and the anonymiser's retention clock.
@@ -378,6 +379,8 @@ class HospitalityOrderController
 					'activity_name' => $this->activityName(isset($application['activity_id']) ? (int)$application['activity_id'] : null),
 					'organization_name' => $application['customer_organization_name'] ?? null,
 					'case_officer_id' => (int)($application['case_officer_id'] ?? 0),
+					// D1: with no case officer to mail, the building's case officers are.
+					'building_id' => (int)($application['building_id'] ?? 0),
 				],
 				'order' => [
 					'id' => (int)$after['id'],
@@ -386,9 +389,35 @@ class HospitalityOrderController
 				'fallback_date' => $this->orderRepo->getEarliestApplicationDate($applicationId),
 				'diff' => $diff,
 				'summary' => $kind === CateringMailRenderer::KIND_CHANGED ? [] : HospitalityOrderDiff::summary($after),
+				'changed_at' => (new \DateTimeImmutable('now', new \DateTimeZone(self::LOCAL_TIMEZONE)))->format(\DateTimeInterface::ATOM),
+				'context' => CateringChangeText::contextOf($after),
+				'cancel_deadline' => $kind === CateringMailRenderer::KIND_CANCELLED ? null : $this->cancelDeadline($application, $after),
 			]);
 		} catch (\Throwable $e) {
 			error_log("Catering change notification failed for order {$after['id']}: " . $e->getMessage());
+		}
+	}
+
+	/**
+	 * The order's cancellation deadline for the officer's mail (GH #1425 S5): the `until` of the
+	 * guard's cancel verdict, the same value the applicant's own order list shows (actionsFor). Null
+	 * when the guard gives none (no deadline basis, billed, paid at checkout), or when it cannot be
+	 * worked out — the mail then simply has no deadline line.
+	 */
+	private function cancelDeadline(array $application, array $order): ?string
+	{
+		try {
+			$until = $this->verdict(
+				HospitalityOrderGuard::ACTION_CANCEL,
+				$application,
+				$order,
+				$this->hospitalityRow((int)($order['hospitality_id'] ?? 0)),
+				$this->toVenueTime($order['serving_time_iso'] ?? null) ?? $this->earliestApplicationDate((int)$application['id'])
+			)['until'];
+			return $until?->format(\DateTimeInterface::ATOM);
+		} catch (\Throwable $e) {
+			error_log("Catering change mail: no cancellation deadline for order {$order['id']}: " . $e->getMessage());
+			return null;
 		}
 	}
 

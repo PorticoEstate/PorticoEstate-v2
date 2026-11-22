@@ -455,6 +455,40 @@ class HospitalityOrderRepository
     }
 
     /**
+     * Every "changed by the applicant" entry on the application's orders, newest first, each with
+     * the order it belongs to (hospitality_name, serving_time_iso, location_name), for the admin
+     * «Historikk» (GH #1425 S4). Read-only: the Historikk shows these, nothing is copied into
+     * bb_application_comment.
+     *
+     * @return list<array> changelog rows; changed_at as an ISO-8601 instant in venue time and
+     *                     old_value / new_value decoded
+     */
+    public function getApplicantChangesByApplication(int $applicationId): array
+    {
+        $sql = "SELECT cl.id, cl.order_id, cl.changed_at, cl.comment, cl.old_value, cl.new_value,
+                       bu.name AS booking_user_name,
+                       h.name AS hospitality_name, r.name AS location_name, o.serving_time_iso
+                FROM bb_hospitality_order_changelog cl
+                JOIN bb_hospitality_order o ON o.id = cl.order_id
+                LEFT JOIN bb_hospitality h ON h.id = o.hospitality_id
+                LEFT JOIN bb_resource r ON r.id = o.location_resource_id
+                LEFT JOIN bb_user bu ON bu.id = cl.booking_user_id
+                WHERE o.application_id = :application_id
+                  AND cl.change_type = 'applicant_change'
+                ORDER BY cl.changed_at DESC, cl.id DESC";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([':application_id' => $applicationId]);
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        foreach ($rows as &$row) {
+            $row['changed_at'] = self::utcToVenueIso($row['changed_at']);
+            $row['old_value'] = $row['old_value'] ? json_decode($row['old_value'], true) : null;
+            $row['new_value'] = $row['new_value'] ? json_decode($row['new_value'], true) : null;
+        }
+        unset($row);
+        return $rows;
+    }
+
+    /**
      * Has this order already been paid for in checkout? True when its hospitality is part of the
      * checkout payment AND the application has a live (not voided / refunded) Vipps payment.
      * The same predicate create_purchase_orders_from_hospitality() uses to leave such orders out

@@ -170,6 +170,57 @@ final class CateringChangeText
         ];
     }
 
+    /**
+     * The application's «Historikk» items for the applicant's catering entries (S4), shaped like the
+     * serialized ApplicationComment rows they are shown among — time, author, comment, type — plus
+     * `type_label` («Bevertning») and the `changelog_id` they come from. No comment row is written
+     * for them: that table is listed on the applicant's legacy page and counted by
+     * getCommentStats, and these are the officer's view of the case entries.
+     *
+     * @param list<array> $rows HospitalityOrderRepository::getApplicantChangesByApplication()
+     * @return list<array{id: null, changelog_id: int, time: ?string, author: string, comment: string, type: string, type_label: string}>
+     */
+    public static function historyItems(array $rows, string $lang): array
+    {
+        $items = [];
+        foreach ($rows as $row) {
+            $old = is_array($row['old_value'] ?? null) ? $row['old_value'] : [];
+            $new = is_array($row['new_value'] ?? null) ? $row['new_value'] : [];
+            $items[] = [
+                'id' => null,
+                'changelog_id' => (int)$row['id'],
+                'time' => $row['changed_at'] ?? null,
+                'author' => CateringText::decode($row['booking_user_name'] ?? ''),
+                'comment' => self::historyLine(
+                    ['kind' => self::kindOf($row['comment'] ?? null, $old, $new), 'new' => $new],
+                    self::contextOf($row),
+                    $lang
+                ),
+                'type' => 'catering',
+                'type_label' => lang('booking.catering_history_tag'),
+            ];
+        }
+        return $items;
+    }
+
+    /**
+     * Comments and catering items as one list, newest first — the order the Historikk shows. The
+     * sort is stable: at the same instant a comment stays ahead of a catering item.
+     */
+    public static function mergeHistory(array $comments, array $items): array
+    {
+        $all = array_merge($comments, $items);
+        $at = static function (array $row): int {
+            try {
+                return (new \DateTimeImmutable((string)($row['time'] ?? '')))->getTimestamp();
+            } catch (\Exception $e) {
+                return 0;
+            }
+        };
+        usort($all, static fn(array $a, array $b): int => $at($b) <=> $at($a));
+        return $all;
+    }
+
     /** «Avbestillingsfrist: 3. juni 2029 kl. 15:00» for an instant. */
     public static function deadlineLine(\DateTimeInterface $until, string $lang): string
     {

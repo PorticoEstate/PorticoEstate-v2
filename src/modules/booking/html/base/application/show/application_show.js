@@ -1995,7 +1995,8 @@
 		comments.forEach(function (comment) {
 			var typeTag = '';
 			if (comment.type && comment.type !== 'comment') {
-				typeTag = ' <span class="booking-tag ds-tag" data-color="neutral">' + esc(comment.type) + '</span>';
+				// A catering change by the applicant (GH #1425) comes with its tag already translated.
+				typeTag = ' <span class="booking-tag ds-tag" data-color="neutral">' + esc(comment.type_label || comment.type) + '</span>';
 			}
 			// The element the comment is about (ref #1392), and for the case officer a
 			// reply on that same element through the comment modal.

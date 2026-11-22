@@ -35,6 +35,7 @@ define('PHPGW_SERVER_ROOT', $root . '/src/modules');
 // supply the missing class.
 $missingFiles = [];
 foreach ([
+    'phpgwapi/services/PreferencesReader.php',
     'booking/services/HospitalityDeadlineCalculator.php',
     'booking/services/CateringText.php',
     'booking/services/HospitalityOrderDiff.php',
@@ -65,6 +66,10 @@ use App\modules\bookingfrontend\services\applications\CateringChangeNotifier;
 use App\modules\booking\repositories\HospitalityOrderRepository;
 use App\modules\booking\services\TranslationLangSwitch;
 use App\modules\bookingfrontend\controllers\applications\HospitalityOrderController;
+use App\modules\booking\repositories\HospitalityRepository;
+use App\modules\booking\services\HospitalityOrderGuard;
+use App\modules\phpgwapi\services\Preferences;
+use App\modules\phpgwapi\services\Settings;
 
 // --- a stand-in for the global lang(), backed by the real .lang files --------------------------------
 $GLOBALS['__lang_now'] = 'no';
@@ -242,6 +247,10 @@ $d = HospitalityOrderDiff::between($order([$taxed('Kaffe', '2', '45', '25')]), $
 $same('D2: a line re-taxed is a change of that line', [$d['old']['line:Kaffe'] ?? null, $d['new']['line:Kaffe'] ?? null], ['2 stk × 45.00 = 90.00 [VAT 25% incl 112.50]', '2 stk × 45.00 = 90.00 [VAT 15% incl 103.50]']);
 // øre rounding: once per line, on the line amount (the client's inclOre), never on the unit price × quantity
 $same('D2: incl. rounding is once per line (3 × 136.99 at 25 % = 410.97 + 102.74)', HospitalityOrderDiff::between(null, $order([$taxed('X', '3', '136.99', '25')]))['new']['total'] ?? null, '410.97 [incl 513.71]');
+// ...and the TOTAL is the sum of the lines so rounded, as billing writes them (booking
+// class.async_task_update_reservation_state.inc.php :202-205, bb_purchase_order_line.tax numeric(10,2), rounded
+// half away from zero per line): two lines of 0.10 at 25 % carry 0.03 + 0.03 VAT, not the 0.05 of the total.
+$same('D2: the incl. total sums per-line-rounded VAT (0.20 + 0.06), not VAT on the total (0.25)', HospitalityOrderDiff::between(null, $order([$taxed('A', '1', '0.10', '25'), $taxed('B', '1', '0.10', '25')]))['new']['total'] ?? null, '0.20 [incl 0.26]');
 
 $hasParse = method_exists(HospitalityOrderDiff::class, 'parseLine') && method_exists(HospitalityOrderDiff::class, 'parseTotal');
 $check('S2: HospitalityOrderDiff can parse a stored line and total back', $hasParse);
@@ -448,6 +457,9 @@ $payload = static fn(string $kind, array $over = []): array => array_replace_rec
     'diff' => HospitalityOrderDiff::between($order([$line('Kaffe', '3', '45')]), $order([$line('Kaffe', '4', '45')])),
     'summary' => HospitalityOrderDiff::summary($order([$line('Kaffe', '3', '45')])),
     'links' => ['case' => 'https://x.test/booking/view/applications/84091', 'order' => 'https://x.test/booking/view/hospitality-orders/7?application_id=84091&b=2'],
+    'changed_at' => '2026-11-08T09:15:00+01:00',
+    'context' => ['hospitality' => 'Kantina', 'serving_time' => '10.11.2026 14:00', 'location' => 'Storsal'],
+    'cancel_deadline' => '2026-11-09T14:00:00+01:00',
 ], $over);
 
 $switch = new FakeLangSwitch('en'); // what a citizen browsing with selected_lang=en leaves behind
@@ -456,12 +468,12 @@ $renderer = new CateringMailRenderer($switch);
 $GLOBALS['__lang_missing'] = [];
 $mail = $renderer->render($payload('changed'), 'no');
 $same('the officer is Norwegian although the acting session is English: subject', $mail['subject'], 'Endret bevertning: Sommerfest, 10.11.2026');
-$contains('...and the body says Fra/Til', $mail['body'], '<th align="left">Fra</th>');
+$contains('...and the body is the Endringslogg\'s words, in Norwegian', $mail['body'], '<b>Endret av søker — Kari Nordmann, 8. november 2026 kl. 09:15</b>');
+$contains('...with the order it is about', $mail['body'], 'Kantina · 10. november 2026 kl. 14:00 · Storsal');
 $same('the language is put back afterwards', $switch->current(), 'en');
 $same('...by swapping exactly there and back', $switch->calls, ['no', 'en']);
-$contains('the body shows the from value', $mail['body'], '3 stk × 45.00 = 135.00');
-$contains('the body shows the to value', $mail['body'], '4 stk × 45.00 = 180.00');
-$contains('the body labels the article line with the article name', $mail['body'], '<td valign="top">Kaffe</td>');
+$contains('the body shows the change FROM -> TO, labelled with the article name (no rate stored: ex VAT, marked)', $mail['body'], '<li>Kaffe: 3 stk × 45 kr = 135 kr ekskl. mva → 4 stk × 45 kr = 180 kr ekskl. mva</li>');
+$lacks('the old FROM/TO table is gone', $mail['body'], '<table');
 $contains('the case link is a link (escaped once in the attribute)', $mail['body'], 'href="https://x.test/booking/view/hospitality-orders/7?application_id=84091&amp;b=2"');
 $same('no translation key was missing while rendering (changed, no)', $GLOBALS['__lang_missing'], []);
 
@@ -475,10 +487,10 @@ foreach (['no', 'nn', 'en'] as $l) {
 }
 $en = $renderer->render($payload('changed'), 'en');
 $same('English officer, subject', $en['subject'], 'Catering changed: Sommerfest, 10.11.2026');
-$contains('English officer, body', $en['body'], '<th align="left">From</th>');
+$contains('English officer, body', $en['body'], '<b>Changed by the applicant — Kari Nordmann, 8 November 2026 at 09:15</b>');
 $nn = $renderer->render($payload('cancelled'), 'nn');
 $same('Nynorsk officer, cancelled subject', $nn['subject'], 'Avbestilt bevertning: Sommerfest, 10.11.2026');
-$contains('a cancelled order lists what it contained', $nn['body'], '3 stk × 45.00 = 135.00');
+$contains('a cancelled order lists what it contained', $nn['body'], '<li>Kaffe: 3 stk × 45 kr = 135 kr ekskl. mva</li>');
 $added = $renderer->render($payload('added'), 'no');
 $same('added subject', $added['subject'], 'Ny bevertning: Sommerfest, 10.11.2026');
 
@@ -497,13 +509,22 @@ $lacks('R1 body: no half-decoded paren', $enc['body'], '&#40;');
 // hostile citizen text is inert
 $hostile = $renderer->render($payload('changed', [
     'actor' => '<img src=x onerror=alert(1)>',
-    'diff' => ['rows' => [['key' => 'comment', 'label' => null, 'from' => '', 'to' => '<script>alert(1)</script> <a href="http://evil">x</a>']]],
+    'diff' => ['rows' => [['key' => 'comment', 'label' => null, 'from' => '', 'to' => '<script>alert(1)</script> <a href="http://evil">x</a>']],
+        'old' => [], 'new' => ['comment' => '<script>alert(1)</script> <a href="http://evil">x</a>']],
 ]), 'no');
 $lacks('a <script> in a comment is not live', $hostile['body'], '<script>');
 $contains('...it is shown as text', $hostile['body'], '&lt;script&gt;alert(1)&lt;/script&gt;');
 $lacks('an <a href> in a comment is not live', $hostile['body'], '<a href="http://evil">');
 $lacks('an <img> in the actor name is not live', $hostile['body'], '<img src=x');
 $lacks('a hostile value cannot add a header line to the subject', $renderer->render($payload('changed', ['application' => ['name' => "x\r\nBcc: a@b.c"]]), 'no')['subject'], "\n");
+// The order line of the log carries stored names (kitchen, delivery place): inert as well.
+$hostileCtx = $renderer->render($payload('changed', ['context' => ['hospitality' => '<img src=y onerror=alert(2)>', 'location' => '<b>x</b>']]), 'no');
+$lacks('an <img> in the order line is not live', $hostileCtx['body'], '<img src=y');
+$contains('...it is shown as text', $hostileCtx['body'], '&lt;img src=y onerror=alert(2)&gt; · 10. november 2026 kl. 14:00 · &lt;b&gt;x&lt;/b&gt;');
+// The template's own rule, checked: no value is ever output raw (a deadline or a translated word included).
+$mailTpl = (string)file_get_contents($root . '/src/modules/booking/html/base/emails/catering_changed_by_applicant.twig');
+$same('the mail template has no |raw and no |safe_html anywhere', preg_match_all('/\|\s*(raw|safe_html)\b/', preg_replace('/\{#.*?#\}/s', '', $mailTpl)), 0);
+$check('control: that pattern finds a |raw', preg_match('/\|\s*(raw|safe_html)\b/', '{{ deadline|raw }}') === 1);
 
 // special_requirements: the applicant's note to the kitchen, written by the applicant and so as hostile as a comment.
 // Driven through the REAL diff, summary and template, in every language, for an addition, a change and a clearing.
@@ -533,7 +554,7 @@ $srInertAsserts = static function (string $tag, string $body, string $l) use ($c
     $contains("special_requirements {$tag} {$l}: shown as text (a)", $body, '&lt;a href=&quot;http://evil&quot;&gt;x&lt;/a&gt;');
     $lacks("special_requirements {$tag} {$l}: escaped exactly once", $body, '&amp;lt;');
     $label = $GLOBALS['__lang_table'][$l]['booking']['catering_field_special_requirements'] ?? '(missing)';
-    $contains("special_requirements {$tag} {$l}: the row carries its translated label «{$label}»", $body, '<td valign="top">' . $label . '</td>');
+    $contains("special_requirements {$tag} {$l}: the line carries its translated label «{$label}»", $body, '<li>' . $label . ': ');
 };
 
 foreach (['no', 'nn', 'en'] as $l) {
@@ -551,7 +572,7 @@ foreach (['no', 'nn', 'en'] as $l) {
     // The clearing: FROM holds the (escaped) text, TO reads as the "nothing" dash.
     $m = $renderer->render(array_merge($payload('changed'), ['diff' => $srClear]), $l);
     $contains("special_requirements clear {$l}: FROM is the escaped text", $m['body'], '&lt;img src=x onerror=alert(1)&gt;');
-    $contains("special_requirements clear {$l}: TO reads as nothing", $m['body'], '<td valign="top">' . $GLOBALS['__lang_table'][$l]['booking']['catering_mail_nothing'] . '</td>');
+    $contains("special_requirements clear {$l}: TO reads as nothing", $m['body'], ' → ' . $GLOBALS['__lang_table'][$l]['booking']['catering_mail_nothing'] . '</li>');
 }
 
 // The failing arm: the SAME template and payload with autoescape OFF must put the hostile tags live, otherwise the
@@ -592,6 +613,23 @@ try {
 }
 $check('a throwing render does propagate (the notifier is what contains it)', $threw);
 $same('...and the language is back to the acting one', [$sw2->current(), $sw2->calls], ['en', ['no', 'en']]);
+
+// ======================================================================================================
+// 3b. S5 — the cancellation deadline line, in the OFFICER's language (pe-pm 46234 condition 3)
+// ======================================================================================================
+$dlSwitch = new FakeLangSwitch('en');   // the citizen browses in English
+$dl = new CateringMailRenderer($dlSwitch);
+$m = $dl->render($payload('changed', ['cancel_deadline' => '2029-06-02T15:00:00+02:00']), 'no');
+$contains('S5: the deadline, in the officer\'s Norwegian although the acting session is English', $m['body'], '<b>Avbestillingsfrist: 2. juni 2029 kl. 15:00</b>');
+$lacks('S5: ...no English in it (the session language would have given «June»)', $m['body'], 'June');
+$same('S5: ...and the acting language is back afterwards', $dlSwitch->current(), 'en');
+$contains('S5: an English officer', $dl->render($payload('added', ['cancel_deadline' => '2029-06-02T15:00:00+02:00']), 'en')['body'], '<b>Cancellation deadline: 2 June 2029 at 15:00</b>');
+$contains('S5: a Nynorsk officer', $dl->render($payload('changed', ['cancel_deadline' => '2029-06-02T15:00:00+02:00']), 'nn')['body'], '<b>Avbestillingsfrist: 2. juni 2029 kl. 15:00</b>');
+$contains('S5: an instant in UTC is shown in venue time', $dl->render($payload('changed', ['cancel_deadline' => '2029-06-02T13:00:00+00:00']), 'no')['body'], 'Avbestillingsfrist: 2. juni 2029 kl. 15:00');
+$lacks('S5: no deadline line on a cancellation', $dl->render($payload('cancelled', ['cancel_deadline' => '2029-06-02T15:00:00+02:00']), 'no')['body'], 'Avbestillingsfrist');
+$lacks('S5: no deadline line when the guard gives none', $dl->render(array_merge($payload('changed'), ['cancel_deadline' => null]), 'no')['body'], 'Avbestillingsfrist');
+$lacks('S5: an unreadable deadline is left out, not guessed', $dl->render($payload('changed', ['cancel_deadline' => 'not a time']), 'no')['body'], 'Avbestillingsfrist');
+$GLOBALS['__lang_now'] = 'en';
 
 // ======================================================================================================
 // 4. CateringChangeNotifier — recipient rules and containment
@@ -637,6 +675,30 @@ class TestNotifier extends CateringChangeNotifier
             throw $this->deliverThrows;
         }
         $this->delivered[] = [$to, $subject, $body];
+    }
+
+    // D4 switch and D1 group: only the database reads are replaced; recipients() itself is the real one.
+    public bool $enabled = true;
+    public array $groupIds = [];
+    public array $prefRows = [];
+    public array $groupCalls = [];
+    public array $prefCalls = [];
+
+    protected function notificationsEnabled(): bool
+    {
+        return $this->enabled;
+    }
+
+    protected function loadBuildingCaseOfficerIds(int $buildingId): array
+    {
+        $this->groupCalls[] = $buildingId;
+        return $this->groupIds;
+    }
+
+    protected function readCommonPreferenceRows(array $accountIds): array
+    {
+        $this->prefCalls[] = $accountIds;
+        return $this->prefRows;
     }
 }
 
@@ -709,7 +771,166 @@ try {
     $threw = true;
 }
 $check('containment: the send throws a TypeError: notify does not throw', !$threw);
-$contains('...and the failure is logged, not lost', $logTail(), 'failed: smtp');
+$contains('...and the failure is logged, not lost, by the send\'s own catch', $logTail(), 'Catering change mail for application 84091 failed: smtp');
+
+// ======================================================================================================
+// 4c. D1 — no case officer to mail: the building's case officers; D4 — the switch (task 47036)
+// ======================================================================================================
+$pref = static fn(int|string $owner, array $json): array => ['preference_owner' => $owner, 'preference_json' => json_encode($json, JSON_UNESCAPED_UNICODE)];
+$subjectIn = static fn(string $l, string $kind = 'changed'): string => str_replace(['%1', '%2'], ['Sommerfest', '10.11.2026'], $GLOBALS['__lang_table'][$l]['booking']["catering_mail_subject_{$kind}"]);
+$groupNotifier = static function (array $ids, array $rows): TestNotifier {
+    $n = new TestNotifier(new CateringMailRenderer(new FakeLangSwitch('en')));
+    $n->groupIds = $ids;
+    $n->prefRows = $rows;
+    return $n;
+};
+$noOfficer = $withOfficer(0, ['application' => ['building_id' => 10]]);
+
+$n = $groupNotifier([3106, 3097], [$pref(-2, ['lang' => 'no']), $pref(3097, ['email' => 'a@example.test', 'lang' => 'nn']), $pref(3106, ['email' => 'b@example.test', 'lang' => 'en'])]);
+$same('D1: no case officer -> one mail per case officer on the building', [$n->notify($noOfficer), count($n->delivered)], [true, 2]);
+$same('D1: ...asked about the application\'s own building', $n->groupCalls, [10]);
+$same('D1: ...lowest account id first, each to their own address', array_column($n->delivered, 0), ['a@example.test', 'b@example.test']);
+$same('D1: ...each in their OWN language (nn, en), not the acting session\'s', array_column($n->delivered, 1), [$subjectIn('nn'), $subjectIn('en')]);
+$same('D1: ...their preferences read in ONE query for all of them', $n->prefCalls, [[3097, 3106]]);
+
+$n = $groupNotifier([3097, 3106], [$pref(-1, ['lang' => 'no']), $pref(3097, ['email' => 'a@example.test', 'lang' => 'nn']), $pref(3106, ['email' => 'b@example.test', 'lang' => 'en'])]);
+$n->notify($noOfficer);
+$same('D1: a FORCED language (owner -1) wins for every one of them', array_column($n->delivered, 1), [$subjectIn('no'), $subjectIn('no')]);
+
+$n = $groupNotifier([3097, 3106], [$pref(3097, ['email' => 'a@example.test']), $pref(3106, ['email' => 'b@example.test', 'lang' => 'xx'])]);
+$n->notify($noOfficer);
+$same('D1: no or an unsupported language -> Norwegian', array_column($n->delivered, 1), [$subjectIn('no'), $subjectIn('no')]);
+
+$n = $groupNotifier([4001, 4002, 4003], [$pref(4001, ['email' => ' Felles@Example.test ', 'lang' => 'nn']), $pref(4002, ['email' => 'felles@example.test', 'lang' => 'en']), $pref(4003, ['email' => 'c@example.test', 'lang' => 'en'])]);
+$n->notify($noOfficer);
+$same('dedup: two accounts with one address (case, spaces) -> ONE mail to it', array_column($n->delivered, 0), ['Felles@Example.test', 'c@example.test']);
+$same('dedup: ...in the language of the lowest account id', $n->delivered[0][1] ?? null, $subjectIn('nn'));
+
+$clearLog();
+$n = $groupNotifier([4001, 4002], [$pref(4001, ['email' => '']), $pref(4002, ['email' => 'not an address'])]);
+$same('D1: case officers without a usable address are skipped: no mail', [$n->notify($noOfficer), count($n->delivered)], [false, 0]);
+$contains('D1: ...and the log says so', $logTail(), "none of building 10's case officers has a usable email address");
+$clearLog();
+$n = $groupNotifier([], []);
+$same('D1: a building with no active case officer: no mail', [$n->notify($noOfficer), count($n->delivered), $n->prefCalls], [false, 0, []]);
+$contains('D1: ...and the log says so', $logTail(), 'building 10 has no active case officer');
+$n = $groupNotifier([3097], [$pref(3097, ['email' => 'a@example.test'])]);
+$same('D1: no building on the application: no mail, the group is not asked', [$n->notify($withOfficer(0)), $n->groupCalls], [false, []]);
+
+$n = $groupNotifier([3097], [$pref(3097, ['email' => 'a@example.test'])]);
+$n->officer = ['email' => 'officer@example.test', 'lang' => 'no'];
+$same('D1: a case officer WITH an address gets it alone; the group is never asked', [$n->notify($withOfficer(5, ['application' => ['building_id' => 10]])), array_column($n->delivered, 0), $n->groupCalls], [true, ['officer@example.test'], []]);
+
+$clearLog();
+$n = $groupNotifier([3097], [$pref(3097, ['email' => 'a@example.test', 'lang' => 'nn'])]);
+$n->officer = ['email' => '', 'lang' => 'en'];
+$same('47038 (1): a case officer WITHOUT a usable address -> the building\'s case officers instead', [$n->notify($withOfficer(9, ['application' => ['building_id' => 10]])), array_column($n->delivered, 0)], [true, ['a@example.test']]);
+$contains('47038 (1): ...and the log names the officer and the fallback', $logTail(), "case officer 9 of application 84091 has no usable email address; mailing the building's case officers instead");
+
+$n = $groupNotifier([3097], [$pref(3097, ['email' => 'a@example.test'])]);
+$n->enabled = false;
+$n->officer = ['email' => 'officer@example.test', 'lang' => 'no'];
+$same('D4 OFF: the officer path sends nothing', [$n->notify($withOfficer(5, ['application' => ['building_id' => 10]])), count($n->delivered)], [false, 0]);
+$same('D4 OFF: the group path sends nothing, and nobody is even looked up', [$n->notify($noOfficer), count($n->delivered), $n->groupCalls, $n->prefCalls], [false, 0, [], []]);
+$hasSwitch = method_exists(CateringChangeNotifier::class, 'switchIsOn') && defined(CateringChangeNotifier::class . '::SWITCH_KEY');
+$check('D4: the notifier has the switch', $hasSwitch);
+if ($hasSwitch) {
+    $same('D4: absent / empty / "1" are ON, the stored "0" is OFF',
+        array_map([CateringChangeNotifier::class, 'switchIsOn'], [null, '', '1', 'True', '0', ' 0 ']),
+        [true, true, true, true, false, false]);
+    $same('D4: the key the mail settings page writes', constant(CateringChangeNotifier::class . '::SWITCH_KEY'), 'notify_case_officer_on_catering_change');
+}
+
+// one recipient whose mail cannot be composed does not cost the others theirs
+$nnThrows = new class {
+    public function render(string $t, array $v): string
+    {
+        if ($GLOBALS['__lang_now'] === 'nn') {
+            throw new \TypeError('nn template');
+        }
+        return 'ok';
+    }
+};
+$n = new TestNotifier(new CateringMailRenderer(new FakeLangSwitch('en'), $nnThrows));
+$n->groupIds = [3097, 3106];
+$n->prefRows = [$pref(3097, ['email' => 'a@example.test', 'lang' => 'nn']), $pref(3106, ['email' => 'b@example.test', 'lang' => 'en'])];
+$same('D1: the first recipient\'s mail fails to compose -> the second still gets theirs', [$n->notify($noOfficer), array_column($n->delivered, 0)], [true, ['b@example.test']]);
+// ...and the same for a send that fails (where the SAPI cannot fork, the sends run one after the other)
+$firstSendFails = new class(new CateringMailRenderer(new FakeLangSwitch('en'))) extends TestNotifier {
+    protected function deliver(string $to, string $subject, string $body): void
+    {
+        if ($to === 'a@example.test') {
+            throw new \TypeError('smtp a');
+        }
+        parent::deliver($to, $subject, $body);
+    }
+};
+$firstSendFails->groupIds = [3097, 3106];
+$firstSendFails->prefRows = [$pref(3097, ['email' => 'a@example.test']), $pref(3106, ['email' => 'b@example.test'])];
+$same('D1: the first recipient\'s send fails -> the second is still sent theirs', [$firstSendFails->notify($noOfficer), array_column($firstSendFails->delivered, 0)], [true, ['b@example.test']]);
+
+// The SQL of the two group reads (static: they need a database). The role, the building, ACTIVE accounts;
+// the preferences of ALL of them plus the forced and default rows, in one statement.
+$notifierSrc = (string)file_get_contents($root . '/src/modules/bookingfrontend/services/applications/CateringChangeNotifier.php');
+foreach (["p.object_type = 'building'", 'p.object_id = :building_id', "p.role = 'case_officer'", "a.account_status = 'A'", 'preference_owner IN (-1, -2', "REPLACE(preference_app, ' ', '') = 'common'"] as $needle) {
+    $contains("D1 SQL: «{$needle}»", $notifierSrc, $needle);
+}
+
+// IDENTITY on the group path (pe-pm 47038): the citizen's request reads N officers' preferences and must
+// still be the citizen's at the end. The stand-in CreateObject reproduces what the Preferences singleton
+// does to Settings['user'] (Preferences.php:48-55), so a group read that goes back to it is RED.
+$GLOBALS['__createobject_calls'] = [];
+if (!function_exists('CreateObject')) {
+    function CreateObject($class, $accountId = null)
+    {
+        $GLOBALS['__createobject_calls'][] = [$class, $accountId];
+        if ($class === 'phpgwapi.preferences' && $accountId) {
+            Preferences::getInstance()->account_id = $accountId;
+            Settings::getInstance()->update('user', ['account_id' => $accountId, 'preferences' => ['common' => ['lang' => 'no', 'email' => "officer{$accountId}@example.test"]]]);
+        }
+        return new class {
+            public function read(): array
+            {
+                return ['common' => ['email' => 'officer@example.test', 'lang' => 'no']];
+            }
+        };
+    }
+}
+$seedCitizen = static function (): void {
+    $settings = (new \ReflectionClass(Settings::class))->newInstanceWithoutConstructor();
+    (new \ReflectionProperty(Settings::class, 'settings'))->setValue($settings, ['user' => ['account_id' => 1022, 'preferences' => ['common' => ['lang' => 'en']]]]);
+    (new \ReflectionProperty(Settings::class, 'instance'))->setValue(null, $settings);
+    $prefs = (new \ReflectionClass(Preferences::class))->newInstanceWithoutConstructor();
+    $prefs->account_id = 1022;
+    (new \ReflectionProperty(Preferences::class, 'instance'))->setValue(null, $prefs);
+};
+$identity = static fn(): array => [Settings::getInstance()->get('user'), Preferences::getInstance()->account_id];
+
+$seedCitizen();
+$GLOBALS['__createobject_calls'] = [];
+$before = $identity();
+$n = $groupNotifier([3097, 3106], [$pref(3097, ['email' => 'a@example.test', 'lang' => 'nn']), $pref(3106, ['email' => 'b@example.test', 'lang' => 'no'])]);
+$same('identity (group path): both case officers are mailed', [$n->notify($noOfficer), count($n->delivered)], [true, 2]);
+$same('identity (group path): Settings[user] is byte-equal after notify()', $identity()[0], $before[0]);
+$same('identity (group path): ...and the Preferences singleton is still the citizen\'s', $identity()[1], $before[1]);
+$same('identity (group path): ...the legacy CreateObject(phpgwapi.preferences) was never called', $GLOBALS['__createobject_calls'], []);
+// RED control: the same notify(), with the group read going through the singleton as the legacy code did.
+$singletonGroup = new class(new CateringMailRenderer(new FakeLangSwitch('en'))) extends TestNotifier {
+    protected function readCommonPreferenceRows(array $accountIds): array
+    {
+        foreach ($accountIds as $id) {
+            CreateObject('phpgwapi.preferences', $id)->read();
+        }
+        return parent::readCommonPreferenceRows($accountIds);
+    }
+};
+$singletonGroup->groupIds = [3097, 3106];
+$singletonGroup->prefRows = [$pref(3097, ['email' => 'a@example.test']), $pref(3106, ['email' => 'b@example.test'])];
+$seedCitizen();
+$before = $identity();
+$singletonGroup->notify($noOfficer);
+$check('identity control: a group read through the singleton DOES change Settings[user] (the probe can fail)', $identity()[0] !== $before[0]);
+$seedCitizen();
 
 // ======================================================================================================
 // 4b. The time the officer reads on a case entry (found live: the admin pages showed it one hour early)
@@ -724,7 +945,7 @@ $same('case entry time: the instant is unchanged, only the zone is', (new \DateT
 
 // The two DB-bound readers of changed_at must both go through the conversion (static: they need a database to run).
 $repoSource = (string)file_get_contents($root . '/src/modules/booking/repositories/HospitalityOrderRepository.php');
-$same('both readers of changed_at convert it (getChangelog, getLastApplicantChanges)', preg_match_all('/self::utcToVenueIso\(\$row\[\'changed_at\'\]\)/', $repoSource), 2);
+$same('all three readers of changed_at convert it (getChangelog, getLastApplicantChanges, getApplicantChangesByApplication)', preg_match_all('/self::utcToVenueIso\(\$row\[\'changed_at\'\]\)/', $repoSource), 3);
 $check('control: the pattern is specific (it does not match a raw changed_at assignment)', preg_match_all('/self::utcToVenueIso\(\$row\[\'changed_at\'\]\)/', "\$out[1] = \$row['changed_at'];") === 0);
 
 // ======================================================================================================
@@ -860,7 +1081,70 @@ $repo = new StubOrderRepo();
 $n = new OrderingNotifier(new CateringMailRenderer(new FakeLangSwitch('no')));
 $n->repo = $repo;
 $record->invoke($makeController($repo, $n), 'changed', $application(0), $before, $after, 77);
-$same('controller path: no case officer -> entry yes, mail no', [count($repo->entries), count($n->delivered)], [1, 0]);
+$same('controller path: no case officer, no building -> entry yes, mail no', [count($repo->entries), count($n->delivered)], [1, 0]);
+
+// D1 through the controller: no case officer -> the controller hands the notifier the application's
+// building, and the building's case officers are mailed. The entry is written as before.
+$repo = new StubOrderRepo();
+$n = new OrderingNotifier(new CateringMailRenderer(new FakeLangSwitch('en')));
+$n->repo = $repo;
+$n->groupIds = [3097, 3106];
+$n->prefRows = [$pref(3097, ['email' => 'a@example.test', 'lang' => 'nn']), $pref(3106, ['email' => 'b@example.test'])];
+$record->invoke($makeController($repo, $n), 'changed', $application(0) + ['building_id' => 10], $before, $after, 77);
+$same('controller path D1: entry yes, and a mail to each of the building\'s case officers', [count($repo->entries), array_column($n->delivered, 0), $n->groupCalls], [1, ['a@example.test', 'b@example.test'], [10]]);
+$same('controller path D1: each in their own language', array_column($n->delivered, 1), [$subjectIn('nn'), $subjectIn('no')]);
+$repo = new StubOrderRepo();
+$n = new OrderingNotifier(new CateringMailRenderer(new FakeLangSwitch('en')));
+$n->repo = $repo;
+$n->enabled = false;
+$record->invoke($makeController($repo, $n), 'changed', $application(), $before, $after, 77);
+$same('controller path D4 OFF: the case entry is still written, no mail', [count($repo->entries), count($n->delivered)], [1, 0]);
+
+// S5 through the controller: the cancellation deadline in the mail is the guard's cancel verdict for the
+// order — the value the applicant's own order list shows (actionsFor) — with the REAL guard and calculator.
+// Serving 4 June 2029 15:00 venue time, cancellation 48 hours before, every day open -> 2 June 15:00.
+class StubHospitalityRepo extends HospitalityRepository
+{
+    public function __construct()
+    {
+    }
+
+    public function getById(int $id): ?array
+    {
+        return ['id' => $id, 'resource_cancellation_deadline_value' => 48, 'resource_cancellation_deadline_unit' => 'hours',
+            'order_by_time_value' => null, 'order_by_time_unit' => null, 'open_days' => 127];
+    }
+}
+class PaidNeverRepo extends StubOrderRepo
+{
+    public function isPaidAtCheckout(int $applicationId, int $hospitalityId): bool
+    {
+        return false;
+    }
+}
+$s5Controller = static function (StubOrderRepo $repo, CateringChangeNotifier $n) use ($makeController, $controllerRef): object {
+    $c = $makeController($repo, $n);
+    $controllerRef->getProperty('guard')->setValue($c, new HospitalityOrderGuard());
+    $controllerRef->getProperty('hospitalityRepo')->setValue($c, new StubHospitalityRepo());
+    return $c;
+};
+$s5After = $order([$line('Kaffe', '4', '45')], ['hospitality_id' => 5, 'serving_time_iso' => '2029-06-04 13:00:00']);
+$s5Before = $order([$line('Kaffe', '3', '45')], ['hospitality_id' => 5, 'serving_time_iso' => '2029-06-04 13:00:00']);
+foreach (['changed' => $s5Before, 'added' => null] as $kind => $b) {
+    $repo = new PaidNeverRepo();
+    $n = new OrderingNotifier(new CateringMailRenderer(new FakeLangSwitch('en')));
+    $n->repo = $repo;
+    $n->officer = ['email' => 'officer@example.test', 'lang' => 'no'];
+    $record->invoke($s5Controller($repo, $n), $kind, $application(), $b, $s5After, 77);
+    $contains("controller path S5 ({$kind}): the officer's mail carries the order's cancellation deadline, in Norwegian", $n->delivered[0][2] ?? '', '<b>Avbestillingsfrist: 2. juni 2029 kl. 15:00</b>');
+}
+$repo = new PaidNeverRepo();
+$n = new OrderingNotifier(new CateringMailRenderer(new FakeLangSwitch('en')));
+$n->repo = $repo;
+$n->officer = ['email' => 'officer@example.test', 'lang' => 'no'];
+$record->invoke($s5Controller($repo, $n), 'cancelled', $application(), $s5Before, $order([$line('Kaffe', '3', '45')], ['hospitality_id' => 5, 'serving_time_iso' => '2029-06-04 13:00:00', 'status' => 'cancelled']), 77);
+$check('controller path S5 (cancelled): one mail', count($n->delivered) === 1);
+$lacks('controller path S5 (cancelled): ...without a deadline line', $n->delivered[0][2] ?? '', 'Avbestillingsfrist');
 
 // FAILURE MUST NOT BREAK THE WRITE: the case entry stays, nothing throws
 foreach ([
@@ -952,6 +1236,99 @@ $same('the notifier has no catch (Exception ...)', preg_match_all('/catch\s*\(\s
 $check('the notifier catches Throwable twice: around the whole notification and inside the deferred send', preg_match_all('/catch\s*\(\s*\\\\Throwable\b/', $notifierSource) >= 2);
 $control = preg_match_all('/catch\s*\(\s*\\\\?Exception\b/', (string)file_get_contents($root . '/src/modules/bookingfrontend/controllers/applications/HospitalityOrderController.php'));
 $check('control: the same pattern DOES find catch (Exception in the existing controller', $control > 0, "found {$control}");
+
+// ======================================================================================================
+// 6. S4 — one «Historikk» line per applicant change, READ from the case entries (task 47036)
+// ======================================================================================================
+$hasHistory = $hasText && method_exists(CateringChangeText::class, 'historyItems') && method_exists(CateringChangeText::class, 'mergeHistory');
+$check('S4: the Historikk lines exist', $hasHistory);
+if ($hasHistory) {
+    $histRow = static fn(int $id, string $at, string $comment, ?array $old, ?array $new): array => [
+        'id' => $id, 'order_id' => 122, 'changed_at' => $at, 'comment' => $comment, 'old_value' => $old, 'new_value' => $new,
+        'booking_user_name' => 'Kari &amp; Ola', 'hospitality_name' => 'Fana kulturhus servering', 'location_name' => 'Anretning',
+        'serving_time_iso' => '2029-06-04 13:00:00',
+    ];
+    $rows = [
+        $histRow(13, '2026-11-18T12:10:00+01:00', 'Order cancelled by applicant via Min side', ['status' => 'pending'], ['status' => 'cancelled']),
+        $histRow(12, '2026-11-18T12:00:00+01:00', 'Order changed by applicant via Min side', ['serving_time' => '04.06.2029 13:00'], ['serving_time' => '04.06.2029 15:00']),
+        $histRow(11, '2026-11-18T11:38:00+01:00', 'Order added by applicant via Min side', null, ['hospitality' => 'Fana kulturhus servering', 'serving_time' => '04.06.2029 14:00', 'line:X' => '1 stk × 1.00 = 1.00']),
+    ];
+    $GLOBALS['__lang_now'] = 'no';
+    $GLOBALS['__lang_missing'] = [];
+    $items = CateringChangeText::historyItems($rows, 'no');
+    $same('S4: one line per entry, worded per kind, the order and its serving time', array_column($items, 'comment'), [
+        'Bevertning avbestilt — Fana kulturhus servering, 4. juni 2029 kl. 15:00. Endret av søker.',
+        'Bevertning endret — Fana kulturhus servering, 4. juni 2029 kl. 15:00. Endret av søker.',
+        'Bevertning lagt til — Fana kulturhus servering, 4. juni 2029 kl. 14:00. Endret av søker.',
+    ]);
+    $same('S4: shaped like the comments it is shown among, tagged «Bevertning»', [$items[0]['type'], $items[0]['type_label'], $items[0]['time'], $items[0]['changelog_id']], ['catering', 'Bevertning', '2026-11-18T12:10:00+01:00', 13]);
+    $same('S4: the author is the applicant, decoded (escaped once by the page)', $items[0]['author'], 'Kari & Ola');
+    $same('S4: no translation key missing (no)', $GLOBALS['__lang_missing'], []);
+    $GLOBALS['__lang_now'] = 'en';
+    $same('S4 en', CateringChangeText::historyItems([$rows[2]], 'en')[0]['comment'] ?? null, 'Catering added — Fana kulturhus servering, 4 June 2029 at 14:00. Changed by the applicant.');
+    $GLOBALS['__lang_now'] = 'nn';
+    $same('S4 nn', CateringChangeText::historyItems([$rows[1]], 'nn')[0]['comment'] ?? null, 'Bevertning endra — Fana kulturhus servering, 4. juni 2029 kl. 15:00. Endra av søkjar.');
+    $GLOBALS['__lang_now'] = 'no';
+
+    $comments = [
+        ['id' => 2, 'time' => '2026-11-18T11:05:00+00:00', 'author' => 'henning', 'comment' => 'Svar', 'type' => 'comment'],
+        ['id' => 1, 'time' => '2026-11-17T09:00:00+00:00', 'author' => 'Kari', 'comment' => 'Spørsmål', 'type' => 'comment'],
+    ];
+    $merged = CateringChangeText::mergeHistory($comments, $items);
+    // c2 at 11:05 UTC is 12:05 in Oslo: between the 12:00 and the 12:10 entry, though its clock reads earlier.
+    $same('S4: comments and catering lines in one list, newest first (instants, whatever the offset)',
+        array_map(static fn($r) => $r['changelog_id'] ?? 'c' . $r['id'], $merged), [13, 'c2', 12, 11, 'c1']);
+    $same('S4: no applicant entries -> the comments exactly as they were', CateringChangeText::mergeHistory($comments, []), $comments);
+}
+// The admin endpoint uses it, read-side only, and cannot be broken by it (static: it needs the app).
+$appCtlSrc = (string)file_get_contents($root . '/src/modules/booking/controllers/ApplicationController.php');
+$same('S4: showComments answers with the catering lines merged in', preg_match_all('/sendJSONResponse\(\$this->withCateringHistory\(\$id, \$comments\), 200, \$response\)/', $appCtlSrc), 1);
+$check('S4: ...and anything going wrong there leaves the comments as they were (catch Throwable)',
+    preg_match('/function withCateringHistory\(.*?catch \(\\\\Throwable \$e\) \{\s*error_log\("Catering history left out.*?return \$comments;/s', $appCtlSrc) === 1);
+foreach (['booking/services/CateringChangeText.php', 'booking/repositories/HospitalityOrderRepository.php', 'bookingfrontend/controllers/applications/HospitalityOrderController.php'] as $file) {
+    $src = is_file($root . '/src/modules/' . $file) ? (string)file_get_contents($root . '/src/modules/' . $file) : '';
+    $same("S4: {$file} writes no bb_application_comment row (no leak to the applicant's page)", preg_match_all('/INSERT\s+INTO\s+bb_application_comment/i', $src), 0);
+}
+$check('S4 control: that pattern finds such a write', preg_match('/INSERT\s+INTO\s+bb_application_comment/i', "INSERT INTO bb_application_comment (application_id) VALUES (1)") === 1);
+$showJs = is_file($root . '/src/modules/booking/html/base/application/show/application_show.js') ? (string)file_get_contents($root . '/src/modules/booking/html/base/application/show/application_show.js') : '';
+$contains('S4: the Historikk shows the translated tag', $showJs, 'esc(comment.type_label || comment.type)');
+
+// ======================================================================================================
+// 7. D4 — the checkbox on the mail settings page: ticked when the key is absent (the real XSL)
+// ======================================================================================================
+$xslPath = $root . '/src/modules/booking/templates/base/mail_settings.xsl';
+$xslSrc = is_file($xslPath) ? (string)file_get_contents($xslPath) : '';
+$hasBox = str_contains($xslSrc, 'notify_case_officer_on_catering_change');
+$check('D4: the mail settings page has the switch', $hasBox);
+if ($hasBox && class_exists(\XSLTProcessor::class)) {
+    $wrapped = '<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:php="http://php.net/xsl">'
+        . '<xsl:output method="html"/><xsl:template name="msgbox"/>' . $xslSrc . '</xsl:stylesheet>';
+    $sheet = new \DOMDocument();
+    $sheet->loadXML($wrapped);
+    $proc = new \XSLTProcessor();
+    $proc->registerPHPFunctions();
+    $proc->importStylesheet($sheet);
+    $GLOBALS['__lang_now'] = 'no';
+    $box = static function (?string $stored) use ($proc): array {
+        $xml = new \DOMDocument();
+        $xml->loadXML('<data><config_data>' . ($stored === null ? '' : '<notify_case_officer_on_catering_change>' . $stored . '</notify_case_officer_on_catering_change>')
+            . '</config_data><data><tabs/></data></data>');
+        $html = (string)$proc->transformToXml($xml);
+        $input = preg_match('/<input[^>]*id="field_notify_case_officer_on_catering_change"[^>]*>/', $html, $m) ? $m[0] : '';
+        return [$input !== '', str_contains($input, 'checked')];
+    };
+    $same('D4 page: key absent -> the box is TICKED (absent = ON, as shipped)', $box(null), [true, true]);
+    $same('D4 page: stored "1" -> ticked', $box('1'), [true, true]);
+    $same('D4 page: stored "0" -> not ticked', $box('0'), [true, false]);
+    $html = (string)$proc->transformToXml((static function () { $d = new \DOMDocument(); $d->loadXML('<data><config_data/><data><tabs/></data></data>'); return $d; })());
+    $check('D4 page: an unticked box still posts "0" (hidden input first, the checkbox "1" after it wins when ticked)',
+        preg_match('/<input name="notify_case_officer_on_catering_change" type="hidden" value="0">\s*<input id="field_notify_case_officer_on_catering_change"[^>]*name="notify_case_officer_on_catering_change"[^>]*value="1"/', $html) === 1, substr($html, (int)strpos($html, 'notify_case_officer'), 400));
+    $contains('D4 page: the label is translated', $html, 'Send e-post til saksbehandler når søker endrer bevertning');
+    $check('D4 page control: the existing notify-on-accepted box, absent, is NOT ticked (the probe can see an unticked box)',
+        preg_match('/<input[^>]*id="field_application_notify_on_accepted"[^>]*>/', $html, $m) === 1 && !str_contains($m[0], 'checked'));
+} elseif ($hasBox) {
+    $check('D4 page: the xsl extension is needed to render the page', false);
+}
 
 unlink($logFile);
 

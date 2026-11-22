@@ -1423,3 +1423,9 @@ catering_log_from_to	booking	en	%1: %2 → %3
 catering_log_amount	booking	en	NOK %1
 catering_log_incl_vat	booking	en	incl. VAT
 catering_log_excl_vat	booking	en	excl. VAT
+catering_history_added	booking	en	Catering added — %1, %2. Changed by the applicant.
+catering_history_changed	booking	en	Catering changed — %1, %2. Changed by the applicant.
+catering_history_cancelled	booking	en	Catering cancelled — %1, %2. Changed by the applicant.
+catering_history_tag	booking	en	Catering
+catering_mail_cancel_deadline	booking	en	Cancellation deadline: %1
+notify_case_officer_on_catering_change	booking	en	Email the case officer when the applicant changes catering

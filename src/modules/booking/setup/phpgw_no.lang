@@ -1415,3 +1415,12 @@ allocation_change_mail_applicant_comment	booking	no	Kommentar fra søker
 remote_location_is_main_resource	booking	no	Ressursen «%1» er hovedressursen for denne bevertningen og kan ikke samtidig være ekstern lokasjon.
 remote_location_has_open_orders	booking	no	Lokasjonen kan ikke fjernes eller settes inaktiv så lenge det finnes åpne bestillinger som skal leveres dit (%1). Avlys dem eller sett dem som levert først.
 hospitality_description_not_string	booking	no	Beskrivelsen må være tekst.
+catering_log_added_by_applicant	booking	no	Lagt til av søker
+catering_log_changed_by_applicant	booking	no	Endret av søker
+catering_log_cancelled_by_applicant	booking	no	Avbestilt av søker
+catering_log_at	booking	no	%1 kl. %2
+catering_log_line	booking	no	%1 %2 × %3 = %4
+catering_log_from_to	booking	no	%1: %2 → %3
+catering_log_amount	booking	no	%1 kr
+catering_log_incl_vat	booking	no	inkl. mva
+catering_log_excl_vat	booking	no	ekskl. mva

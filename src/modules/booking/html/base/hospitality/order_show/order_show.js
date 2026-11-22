@@ -1242,35 +1242,65 @@
 				bodyHtml += '<span class="order-show__changelog-time">' + fmtDate(entry.changed_at) + '</span>';
 				bodyHtml += '</div>';
 
-				bodyHtml += '<div class="order-show__changelog-comment">' + esc(entry.comment) + '</div>';
-
-				// Diff display
-				if (entry.old_value || entry.new_value)
-				{
-					bodyHtml += '<div class="order-show__changelog-diff">';
-					var oldObj = entry.old_value || {};
-					var newObj = entry.new_value || {};
-					var allKeys = Object.keys(Object.assign({}, oldObj, newObj));
-					allKeys.forEach(function (key)
-					{
-						var oldVal = oldObj[key] != null ? String(oldObj[key]) : '';
-						var newVal = newObj[key] != null ? String(newObj[key]) : '';
-						if (oldVal !== newVal)
-						{
-							bodyHtml += '<span class="order-show__changelog-field">' + esc(key) + ': ';
-							if (oldVal) bodyHtml += '<del>' + esc(oldVal) + '</del> ';
-							if (newVal) bodyHtml += '<ins>' + esc(newVal) + '</ins>';
-							bodyHtml += '</span>';
-						}
-					});
-					bodyHtml += '</div>';
-				}
+				var display = entry.change_type === APPLICANT_CHANGE ? entry.display : null;
+				bodyHtml += display ? readableChangeHtml(display) : rawChangeHtml(entry);
 
 				bodyHtml += '</div>';
 			});
 		}
 
 		container.innerHTML = section(lang('changelog'), bodyHtml);
+	}
+
+	// An applicant's change, put into words by the server (GH #1425, CateringChangeText): what it
+	// was, the order it is about, then one line per change, incl. VAT, in the officer's language.
+	// Every part is plain text and is escaped here, once.
+	function readableChangeHtml(display)
+	{
+		var html = '<div class="order-show__changelog-comment">' + esc(display.title) + '</div>';
+		var lines = display.lines || [];
+		if (display.context || lines.length)
+		{
+			html += '<ul class="order-show__changelog-lines">';
+			if (display.context)
+			{
+				html += '<li class="order-show__changelog-context">' + esc(display.context) + '</li>';
+			}
+			lines.forEach(function (text)
+			{
+				html += '<li>' + esc(text) + '</li>';
+			});
+			html += '</ul>';
+		}
+		return html;
+	}
+
+	// An officer's own entry (and an applicant entry the server could not put into words): the
+	// stored comment and the raw field diff.
+	function rawChangeHtml(entry)
+	{
+		var html = '<div class="order-show__changelog-comment">' + esc(entry.comment) + '</div>';
+		if (entry.old_value || entry.new_value)
+		{
+			html += '<div class="order-show__changelog-diff">';
+			var oldObj = entry.old_value || {};
+			var newObj = entry.new_value || {};
+			var allKeys = Object.keys(Object.assign({}, oldObj, newObj));
+			allKeys.forEach(function (key)
+			{
+				var oldVal = oldObj[key] != null ? String(oldObj[key]) : '';
+				var newVal = newObj[key] != null ? String(newObj[key]) : '';
+				if (oldVal !== newVal)
+				{
+					html += '<span class="order-show__changelog-field">' + esc(key) + ': ';
+					if (oldVal) html += '<del>' + esc(oldVal) + '</del> ';
+					if (newVal) html += '<ins>' + esc(newVal) + '</ins>';
+					html += '</span>';
+				}
+			});
+			html += '</div>';
+		}
+		return html;
 	}
 
 })();

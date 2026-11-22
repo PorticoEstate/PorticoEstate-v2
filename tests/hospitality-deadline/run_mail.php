@@ -29,21 +29,35 @@ require_once getenv('VENDOR_AUTOLOAD') ?: $root . '/vendor/autoload.php';
 
 define('PHPGW_SERVER_ROOT', $root . '/src/modules');
 
+// A file that does not exist in the tree under test (an older base) is reported by the checks that
+// need it as a FAIL line, not as a fatal error. Run against a base, point VENDOR_AUTOLOAD at THAT
+// tree's vendor/: the autoloader resolves App\ from its own tree, and another tree's would quietly
+// supply the missing class.
+$missingFiles = [];
 foreach ([
     'booking/services/HospitalityDeadlineCalculator.php',
     'booking/services/CateringText.php',
     'booking/services/HospitalityOrderDiff.php',
+    'booking/services/CateringChangeText.php',
     'booking/services/CateringLangSwitch.php',
     'booking/services/CateringMailRenderer.php',
     'booking/services/TranslationLangSwitch.php',
     'booking/repositories/HospitalityOrderRepository.php',
+    'bookingfrontend/services/AllocationTimeChangeNotifier.php',
     'bookingfrontend/services/applications/CateringChangeNotifier.php',
     'bookingfrontend/controllers/applications/HospitalityOrderController.php',
+    'booking/controllers/HospitalityOrderController.php',
 ] as $file) {
+    if (!is_file($root . '/src/modules/' . $file)) {
+        $missingFiles[] = $file;
+        continue;
+    }
     require_once $root . '/src/modules/' . $file;
 }
 
 use App\modules\booking\services\CateringLangSwitch;
+use App\modules\booking\services\CateringChangeText;
+use App\modules\booking\controllers\HospitalityOrderController as AdminOrderController;
 use App\modules\booking\services\CateringMailRenderer;
 use App\modules\booking\services\CateringText;
 use App\modules\booking\services\HospitalityOrderDiff;
@@ -206,6 +220,221 @@ $cancelled = HospitalityOrderDiff::between($order([$line('Kaffe', '3', '45')]), 
 $same('cancel: the status row', [$cancelled['old']['status'] ?? null, $cancelled['new']['status'] ?? null], ['pending', 'cancelled']);
 $sum = HospitalityOrderDiff::summary($order([$line('Kaffe', '3', '45')], ['comment' => 'x']));
 $same('summary leaves out status and empty values', array_column($sum, 'key'), ['hospitality', 'serving_time', 'location', 'comment', 'line:Kaffe', 'total']);
+
+// ======================================================================================================
+// 2b. The stored values carry each line's own VAT rate (GH #1425 D2), and parse back (S2)
+// ======================================================================================================
+$check('the tree under test has every file the harness loads', $missingFiles === [], 'missing: ' . implode(', ', $missingFiles));
+$taxed = static fn(string $name, string $qty, string $price, mixed $vat, ?string $comment = null, string $unit = 'stk'): array
+    => $line($name, $qty, $price, $comment, $unit) + ['tax_percent' => $vat];
+
+$d = HospitalityOrderDiff::between(null, $order([$taxed('Vårruller', '2', '10', '25')]));
+$same('D2: a line with a known rate stores it and the incl. amount of the moment', $d['new']['line:Vårruller'] ?? null, '2 stk × 10.00 = 20.00 [VAT 25% incl 25.00]');
+$same('D2: the total stores the incl. amount when every rate is known', $d['new']['total'] ?? null, '20.00 [incl 25.00]');
+$d = HospitalityOrderDiff::between(null, $order([$taxed('Brus', '3', '20', '15.00'), $taxed('Vann', '1', '10', 0)]));
+$same('D2: a 15 % line keeps 15 (not 25)', $d['new']['line:Brus'] ?? null, '3 stk × 20.00 = 60.00 [VAT 15% incl 69.00]');
+$same('D2: a 0 % line keeps its 0 (a real 0 % is not "unknown")', $d['new']['line:Vann'] ?? null, '1 stk × 10.00 = 10.00 [VAT 0% incl 10.00]');
+$same('D2: the incl. total adds each line at its own rate (69.00 + 10.00)', $d['new']['total'] ?? null, '70.00 [incl 79.00]');
+$d = HospitalityOrderDiff::between(null, $order([$taxed('Kaffe', '1', '45', '25'), $taxed('Kake', '1', '20', null)]));
+$same('D2: an unknown rate (NULL: no fm_ecomva row) adds nothing to the line', $d['new']['line:Kake'] ?? null, '1 stk × 20.00 = 20.00');
+$same('D2: ...and the total is then ex VAT only, never a guess', $d['new']['total'] ?? null, '65.00');
+$d = HospitalityOrderDiff::between($order([$taxed('Kaffe', '2', '45', '25')]), $order([$taxed('Kaffe', '2', '45', '15')]));
+$same('D2: a line re-taxed is a change of that line', [$d['old']['line:Kaffe'] ?? null, $d['new']['line:Kaffe'] ?? null], ['2 stk × 45.00 = 90.00 [VAT 25% incl 112.50]', '2 stk × 45.00 = 90.00 [VAT 15% incl 103.50]']);
+// øre rounding: once per line, on the line amount (the client's inclOre), never on the unit price × quantity
+$same('D2: incl. rounding is once per line (3 × 136.99 at 25 % = 410.97 + 102.74)', HospitalityOrderDiff::between(null, $order([$taxed('X', '3', '136.99', '25')]))['new']['total'] ?? null, '410.97 [incl 513.71]');
+
+$hasParse = method_exists(HospitalityOrderDiff::class, 'parseLine') && method_exists(HospitalityOrderDiff::class, 'parseTotal');
+$check('S2: HospitalityOrderDiff can parse a stored line and total back', $hasParse);
+if ($hasParse) {
+    foreach ([
+        'with a rate and a comment' => [$taxed('Kaffe', '2.5', '45', '25', 'sterk — og × varm', 'kg'), ['2.5', 'kg', '45.00', '112.50', '25', '140.63', 'sterk — og × varm']],
+        'legacy, no rate' => [$line('Vårruller', '2', '10', null, 'each'), ['2', 'each', '10.00', '20.00', null, null, '']],
+        'no unit' => [$taxed('Leie', '1', '100', '0', null, ''), ['1', '', '100.00', '100.00', '0', '100.00', '']],
+    ] as $name => [$l, $want]) {
+        $stored = HospitalityOrderDiff::between(null, $order([$l]))['new']['line:' . $l['article_name']] ?? '';
+        $p = HospitalityOrderDiff::parseLine($stored);
+        $same("S2 parseLine round-trip ({$name}): «{$stored}»", $p === null ? null : [$p['quantity'], $p['unit'], $p['unit_price'], $p['amount'], $p['vat'], $p['incl'], $p['comment']], $want);
+    }
+    $same('S2 parseLine: the exact legacy value live order 122 holds', HospitalityOrderDiff::parseLine('2 each × 10.00 = 20.00')['unit'] ?? null, 'each');
+    $same('S2 parseLine: not a line -> null (shown as it is)', HospitalityOrderDiff::parseLine('Kaffe'), null);
+    $same('S2 parseTotal: legacy', HospitalityOrderDiff::parseTotal('20.00'), ['amount' => '20.00', 'incl' => null]);
+    $same('S2 parseTotal: with incl', HospitalityOrderDiff::parseTotal('20.00 [incl 25.00]'), ['amount' => '20.00', 'incl' => '25.00']);
+    $same('S2 parseTotal: not a total -> null', HospitalityOrderDiff::parseTotal('tjue'), null);
+}
+
+// ======================================================================================================
+// 2c. CateringChangeText — the one formatter behind the Endringslogg, the Historikk and the mail (S2)
+// ======================================================================================================
+$hasText = class_exists(CateringChangeText::class);
+$check('S2: the formatter CateringChangeText exists', $hasText);
+$nb = "\u{00A0}";
+if ($hasText) {
+    $ctx = ['hospitality' => 'Fana kulturhus servering', 'serving_time' => '04.06.2029 15:00', 'location' => 'Anretning'];
+    $addedEntry = static fn(array $new = []): array => [
+        'kind' => 'added', 'actor' => 'Kari Nordmann', 'changed_at' => '2026-11-18T11:38:00+01:00', 'old' => [],
+        'new' => $new + ['hospitality' => 'Fana kulturhus servering', 'serving_time' => '04.06.2029 15:00', 'location' => 'Anretning',
+            'line:Vårruller' => '2 each × 10.00 = 20.00 [VAT 25%]', 'total' => '20.00 [incl 25.00]'],
+    ];
+
+    $GLOBALS['__lang_now'] = 'no';
+    $GLOBALS['__lang_missing'] = [];
+    $t = CateringChangeText::describe($addedEntry(), $ctx, 'no');
+    $same('S2 no: the title says what it was', $t['title'], 'Lagt til av søker');
+    $same('S2 no: who and when, in venue time with a Norwegian month', $t['byline'], 'Kari Nordmann, 18. november 2026 kl. 11:38');
+    $same('S2 no: the order it is about', $t['context'], 'Fana kulturhus servering · 4. juni 2029 kl. 15:00 · Anretning');
+    $same('S2 no: a line incl. VAT at its own rate, in kroner, unit translated', $t['lines'][0] ?? null, "Vårruller: 2 stk × 12,50 kr = 25 kr inkl. mva");
+    $same('S2 no: the total incl. VAT', $t['lines'][1] ?? null, 'Sum: 25 kr inkl. mva');
+    $same('S2 no: nothing else', count($t['lines']), 2);
+    $same('S2 no: no translation key missing', $GLOBALS['__lang_missing'], []);
+
+    // The legacy entry exactly as live order 122 holds it: no rate stored. Shown ex VAT and SAID so; never as
+    // 12,50 (which is what an assumed 25 % would give).
+    $legacy = CateringChangeText::describe(['kind' => 'added', 'actor' => '', 'changed_at' => null, 'old' => [],
+        'new' => ['line:Vårruller' => '2 each × 10.00 = 20.00', 'total' => '20.00']], $ctx, 'no');
+    $same('S2 legacy line: ex VAT, marked «ekskl. mva»', $legacy['lines'][0] ?? null, 'Vårruller: 2 stk × 10 kr = 20 kr ekskl. mva');
+    $lacks('S2 legacy line: never an assumed 25 % (12,50)', implode("\n", $legacy['lines']), '12,50');
+    $same('S2 legacy total: ex VAT, marked', $legacy['lines'][1] ?? null, 'Sum: 20 kr ekskl. mva');
+    $same('S2 legacy: no actor, no time -> the title alone', $legacy['heading'], 'Lagt til av søker');
+    $moved = CateringChangeText::describe($addedEntry(), ['serving_time' => '05.06.2029 09:00'] + $ctx, 'no');
+    $same('S2: an addition shows the order as it was ADDED, not as it is now', $moved['context'], 'Fana kulturhus servering · 4. juni 2029 kl. 15:00 · Anretning');
+
+    $rates = CateringChangeText::describe(['kind' => 'added', 'old' => [], 'new' => [
+        'line:Brus' => '1 stk × 100.00 = 100.00 [VAT 15%]',
+        'line:Vann' => '1 stk × 10.00 = 10.00 [VAT 0%]',
+        'line:Buffet' => '16 stk × 80.00 = 1280.00 [VAT 25%]',
+        'line:Ost' => '0.5 kg × 3.33 = 1.67 [VAT 25%] — uten nøtter',
+    ]], $ctx, 'no');
+    $same('S2: a 15 % line is 115 kr (not 125)', $rates['lines'][0] ?? null, 'Brus: 1 stk × 115 kr = 115 kr inkl. mva');
+    $same('S2: a 0 % line keeps its amount and is incl.', $rates['lines'][1] ?? null, 'Vann: 1 stk × 10 kr = 10 kr inkl. mva');
+    $same('S2: thousands are grouped («1 600 kr»)', $rates['lines'][2] ?? null, "Buffet: 16 stk × 100 kr = 1{$nb}600 kr inkl. mva");
+    $same('S2: decimals with a comma, the line rounded once, the comment kept', $rates['lines'][3] ?? null, 'Ost: 0,5 kg × 4,16 kr = 2,09 kr inkl. mva — uten nøtter');
+    // D2 (47066/47068): an entry shows the incl. amount it STORED when it was written, not one worked out again
+    // today (here deliberately different from what the rule gives now, 125.00, so the two cannot be confused).
+    $stored = CateringChangeText::describe(['kind' => 'added', 'old' => [], 'new' => ['line:Leie' => '1 stk × 100.00 = 100.00 [VAT 25% incl 124.00] — x']], $ctx, 'no');
+    $same('S2: the stored incl. amount is the one shown', $stored['lines'][0] ?? null, 'Leie: 1 stk × 125 kr = 124 kr inkl. mva — x');
+    $fresh = HospitalityOrderDiff::between(null, $order([$taxed('Leie', '1', '100', '25')]))['new']['line:Leie'] ?? '';
+    $same('S2: a value written today round-trips to the same words', CateringChangeText::describe(['kind' => 'added', 'old' => [], 'new' => ['line:Leie' => $fresh]], $ctx, 'no')['lines'][0] ?? null, 'Leie: 1 stk × 125 kr = 125 kr inkl. mva');
+
+    $changed = CateringChangeText::describe(['kind' => 'changed', 'actor' => 'Kari Nordmann', 'changed_at' => '2029-06-01T08:00:00+00:00',
+        'old' => ['serving_time' => '04.06.2029 13:00', 'line:Vårruller' => '2 each × 10.00 = 20.00 [VAT 25%]', 'comment' => 'Uten nøtter', 'total' => '20.00 [incl 25.00]'],
+        'new' => ['serving_time' => '04.06.2029 15:00', 'line:Vårruller' => '3 each × 10.00 = 30.00 [VAT 25%]', 'total' => '30.00 [incl 37.50]']], $ctx, 'no');
+    $same('S2 change: the time from a UTC instant is venue time (summer, UTC+2)', $changed['byline'], 'Kari Nordmann, 1. juni 2029 kl. 10:00');
+    $same('S2 change: the order it is about comes from the order as it is now', $changed['context'], 'Fana kulturhus servering · 4. juni 2029 kl. 15:00 · Anretning');
+    $same('S2 change: rows in a stable order, each FROM → TO', $changed['lines'], [
+        'Serveringstid: 4. juni 2029 kl. 13:00 → 4. juni 2029 kl. 15:00',
+        'Kommentar: Uten nøtter → —',
+        'Vårruller: 2 stk × 12,50 kr = 25 kr inkl. mva → 3 stk × 12,50 kr = 37,50 kr inkl. mva',
+        'Sum: 25 kr inkl. mva → 37,50 kr inkl. mva',
+    ]);
+    $winter = CateringChangeText::describe(['kind' => 'cancelled', 'changed_at' => '2026-03-29T00:30:00+00:00', 'old' => ['status' => 'pending'], 'new' => ['status' => 'cancelled']], $ctx, 'no');
+    $same('S2 the DST night: 00:30 UTC on 29 March is 01:30 local (UTC+1 still)', $winter['byline'], '29. mars 2026 kl. 01:30');
+    $midnight = CateringChangeText::describe(['kind' => 'cancelled', 'changed_at' => '2026-11-17T23:30:00+00:00', 'old' => [], 'new' => []], $ctx, 'no');
+    $same('S2: the DATE is venue time too (23:30 UTC on the 17th is the 18th in Oslo)', $midnight['byline'], '18. november 2026 kl. 00:30');
+    $same('S2 cancel: the title', $winter['title'], 'Avbestilt av søker');
+    $same('S2 cancel: the status is not repeated as a line', $winter['lines'], []);
+
+    $GLOBALS['__lang_now'] = 'en';
+    $en = CateringChangeText::describe($addedEntry(), $ctx, 'en');
+    $same('S2 en: title', $en['title'], 'Added by the applicant');
+    $same('S2 en: date', $en['byline'], 'Kari Nordmann, 18 November 2026 at 11:38');
+    $same('S2 en: amounts', $en['lines'][0] ?? null, 'Vårruller: 2 each × NOK 12.50 = NOK 25 incl. VAT');
+    $GLOBALS['__lang_now'] = 'nn';
+    $nn = CateringChangeText::describe($addedEntry(), $ctx, 'nn');
+    $same('S2 nn: title', $nn['title'], 'Lagt til av søkjar');
+    $GLOBALS['__lang_now'] = 'no';
+
+    foreach (['no', 'nn', 'en'] as $l) {
+        foreach (['added', 'changed', 'cancelled'] as $k) {
+            $GLOBALS['__lang_now'] = $l;
+            $GLOBALS['__lang_missing'] = [];
+            $all = CateringChangeText::describe(['kind' => $k, 'actor' => 'A', 'changed_at' => '2026-11-18T11:38:00+01:00',
+                'old' => $k === 'changed' ? ['comment' => 'a', 'line:X' => '1 stk × 1.00 = 1.00', 'total' => '1.00'] : [],
+                'new' => ['comment' => 'b', 'special_requirements' => 'c', 'line:X' => '2 stk × 1.00 = 2.00 [VAT 25%]', 'total' => '2.00 [incl 2.50]', 'status' => 'pending']], $ctx, $l);
+            $same("S2 {$l}/{$k}: no translation key missing", $GLOBALS['__lang_missing'], []);
+            $check("S2 {$l}/{$k}: no '!key' leaked", !preg_match('/![a-z_]+/', implode("\n", $all['lines']) . $all['heading'] . $all['context']));
+        }
+    }
+    $GLOBALS['__lang_now'] = 'no';
+
+    $same('S2 kind: from the stored comment (added)', CateringChangeText::kindOf('Order added by applicant via Min side', ['x' => '1'], []), 'added');
+    $same('S2 kind: from the stored comment (changed)', CateringChangeText::kindOf('Order changed by applicant via Min side', [], ['x' => '1']), 'changed');
+    $same('S2 kind: from the stored comment (cancelled)', CateringChangeText::kindOf('Order cancelled by applicant via Min side', [], []), 'cancelled');
+    $same('S2 kind: unknown comment, a status of cancelled', CateringChangeText::kindOf('?', ['status' => 'pending'], ['status' => 'cancelled']), 'cancelled');
+    $same('S2 kind: unknown comment, nothing before', CateringChangeText::kindOf(null, [], ['x' => '1']), 'added');
+    $same('S2 kind: the controller writes exactly the comments the kind is read from',
+        array_values(CateringChangeText::ENTRY_COMMENTS),
+        ['Order added by applicant via Min side', 'Order changed by applicant via Min side', 'Order cancelled by applicant via Min side']);
+    $unknown = CateringChangeText::describe(['kind' => 'changed', 'old' => ['mystery' => 'a'], 'new' => ['mystery' => 'b']], $ctx, 'no');
+    $same('S2: a key the formatter does not know is shown, not dropped', $unknown['lines'], ['mystery: a → b']);
+    $raw = CateringChangeText::describe(['kind' => 'added', 'old' => [], 'new' => ['line:X' => 'not a line value']], $ctx, 'no');
+    $same('S2: a line value it cannot parse is shown as it is', $raw['lines'], ['X: not a line value']);
+    $plain = CateringChangeText::describe(['kind' => 'added', 'old' => [], 'new' => ['comment' => '<b>x</b> &amp;']], $ctx, 'no');
+    $same('S2: output is plain text, NOT escaped here (the caller escapes once)', $plain['lines'], ['Kommentar: <b>x</b> &amp;']);
+    $same('S2 context from a live order snapshot (contextOf)', CateringChangeText::contextOf($order([], ['hospitality_name' => 'Kantina &amp;#40;A&amp;#41;', 'serving_time_iso' => '2029-06-04 13:00:00', 'location_name' => 'Storsal'])),
+        ['hospitality' => 'Kantina (A)', 'serving_time' => '04.06.2029 15:00', 'location' => 'Storsal']);
+}
+
+// ======================================================================================================
+// 2d. S3 — the admin catering list in serving order; admin «Endringslogg» display (S2)
+// ======================================================================================================
+$hasSort = method_exists(AdminOrderController::class, 'sortByServingTime');
+$check('S3: the admin controller sorts the catering list by serving time', $hasSort);
+if ($hasSort) {
+    // The live shape that was wrong (#46220): the NEWEST order (highest id) has the LATEST serving time and stood first.
+    $rows = [
+        ['id' => 122, 'serving_time_iso' => '2029-06-04 13:00:00'],
+        ['id' => 112, 'serving_time_iso' => '2029-06-04 11:30:00'],
+        ['id' => 130, 'serving_time_iso' => null],
+        ['id' => 107, 'serving_time_iso' => '2029-06-04 12:00:00'],
+        ['id' => 108, 'serving_time_iso' => '2029-06-04 12:00:00'],
+    ];
+    $same('S3: earliest serving first, no serving time last, ties by id', array_column(AdminOrderController::sortByServingTime($rows), 'id'), [112, 107, 108, 122, 130]);
+}
+// The index (needs a database to run) sorts on the application_id path only: the kitchen's hospitality_id
+// list and the repository default (which also feeds Min side) keep their order.
+$adminSrc = is_file($root . '/src/modules/booking/controllers/HospitalityOrderController.php') ? (string)file_get_contents($root . '/src/modules/booking/controllers/HospitalityOrderController.php') : '';
+$same('S3: the index sorts exactly once', preg_match_all('/\$orders = self::sortByServingTime\(\$orders\);/', $adminSrc), 1);
+$check('S3: ...inside the application_id branch, before the hospitality_id branch',
+    preg_match('/getOrdersWithLinesByApplication\(\(int\)\$params\[\'application_id\'\]\);\s*\}\s*(?:\/\/[^\n]*\n\s*)*\$orders = self::sortByServingTime\(\$orders\);\s*\} elseif \(!empty\(\$params\[\'hospitality_id\'\]\)\)/', $adminSrc) === 1);
+$same('S3: the repository default is untouched (created DESC, also Min side\'s)', preg_match_all('/ORDER BY o\.created DESC/', $repoSource ?? (string)file_get_contents($root . '/src/modules/booking/repositories/HospitalityOrderRepository.php')), 3);
+$adminRef = new \ReflectionClass(AdminOrderController::class);
+$hasDisplay = $adminRef->hasMethod('withReadableChangelog');
+$check('S2: the admin order JSON puts applicant entries into words', $hasDisplay);
+if ($hasDisplay && $hasText) {
+    $admin = $adminRef->newInstanceWithoutConstructor();
+    $snap = $order([$taxed('Vårruller', '3', '10', '25')], ['hospitality_name' => 'Fana kulturhus servering', 'serving_time_iso' => '2029-06-04 13:00:00', 'location_name' => 'Anretning']);
+    $snap['changelog'] = [
+        ['id' => 2, 'change_type' => 'applicant_change', 'comment' => 'Order changed by applicant via Min side', 'booking_user_name' => 'Kari Nordmann',
+            'changed_at' => '2026-11-18T11:38:00+01:00', 'old_value' => ['line:Vårruller' => '2 each × 10.00 = 20.00'], 'new_value' => ['line:Vårruller' => '3 each × 10.00 = 30.00 [VAT 25%]']],
+        ['id' => 1, 'change_type' => 'field_update', 'comment' => 'Officer note', 'case_officer_name' => 'henning', 'changed_at' => '2026-11-18T10:00:00+01:00',
+            'old_value' => ['comment' => 'a'], 'new_value' => ['comment' => 'b']],
+    ];
+    $GLOBALS['__lang_now'] = 'no';
+    $out = $adminRef->getMethod('withReadableChangelog')->invoke($admin, $snap, 'no');
+    $same('S2 admin: an applicant entry gets its title', $out['changelog'][0]['display']['title'] ?? null, 'Endret av søker');
+    $same('S2 admin: ...and its lines (a legacy FROM ex VAT, a new TO incl. VAT)', $out['changelog'][0]['display']['lines'] ?? null,
+        ['Vårruller: 2 stk × 10 kr = 20 kr ekskl. mva → 3 stk × 12,50 kr = 37,50 kr inkl. mva']);
+    $same('S2 admin: ...the stored entry itself is unchanged', [$out['changelog'][0]['comment'], $out['changelog'][0]['old_value']], [$snap['changelog'][0]['comment'], $snap['changelog'][0]['old_value']]);
+    $check('S2 admin: an officer entry gets NO display (rendered as before)', !array_key_exists('display', $out['changelog'][1]));
+    $snap['changelog'][0]['old_value'] = 'not a map';
+    $out = $adminRef->getMethod('withReadableChangelog')->invoke($admin, $snap, 'no');
+    $check('S2 admin: an odd stored value does not throw and still gets words', isset($out['changelog'][0]['display']['title']));
+    // No language to be had (here: no Translation singleton outside the app, an Error, not an Exception — and
+    // show() catches Exception only): the order is returned as it was, raw, and the page still loads.
+    $threw = null;
+    $quietLog = ini_set('error_log', '/dev/null');
+    $quietLevel = error_reporting(0);   // the app's Settings warns while it fails to boot here; not what is checked
+    try {
+        $out = $adminRef->getMethod('withReadableChangelog')->invoke($admin, $snap, null);
+    } catch (\Throwable $e) {
+        $threw = $e;
+    } finally {
+        error_reporting($quietLevel);
+        ini_set('error_log', $quietLog === false ? '' : $quietLog);
+    }
+    $check('S2 admin: no language available -> no throw', $threw === null, $threw ? get_class($threw) . ': ' . $threw->getMessage() : '');
+    $check('S2 admin: ...and the entries are left raw', $threw === null && !array_key_exists('display', $out['changelog'][0]));
+}
 
 // ======================================================================================================
 // 3. CateringMailRenderer — real template, real .lang files, language swap
@@ -594,6 +823,23 @@ foreach ([
     $same("controller path ({$kind}): one entry and one mail", [count($repo->entries), count($n->delivered)], [1, 1]);
     $same("controller path ({$kind}): the subject", $n->delivered[0][1] ?? null, $subject);
 }
+
+// GUARD — «Sist endret» is intentionally NOT moved by a catering change (operator 2026-11-23, task 47036:
+// «keep as is, changing it leads to issues»): no path a catering change takes writes bb_application. Static,
+// because the writes need a database; the live before/after SELECT is in the SHA READY.
+$appWrite = '/\b(?:UPDATE\s+bb_application|INSERT\s+INTO\s+bb_application|DELETE\s+FROM\s+bb_application)\b(?!_)/i';
+foreach ([
+    'the applicant path (bookingfrontend HospitalityOrderController)' => 'bookingfrontend/controllers/applications/HospitalityOrderController.php',
+    'the officer path (booking HospitalityOrderController)' => 'booking/controllers/HospitalityOrderController.php',
+    'the order repository both paths write through' => 'booking/repositories/HospitalityOrderRepository.php',
+    'the notifier' => 'bookingfrontend/services/applications/CateringChangeNotifier.php',
+] as $name => $file) {
+    $src = is_file($root . '/src/modules/' . $file) ? (string)file_get_contents($root . '/src/modules/' . $file) : '';
+    $check("guard: {$name} is there to read", $src !== '');
+    $same("guard: {$name} writes no bb_application row («Sist endret» untouched)", preg_match_all($appWrite, $src), 0);
+}
+$check('guard control: the pattern finds a write of bb_application', preg_match($appWrite, "UPDATE bb_application SET modified = NOW() WHERE id = :id") === 1);
+$check('guard control: ...and not one of bb_application_comment', preg_match($appWrite, "INSERT INTO bb_application_comment (application_id) VALUES (1)") === 0);
 
 // a PUT that resends what the order already had: nothing to record, nobody to tell
 $repo = new StubOrderRepo();

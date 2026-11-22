@@ -13,6 +13,7 @@ use App\modules\booking\services\HospitalityDeadlineCalculator;
 use App\modules\booking\services\HospitalityOrderGuard;
 use App\modules\booking\services\HospitalityOrderDiff;
 use App\modules\booking\services\CateringMailRenderer;
+use App\modules\booking\services\CateringChangeText;
 use App\modules\bookingfrontend\models\User;
 use App\modules\bookingfrontend\services\applications\CateringChangeNotifier;
 use App\modules\bookingfrontend\services\applications\CitizenHospitalityOrder;
@@ -320,6 +321,9 @@ class HospitalityOrderController
 	 *
 	 * No bb_application row is touched (the application process is frozen) and no application
 	 * comment is written (that path mails the whole group and bumps frontend_modified).
+	 * `modified` («Sist endret») is deliberately left alone: the operator ruled 2026-11-23 (task
+	 * 47036) that a catering change does not move it — it also dates the applicant's own status
+	 * timeline and the anonymiser's retention clock.
 	 *
 	 * @param array|null $before the order before the change; null when it was just added
 	 * @param array|null $after  the order after the change
@@ -343,12 +347,6 @@ class HospitalityOrderController
 			return;
 		}
 
-		$comments = [
-			CateringMailRenderer::KIND_ADDED => 'Order added by applicant via Min side',
-			CateringMailRenderer::KIND_CHANGED => 'Order changed by applicant via Min side',
-			CateringMailRenderer::KIND_CANCELLED => 'Order cancelled by applicant via Min side',
-		];
-
 		// The table requires an author, so a call with no resolvable booking user (a hand-made
 		// ?secret= request) leaves no entry — as before — but the officer is still told.
 		try {
@@ -359,7 +357,8 @@ class HospitalityOrderController
 					'change_type' => 'applicant_change',
 					'old_value' => $diff['old'] ?: null,
 					'new_value' => $diff['new'] ?: null,
-					'comment' => $comments[$kind],
+					// The kind is read back from this exact text (CateringChangeText::kindOf).
+					'comment' => CateringChangeText::ENTRY_COMMENTS[$kind],
 				]);
 			}
 		} catch (\Throwable $e) {

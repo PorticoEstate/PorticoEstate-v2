@@ -265,6 +265,22 @@
 	font-size: 0.75rem;
 }
 
+/* An applicant's change in words (GH #1425): sentences, one per line, in the text font — not the
+   raw key/value chips above. */
+.order-show__changelog-lines {
+	display: flex;
+	flex-direction: column;
+	gap: 0.125rem;
+	margin: 0.375rem 0 0;
+	padding: 0;
+	list-style: none;
+	font-size: 0.875rem;
+}
+
+.order-show__changelog-context {
+	color: var(--ds-color-text-subtle, #68707c);
+}
+
 .order-show__changelog-diff del {
 	text-decoration: line-through;
 	color: var(--ds-color-danger-text-default, #c4183c);

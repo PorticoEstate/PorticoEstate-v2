@@ -9,6 +9,8 @@ use App\modules\booking\repositories\HospitalityArticleRepository;
 use App\modules\booking\repositories\HospitalityOrderRepository;
 use App\modules\booking\models\HospitalityOrder;
 use App\modules\booking\models\HospitalityOrderLine;
+use App\modules\booking\services\CateringChangeText;
+use App\modules\booking\services\TranslationLangSwitch;
 use App\Database\Db;
 
 use Psr\Container\ContainerInterface;
@@ -43,8 +45,74 @@ class HospitalityOrderController
 	private function orderToJson(int $orderId): array
 	{
 		$data = $this->repository->getOrderWithLines($orderId);
-		$model = new HospitalityOrder($data);
+		$model = new HospitalityOrder($this->withReadableChangelog($data));
 		return $model->serialize();
+	}
+
+	/**
+	 * GH #1425: every «Endret av søker» entry gets `display` — the change in words, incl. VAT, in the
+	 * officer's own language (CateringChangeText, the same formatter as the officer's mail). The
+	 * stored entry is left as it is; officers' own entries get nothing and render as before.
+	 *
+	 * Admin only: this controller is the booking backend's. The applicant's responses never carry
+	 * the changelog (bookingfrontend CitizenHospitalityOrder).
+	 */
+	private function withReadableChangelog(?array $order, ?string $lang = null): ?array
+	{
+		if (empty($order['changelog'])) {
+			return $order;
+		}
+		// The callers catch Exception only: nothing here may turn the order page into a 500. Without
+		// a language or a context the entries are simply shown raw, as before.
+		try {
+			$lang ??= (new TranslationLangSwitch())->current();
+			$context = CateringChangeText::contextOf($order);
+		} catch (\Throwable $e) {
+			error_log('Catering changelog left unformatted for order ' . ($order['id'] ?? '?') . ': ' . $e->getMessage());
+			return $order;
+		}
+		foreach ($order['changelog'] as &$entry) {
+			if (($entry['change_type'] ?? null) !== 'applicant_change') {
+				continue;
+			}
+			try {
+				$old = is_array($entry['old_value'] ?? null) ? $entry['old_value'] : [];
+				$new = is_array($entry['new_value'] ?? null) ? $entry['new_value'] : [];
+				$entry['display'] = CateringChangeText::describe([
+					'kind' => CateringChangeText::kindOf($entry['comment'] ?? null, $old, $new),
+					'actor' => $entry['booking_user_name'] ?? null,
+					'changed_at' => $entry['changed_at'] ?? null,
+					'old' => $old,
+					'new' => $new,
+				], $context, $lang);
+			} catch (\Throwable $e) {
+				// An entry that cannot be put into words is shown raw, as before; the page still loads.
+				error_log("Catering changelog entry {$entry['id']} could not be formatted: " . $e->getMessage());
+			}
+		}
+		unset($entry);
+		return $order;
+	}
+
+	/**
+	 * Orders by serving time, earliest first; an order without one after all that have one; ties
+	 * (and those without) by id. serving_time_iso is stored naive UTC in one format, so the strings
+	 * order as the instants do.
+	 *
+	 * @param list<array> $orders
+	 * @return list<array>
+	 */
+	public static function sortByServingTime(array $orders): array
+	{
+		usort($orders, static function (array $a, array $b): int {
+			$sa = (string)($a['serving_time_iso'] ?? '');
+			$sb = (string)($b['serving_time_iso'] ?? '');
+			if ($sa === '' || $sb === '') {
+				return [$sa === '' ? 1 : 0, (int)$a['id']] <=> [$sb === '' ? 1 : 0, (int)$b['id']];
+			}
+			return [$sa, (int)$a['id']] <=> [$sb, (int)$b['id']];
+		});
+		return $orders;
 	}
 
 	private function requireChangelogComment(array $body): ?string
@@ -157,6 +225,9 @@ class HospitalityOrderController
 				} else {
 					$orders = $this->repository->getOrdersWithLinesByApplication((int)$params['application_id']);
 				}
+				// The application page's catering list reads in serving order (GH #1425 S3). Here and not
+				// in the repository: its created-DESC default also feeds the applicant's Min side.
+				$orders = self::sortByServingTime($orders);
 			} elseif (!empty($params['hospitality_id'])) {
 				$status = $params['status'] ?? null;
 				$rows = $this->repository->getByHospitalityId((int)$params['hospitality_id'], $status);
@@ -280,7 +351,7 @@ class HospitalityOrderController
 				return $this->jsonError($response, 'Order not found', 404);
 			}
 
-			$model = new HospitalityOrder($data);
+			$model = new HospitalityOrder($this->withReadableChangelog($data));
 
 			$response->getBody()->write(json_encode($model->serialize()));
 			return $response->withHeader('Content-Type', 'application/json')->withStatus(200);

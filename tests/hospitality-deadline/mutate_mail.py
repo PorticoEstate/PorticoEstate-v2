@@ -30,6 +30,9 @@ FILES = [
     "src/modules/booking/html/base/emails/catering_changed_by_applicant.twig",
     "src/modules/bookingfrontend/services/applications/CateringChangeNotifier.php",
     "src/modules/bookingfrontend/controllers/applications/HospitalityOrderController.php",
+    "src/modules/booking/services/CateringChangeText.php",
+    "src/modules/booking/controllers/HospitalityOrderController.php",
+    "src/modules/bookingfrontend/services/AllocationTimeChangeNotifier.php",
 ] + [f"src/modules/{m}/setup/phpgw_{l}.lang" for m in ("booking", "bookingfrontend") for l in ("no", "nn", "en")]
 
 R = "src/modules/booking/services/CateringMailRenderer.php"
@@ -39,6 +42,8 @@ N = "src/modules/bookingfrontend/services/applications/CateringChangeNotifier.ph
 TW = "src/modules/booking/html/base/emails/catering_changed_by_applicant.twig"
 C = "src/modules/bookingfrontend/controllers/applications/HospitalityOrderController.php"
 REPO = "src/modules/booking/repositories/HospitalityOrderRepository.php"
+CT = "src/modules/booking/services/CateringChangeText.php"
+AC = "src/modules/booking/controllers/HospitalityOrderController.php"
 
 # (id, file, description, old, new)
 MUTATIONS = [
@@ -118,6 +123,55 @@ MUTATIONS = [
      "        $out['special_requirements'] = ['value' => CateringText::decode($order['special_requirements'] ?? ''), 'label' => null];\n", ""),
     ("Mm32", R, "special_requirements is not a fixed field: its row is labelled with the raw key",
      "'comment', 'special_requirements', 'total'", "'comment', 'total'"),
+
+    # ---- GH #1425 build (task 47036), P1: S1 «Sist endret», S2 readable log incl. VAT per line, S3 sort ----
+    ("Mp1", D, "a line's known VAT rate is not stored with it",
+     "        if ($vat !== null) {\n            $incl = self::money(", "        if (false) {\n            $incl = self::money("),
+    ("Mp2", D, "the incl. amount assumes 25 % instead of the line's own rate",
+     "return $exOre + (int)round($exOre * $percent / 100);", "return $exOre + (int)round($exOre * 25 / 100);"),
+    ("Mp3", D, "an unknown rate (no fm_ecomva row) is taken for 0 %",
+     "        if ($percent === null || $percent === '' || !is_numeric($percent)) {\n            return null;\n        }",
+     "        if ($percent === null || $percent === '' || !is_numeric($percent)) {\n            return '0';\n        }"),
+    ("Mp4", D, "the total claims an incl. amount although a line's rate is unknown",
+     "            if ($vat === null) {\n                return $text;\n            }", "            if ($vat === null) {\n                continue;\n            }"),
+    ("Mp5", D, "parseLine drops a line's comment",
+     "'comment' => (string)($m['comment'] ?? ''),", "'comment' => '',"),
+    ("Mp6", CT, "a line with no known rate is labelled «inkl. mva»",
+     "            $basis = lang('booking.catering_log_excl_vat');", "            $basis = lang('booking.catering_log_incl_vat');"),
+    ("Mp7", CT, "the date of a time is taken in UTC, not venue time",
+     "self::VENUE_TIMEZONE, \\IntlDateFormatter::GREGORIAN, $pattern", "'UTC', \\IntlDateFormatter::GREGORIAN, $pattern"),
+    ("Mp7b", CT, "the clock time is shown in UTC, not venue time",
+     "self::VENUE_TIMEZONE, \\IntlDateFormatter::GREGORIAN, 'HH:mm'", "'UTC', \\IntlDateFormatter::GREGORIAN, 'HH:mm'"),
+    ("Mp8", CT, "thousands are not grouped («1600 kr»)",
+     "number_format($ore / 100, $decimals, ',', \"\\u{00A0}\")", "number_format($ore / 100, $decimals, ',', '')"),
+    ("Mp9", CT, "the unit is not translated («each»)",
+     "            $unit = lang('booking.unit_' . $unitKey);", "            $unit = $unit;"),
+    ("Mp10", CT, "the kind is not read from the stored comment",
+     "        if (is_string($kind)) {\n            return $kind;\n        }\n", ""),
+    ("Mp11", CT, "a change shows the new value on both sides",
+     "                    self::valueText($key, $old[$key] ?? '', $lang),", "                    self::valueText($key, $new[$key] ?? '', $lang),"),
+    ("Mp12", CT, "an addition is described by the order as it is now, not as it was added",
+     "        $own = $kind === self::KIND_CHANGED ? [] : $new;\n        $contextParts = [];", "        $own = [];\n        $contextParts = [];"),
+    ("Mp13", AC, "the admin list is sorted latest serving first",
+     "return [$sa, (int)$a['id']] <=> [$sb, (int)$b['id']];", "return [$sb, (int)$a['id']] <=> [$sa, (int)$b['id']];"),
+    ("Mp14", AC, "the admin index does not sort",
+     "\t\t\t\t$orders = self::sortByServingTime($orders);\n", ""),
+    ("Mp15", AC, "an officer's own entry is also put into words",
+     "\t\t\tif (($entry['change_type'] ?? null) !== 'applicant_change') {\n\t\t\t\tcontinue;\n\t\t\t}\n", ""),
+    ("Mp15b", AC, "the admin order page's language lookup is outside any try: an Error from it is a 500",
+     "\t\t} catch (\\Throwable $e) {\n\t\t\terror_log('Catering changelog left unformatted", "\t\t} catch (\\Exception $e) {\n\t\t\terror_log('Catering changelog left unformatted"),
+    ("Mp16", D, "the stored incl. amount is left out of the line value",
+     "            $text .= \" [VAT {$vat}% incl {$incl}]\";", "            $text .= \" [VAT {$vat}%]\";"),
+    ("Mp17", CT, "the incl. amount stored with an entry is ignored and worked out again",
+     "            $amountOre = $p['incl'] !== null\n", "            $amountOre = false\n"),
+    # Guard: «Sist endret» is NOT moved by a catering change (operator 2026-11-23). A write of bb_application put
+    # into the paths a catering change takes must turn the harness red.
+    ("Mg1", REPO, "the order repository writes bb_application (e.g. a «Sist endret» bump)",
+     "        $sql = \"UPDATE bb_hospitality_order\n                SET status = :status, modified = DEFAULT, modified_by = :modified_by\n                WHERE id = :id\";",
+     "        $sql = \"UPDATE bb_application\n                SET status = :status, modified = DEFAULT, modified_by = :modified_by\n                WHERE id = :id\";"),
+    ("Mg2", C, "the applicant path writes bb_application",
+     "\t\t$stmt = \\App\\Database\\Db::getInstance()->prepare(\"SELECT name FROM bb_activity WHERE id = :id\");",
+     "\t\t$stmt = \\App\\Database\\Db::getInstance()->prepare(\"UPDATE bb_application SET modified = NOW() WHERE id = :id\");"),
 ]
 
 

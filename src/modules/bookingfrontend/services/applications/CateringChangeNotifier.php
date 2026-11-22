@@ -6,6 +6,7 @@ use App\modules\booking\services\CateringMailRenderer;
 use App\modules\booking\services\EmailService;
 use App\modules\booking\services\TranslationLangSwitch;
 use App\modules\bookingfrontend\helpers\WebSocketHelper;
+use App\modules\phpgwapi\services\PreferencesReader;
 
 /**
  * Tells the application's case officer that the applicant added, changed or cancelled a catering
@@ -87,16 +88,18 @@ class CateringChangeNotifier
     }
 
     /**
-     * seam — the case officer's address and language.
+     * seam — the case officer's address and language, read WITHOUT making the officer the current
+     * user. CreateObject('phpgwapi.preferences', $id) would: it returns the Preferences singleton and
+     * rewrites Settings['user'] for the rest of the citizen's request (see PreferencesReader).
      *
      * @return array{email: ?string, lang: ?string}
      */
     protected function loadOfficer(int $accountId): array
     {
-        $prefs = CreateObject('phpgwapi.preferences', $accountId)->read();
+        $common = PreferencesReader::read($accountId, ['common'])['common'] ?? [];
         return [
-            'email' => $prefs['common']['email'] ?? null,
-            'lang' => $prefs['common']['lang'] ?? null,
+            'email' => $common['email'] ?? null,
+            'lang' => $common['lang'] ?? null,
         ];
     }
 

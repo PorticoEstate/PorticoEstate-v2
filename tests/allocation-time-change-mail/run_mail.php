@@ -9,7 +9,9 @@
  * Covers, with no database and no mail transport:
  *   - AllocationTimeChangeNotifier::loadOfficer: the officer's preferences resolved as the framework
  *     resolves them (forced > own > default), and the CITIZEN's Settings['user'] and the Preferences
- *     singleton left exactly as they were
+ *     singleton left exactly as they were. The read goes through PreferencesReader, whose real SQL runs
+ *     on an in-memory sqlite behind Db::getInstance(); the reader itself is tested in
+ *     tests/preferences-reader/run_reader.php
  *   - AllocationTimeChangeMailRenderer: the real Twig template, the real .lang files in no/nn/en,
  *     the language swap, escape-once of every value (the applicant's and the organisation's names
  *     included), the applicant's comment
@@ -49,6 +51,7 @@ foreach ([
     require_once $root . '/src/modules/' . $file;
 }
 
+use App\Database\Db;
 use App\modules\booking\services\AllocationTimeChangeMailRenderer;
 use App\modules\booking\services\CateringLangSwitch;
 use App\modules\booking\services\EmailService;
@@ -457,24 +460,44 @@ $seedCitizen = static function (): void {
 };
 $identity = static fn(): array => [Settings::getInstance()->get('user'), Preferences::getInstance()->account_id];
 
-/** The production loadOfficer(), with only the database read replaced by fixed rows. */
+// The production loadOfficer() reads through PreferencesReader, which runs its real SQL on Db::getInstance().
+// Here that Db is an in-memory sqlite with a phpgw_preferences table: the stored rows are the only thing faked.
+$prefsDb = new PDO('sqlite::memory:');
+$dbRef = new ReflectionClass(Db::class);
+$dbInstance = $dbRef->newInstanceWithoutConstructor();
+$dbRef->getProperty('db')->setValue($dbInstance, $prefsDb);
+$dbRef->getProperty('connected')->setValue(null, true);
+$dbRef->getProperty('instance')->setValue(null, $dbInstance);
+$seedPreferences = static function (array $rows, bool $tableMissing = false) use ($prefsDb): void {
+    $prefsDb->exec('DROP TABLE IF EXISTS phpgw_preferences');
+    if ($tableMissing) {
+        return;
+    }
+    $prefsDb->exec('CREATE TABLE phpgw_preferences (preference_owner INTEGER, preference_app TEXT, preference_json TEXT)');
+    $insert = $prefsDb->prepare('INSERT INTO phpgw_preferences (preference_owner, preference_app, preference_json) VALUES (?, ?, ?)');
+    foreach ($rows as $row) {
+        $insert->execute([$row['preference_owner'], $row['preference_app'] ?? 'common', $row['preference_json']]);
+    }
+};
+
+/** The production loadOfficer(): the stored rows are written to the sqlite above, everything else is real. */
 class RowsNotifier extends AllocationTimeChangeNotifier
 {
     public array $rows = [];
     public array $delivered = [];
-    public ?\Throwable $rowsThrow = null;
+    /** the preference read fails: the table is gone */
+    public bool $dbDown = false;
 
     public function officer(int $accountId): array
     {
         return $this->loadOfficer($accountId);
     }
 
-    protected function readCommonPreferenceRows(int $accountId): array
+    protected function loadOfficer(int $accountId): array
     {
-        if ($this->rowsThrow) {
-            throw $this->rowsThrow;
-        }
-        return $this->rows;
+        global $seedPreferences;
+        $seedPreferences($this->rows, $this->dbDown);
+        return parent::loadOfficer($accountId);
     }
 
     protected function buildCaseLink(int $applicationId): string
@@ -493,7 +516,7 @@ class RowsNotifier extends AllocationTimeChangeNotifier
     }
 }
 
-$stored = static fn(int|string $owner, array $json): array => ['preference_owner' => $owner, 'preference_json' => json_encode($json, JSON_UNESCAPED_UNICODE)];
+$stored = static fn(int|string $owner, array $json): array => ['preference_owner' => $owner, 'preference_app' => 'common', 'preference_json' => json_encode($json, JSON_UNESCAPED_UNICODE)];
 $resolve = static function (array $rows): array {
     $n = new RowsNotifier(new AllocationTimeChangeMailRenderer(new FakeLangSwitch('no')));
     $n->rows = $rows;
@@ -513,7 +536,7 @@ $same('prefs: owners arrive from PDO as strings', $resolve([$stored('-1', ['lang
 $same('prefs: a forced value only touches its own key', $resolve([$stored(-1, ['lang' => 'no']), $stored(7, ['email' => 'own@example.test', 'lang' => 'en'])])['email'], 'own@example.test');
 $same('prefs: a forced EMPTY value still overwrites, as in the framework', $resolve([$stored(-1, ['lang' => '']), $stored(7, ['lang' => 'en'])])['lang'], '');
 $same('prefs: stored strings are unquoted like Preferences::unquote()', $resolve([$stored(7, ['email' => "o\\'brien@example.test"])])['email'], "o'brien@example.test");
-$same('prefs: a row that is not valid JSON, or not an object, is skipped', $resolve([['preference_owner' => 7, 'preference_json' => '{nope'], ['preference_owner' => 7, 'preference_json' => '"text"'], $stored(-2, ['lang' => 'nn'])]), ['email' => null, 'lang' => 'nn']);
+$same('prefs: a row that is not valid JSON, or not an object, is skipped', $resolve([['preference_owner' => 7, 'preference_app' => 'common', 'preference_json' => '{nope'], ['preference_owner' => 7, 'preference_app' => 'common', 'preference_json' => '"text"'], $stored(-2, ['lang' => 'nn'])]), ['email' => null, 'lang' => 'nn']);
 
 // the citizen's identity is untouched by a whole notify(), and the officer still gets the mail
 $seedCitizen();
@@ -537,7 +560,7 @@ $res = $n->notify($withOfficer(7));
 $same('identity: a render that throws: no mail, identity unchanged', [$res, $identity()], [false, $beforeIdentity]);
 $clearLog();
 $n = new RowsNotifier(new AllocationTimeChangeMailRenderer(new FakeLangSwitch('en')));
-$n->rowsThrow = new \TypeError('db down');
+$n->dbDown = true;
 $threw = false;
 $res = null;
 try {
@@ -545,8 +568,8 @@ try {
 } catch (\Throwable $e) {
     $threw = true;
 }
-$check('identity: the preference read throws a TypeError: notify does not throw', !$threw);
-$same('identity: ...no mail, a line in the log, identity unchanged', [$res, count($n->delivered), str_contains($logTail(), 'db down'), $identity()], [false, 0, true, $beforeIdentity]);
+$check('identity: the preference read fails (no phpgw_preferences): notify does not throw', !$threw);
+$same('identity: ...no mail, a line in the log, identity unchanged', [$res, count($n->delivered), str_contains($logTail(), 'phpgw_preferences'), $identity()], [false, 0, true, $beforeIdentity]);
 
 // ======================================================================================================
 // 2c. EmailService::sendCaseOfficerChangeMail — an empty booking config is logged, not silent

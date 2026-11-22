@@ -39,6 +39,7 @@ require_once getenv('VENDOR_AUTOLOAD') ?: $root . '/vendor/autoload.php';
 define('PHPGW_SERVER_ROOT', $root . '/src/modules');
 
 foreach ([
+    'phpgwapi/services/PreferencesReader.php',
     'booking/services/CateringText.php',
     'booking/services/CateringLangSwitch.php',
     'booking/services/EmailService.php',

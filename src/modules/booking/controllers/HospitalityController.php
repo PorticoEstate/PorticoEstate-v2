@@ -186,6 +186,26 @@ class HospitalityController
 	}
 
 	/**
+	 * RULING (operator, 47045 (b)): removing a delivery location, or switching it off, while open orders are served there
+	 * strands those orders. "Open" is decided in ONE place, HospitalityOrderRepository::countOpenAtLocation, the same count
+	 * as Q1. Re-activating is never refused by this rule (the direct-booking rule guards it).
+	 *
+	 * @return array{code: string, error: string, order_count: int}|null null = allowed
+	 */
+	private function openOrdersAtRemoteRefusal(int $hospitalityId, int $resourceId): ?array
+	{
+		$open = $this->orderRepository->countOpenAtLocation($hospitalityId, $resourceId);
+		if ($open === 0) {
+			return null;
+		}
+		return [
+			'code' => 'remote_location_has_open_orders',
+			'error' => lang('booking.remote_location_has_open_orders', $open),
+			'order_count' => $open,
+		];
+	}
+
+	/**
 	 * RULING Q2 (operator): the new main resource must not be an ACTIVE delivery location (remote location) of this
 	 * same hospitality. The Resources tab leaves the main resource out of the delivery locations, so the row would
 	 * turn invisible while it stays active, and the resource would be listed twice as a delivery location
@@ -684,6 +704,12 @@ class HospitalityController
 			$id = (int)$args['id'];
 			$resourceId = (int)$args['resourceId'];
 
+			// Removing a delivery location with open orders served there would strand them (operator ruling, 47045 (b)).
+			$refusal = $this->openOrdersAtRemoteRefusal($id, $resourceId);
+			if ($refusal !== null) {
+				return $this->refuse($response, $refusal);
+			}
+
 			$this->repository->removeRemoteLocation($id, $resourceId);
 
 			$accountId = (int)$this->userSettings['account_id'];
@@ -733,10 +759,20 @@ class HospitalityController
 				return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
 			}
 
-			// Re-activating a delivery location attaches it again; switching it off is the remedy and is never refused.
+			// Re-activating a delivery location attaches it again, so the direct-booking rule applies to it. That rule never
+			// refuses switching it off (the open-order rule below does, see 47045 (b)).
 			$refusal = $this->directBookingGuard->checkRemoteLocation($this->repository->getById($id), $resourceId, (bool)$body['active']);
 			if ($refusal !== null) {
 				return $this->refuseDirectBookingConflict($response, $refusal);
+			}
+
+			// Switching it off strands the open orders served there, as removing it does (operator ruling, 47045 (b)).
+			// Re-activating is never refused by this rule.
+			if (!(bool)$body['active']) {
+				$refusal = $this->openOrdersAtRemoteRefusal($id, $resourceId);
+				if ($refusal !== null) {
+					return $this->refuse($response, $refusal);
+				}
 			}
 
 			$this->repository->toggleRemoteLocation($id, $resourceId, (bool)$body['active']);

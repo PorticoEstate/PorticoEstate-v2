@@ -503,7 +503,11 @@ $expect('q/a move is told apart from the key arriving unchanged (the whole row m
 $expect('q/the broadcast tells other admins to rebuild the Resources tab when the main moved', str_contains($updateSource, "\$mainResourceChanged ? 'main_resource' : 'details'"), true);
 $controllerSource = file_get_contents(getenv('CONTROLLER_FILE') ?: $root . '/src/modules/booking/controllers/HospitalityController.php');
 $expect('q/"open" is not spelled in the controller (one definition, in the order repository)', str_contains($controllerSource, 'serving_time_iso') || str_contains($controllerSource, "'cancelled'"), false);
-$expect('q/the Q1 method counts through the one definition', str_contains($controllerSource, 'orderRepository->countOpenAtLocation('), true);
+// Scoped to the METHOD, not the file: the (b) helper makes the same call, so a whole-file search would still pass when Q1 lost its
+// own (mutant M54). The (b) helper gets its own row for the same reason.
+$expect('q/the Q1 method counts through the one definition', str_contains($methodSource('openOrdersAtMainRefusal'), 'orderRepository->countOpenAtLocation('), true);
+// method_exists first: on a base without the helper this row is RED, not an uncaught ReflectionException that ends the run.
+$expect('remote/b the open-order rule counts through the same one definition', method_exists(HospitalityController::class, 'openOrdersAtRemoteRefusal') && str_contains($methodSource('openOrdersAtRemoteRefusal'), 'orderRepository->countOpenAtLocation('), true);
 $orderRepositorySource = file_get_contents(getenv('ORDER_REPOSITORY_FILE') ?: $root . '/src/modules/booking/repositories/HospitalityOrderRepository.php');
 $openFn = substr($orderRepositorySource, (int)strpos($orderRepositorySource, 'function countOpenAtLocation'), 1400);
 $expect('q/the definition of "open" reads the final statuses from the order guard, not a second list', str_contains($openFn, 'HospitalityOrderGuard::FINAL_ORDER_STATUSES') && !str_contains($openFn, "'cancelled'"), true);
@@ -571,7 +575,8 @@ final class HarnessWorld
 
 /**
  * Hospitality 7, main resource 10 (Kjokken); resources 11-13 are free to move to, 20 has direct booking.
- * $with: 'row' (stored hospitality fields), 'remote' (hospitality id => ids of its ACTIVE delivery locations), 'open' (see HarnessWorld).
+ * $with: 'row' (stored hospitality fields), 'remote' (hospitality id => ids of its ACTIVE delivery locations), 'remoteInactive'
+ * (hospitality id => ids of its INACTIVE delivery locations), 'open' (see HarnessWorld).
  */
 $newWorld = static function (array $with = []): HarnessWorld {
     $w = new HarnessWorld();
@@ -588,6 +593,11 @@ $newWorld = static function (array $with = []): HarnessWorld {
     foreach ($with['remote'] ?? [] as $hospitalityId => $resourceIds) {
         foreach ($resourceIds as $resourceId) {
             $w->pdo->prepare('INSERT INTO bb_hospitality_remote_location (hospitality_id, resource_id, active) VALUES (?, ?, 1)')->execute([$hospitalityId, $resourceId]);
+        }
+    }
+    foreach ($with['remoteInactive'] ?? [] as $hospitalityId => $resourceIds) {
+        foreach ($resourceIds as $resourceId) {
+            $w->pdo->prepare('INSERT INTO bb_hospitality_remote_location (hospitality_id, resource_id, active) VALUES (?, ?, 0)')->execute([$hospitalityId, $resourceId]);
         }
     }
     return $w;
@@ -932,6 +942,39 @@ $expect('remote/source order: addRemoteLocation() asks the direct-booking guard 
     $firstBefore($addSource, 'directBookingGuard->checkRemoteLocation(', '$this->remoteIsMainResourceRefusal('), true);
 $expect('remote/source order: addRemoteLocation() asks the main-resource rule before the repository write',
     $firstBefore($addSource, '$this->remoteIsMainResourceRefusal(', 'repository->addRemoteLocation('), true);
+
+// ── (b) open orders at a delivery location: removing it, or switching it off, strands them (47045 (b)) ───────────────
+// "Open" is the one definition, countOpenAtLocation, called once with (hospitality, delivery location): the same count as Q1.
+// The refusal is asked before the write. Re-activating is never refused by this rule.
+// Remote location 11 of hospitality 7. Key order matches $remoteOutcome + order_count + counts, since the comparison is identical.
+$openRefusal = static fn(int $count): array => ['status' => 422, 'code' => 'remote_location_has_open_orders',
+    'error' => "booking.remote_location_has_open_orders|{$count}", 'writes' => [], 'broadcasts' => [], 'order_count' => $count, 'counts' => [[7, 11]]];
+$remoteFull = static fn(array $o): array => $remoteOutcome($o) + ['order_count' => $o['body']['order_count'] ?? null, 'counts' => $o['counts']];
+$remoteOpen2 = static fn(array $with = []): HarnessWorld => $newWorld(array_replace(['open' => [7 => [11 => 2]]], $with));
+
+$expect('remote/b REMOVE a delivery location with 2 open orders at it: 422 remote_location_has_open_orders, order_count 2, NO write, no broadcast, one count (7 at 11)',
+    $remoteFull($drive('removeRemote', [], $remoteOpen2(), 11)), $openRefusal(2));
+$o = $drive('removeRemote', [], $newWorld(), 11);
+$expect('remote/b zero arm: REMOVE with no open orders is allowed: 200, one removeRemoteLocation write, the other admins told, one count (base makes no count, so RED there)',
+    [$o['status'], $o['writes'], $o['broadcasts'], $o['counts']], [200, [['removeRemote', 7, 11]], [['hospitality', 7, 'updated', 'resources']], [[7, 11]]]);
+$expect('remote/b SWITCH OFF a delivery location with 2 open orders at it: 422 remote_location_has_open_orders, order_count 2, NO write, one count',
+    $remoteFull($drive('toggleRemote', ['active' => false], $remoteOpen2(), 11)), $openRefusal(2));
+$expect('remote/b switching OFF an ALREADY-INACTIVE delivery location with 2 open orders: refused too (a no-op PATCH is no way round it)',
+    $remoteFull($drive('toggleRemote', ['active' => false], $remoteOpen2(['remoteInactive' => [7 => [11]]]), 11)), $openRefusal(2));
+$o = $drive('toggleRemote', ['active' => true], $remoteOpen2(['remoteInactive' => [7 => [11]]]), 11);
+$expect('remote/b RE-ACTIVATING with 2 open orders at it is NEVER refused by this rule: 200, one toggle write (on), NO count',
+    [$o['status'], $o['writes'], $o['counts']], [200, [['toggleRemote', 7, 11, true]], []]);
+$o = $drive('toggleRemote', ['active' => false], $newWorld(), 11);
+$expect('remote/b zero arm: switching OFF with no open orders is allowed: 200, one toggle write (off), one count (base makes no count, so RED there)',
+    [$o['status'], $o['writes'], $o['counts']], [200, [['toggleRemote', 7, 11, false]], [[7, 11]]]);
+$removeSource = $methodSource('removeRemoteLocation');
+$toggleSource = $methodSource('toggleRemoteLocation');
+$expect('remote/b source order: removeRemoteLocation() asks the open-order rule before the repository write',
+    $firstBefore($removeSource, 'openOrdersAtRemoteRefusal(', 'repository->removeRemoteLocation('), true);
+$expect('remote/b source order: toggleRemoteLocation() asks the direct-booking guard before the open-order rule',
+    $firstBefore($toggleSource, 'directBookingGuard->checkRemoteLocation(', 'openOrdersAtRemoteRefusal('), true);
+$expect('remote/b source order: toggleRemoteLocation() asks the open-order rule before the repository write',
+    $firstBefore($toggleSource, 'openOrdersAtRemoteRefusal(', 'repository->toggleRemoteLocation('), true);
 
 // The doubles are meant to leave nothing to the real database. Db::getInstance() would create the singleton (in a CLI with no
 // configuration that is a silent in-memory SQLite, which answers every query with nothing), so a path that reached for it

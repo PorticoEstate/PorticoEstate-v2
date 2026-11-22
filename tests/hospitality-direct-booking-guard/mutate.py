@@ -343,8 +343,8 @@ MUTANTS = [
 
     # ── Q1 and Q2 of the main resource, run through update() ─────────────────────────────────────────────────────────────────
     ("M70", "Q1/Q2: a refusal is computed and never returned, so the write happens (OM4 of fact 45960)",
-     "if ($refusal !== null) {\n" + T*5 + "return $this->refuse($response, $refusal);",
-     "if ($refusal !== null && false) {\n" + T*5 + "return $this->refuse($response, $refusal);",
+     "?? $this->openOrdersAtMainRefusal($existing);\n" + T*4 + "if ($refusal !== null) {\n" + T*5 + "return $this->refuse($response, $refusal);",
+     "?? $this->openOrdersAtMainRefusal($existing);\n" + T*4 + "if ($refusal !== null && false) {\n" + T*5 + "return $this->refuse($response, $refusal);",
      ['move/Q1 a main move with open orders at the old main', 'move/Q2 a move onto an active delivery location'], "controller"),
     ("M71", "Q1: the refusal is computed and thrown away, Q2's is still returned",
      "$this->mainIsRemoteLocationRefusal($existing, $body['resource_id'])\n" + T*5 + "?? $this->openOrdersAtMainRefusal($existing);",
@@ -406,6 +406,29 @@ MUTANTS = [
      "\t\t\t$refusal = $this->directBookingGuard->checkRemoteLocation($existing, (int)$body['resource_id'], true);\n\t\t\tif ($refusal !== null) {\n\t\t\t\treturn $this->refuseDirectBookingConflict($response, $refusal);\n\t\t\t}\n\n\t\t\t// The main resource cannot also be a delivery location of its hospitality (operator ruling, 47045 (a)).\n\t\t\t$refusal = $this->remoteIsMainResourceRefusal($existing, (int)$body['resource_id']);\n\t\t\tif ($refusal !== null) {\n\t\t\t\treturn $this->refuse($response, $refusal);\n\t\t\t}\n",
      "\t\t\t$refusal = $this->remoteIsMainResourceRefusal($existing, (int)$body['resource_id']);\n\t\t\tif ($refusal !== null) {\n\t\t\t\treturn $this->refuse($response, $refusal);\n\t\t\t}\n\n\t\t\t$refusal = $this->directBookingGuard->checkRemoteLocation($existing, (int)$body['resource_id'], true);\n\t\t\tif ($refusal !== null) {\n\t\t\t\treturn $this->refuseDirectBookingConflict($response, $refusal);\n\t\t\t}\n",
      ['remote/the direct-booking refusal speaks first when the main itself has direct booking', 'remote/source order: addRemoteLocation() asks the direct-booking guard before the main-resource rule'], "controller"),
+    # (b) 47045: open orders at a delivery location refuse its removal and its switching off (never its re-activation)
+    ("M81", "(b) REMOVE does not count the open orders (the refusal is dropped from removeRemoteLocation)",
+     "\t\t\t// Removing a delivery location with open orders served there would strand them (operator ruling, 47045 (b)).\n\t\t\t$refusal = $this->openOrdersAtRemoteRefusal($id, $resourceId);\n\t\t\tif ($refusal !== null) {\n\t\t\t\treturn $this->refuse($response, $refusal);\n\t\t\t}\n\n\t\t\t$this->repository->removeRemoteLocation($id, $resourceId);",
+     "\t\t\t$this->repository->removeRemoteLocation($id, $resourceId);",
+     ['remote/b REMOVE a delivery location with 2 open orders'], "controller"),
+    ("M82", "(b) SWITCH OFF does not count the open orders (the refusal is dropped from toggleRemoteLocation)",
+     "\t\t\tif (!(bool)$body['active']) {\n\t\t\t\t$refusal = $this->openOrdersAtRemoteRefusal($id, $resourceId);",
+     "\t\t\tif (false) {\n\t\t\t\t$refusal = $this->openOrdersAtRemoteRefusal($id, $resourceId);",
+     ['remote/b SWITCH OFF a delivery location with 2 open orders', 'remote/b switching OFF an ALREADY-INACTIVE'], "controller"),
+    ("M83", "(b) the open-order rule also applies to RE-ACTIVATION (the test is not `!active` but always)",
+     "\t\t\tif (!(bool)$body['active']) {", "\t\t\tif (true) {",
+     ['remote/b RE-ACTIVATING with 2 open orders'], "controller"),
+    ("M84", "(b) the count is made with the remote id as the hospitality id and the hospitality id as the location",
+     "$open = $this->orderRepository->countOpenAtLocation($hospitalityId, $resourceId);", "$open = $this->orderRepository->countOpenAtLocation($resourceId, $hospitalityId);",
+     ['remote/b REMOVE a delivery location with 2 open orders', 'remote/b SWITCH OFF a delivery location with 2 open orders'], "controller"),
+    ("M85", "(b) REMOVE writes BEFORE the open-order rule (the refusal comes after the write)",
+     "\t\t\t// Removing a delivery location with open orders served there would strand them (operator ruling, 47045 (b)).\n\t\t\t$refusal = $this->openOrdersAtRemoteRefusal($id, $resourceId);\n\t\t\tif ($refusal !== null) {\n\t\t\t\treturn $this->refuse($response, $refusal);\n\t\t\t}\n\n\t\t\t$this->repository->removeRemoteLocation($id, $resourceId);",
+     "\t\t\t$this->repository->removeRemoteLocation($id, $resourceId);\n\t\t\t$refusal = $this->openOrdersAtRemoteRefusal($id, $resourceId);\n\t\t\tif ($refusal !== null) {\n\t\t\t\treturn $this->refuse($response, $refusal);\n\t\t\t}",
+     ['remote/b REMOVE a delivery location with 2 open orders', 'remote/b source order: removeRemoteLocation() asks the open-order rule before the repository write'], "controller"),
+    ("M86", "(b) SWITCH OFF writes BEFORE the open-order rule (the refusal comes after the write)",
+     "\t\t\tif (!(bool)$body['active']) {\n\t\t\t\t$refusal = $this->openOrdersAtRemoteRefusal($id, $resourceId);\n\t\t\t\tif ($refusal !== null) {\n\t\t\t\t\treturn $this->refuse($response, $refusal);\n\t\t\t\t}\n\t\t\t}\n\n\t\t\t$this->repository->toggleRemoteLocation($id, $resourceId, (bool)$body['active']);",
+     "\t\t\t$this->repository->toggleRemoteLocation($id, $resourceId, (bool)$body['active']);\n\t\t\tif (!(bool)$body['active']) {\n\t\t\t\t$refusal = $this->openOrdersAtRemoteRefusal($id, $resourceId);\n\t\t\t\tif ($refusal !== null) {\n\t\t\t\t\treturn $this->refuse($response, $refusal);\n\t\t\t\t}\n\t\t\t}",
+     ['remote/b SWITCH OFF a delivery location with 2 open orders', 'remote/b source order: toggleRemoteLocation() asks the open-order rule before the repository write'], "controller"),
 ]
 
 

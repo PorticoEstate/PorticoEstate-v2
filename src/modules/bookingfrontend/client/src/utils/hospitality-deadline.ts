@@ -149,6 +149,23 @@ export function isDeadlineOpen(now: Date | number, deadline: Date | null): boole
     return t <= deadline.getTime();
 }
 
+/**
+ * The application's earliest requested start: the anchor of an order that has no serving time of its own.
+ * Read from THIS application only, as the server does (HospitalityOrderRepository::getEarliestApplicationDate is
+ * `MIN(from_) … WHERE application_id = :id`), never from the other applications of a cart or a building group.
+ * null when there is no application or it has no date.
+ */
+export function earliestApplicationDate(
+    application: {dates?: ReadonlyArray<{from_: string}> | null} | undefined
+): Date | null {
+    let earliest: Date | null = null;
+    for (const d of application?.dates ?? []) {
+        const from = new Date(d.from_);
+        if (!earliest || from < earliest) earliest = from;
+    }
+    return earliest;
+}
+
 export type HospitalityAction = 'add' | 'change' | 'cancel';
 
 export type HospitalityActionReason =

@@ -7,7 +7,7 @@ import {IApplication} from '@/service/types/api/application.types';
 import {IHospitality, IHospitalityOrder} from '@/service/types/api/hospitality.types';
 import {useApplicationGroupHospitalities, useDeleteHospitalityOrder} from '../hooks/hospitality-hooks';
 import {formatOreOrDash, hospitalityOrderTotalOre, sumOreOrNull} from '@/utils/article-pricing';
-import {computeHospitalityDeadline} from '@/utils/hospitality-deadline';
+import {cancellationNotice} from '@/utils/catering-cancellation-notice';
 import HospitalityOrderModal from './hospitality-order-modal';
 import styles from './hospitality.module.scss';
 
@@ -81,44 +81,12 @@ const HospitalitySection: FC<HospitalitySectionProps> = ({applicationIds, applic
         return sumOreOrNull(orders.map(order => hospitalityOrderTotalOre(order)));
     }, [orders]);
 
-    // Calculate cancellation deadline info only for ordered hospitalities
-    const cancellationInfo = useMemo(() => {
-        if (orders.length === 0 || applications.length === 0) return null;
-
-        // Find the earliest booking date across all applications
-        let earliestFrom: Date | null = null;
-        for (const app of applications) {
-            for (const d of (app.dates || [])) {
-                const from = new Date(d.from_);
-                if (!earliestFrom || from < earliestFrom) earliestFrom = from;
-            }
-        }
-        if (!earliestFrom) return null;
-
-        // Only consider hospitalities that have been ordered
-        const orderedHospitalityIds = new Set(orders.map(o => o.hospitality_id));
-        const orderedHospitalities = hospitalities.filter(h => orderedHospitalityIds.has(h.id));
-
-        // Most restrictive = the earliest cancel-by instant across ordered hospitalities.
-        // Each deadline honours that hospitality's working-days config (mirrors the backend calc).
-        let strictestCancelBy: Date | null = null;
-        for (const h of orderedHospitalities) {
-            const cancelBy = computeHospitalityDeadline(
-                earliestFrom,
-                h.resource_cancellation_deadline_value,
-                h.resource_cancellation_deadline_unit,
-                h.open_days_list
-            );
-            if (cancelBy && (strictestCancelBy === null || cancelBy < strictestCancelBy)) {
-                strictestCancelBy = cancelBy;
-            }
-        }
-        if (!strictestCancelBy) return null;
-
-        const isPastDeadline = Date.now() > strictestCancelBy.getTime();
-
-        return {cancelBy: strictestCancelBy, isPastDeadline};
-    }, [orders, hospitalities, applications]);
+    // Each order's cancellation deadline counts back from ITS OWN serving time (or its own application's earliest
+    // date), as the server's lock does; the other applications in the building group play no part.
+    const cancellationInfo = useMemo(
+        () => cancellationNotice(orders, hospitalities, applications, Date.now()),
+        [orders, hospitalities, applications]
+    );
 
     if (isLoading || hospitalities.length === 0) {
         return null;
@@ -169,20 +137,20 @@ const HospitalitySection: FC<HospitalitySectionProps> = ({applicationIds, applic
                 </Button>
             </div>
 
-            {/* Information while the order can still be cancelled (#1502); a warning once the deadline has passed */}
-            {cancellationInfo && (
-                <Alert
-                    data-color={cancellationInfo.isPastDeadline ? 'warning' : 'info'}
-                    data-size="sm"
-                    style={{marginBottom: '0.75rem'}}
-                >
-                    {cancellationInfo.isPastDeadline
-                        ? t('bookingfrontend.cancellation_deadline_passed_warning')
-                        : t('bookingfrontend.cancellation_deadline_info')
-                            .replace('%1', cancellationInfo.cancelBy.toLocaleDateString('nb-NO', {
-                                day: '2-digit', month: 'short', year: 'numeric',
-                                hour: '2-digit', minute: '2-digit'
-                            }))
+            {/* A warning when some order's cancellation deadline has passed; information with the soonest deadline
+                that is still open. Both can show at once: a past order never hides an open order's date. */}
+            {cancellationInfo?.somePast && (
+                <Alert data-color="warning" data-size="sm" style={{marginBottom: '0.75rem'}}>
+                    {t('bookingfrontend.cancellation_deadline_passed_warning')}
+                </Alert>
+            )}
+            {cancellationInfo?.soonestOpen && (
+                <Alert data-color="info" data-size="sm" style={{marginBottom: '0.75rem'}}>
+                    {t('bookingfrontend.cancellation_deadline_info')
+                        .replace('%1', cancellationInfo.soonestOpen.toLocaleDateString('nb-NO', {
+                            day: '2-digit', month: 'short', year: 'numeric',
+                            hour: '2-digit', minute: '2-digit'
+                        }))
                     }
                 </Alert>
             )}

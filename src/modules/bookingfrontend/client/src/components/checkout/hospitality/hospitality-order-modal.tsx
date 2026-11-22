@@ -44,6 +44,7 @@ import {
 import {hospitalityMenuLineForSummary, summarizeHospitalityVat} from '@/utils/hospitality-price-summary';
 import {
     computeHospitalityDeadline,
+    earliestApplicationDate,
     hospitalityActionWindow,
     isWorkingDaysMode,
     formatOpenDays,
@@ -61,16 +62,6 @@ interface HospitalityOrderModalProps {
     onHospitalitySelect: (hospitality: IHospitality) => void;
     applications: IApplication[];
     existingOrder?: IHospitalityOrder;
-}
-
-/** The application's earliest requested start — the anchor for an order that has no serving time. */
-function earliestDate(application: IApplication | undefined): Date | null {
-    let earliest: Date | null = null;
-    for (const d of application?.dates ?? []) {
-        const from = new Date(d.from_);
-        if (!earliest || from < earliest) earliest = from;
-    }
-    return earliest;
 }
 
 /** Key of the synthetic option carrying a legacy order's stored serving time. */
@@ -436,7 +427,7 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
         if (changingSubmittedOrder && existingOrder) {
             storedAnchor = existingOrder.serving_time_iso
                 ? new Date(existingOrder.serving_time_iso)
-                : earliestDate(orderApplication);
+                : earliestApplicationDate(orderApplication);
         }
 
         const deadlineVerdict = storedAnchor

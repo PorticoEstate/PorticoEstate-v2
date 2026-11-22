@@ -147,8 +147,11 @@
 	{
 		return fetch(url, { method: 'DELETE', credentials: 'same-origin' }).then(function (res)
 		{
-			if (!res.ok) throw new Error('HTTP ' + res.status);
-			return res.json();
+			if (res.ok) return res.json();
+			return res.json().catch(function () { return null; }).then(function (json)
+			{
+				throw new Error((json && json.error) || 'HTTP ' + res.status);
+			});
 		});
 	}
 

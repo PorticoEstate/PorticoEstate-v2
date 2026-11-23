@@ -227,7 +227,7 @@ MUTATIONS = [
      "catering_application_closed\tbookingfrontend\tnn\t", "catering_application_closed_x\tbookingfrontend\tnn\t"),
     # --- (7) the quantity of a catering line is a positive WHOLE number (task 47994, C1) ----------------------
     ("Mq1", "php", HOQ, "a fraction is no longer refused (the floor test is gone: 2.5 is read as 2)",
-     "if ($raw != floor($raw) || $raw > self::MAX) {", "if ($raw > self::MAX) {"),
+     "if ($raw != floor($raw) || $raw < 1 || $raw > self::MAX) {", "if ($raw < 1 || $raw > self::MAX) {"),
     ("Mq2", "php", HOQ, "a string with a fraction is accepted (\"2.5\" is read as 2)",
      "'/^[0-9]+(?:\\.0+)?$/D'", "'/^[0-9]+(?:\\.[0-9]+)?$/D'"),
     ("Mq3", "php", HOQ, "a string with a trailing newline is accepted (the D modifier is gone)",
@@ -237,7 +237,7 @@ MUTATIONS = [
     ("Mq5", "php", HOQ, "no upper bound (a whole number above the column's capacity is accepted)",
      "return $quantity >= 1 && $quantity <= self::MAX ? $quantity : null;", "return $quantity >= 1 ? $quantity : null;"),
     ("Mq6", "php", HOQ, "a float above the column's capacity is not refused by value (PHP's (int) wraps 2^64+8192 to 8192)",
-     "if ($raw != floor($raw) || $raw > self::MAX) {", "if ($raw != floor($raw)) {"),
+     "if ($raw != floor($raw) || $raw < 1 || $raw > self::MAX) {", "if ($raw != floor($raw) || $raw < 1) {"),
     ("Mq7", "php", HOQ, "anything that is not an int, float or digit string is cast with (int) (true, [2] and \"2abc\"-like values pass)",
      "        } else {\n            return null;\n        }\n\n        return $quantity", "        } else {\n            $quantity = (int)$raw;\n        }\n\n        return $quantity"),
     ("Mq8", "php", HOQ, "a line without a quantity is refused instead of meaning 1",
@@ -269,6 +269,8 @@ MUTATIONS = [
      "catering_quantity_not_whole\tbookingfrontend\tnn\t", "catering_quantity_not_whole_x\tbookingfrontend\tnn\t"),
     ("Mq19", "php", LANG.format("en"), "the English text is gone",
      "catering_quantity_not_whole\tbookingfrontend\ten\t", "catering_quantity_not_whole_x\tbookingfrontend\ten\t"),
+    ("Mq20", "php", HOQ, "a float below 1 is not refused by value before the cast (task 48533: (int) wraps -18446744073709549568 to +2048, which the range test accepts)",
+     "if ($raw != floor($raw) || $raw < 1 || $raw > self::MAX) {", "if ($raw != floor($raw) || $raw > self::MAX) {"),
     # --- (8) the same rule in the ADMIN order API: addLine and updateLine (task 47994, C1b) --------------------
     ("Ma1", "php", ADM, "addLine judges nothing (the raw body quantity is stored again)",
      "\t\t\t$quantity = HospitalityOrderQuantity::ofLine($body);\n\t\t\tif ($quantity === null) {\n\t\t\t\treturn $this->refuseQuantity($response);\n\t\t\t}\n",

@@ -38,8 +38,10 @@ final class HospitalityOrderQuantity
         if (is_int($raw)) {
             $quantity = $raw;
         } elseif (is_float($raw)) {
-            // INF is above MAX and NaN is not equal to its own floor, so neither needs a test of its own.
-            if ($raw != floor($raw) || $raw > self::MAX) {
+            // INF is above MAX, -INF is below 1 and NaN is not equal to its own floor, so none needs a test of its own. The
+            // lower bound must come BEFORE the cast: (int) of a float outside int64 wraps modulo 2^64, so the JSON number
+            // -18446744073709549568 (beyond int64, hence a float) would become +2048 and pass the range test below.
+            if ($raw != floor($raw) || $raw < 1 || $raw > self::MAX) {
                 return null;
             }
             $quantity = (int)$raw;

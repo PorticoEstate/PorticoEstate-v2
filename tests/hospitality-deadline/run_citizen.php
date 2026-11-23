@@ -794,6 +794,13 @@ $wholeTable = [
     ['1e400', null], ['100000000', null], ['"100000000"', null], ['12345678901234567890', null], ['"12345678901234567890"', null], ['9007199254740993', null],
     // 2^64 + 8192 as a float: PHP's (int) wraps it to 8192, which would pass the range test, so the float branch must refuse it by value first.
     ['18446744073709560000', null], ['18446744073709563904', null],
+    // The NEGATIVE half of the same wrap (task 48533): a JSON number below -2^63 is a float, and (int) of it wraps modulo 2^64 to a
+    // POSITIVE number in 1..MAX that the final range test would accept. -(2^64 - 2048) wraps to +2048, -(2^64 - 4096) to +4096,
+    // -(2^65 - 4096) to +4096 (the next period). -1e30 and -INF (1e400's negative) wrap to something refused anyway; they are rows
+    // so that a lower bound written some other way cannot lose them.
+    ['-18446744073709549568', null], ['-18446744073709547520', null], ['-36893488147419099136', null], ['-1e30', null], ['-1e400', null],
+    // Positive control: the numbers those floats wrap TO are valid quantities, so a wrap that got through really would be accepted.
+    ['2048', 2048], ['4096', 4096], ['2048.0', 2048],
 ];
 if ($haveQuantity) {
     foreach ($wholeTable as [$literal, $want]) {
@@ -826,7 +833,10 @@ $wroteNothing = static fn(CitizenStubRepo $repo, RecordingNotifier $notifier): a
     [$repo->wrote, array_values(array_intersect($repo->calls, $writeCalls)), count($repo->entries), count($notifier->payloads)];
 
 // Refused: the request answers 400 with the translated error, the code and the offending line, and NOTHING is written.
-$refusedQuantities = ['2.5', '"2.5"', '0.5', '2.004', '0', '-1', '"abc"', 'true', 'false', '[2]', '1e400', '100000000', '"2abc"', '"1e1"', '" 2"', '0.0'];
+$refusedQuantities = ['2.5', '"2.5"', '0.5', '2.004', '0', '-1', '"abc"', 'true', 'false', '[2]', '1e400', '100000000', '"2abc"', '"1e1"', '" 2"', '0.0',
+    // Beyond int64 and negative (task 48533): (int) wraps these to +2048 / +4096 unless the float is refused by value first. Shared by
+    // all four APIs: the applicant's create and update here, the admin addLine and updateLine in section 8.
+    '-18446744073709549568', '-18446744073709547520', '-36893488147419099136', '-1e30', '-1e400', '-0.0'];
 foreach ($refusedQuantities as $literal) {
     [$r, $repo, $notifier] = $createQ('[{"hospitality_article_id":11,"quantity":' . $literal . '}]');
     $json = json_decode($r['body'], true) ?: [];

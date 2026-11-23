@@ -12,7 +12,9 @@
  * literal ending such as '1', that is somebody else's registration, and uiparticipant::add then wrote the request's
  * phone, email and check-in/out times onto it BY ITS ID. A registration is now found only by the same number
  * (soparticipant::phone_key: digits, without a leading 00 or the Norwegian country code), the statements are bound, and
- * a registration that is found keeps the phone it was stored with.
+ * a registration that is found keeps the phone AND the email it was stored with (task 48970: under phone = identity, a
+ * request that only knows a number must not write contact data onto that registration; a new registration, when none is
+ * found, takes the request's phone and email).
  *
  * The classes under test are the REAL code from HD_ROOT: booking_soparticipant (get_previous_registration, doValidate,
  * preValidate, get_number_of_participants, phone_key), bookingfrontend_uiparticipant::add and Sanitizer. Stubs:
@@ -33,8 +35,9 @@
  *   N3  only the reservation's own registrations: the same number in another reservation, or another type, is not found
  *   N4  the latest registration of a number wins; checked out, a register_pre/in starts a new one (id null)
  *   N5  a number that is not registered finds nothing
- *   N6  POST register_in with the 8 digits of a pre-registered +47 number checks THAT registration in (from_ set, the
- *       request email) and changes no other row
+ *   N6  POST register_in with the 8 digits of a pre-registered +47 number checks THAT registration in (from_ set), keeps
+ *       its STORED email (the request's is written to no row) and changes no other row. N6 fails on 0af61b87b, which
+ *       wrote the request's email onto the found registration (task 48970, ruling c-strict), and passes on the fix.
  *   N7  POST register_out with the stored phone checks that registration out and changes no other row
  *   N8  POST register_pre with a new number adds one registration and changes no other row
  * FIX rows (fail on the base tree, pass on the fix):
@@ -595,8 +598,9 @@ namespace {
         $one = $r['ids']['one'];
         $row = $r['rows_after'][$one];
         $ok = $r['redirected'] && changed($r) === [$one] && added($r) === []
-            && $row['from_'] !== null && $row['to_'] === null && $row['email'] === 'new@example.invalid';
-        check('N6', $ok, 'POST register_in with the 8 digits of a pre-registered +47 number checks THAT registration in',
+            && $row['from_'] !== null && $row['to_'] === null && $row['email'] === 'one@example.invalid'
+            && array_filter($r['rows_after'], fn($after) => $after['email'] === 'new@example.invalid') === [];
+        check('N6', $ok, 'POST register_in with the 8 digits of a pre-registered +47 number checks THAT registration in and keeps its stored email',
             json_encode(['redirected' => $r['redirected'], 'changed' => changed($r), 'added' => count(added($r)), 'row' => $row, 'errors' => $r['errors']]));
         check('F9', $row['phone'] === '+4791111111', 'the registration found by its 8 digits keeps its stored phone',
             "phone now '{$row['phone']}'");

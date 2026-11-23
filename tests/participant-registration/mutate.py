@@ -56,6 +56,10 @@ MUTATIONS = [
      ['F10']),
     ('M10 the found registration is not the requester\'s: any row of the reservation', SO,
      r"if \(self::phone_key\(\(string\)\$row\['phone'\]\) === \$key\)", "if (true)", ['F3', 'F8']),
+    # task 48970 (ruling c-strict): a found registration keeps its stored email too
+    ('M11 the request email written onto a found registration', UI,
+     r"!empty\(\$participant\['id'\]\) \? \$participant\['email'\] : Sanitizer::get_var\('email', 'email'\)",
+     "Sanitizer::get_var('email', 'email')", ['N6']),
 ]
 
 

@@ -1,4 +1,18 @@
 new coordinator	property	no	Ny koordinator
+import recipients	property	no	Importer mottakere
+csv or excel: header row followed by id, address, name, norwegian phone number and an ignored column.	property	no	CSV eller Excel: overskriftsrad etterfulgt av ID, adresse, navn, norsk telefonnummer og en kolonne som ignoreres.
+importing recipients	property	no	Importerer mottakere
+recipients imported	property	no	Mottakere importert
+invalid phone numbers in rows	property	no	Ugyldige telefonnumre på radene
+sending sms	property	no	Sender SMS
+sms sending completed	property	no	Sending av SMS er fullført
+recipients without confirmed sending	property	no	Mottakere uten bekreftet sending (kontroller SMS-loggen før du sender på nytt)
+sending interrupted. check the sms log before sending again. the current batch may have been partially sent.	property	no	Sendingen ble avbrutt. Kontroller SMS-loggen før du sender på nytt. Noen meldinger i gjeldende gruppe kan ha blitt sendt.
+keep this page open while sms messages are being sent.	property	no	Hold denne siden åpen mens SMS-meldingene sendes.
+no recipients were imported.	property	no	Ingen mottakere ble importert.
+file upload failed. check the file size and try again.	property	no	Filopplasting feilet. Kontroller filstørrelsen og prøv igjen.
+could not import recipients	property	no	Kunne ikke importere mottakere
+invalid sms batch	property	no	Ugyldig SMS-gruppe
 transfer budget	property	no	Overfør budsjett
 economy	property	no	Økonomi
 %1 buildings has been updated to not active of %2 already not active	property	no	%1 Bygninger er oppdatert til IKKE AKTIVE av %2 som var IKKE AKTIVE fra før

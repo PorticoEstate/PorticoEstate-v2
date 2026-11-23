@@ -16,7 +16,8 @@
 <xsl:template xmlns:php="http://php.net/xsl" match="send_sms">
 	<script type="text/javascript">
 		self.name="first_Window";
-		var lang = <xsl:value-of select="php:function('js_lang',  'Name', 'Address', 'select user')"/>
+		var lang = <xsl:value-of select="php:function('js_lang',  'Name', 'Address', 'select user', 'selected', 'Import failed', 'Importing recipients', 'Recipients imported', 'Invalid phone numbers in rows', 'Sending SMS', 'SMS sending completed', 'Recipients without confirmed sending', 'Sending interrupted. Check the SMS log before sending again. The current batch may have been partially sent.', 'Keep this page open while SMS messages are being sent.', 'No recipients were imported.')"/>
+		Object.keys(lang).forEach(function (key) { if (lang[key].charAt(0) === '!') { lang[key] = key; } });
 	</script>
 
 	<div class="content">
@@ -58,7 +59,12 @@
 								<xsl:apply-templates select="recipient_list/options"/>
 							</select>
 						</div>
-
+						<div class="pure-control-group">
+							<label for="sms_recipient_file"><xsl:value-of select="import_recipients_label"/></label>
+							<input type="file" id="sms_recipient_file" accept=".csv,.xls,.xlsx" class="pure-input-3-4"/>
+							<div><xsl:value-of select="import_recipients_help"/></div>
+							<div id="sms_import_status" role="status" aria-live="polite"></div>
+						</div>
 
 						<div class="pure-control-group">
 							<label>
@@ -94,6 +100,7 @@
 						</fieldset>
 					</div>
 				</div>
+				<div id="sms_send_status" role="status" aria-live="polite"></div>
 				<div id="submit_group_bottom" class="proplist-col">
 					<xsl:variable name="lang_save">
 						<xsl:value-of select="php:function('lang', 'save')"/>

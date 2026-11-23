@@ -161,17 +161,22 @@
 
 // The closing time at the foot of the time axis (#1537). FullCalendar labels a slot only while it starts before
 // slotMaxTime, so the closing time is drawn here, over the bottom edge of the grid. The wrapper only positions the
-// label: the grid itself does not move.
+// label: the grid itself does not move. It keeps its own height (align-self: start), so the label stays on the
+// calendar's bottom edge and does not follow a taller sibling in the grid that holds the calendar.
 .calendarBody {
     position: relative;
+    align-self: start;
 }
 
+// The axis column is 61px wide with a 4.5px cushion, and the calendar starts 2px inside the wrapper. Measured live in
+// Chrome 157 at 1280 and 375, in the week and day views: the text right-aligns to the same edge as the slot labels.
 .closingAxisLabel {
     position: absolute;
     bottom: 0;
-    left: 0;
-    width: 3.2em; // the axis column's width, measured in the live check
-    padding-right: 4px;
+    left: 2px;
+    width: 61px;
+    box-sizing: border-box;
+    padding-right: 4.5px;
     text-align: right;
     pointer-events: none;
 }

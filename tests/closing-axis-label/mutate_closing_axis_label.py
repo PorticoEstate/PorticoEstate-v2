@@ -2,8 +2,8 @@
 """
 Mutation check for tests/closing-axis-label/run.mts (#1537, GO pe-pm 48080).
 
-One deliberate defect at a time, applied to a TEMP COPY of the helper (util/closing-axis-label.ts). The harness runs on
-each copy through CLIENT_SRC; the working tree is never written. The unmutated copy must be green first, every
+One deliberate defect at a time, applied to a TEMP COPY of the file it names (the helper util/closing-axis-label.ts, the
+view, or the module stylesheet). The harness runs on each copy through CLIENT_SRC; the working tree is never written. The unmutated copy must be green first, every
 replacement must match exactly once, and a mutant counts as KILLED only when all hold:
   - the harness exits 1 (0 = it stayed green; 2 = it crashed, and a crash kills nothing);
   - it prints no CRASH line;
@@ -15,8 +15,16 @@ So a mutant that turns everything red is not a kill of its own rows.
       FullCalendar's slat loop uses (slatTime < slotMaxTime). Breaks the clock rows; midnight is a separate path.
   M2  midnight mapping dropped: the end of the day is written as the engine's own midnight, '00:00'. Breaks the
       midnight rows; the clock rows stay.
-  M3  late-close threshold made exclusive: 23:45 no longer counts as the end of the day, so it prints '23:45'.
-      Breaks 23:45 only; 24:00:00 stays.
+  M3  late-close threshold made exclusive: 23:45 no longer counts as the end of the day, so it reads as an off-slat
+      time. Breaks 23:45 only; 24:00:00 stays.
+  M4  the off-slat null dropped: 22:15 and 21:45 get a label that names a time the grid does not end on. Breaks the
+      off-slat rows only.
+  M5  the fallback «null at :30» (label on the hour only): the :30 rows go null, the hour rows stay. Breaks the :30
+      rows only; this is the shape the harness must tell apart from the band shape.
+  M6  the time-grid gate dropped in the view: the label would be drawn in the dayGrid and list views too. Breaks the
+      gate row only (the helper cannot see the view, so the harness holds the gate by pattern).
+  M7  the wrapper loses grid-area: calendar-body (the 14px-narrower regression of 85a34807f). Breaks that row only.
+  M8  the label is positioned absolutely again (an overlay on the grid, not a band). Breaks the in-flow row only.
 
 Usage:  python3 tests/closing-axis-label/mutate_closing_axis_label.py
 Exit:   0 when the original is green and every mutant is killed on its own rows, 1 otherwise.
@@ -35,10 +43,14 @@ NODE = os.environ.get("NODE_BIN", "node")
 
 HELPER = "components/building-calendar/util/closing-axis-label.ts"
 VIEW = "components/building-calendar/views/calendar/full-calendar-view.tsx"
-FILES = [HELPER, VIEW]
+STYLES = "components/building-calendar/building-calender.module.scss"
+FILES = [HELPER, VIEW, STYLES]
 
 LOCALES = ["nb-NO", "en-GB", "en-US"]
-CLOCK_ROWS = ["22:00:00", "21:30:00", "09:30:00"]
+CLOCK_ROWS = ["22:00:00", "21:30:00", "14:30:00", "09:30:00", "23:30:00"]
+HALF_HOUR_ROWS = ["21:30:00", "14:30:00", "09:30:00", "23:30:00"]
+ON_THE_HOUR_ROWS = ["22:00:00"]
+OFF_SLAT = ["22:15:00", "21:45:00", "09:10:00", "23:15:00", "23:44:00"]
 MIDNIGHT_ROWS = ["23:45:00", "24:00:00"]
 JUNK = ["undefined", "null", '""', '"22"', '"banana"', '"25:00:00"', '"24:30:00"', '"22:75:00"']
 
@@ -56,52 +68,107 @@ def rows(times):
 
 
 JUNK_ROWS = [junk_row(v) for v in JUNK]
+OFF_SLAT_ROWS = rows(OFF_SLAT)
 
-# (id, what the defect is, the text in the helper to replace, its replacement, rows that must FAIL, rows that must stay ok)
+# wiring rows of the harness (the start of each check name)
+GATE_ROW = "the label is drawn only in the time-grid views"
+SLOT_ROW = "SLOT_MINUTES is the view's slotDuration"
+FLOW_ROW = "the label is a div in flow right after the calendar"
+AREA_ROW = ".calendarBody takes grid-area: calendar-body"
+AREAS_ROW = ".calendar still names the calendar-body area"
+BAND_ROW = ".closingAxisLabel is in flow"
+WIRING_OK = ["view renders the label from closingAxisLabel(slotMaxTime"]
+
+# (id, what the defect is, the file it is applied to, the text to replace, its replacement, rows that must FAIL, rows
+# that must stay ok). Row prefixes are the start of the harness's check names.
 MUTANTS = [
     (
         "M1",
         "exclusive bound reinstated: the slot before the closing time",
+        HELPER,
         "new Date(2000, 0, 3, hours, minutes)",
         "new Date(2000, 0, 3, hours, minutes - 30)",
         rows(CLOCK_ROWS),
-        rows(MIDNIGHT_ROWS) + JUNK_ROWS,
+        rows(MIDNIGHT_ROWS) + OFF_SLAT_ROWS + JUNK_ROWS,
     ),
     (
         "M2",
         "midnight mapping dropped: the end of the day reads the engine's '00:00'",
+        HELPER,
         "endOfDay && part.type === 'hour' ? '24' : part.value",
         "part.value",
         rows(MIDNIGHT_ROWS),
-        rows(CLOCK_ROWS) + JUNK_ROWS,
+        rows(CLOCK_ROWS) + OFF_SLAT_ROWS + JUNK_ROWS,
     ),
     (
         "M3",
         "late-close threshold made exclusive: 23:45 is not the end of the day",
+        HELPER,
         "hours * 60 + minutes >= END_OF_DAY_FROM_MINUTES",
         "hours * 60 + minutes > END_OF_DAY_FROM_MINUTES",
         rows(["23:45:00"]),
-        rows(CLOCK_ROWS + ["24:00:00"]) + JUNK_ROWS,
+        rows(CLOCK_ROWS + ["24:00:00"]) + OFF_SLAT_ROWS + JUNK_ROWS,
+    ),
+    (
+        "M4",
+        "off-slat null dropped: 22:15 and 21:45 get a label the grid does not end on",
+        HELPER,
+        "if (!endOfDay && minutes % SLOT_MINUTES !== 0) return null;",
+        "",
+        OFF_SLAT_ROWS,
+        rows(CLOCK_ROWS + MIDNIGHT_ROWS) + JUNK_ROWS,
+    ),
+    (
+        "M5",
+        "fallback «null at :30»: a label on the hour only",
+        HELPER,
+        "minutes % SLOT_MINUTES !== 0",
+        "minutes !== 0",
+        rows(HALF_HOUR_ROWS),
+        rows(ON_THE_HOUR_ROWS + MIDNIGHT_ROWS) + OFF_SLAT_ROWS + JUNK_ROWS,
+    ),
+    (
+        "M6",
+        "time-grid gate dropped in the view: the label would also be drawn in dayGrid and list",
+        VIEW,
+        "viewMode.startsWith('timeGrid') ? closingAxisLabel(",
+        "true ? closingAxisLabel(",
+        [GATE_ROW],
+        rows(CLOCK_ROWS + MIDNIGHT_ROWS) + WIRING_OK + [SLOT_ROW, FLOW_ROW, AREA_ROW, AREAS_ROW, BAND_ROW],
+    ),
+    (
+        "M7",
+        "wrapper without grid-area: calendar-body (every building calendar 14px narrower at desktop width)",
+        STYLES,
+        ".calendarBody {\n    grid-area: calendar-body;\n}",
+        ".calendarBody {\n}",
+        [AREA_ROW],
+        [GATE_ROW, SLOT_ROW, FLOW_ROW, AREAS_ROW, BAND_ROW] + WIRING_OK,
+    ),
+    (
+        "M8",
+        "label positioned absolutely again: an overlay on the grid, not a band under it",
+        STYLES,
+        "    padding-right: 4.5px;\n    text-align: right;\n}",
+        "    padding-right: 4.5px;\n    text-align: right;\n    position: absolute;\n    bottom: 0;\n}",
+        [BAND_ROW],
+        [GATE_ROW, SLOT_ROW, FLOW_ROW, AREA_ROW, AREAS_ROW] + WIRING_OK,
     ),
 ]
 
 
-def helper_text():
-    with open(os.path.join(CLIENT_SRC, HELPER), encoding="utf8") as handle:
+def read(rel):
+    with open(os.path.join(CLIENT_SRC, rel), encoding="utf8") as handle:
         return handle.read()
 
 
-def build_copy(name, helper):
-    """A temp tree holding the two files the harness reads, with the helper text given."""
+def build_copy(name, overrides):
+    """A temp tree holding the files the harness reads: the tree's own, except the text given for the files named."""
     tmp = tempfile.mkdtemp(prefix=f"closing-axis-{name}-")
     for rel in FILES:
         dst = os.path.join(tmp, rel)
         os.makedirs(os.path.dirname(dst), exist_ok=True)
-        if rel == HELPER:
-            text = helper
-        else:
-            with open(os.path.join(CLIENT_SRC, rel), encoding="utf8") as handle:
-                text = handle.read()
+        text = overrides[rel] if rel in overrides else read(rel)
         with open(dst, "w", encoding="utf8") as handle:
             handle.write(text)
     return tmp
@@ -125,8 +192,8 @@ def check_rows(output, must_fail, must_ok):
 
 
 def main():
-    base = helper_text()
-    tmp = build_copy("original", base)
+    texts = {rel: read(rel) for rel in FILES}
+    tmp = build_copy("original", {})
     try:
         code, out = run_harness(tmp)
     finally:
@@ -138,12 +205,12 @@ def main():
     print("ok   original: green (harness exit 0)")
 
     survivors = 0
-    for mutant_id, what, old, new, must_fail, must_ok in MUTANTS:
-        if base.count(old) != 1:
-            print(f"FAIL {mutant_id}: the text to mutate is not in {HELPER} exactly once")
+    for mutant_id, what, rel, old, new, must_fail, must_ok in MUTANTS:
+        if texts[rel].count(old) != 1:
+            print(f"FAIL {mutant_id}: the text to mutate is not in {rel} exactly once")
             survivors += 1
             continue
-        tmp = build_copy(mutant_id, base.replace(old, new))
+        tmp = build_copy(mutant_id, {rel: texts[rel].replace(old, new)})
         try:
             code, out = run_harness(tmp)
         finally:

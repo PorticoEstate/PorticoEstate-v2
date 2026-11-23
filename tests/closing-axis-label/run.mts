@@ -13,9 +13,15 @@
  *      prints for it, with that format written out here by hand, in each locale the calendar uses. A control shows
  *      the formatter really prints the 2-digit clock, so the comparison can fail;
  *   3. junk in, null out: a missing or malformed slotMaxTime draws no label instead of a wrong one;
+ *   3a. off the grid's lines, null out: the grid ends on a slot line (slotDuration 30 minutes), so a slotMaxTime whose
+ *      minute is not 00 or 30 (22:15, 21:45) ends on the next line and any label there would be false. 21:30 and 14:30
+ *      keep theirs; the end of the day (23:45 on) is the one exception and still reads «24:00»;
  *   4. the wiring, by source pattern: the view imports the helper and its one SLOT_LABEL_FORMAT, passes that format to
  *      slotLabelFormat, and still holds slotMaxTime and eventConstraint as they were on base. The byte-for-byte proof is
- *      the diff; these patterns only stop the wiring from drifting while the helper changes.
+ *      the diff; these patterns only stop the wiring from drifting while the helper changes. Also here: SLOT_MINUTES is
+ *      the view's slotDuration, the label is drawn only in the time-grid views (the TSX cannot be imported, so the gate
+ *      is held by pattern), the label sits in flow after the calendar inside the wrapper, and the wrapper takes the grid
+ *      area the calendar had (without it every building calendar is 14px narrower at desktop width).
  *
  * CLIENT_SRC points the harness at another client src/ tree. tests/closing-axis-label/mutate_closing_axis_label.py
  * uses it to run this same file on mutated copies.
@@ -33,6 +39,7 @@ const repo = resolve(here, '../..');
 const clientSrc = process.env.CLIENT_SRC ?? join(repo, 'src/modules/bookingfrontend/client/src');
 const HELPER = 'components/building-calendar/util/closing-axis-label.ts';
 const VIEW = 'components/building-calendar/views/calendar/full-calendar-view.tsx';
+const STYLES = 'components/building-calendar/building-calender.module.scss';
 
 let fail = 0;
 const check = (name: string, pass: boolean): void => {
@@ -51,10 +58,14 @@ const LOCALES = ['nb-NO', 'en-GB', 'en-US'];
 const ROWS: Array<[string, string]> = [
 	['22:00:00', '22:00'],
 	['21:30:00', '21:30'],
+	['14:30:00', '14:30'],
 	['09:30:00', '09:30'],
+	['23:30:00', '23:30'],
 	['23:45:00', '24:00'],
 	['24:00:00', '24:00'],
 ];
+/** slotMaxTime values that are clock times but not on a slot line (minute not 00 or 30): no label, in every locale */
+const OFF_SLAT: string[] = ['22:15:00', '21:45:00', '09:10:00', '23:15:00', '23:44:00'];
 const JUNK: unknown[] = [undefined, null, '', '22', 'banana', '25:00:00', '24:30:00', '22:75:00'];
 /** the view's slotLabelFormat, as the inline literal it was on base (full-calendar-view.tsx:1000) */
 const VIEW_SLOT_LABEL_FORMAT = {hour: '2-digit', minute: '2-digit', hour12: false};
@@ -80,6 +91,7 @@ const show = (v: unknown): string => (v === undefined ? 'undefined' : JSON.strin
 type Closing = (slotMaxTime: unknown, locale: string) => string | null;
 let closingAxisLabel: Closing | undefined;
 let slotLabelFormat: unknown;
+let slotMinutes: unknown;
 
 const helperFile = join(clientSrc, HELPER);
 if (!existsSync(helperFile)) {
@@ -94,6 +106,7 @@ if (!existsSync(helperFile)) {
 		const mod = await import(pathToFileURL(copy).href);
 		closingAxisLabel = typeof mod.closingAxisLabel === 'function' ? mod.closingAxisLabel : undefined;
 		slotLabelFormat = mod.SLOT_LABEL_FORMAT;
+		slotMinutes = mod.SLOT_MINUTES;
 		check(`${HELPER} exports closingAxisLabel`, closingAxisLabel !== undefined);
 	} catch (error) {
 		check(`${HELPER} loads (${(error as Error).message})`, false);
@@ -116,6 +129,10 @@ for (const locale of LOCALES) {
 	for (const [input, want] of ROWS) {
 		const got = call(input, locale);
 		check(`closingAxisLabel('${input}', '${locale}') → «${String(got)}», want «${want}»`, got === want);
+	}
+	for (const input of OFF_SLAT) {
+		const got = call(input, locale);
+		check(`closingAxisLabel('${input}', '${locale}') → «${String(got)}», want «null» (not on a slot line)`, got === null);
 	}
 }
 
@@ -159,6 +176,34 @@ check("slotMaxTime state unchanged: useState('24:00:00')", view.includes("const 
 check('slotMaxTime still passed to FullCalendar as slotMaxTime={slotMaxTime}', view.includes('slotMaxTime={slotMaxTime}'));
 check('setSlotMaxTime rule unchanged (whitespace-normalised)', norm(view).includes(norm(SET_SLOT_MAX_TIME)));
 check('eventConstraint unchanged (whitespace-normalised)', norm(view).includes(norm(EVENT_CONSTRAINT)));
+check(
+	'the label is drawn only in the time-grid views: viewMode.startsWith(\'timeGrid\') gates closingAxisLabel (dayGrid and list have no time axis)',
+	/viewMode\.startsWith\(\s*['"]timeGrid['"]\s*\)\s*\?\s*closingAxisLabel\(/.test(view),
+);
+check(
+	'SLOT_MINUTES is the view\'s slotDuration={"00:30:00"} in minutes (30), so the off-slat rule and the grid agree',
+	view.includes('slotDuration={"00:30:00"}') && slotMinutes === 30,
+);
+check(
+	'the label is a div in flow right after the calendar, inside the calendarBody wrapper (a band under the grid, not an overlay)',
+	/<div className=\{styles\.calendarBody\}>\s*\{calendar\}\s*\{closingLabel\s*&&\s*<div className=\{styles\.closingAxisLabel\}>\{closingLabel\}<\/div>\}\s*<\/div>/.test(view),
+);
+
+// 4a. the stylesheet: the wrapper takes the calendar's grid area, and the band is in flow
+const stylesFile = join(clientSrc, STYLES);
+const stylesText = existsSync(stylesFile) ? readFileSync(stylesFile, 'utf8') : '';
+const ruleBody = (selector: string): string | null => new RegExp(`\\${selector}\\s*\\{([^}]*)\\}`).exec(stylesText)?.[1] ?? null;
+const wrapperRule = ruleBody('.calendarBody');
+const bandRule = ruleBody('.closingAxisLabel');
+check(
+	'.calendarBody takes grid-area: calendar-body, the area the calendar had (else it is auto-placed in one column, 14px narrower)',
+	wrapperRule !== null && /(^|[;\s])grid-area\s*:\s*calendar-body\s*;/.test(wrapperRule),
+);
+check('.calendar still names the calendar-body area in grid-template-areas', /grid-template-areas\s*:[^;]*"[^"]*\bcalendar-body\b[^"]*"/.test(stylesText));
+check(
+	'.closingAxisLabel is in flow: no position declaration (an absolute label would overlay the grid instead of getting its own band)',
+	bandRule !== null && !/(^|[;\s])position\s*:/.test(bandRule),
+);
 
 console.log(fail === 0 ? 'PASS closing-axis-label: every check holds' : `FAIL closing-axis-label: ${fail} check(s) failed`);
 process.exitCode = fail === 0 ? 0 : 1;

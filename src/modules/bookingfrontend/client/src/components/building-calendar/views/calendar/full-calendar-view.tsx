@@ -1084,7 +1084,7 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 	return (
 		<div className={styles.calendarBody}>
 			{calendar}
-			{closingLabel && <span className={styles.closingAxisLabel}>{closingLabel}</span>}
+			{closingLabel && <div className={styles.closingAxisLabel}>{closingLabel}</div>}
 		</div>
 	);
 }

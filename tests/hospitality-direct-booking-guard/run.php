@@ -25,7 +25,11 @@
  *   - the offer description rule (at most 70 Unicode code points, f1998b27b),
  *   - the two main-resource rulings Q1 (open orders at the old main) and Q2 (the new main is an active
  *     delivery location), e929f56d8,
- *   - the order the refusals are asked in.
+ *   - the order the refusals are asked in,
+ *   - the picker rule (task 47994, C2): the main resource must be one the admin's picker OFFERS (active, in an active building); a move
+ *     to another resource is refused with a 422 naming it, a key that is not a move is never judged. The repository's SQL is not
+ *     visible here (a double answers the offer): main-resource-offer-pg.php holds it to the picker's own code on PostgreSQL, and
+ *     mutate-offer-pg.py shows that run goes red for a broken copy.
  * Doubles stand in ONLY for what reaches outside the process: the two repositories (no database; they
  * answer from an array and RECORD every write), the guard's database (an in-memory SQLite: the guard's own
  * lookups run on it), Acl::check(), the WebSocket fork and lang(). Those rows need vendor/ for the Slim
@@ -570,18 +574,21 @@ final class HarnessWorld
     public array $open = [];         // hospitality id => [location resource id => number of OPEN orders]
     public array $writes = [];       // [method, id, data] for every create()/update() the repository was asked for, in order
     public array $counts = [];       // [hospitality id, location resource id] for every Q1 count
+    public array $offer = [];        // resource id => ['active' => bool, 'in_active_building' => bool]: what mainResourceOffer() answers; an id that exists and is not listed is offered
+    public array $offerCalls = [];   // the resource id of every mainResourceOffer() the repository was asked
     public PDO $pdo;                 // the guard's database: bb_resource and bb_hospitality_remote_location
 }
 
 /**
  * Hospitality 7, main resource 10 (Kjokken); resources 11-13 are free to move to, 20 has direct booking.
  * $with: 'row' (stored hospitality fields), 'remote' (hospitality id => ids of its ACTIVE delivery locations), 'remoteInactive'
- * (hospitality id => ids of its INACTIVE delivery locations), 'open' (see HarnessWorld).
+ * (hospitality id => ids of its INACTIVE delivery locations), 'open' and 'offer' (see HarnessWorld).
  */
 $newWorld = static function (array $with = []): HarnessWorld {
     $w = new HarnessWorld();
     $w->row = array_replace(['id' => 7, 'resource_id' => 10, 'name' => 'Kantina', 'description' => null, 'active' => 1, 'modified' => null, 'open_days' => null], $with['row'] ?? []);
     $w->open = $with['open'] ?? [];
+    $w->offer = $with['offer'] ?? [];
     $resources = [10 => ['Kjokken', null], 11 => ['Sal A', null], 12 => ['Sal B', null], 13 => ['Sal C', null], 20 => ['Sal D', FUTURE]];
     $w->resourceIds = array_keys($resources);
     $w->pdo = new PDO('sqlite::memory:');
@@ -632,6 +639,15 @@ $controllerOn = static function (HarnessWorld $w): HospitalityController {
         public function resourceExists(int $resourceId): bool
         {
             return in_array($resourceId, $this->w->resourceIds, true);
+        }
+
+        public function mainResourceOffer(int $resourceId): ?array
+        {
+            $this->w->offerCalls[] = $resourceId;
+            if (!in_array($resourceId, $this->w->resourceIds, true)) {
+                return null;
+            }
+            return $this->w->offer[$resourceId] ?? ['active' => true, 'in_active_building' => true];
         }
 
         public function create(array $data): int
@@ -734,10 +750,10 @@ $drive = static function (string $action, $body, ?HarnessWorld $world = null, in
         };
         $raw = (string)$response->getBody();
         return ['status' => $response->getStatusCode(), 'raw' => $raw, 'body' => json_decode($raw, true), 'threw' => null,
-            'writes' => $w->writes, 'counts' => $w->counts, 'broadcasts' => HarnessWebSocketHelper::$sent];
+            'writes' => $w->writes, 'counts' => $w->counts, 'broadcasts' => HarnessWebSocketHelper::$sent, 'offerCalls' => $w->offerCalls];
     } catch (Throwable $e) {
         return ['status' => 0, 'raw' => '', 'body' => null, 'threw' => get_class($e) . ': ' . $e->getMessage(),
-            'writes' => $w->writes, 'counts' => $w->counts, 'broadcasts' => HarnessWebSocketHelper::$sent];
+            'writes' => $w->writes, 'counts' => $w->counts, 'broadcasts' => HarnessWebSocketHelper::$sent, 'offerCalls' => $w->offerCalls];
     } finally {
         error_reporting($previous);
     }
@@ -1003,6 +1019,96 @@ $expect('desc/source order: store() asks the description rule before the reposit
 $expect('desc/source order: update() asks the description rule after the resource check', $firstBefore($updateSource, 'repository->resourceExists(', 'self::descriptionRefused('), true);
 $expect('desc/source order: update() asks the description rule before the direct-booking guard', $firstBefore($updateSource, 'self::descriptionRefused(', 'directBookingGuard->checkHospitalityUpdate('), true);
 $expect('desc/source order: update() asks the description rule before the repository write', $firstBefore($updateSource, 'self::descriptionRefused(', 'repository->update('), true);
+
+// ── (B) of #47994: the main resource must be one the admin's PICKER OFFERS (C2) ───────────────────────────────────────────
+// The picker is the active buildings' active resources: so a move to an INACTIVE resource, or to one in NO ACTIVE building, is refused with a 422
+// that names the resource, BEFORE the description, the direct-booking guard, Q2, Q1 and the write; a resource in ANOTHER active building IS
+// offered and moves. A key that is not a move (the stored main sent back, or no key) is never judged, so a main that has gone inactive still
+// saves a rename. Hospitality 7, main 10; the double answers the offer from $w->offer (the repository's SQL is held to the picker's own code on
+// PostgreSQL by main-resource-offer-pg.php).
+$inactiveOffer = ['active' => false, 'in_active_building' => true];
+$noBuildingOffer = ['active' => true, 'in_active_building' => false];
+$hiddenOffer = ['active' => false, 'in_active_building' => false];
+$offeredOffer = ['active' => true, 'in_active_building' => true];
+
+
+$o = $drive('update', ['resource_id' => 11], $newWorld(['offer' => [11 => $inactiveOffer]]));
+$expect('picker/update a move to an INACTIVE resource: 422 main_resource_inactive naming it, resource_ids, NO repository write, no broadcast; the offer asked once',
+    [$move($o), $o['offerCalls']], [$refusedMove('main_resource_inactive', 'booking.main_resource_inactive|Sal A', ['resource_ids' => [11]]), [11]]);
+$expect('picker/update the refusal comes before Q1: the open orders at the old main were never counted', $o['counts'], []);
+$o = $drive('update', ['resource_id' => 12], $newWorld(['offer' => [12 => $noBuildingOffer]]));
+$expect('picker/update a move to an ACTIVE resource in NO ACTIVE building: 422 main_resource_not_in_active_building naming it, NO write, no broadcast',
+    [$move($o), $o['offerCalls']], [$refusedMove('main_resource_not_in_active_building', 'booking.main_resource_not_in_active_building|Sal B', ['resource_ids' => [12]]), [12]]);
+$o = $drive('update', ['resource_id' => 11], $newWorld(['offer' => [11 => $hiddenOffer]]));
+$expect('picker/update a resource that is BOTH inactive and in no active building is answered as inactive (inactive first)',
+    $o['body']['code'] ?? null, 'main_resource_inactive');
+$o = $drive('update', ['resource_id' => '11'], $newWorld(['offer' => [11 => $inactiveOffer]]));
+$expect('picker/update the same refusal when the id arrives as the string "11"; the offer is asked about the int 11',
+    [$o['status'], $o['body']['code'] ?? null, $o['writes'], $o['offerCalls']], [422, 'main_resource_inactive', [], [11]]);
+$o = $drive('update', ['resource_id' => 13], $newWorld(['offer' => [13 => $offeredOffer]]));
+$expect('picker/update a move to a resource the picker OFFERS saves (it may be in ANOTHER active building: the building does not matter), the offer asked once',
+    [$move($o), $o['offerCalls']], [$saved200(['resource_id' => 13, 'modified_by' => 5], 'main_resource'), [13]]);
+
+// The stored main has since gone inactive and lost its building: it still saves, and the offer is never asked.
+$staleMain = static fn(): HarnessWorld => $newWorld(['offer' => [10 => $hiddenOffer]]);
+$o = $drive('update', ['resource_id' => 10, 'name' => 'Nytt navn'], $staleMain());
+$expect('picker/update the UNCHANGED key (int) of a main that is now inactive and in no building: saves, the offer is not asked',
+    [$move($o), $o['offerCalls']], [$saved200(['resource_id' => 10, 'name' => 'Nytt navn', 'modified_by' => 5], 'details'), []]);
+$o = $drive('update', ['resource_id' => '10', 'name' => 'Nytt navn'], $staleMain());
+$expect('picker/update the UNCHANGED key as the string "10" of such a main: saves, the offer is not asked',
+    [$move($o), $o['offerCalls']], [$saved200(['resource_id' => 10, 'name' => 'Nytt navn', 'modified_by' => 5], 'details'), []]);
+$o = $drive('update', ['name' => 'Nytt navn'], $staleMain());
+$expect('picker/update a rename with no resource_id key of such a main: saves, the offer is not asked',
+    [$move($o), $o['offerCalls']], [$saved200(['name' => 'Nytt navn', 'modified_by' => 5], 'details'), []]);
+$o = $drive('update', ['resource_id' => 11], $newWorld(['offer' => [10 => $hiddenOffer, 11 => $inactiveOffer]]));
+$expect('picker/update control: leaving such a main for an INACTIVE resource is still refused', [$o['status'], $o['body']['code'] ?? null], [422, 'main_resource_inactive']);
+
+// unknown_resource keeps its place and is answered without asking the offer.
+$o = $drive('update', ['resource_id' => 99], $newWorld());
+$expect('picker/update an unknown resource is still unknown_resource, and the offer is not asked', [$o['status'], $o['body']['code'] ?? null, $o['offerCalls']], [422, 'unknown_resource', []]);
+
+// Order: the picker rule comes BEFORE the description, the direct-booking guard, Q2 and Q1, and every refusal is before the write.
+$o = $drive('update', ['resource_id' => 11, 'description' => str_repeat('a', 71)], $newWorld(['offer' => [11 => $inactiveOffer]]));
+$expect('picker/order update: an inactive resource AND a 71-character description: the picker rule answers, nothing written',
+    [$o['status'], $o['body']['code'] ?? null, $o['writes']], [422, 'main_resource_inactive', []]);
+$o = $drive('update', ['resource_id' => 20], $newWorld(['offer' => [20 => $inactiveOffer], 'remote' => [7 => [20]], 'open' => [7 => [10 => 2]]]));
+$expect('picker/order update: an inactive resource with direct booking, an active delivery location, and open orders at 10: the picker rule speaks first, no count, no write',
+    [$o['status'], $o['body']['code'] ?? null, $o['writes'], $o['counts']], [422, 'main_resource_inactive', [], []]);
+$o = $drive('update', ['resource_id' => 12], $newWorld(['offer' => [12 => $noBuildingOffer], 'remote' => [7 => [12]], 'open' => [7 => [10 => 2]]]));
+$expect('picker/order update: a resource in no active building that is also an active delivery location: the picker rule speaks before Q2',
+    [$o['status'], $o['body']['code'] ?? null, $o['writes'], $o['counts']], [422, 'main_resource_not_in_active_building', [], []]);
+
+// store(): no stored main, so every resource is judged.
+$o = $drive('store', ['resource_id' => 11, 'name' => 'Ny'], $newWorld(['offer' => [11 => $inactiveOffer]]));
+$expect('picker/store an INACTIVE resource: 422 main_resource_inactive naming it, NO repository write',
+    [$o['status'], $o['body']['code'] ?? null, $o['body']['error'] ?? null, $o['body']['resource_ids'] ?? null, $o['writes'], $o['offerCalls']],
+    [422, 'main_resource_inactive', 'booking.main_resource_inactive|Sal A', [11], [], [11]]);
+$o = $drive('store', ['resource_id' => 12, 'name' => 'Ny'], $newWorld(['offer' => [12 => $noBuildingOffer]]));
+$expect('picker/store a resource in NO ACTIVE building: 422 main_resource_not_in_active_building naming it, NO repository write',
+    [$o['status'], $o['body']['code'] ?? null, $o['body']['error'] ?? null, $o['writes']], [422, 'main_resource_not_in_active_building', 'booking.main_resource_not_in_active_building|Sal B', []]);
+$o = $drive('store', ['resource_id' => 13, 'name' => 'Ny'], $newWorld(['offer' => [13 => $offeredOffer]]));
+$expect('picker/store a resource the picker offers: 201 and exactly one create', [$o['status'], count($o['writes']), $o['writes'][0][0] ?? null, $o['offerCalls']], [201, 1, 'create', [13]]);
+$o = $drive('store', ['resource_id' => 11, 'name' => 'Ny', 'description' => str_repeat('a', 71)], $newWorld(['offer' => [11 => $inactiveOffer]]));
+$expect('picker/order store: an inactive resource AND a 71-character description: the picker rule answers, nothing written',
+    [$o['status'], $o['body']['code'] ?? null, $o['writes']], [422, 'main_resource_inactive', []]);
+$o = $drive('store', ['resource_id' => 99, 'name' => 'Ny'], $newWorld());
+$expect('picker/order store: an unknown resource is still unknown_resource, and the offer is not asked', [$o['status'], $o['body']['code'] ?? null, $o['offerCalls']], [422, 'unknown_resource', []]);
+
+// Source order (the rows above show it; these name the three places so a moved line is read as moved).
+$expect('picker/source order: store() asks the picker rule after the resource check, before the description rule and before the repository write',
+    [$firstBefore($storeSource, 'repository->resourceExists(', 'mainResourceNotOfferedRefusal('), $firstBefore($storeSource, 'mainResourceNotOfferedRefusal(', 'self::descriptionRefused('),
+        $firstBefore($storeSource, 'mainResourceNotOfferedRefusal(', 'repository->create(')], [true, true, true]);
+$expect('picker/source order: update() asks the picker rule after the resource check, before the description rule, the direct-booking guard and the repository write',
+    [$firstBefore($updateSource, 'repository->resourceExists(', 'mainResourceNotOfferedRefusal('), $firstBefore($updateSource, 'mainResourceNotOfferedRefusal(', 'self::descriptionRefused('),
+        $firstBefore($updateSource, 'mainResourceNotOfferedRefusal(', 'directBookingGuard->checkHospitalityUpdate('), $firstBefore($updateSource, 'mainResourceNotOfferedRefusal(', 'repository->update(')], [true, true, true, true]);
+
+// The two refusal texts exist in all three languages, once each (the --compare of test_lang_files.php cannot see a key that is missing from all three).
+foreach (['main_resource_inactive', 'main_resource_not_in_active_building'] as $langKey) {
+    foreach (['no', 'nn', 'en'] as $langCode) {
+        $langRows = preg_grep('/^' . $langKey . "\tbooking\t" . $langCode . "\t\\S/", explode("\n", (string)file_get_contents($root . "/src/modules/booking/setup/phpgw_{$langCode}.lang")));
+        $expect("picker/lang: {$langKey} has exactly one non-empty {$langCode} row in booking", count($langRows), 1);
+    }
+}
 
 // The doubles are meant to leave nothing to the real database. Db::getInstance() would create the singleton (in a CLI with no
 // configuration that is a silent in-memory SQLite, which answers every query with nothing), so a path that reached for it

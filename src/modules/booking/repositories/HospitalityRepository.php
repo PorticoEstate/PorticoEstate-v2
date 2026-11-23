@@ -53,6 +53,41 @@ class HospitalityRepository
     }
 
     /**
+     * Would the admin's main-resource picker OFFER this resource? (Task 47994: the server refuses exactly what the picker hides.)
+     * The picker is the building search, `bb_building WHERE active = 1` (booking BuildingController::index), then a building's
+     * resources, `bb_resource.active = 1` joined through `bb_building_resource`
+     * (bookingfrontend ResourceRepository::getByBuildingId). So a resource is offered when it is active AND in at least one ACTIVE
+     * building; the picker lets the admin search ANY active building, so which building it is in does not matter. A resource in
+     * no building, or only in inactive ones, can never be reached.
+     *
+     * CASE, not a boolean EXISTS: a PostgreSQL boolean comes back as 't'/'f' through some PDO builds, and (int)'t' is 0.
+     *
+     * @return array{active: bool, in_active_building: bool}|null null = there is no such resource
+     */
+    public function mainResourceOffer(int $resourceId): ?array
+    {
+        $stmt = $this->db->prepare(
+            "SELECT r.active,
+                    CASE WHEN EXISTS (
+                        SELECT 1 FROM bb_building_resource br
+                          JOIN bb_building b ON b.id = br.building_id
+                         WHERE br.resource_id = r.id AND b.active = 1
+                    ) THEN 1 ELSE 0 END AS in_active_building
+               FROM bb_resource r
+              WHERE r.id = :id"
+        );
+        $stmt->execute([':id' => $resourceId]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        if ($row === false) {
+            return null;
+        }
+        return [
+            'active' => (int)$row['active'] === 1,
+            'in_active_building' => (int)$row['in_active_building'] === 1,
+        ];
+    }
+
+    /**
      * Who to contact about a catering order once its deadlines have passed (GH #1423): the
      * kitchen resource's own contact_info if it has one, otherwise the email/phone of the building
      * that owns the kitchen — and, when the kitchen maps to no building, of $fallbackBuildingId

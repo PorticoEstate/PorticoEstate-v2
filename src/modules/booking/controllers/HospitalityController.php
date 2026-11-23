@@ -249,6 +249,36 @@ class HospitalityController
 	}
 
 	/**
+	 * RULING (operator, request 205, task 47994): the main resource must be one the admin's picker would OFFER, so the server refuses
+	 * exactly what the picker hides, no more. HospitalityRepository::mainResourceOffer says what that is: the resource is active and
+	 * sits in at least one ACTIVE building (it does not have to be the building the hospitality is in now: the picker searches every
+	 * active building). Inactive is answered first. To rule otherwise, change this method and that query only.
+	 *
+	 * @param int $resourceId the (normalised) resource the hospitality would get, known to exist
+	 * @return array{code: string, error: string, resource_ids: int[]}|null null = the picker offers it
+	 */
+	private function mainResourceNotOfferedRefusal(int $resourceId): ?array
+	{
+		$offer = $this->repository->mainResourceOffer($resourceId);
+		if ($offer !== null && $offer['active'] && $offer['in_active_building']) {
+			return null;
+		}
+		$name = $this->directBookingGuard->resourcesById([$resourceId])[$resourceId]['name'] ?? (string)$resourceId;
+		if ($offer !== null && $offer['active']) {
+			return [
+				'code' => 'main_resource_not_in_active_building',
+				'error' => lang('booking.main_resource_not_in_active_building', $name),
+				'resource_ids' => [$resourceId],
+			];
+		}
+		return [
+			'code' => 'main_resource_inactive',
+			'error' => lang('booking.main_resource_inactive', $name),
+			'resource_ids' => [$resourceId],
+		];
+	}
+
+	/**
 	 * RULING (operator, 47045 (a)): the main resource of a hospitality cannot also be one of its delivery locations.
 	 * The main resource is already on the Resources tab, so adding it as a delivery location would list it twice.
 	 * addRemoteLocation() asks the direct-booking rule first, as it does for every delivery location.
@@ -367,6 +397,11 @@ class HospitalityController
 			}
 			if (!$this->repository->resourceExists($body['resource_id'])) {
 				return $this->refuseResourceId($response, 'unknown_resource');
+			}
+			// The main resource must be one the admin's picker offers (task 47994).
+			$refusal = $this->mainResourceNotOfferedRefusal($body['resource_id']);
+			if ($refusal !== null) {
+				return $this->refuse($response, $refusal);
 			}
 
 			if (self::descriptionRefused($body)) {
@@ -505,6 +540,18 @@ class HospitalityController
 				return $this->refuseResourceId($response, 'unknown_resource');
 			}
 
+			// A real move of the main resource (the key may also arrive unchanged, from a client that sends the whole
+			// row, and then nothing about the resource is judged: a main that has since gone inactive, or lost its
+			// building, still saves a rename).
+			$mainResourceChanged = array_key_exists('resource_id', $body) && $body['resource_id'] !== (int)$existing['resource_id'];
+			// A move must go to a resource the admin's picker offers (task 47994).
+			if ($mainResourceChanged) {
+				$refusal = $this->mainResourceNotOfferedRefusal($body['resource_id']);
+				if ($refusal !== null) {
+					return $this->refuse($response, $refusal);
+				}
+			}
+
 			if (self::descriptionRefused($body)) {
 				return $this->refuseDescription($response, $body['description']);
 			}
@@ -517,10 +564,8 @@ class HospitalityController
 				return $this->refuseDirectBookingConflict($response, $refusal);
 			}
 
-			// A real move of the main resource (the key may also arrive unchanged, from a client that sends the whole
-			// row). Two rulings by the operator, each in one method: see openOrdersAtMainRefusal() and
-			// mainIsRemoteLocationRefusal().
-			$mainResourceChanged = array_key_exists('resource_id', $body) && $body['resource_id'] !== (int)$existing['resource_id'];
+			// Two rulings by the operator on a move of the main resource, each in one method: see
+			// openOrdersAtMainRefusal() and mainIsRemoteLocationRefusal().
 			if ($mainResourceChanged) {
 				$refusal = $this->mainIsRemoteLocationRefusal($existing, $body['resource_id'])
 					?? $this->openOrdersAtMainRefusal($existing);

@@ -29,9 +29,25 @@ ORDER_REPOSITORY = os.path.join(ROOT, "src/modules/booking/repositories/Hospital
 MODEL = os.path.join(ROOT, "src/modules/booking/models/Hospitality.php")
 PHP = shutil.which("php") or "php"
 T = "\t"  # the controller is indented with tabs; its mutants spell that out
+# The blocks of the picker rule (task 47994) and of the rules it sits between, as HospitalityController spells them.
+PICK_UPDATE = (T*3 + "// A move must go to a resource the admin's picker offers (task 47994).\n"
+               + T*3 + "if ($mainResourceChanged) {\n" + T*4 + "$refusal = $this->mainResourceNotOfferedRefusal($body['resource_id']);\n"
+               + T*4 + "if ($refusal !== null) {\n" + T*5 + "return $this->refuse($response, $refusal);\n" + T*4 + "}\n" + T*3 + "}\n")
+PICK_STORE = (T*3 + "// The main resource must be one the admin's picker offers (task 47994).\n"
+              + T*3 + "$refusal = $this->mainResourceNotOfferedRefusal($body['resource_id']);\n"
+              + T*3 + "if ($refusal !== null) {\n" + T*4 + "return $this->refuse($response, $refusal);\n" + T*3 + "}\n")
+UPD_WRITE = T*3 + "$this->repository->update($id, $body);\n"
+CRE_WRITE = T*3 + "$id = $this->repository->create($body);\n"
+DESC_BLOCK = T*3 + "if (self::descriptionRefused($body)) {\n" + T*4 + "return $this->refuseDescription($response, $body['description']);\n" + T*3 + "}\n"
+DIRECT_BLOCK = (T*3 + "// Moving the hospitality to a resource, or re-activating it, links resources to it again:\n"
+                + T*3 + "// refuse when one of them has direct booking. Any other edit (name, deadlines, flags)\n"
+                + T*3 + "// of a hospitality that is already in conflict still saves.\n"
+                + T*3 + "$refusal = $this->directBookingGuard->checkHospitalityUpdate($existing, $body);\n"
+                + T*3 + "if ($refusal !== null) {\n" + T*4 + "return $this->refuseDirectBookingConflict($response, $refusal);\n" + T*3 + "}\n")
 
 # (id, description, old text, new text, row-name fragments that MUST fail[, "controller" / "orderrepo" / "model" when the mutant is of
-# HospitalityController / HospitalityOrderRepository / the Hospitality model instead of the guard])
+# HospitalityController / HospitalityOrderRepository / the Hospitality model instead of the guard]). OLD may also be a function of the source
+# (a mutant that MOVES a block): it returns the mutated text, or None when an anchor was not found exactly once; NEW is then None.
 MUTANTS = [
     ("M1", "resource side: an OWN link is ignored",
      "        foreach ($linkRows as $row) {\n            if ((int)($row['hospitality_active'] ?? 0) !== 1) {",
@@ -251,7 +267,8 @@ MUTANTS = [
      "",
      ['resid/source order: update() checks the resource exists before the guard'], "controller"),
     ("M51", "controller: the two rulings (Q1, Q2) are asked on every save, not only when the main moves",
-     "if ($mainResourceChanged) {", "if (true) {",
+     T*3 + "if ($mainResourceChanged) {\n" + T*4 + "$refusal = $this->mainIsRemoteLocationRefusal(",
+     T*3 + "if (true) {\n" + T*4 + "$refusal = $this->mainIsRemoteLocationRefusal(",
      ['q/only an actual move of the main resource asks them'], "controller"),
     ("M52", "controller: Q1 (open orders at the old main) is never asked",
      "$this->mainIsRemoteLocationRefusal($existing, $body['resource_id'])\n" + T*5 + "?? $this->openOrdersAtMainRefusal($existing);",
@@ -309,11 +326,10 @@ MUTANTS = [
      "return is_string($description) ? mb_strlen($description, 'UTF-8') > self::DESCRIPTION_MAX_LENGTH : $description !== null;",
      ['desc/model: descriptionTooLong judges LENGTH only'], "model"),
     ("M65", "description: update() judges the STORED description when the body does not carry one",
-     T*3 + "if (array_key_exists('resource_id', $body) && !$this->repository->resourceExists($body['resource_id'])) {\n"
-       + T*4 + "return $this->refuseResourceId($response, 'unknown_resource');\n" + T*3 + "}\n\n" + T*3 + "if (self::descriptionRefused($body)) {",
-     T*3 + "if (array_key_exists('resource_id', $body) && !$this->repository->resourceExists($body['resource_id'])) {\n"
-       + T*4 + "return $this->refuseResourceId($response, 'unknown_resource');\n" + T*3 + "}\n\n"
-       + T*3 + "if (self::descriptionRefused($body + ['description' => $existing['description'] ?? null])) {",
+     DESC_BLOCK + "\n" + T*3 + "// Moving the hospitality to a resource, or re-activating it, links resources to it again:",
+     T*3 + "if (self::descriptionRefused($body + ['description' => $existing['description'] ?? null])) {\n"
+       + T*4 + "return $this->refuseDescription($response, $body['description']);\n" + T*3 + "}\n\n"
+       + T*3 + "// Moving the hospitality to a resource, or re-activating it, links resources to it again:",
      ['desc/update a name-only PUT on an offer whose STORED description is 128 code points'], "controller"),
     ("M66", "description: store() does not judge the description at all",
      T*3 + "if (self::descriptionRefused($body)) {\n" + T*4 + "return $this->refuseDescription($response, $body['description']);\n" + T*3 + "}\n\n"
@@ -376,15 +392,12 @@ MUTANTS = [
     ("M76", "Q1 and Q2 are asked BEFORE the direct-booking guard (a move to a direct-booking resource answers with the wrong refusal)",
      T*3 + "$refusal = $this->directBookingGuard->checkHospitalityUpdate($existing, $body);\n"
        + T*3 + "if ($refusal !== null) {\n" + T*4 + "return $this->refuseDirectBookingConflict($response, $refusal);\n" + T*3 + "}\n\n"
-       + T*3 + "// A real move of the main resource (the key may also arrive unchanged, from a client that sends the whole\n"
-       + T*3 + "// row). Two rulings by the operator, each in one method: see openOrdersAtMainRefusal() and\n"
-       + T*3 + "// mainIsRemoteLocationRefusal().\n"
-       + T*3 + "$mainResourceChanged = array_key_exists('resource_id', $body) && $body['resource_id'] !== (int)$existing['resource_id'];\n"
+       + T*3 + "// Two rulings by the operator on a move of the main resource, each in one method: see\n"
+       + T*3 + "// openOrdersAtMainRefusal() and mainIsRemoteLocationRefusal().\n"
        + T*3 + "if ($mainResourceChanged) {\n"
        + T*4 + "$refusal = $this->mainIsRemoteLocationRefusal($existing, $body['resource_id'])\n" + T*5 + "?? $this->openOrdersAtMainRefusal($existing);\n"
        + T*4 + "if ($refusal !== null) {\n" + T*5 + "return $this->refuse($response, $refusal);\n" + T*4 + "}\n" + T*3 + "}\n",
-     T*3 + "$mainResourceChanged = array_key_exists('resource_id', $body) && $body['resource_id'] !== (int)$existing['resource_id'];\n"
-       + T*3 + "if ($mainResourceChanged) {\n"
+     T*3 + "if ($mainResourceChanged) {\n"
        + T*4 + "$refusal = $this->mainIsRemoteLocationRefusal($existing, $body['resource_id'])\n" + T*5 + "?? $this->openOrdersAtMainRefusal($existing);\n"
        + T*4 + "if ($refusal !== null) {\n" + T*5 + "return $this->refuse($response, $refusal);\n" + T*4 + "}\n" + T*3 + "}\n"
        + T*3 + "$refusal = $this->directBookingGuard->checkHospitalityUpdate($existing, $body);\n"
@@ -444,6 +457,50 @@ MUTANTS = [
      "return $description !== null && !is_string($description);", "return false;",
      ['desc/store a non-string description (int 5)', 'desc/update a non-string description (int 5)',
       'desc/store a non-string description (an empty array)', 'desc/update a non-string description (an array holding a 500-character string)'], "model"),
+    # (B) of #47994: the main resource must be one the admin's picker offers
+    ("M91", "picker: update() does not ask the picker rule at all", PICK_UPDATE, "",
+     ['picker/update a move to an INACTIVE resource', 'picker/update a move to an ACTIVE resource in NO ACTIVE building'], "controller"),
+    ("M92", "picker: store() does not ask the picker rule at all", PICK_STORE, "",
+     ['picker/store an INACTIVE resource', 'picker/store a resource in NO ACTIVE building'], "controller"),
+    ("M93", "picker: update() judges the UNCHANGED key too (a main that has gone inactive can no longer be renamed)",
+     T*3 + "if ($mainResourceChanged) {\n" + T*4 + "$refusal = $this->mainResourceNotOfferedRefusal(",
+     T*3 + "if (array_key_exists('resource_id', $body)) {\n" + T*4 + "$refusal = $this->mainResourceNotOfferedRefusal(",
+     ['picker/update the UNCHANGED key (int)', 'picker/update the UNCHANGED key as the string "10"'], "controller"),
+    ("M94", "picker: update() asks the description rule BEFORE the picker rule", PICK_UPDATE + "\n" + DESC_BLOCK, DESC_BLOCK + "\n" + PICK_UPDATE,
+     ['picker/order update: an inactive resource AND a 71-character description', 'picker/source order: update()'], "controller"),
+    ("M95", "picker: update() asks the direct-booking guard BEFORE the picker rule", PICK_UPDATE + "\n" + DESC_BLOCK + "\n" + DIRECT_BLOCK,
+     DESC_BLOCK + "\n" + DIRECT_BLOCK + "\n" + PICK_UPDATE,
+     ['picker/order update: an inactive resource with direct booking', 'picker/source order: update()'], "controller"),
+    ("M96", "picker: update() asks the picker rule AFTER the repository write",
+     lambda src: (src.replace(PICK_UPDATE, "", 1).replace(UPD_WRITE, UPD_WRITE + PICK_UPDATE, 1)
+                  if src.count(PICK_UPDATE) == 1 and src.count(UPD_WRITE) == 1 else None),
+     None, ['picker/update a move to an INACTIVE resource', 'picker/source order: update()'], "controller"),
+    ("M97", "picker: store() asks the picker rule AFTER the repository write",
+     lambda src: (src.replace(PICK_STORE, "", 1).replace(CRE_WRITE, CRE_WRITE + PICK_STORE, 1)
+                  if src.count(PICK_STORE) == 1 and src.count(CRE_WRITE) == 1 else None),
+     None, ['picker/store an INACTIVE resource', 'picker/source order: store()'], "controller"),
+    ("M98", "picker: the two refusal codes are swapped (a resource in no active building answers main_resource_inactive)",
+     "'code' => 'main_resource_not_in_active_building',", "'code' => 'main_resource_inactive',",
+     ['picker/update a move to an ACTIVE resource in NO ACTIVE building'], "controller"),
+    ("M99", "picker: a resource that is both inactive and in no active building is answered as not_in_active_building (inactive is no longer first)",
+     "if ($offer !== null && $offer['active']) {", "if ($offer !== null && !$offer['in_active_building']) {",
+     ['picker/update a resource that is BOTH inactive and in no active building is answered as inactive'], "controller"),
+    ("M100", "picker: the building is not judged (a resource in no active building is offered)",
+     "if ($offer !== null && $offer['active'] && $offer['in_active_building']) {", "if ($offer !== null && $offer['active']) {",
+     ['picker/update a move to an ACTIVE resource in NO ACTIVE building', 'picker/store a resource in NO ACTIVE building'], "controller"),
+    ("M101", "picker: active is not judged (an inactive resource is offered)",
+     "if ($offer !== null && $offer['active'] && $offer['in_active_building']) {", "if ($offer !== null && $offer['in_active_building']) {",
+     ['picker/update a move to an INACTIVE resource', 'picker/store an INACTIVE resource'], "controller"),
+    ("M102", "picker: the refusal does not carry resource_ids",
+     T*3 + "'error' => lang('booking.main_resource_inactive', $name),\n" + T*3 + "'resource_ids' => [$resourceId],\n",
+     T*3 + "'error' => lang('booking.main_resource_inactive', $name),\n",
+     ['picker/update a move to an INACTIVE resource'], "controller"),
+    ("M103", "picker: the refusal text is not translated",
+     "'error' => lang('booking.main_resource_inactive', $name),", "'error' => 'The resource is not active.',",
+     ['picker/update a move to an INACTIVE resource', 'picker/store an INACTIVE resource'], "controller"),
+    ("M104", "picker: the refusal does not name the resource",
+     "'error' => lang('booking.main_resource_not_in_active_building', $name),", "'error' => lang('booking.main_resource_not_in_active_building'),",
+     ['picker/update a move to an ACTIVE resource in NO ACTIVE building'], "controller"),
 ]
 
 
@@ -494,14 +551,21 @@ def main():
                 continue
             kind = target[0] if target else "guard"
             source = {"guard": original, "controller": original_controller, "orderrepo": original_order_repository, "model": original_model}[kind]
-            count = source.count(old)
+            if callable(old):
+                # a mutant that is a function of the source (a block moved from one place to another): it returns the
+                # mutated text, or None when an anchor it needs was not found exactly once
+                mutated = old(source)
+                count = 1 if mutated is not None and mutated != source else 0
+            else:
+                count = source.count(old)
+                mutated = source.replace(old, new) if count == 1 else None
             if count != 1:
                 print(f"{mid:4} NOT APPLIED ({count} matches) - {desc}")
                 bad += 1
                 continue
             path = os.path.join(tmp, f"{mid}.php")
             with open(path, "w", encoding="utf-8") as fh:
-                fh.write(source.replace(old, new))
+                fh.write(mutated)
             lint = subprocess.run([PHP, "-l", path], capture_output=True, text=True)
             if lint.returncode != 0:
                 print(f"{mid:4} MUTANT DOES NOT PARSE - {desc}: {lint.stdout.strip()}")

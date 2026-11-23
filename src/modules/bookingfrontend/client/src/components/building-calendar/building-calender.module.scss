@@ -159,6 +159,23 @@
     animation: highlightedEventPulse 1.4s ease-in-out 3;
 }
 
+// The closing time at the foot of the time axis (#1537). FullCalendar labels a slot only while it starts before
+// slotMaxTime, so the closing time is drawn here, over the bottom edge of the grid. The wrapper only positions the
+// label: the grid itself does not move.
+.calendarBody {
+    position: relative;
+}
+
+.closingAxisLabel {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 3.2em; // the axis column's width, measured in the live check
+    padding-right: 4px;
+    text-align: right;
+    pointer-events: none;
+}
+
 @keyframes highlightedEventPulse {
     0%, 100% {
         box-shadow: 0 0 0 2px var(--ds-color-accent-surface-hover);

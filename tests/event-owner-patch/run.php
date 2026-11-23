@@ -28,11 +28,16 @@
  *   D1  pinned values (pe-pm 48749 (d)): '0'/'0' and 0/0 MATCH, in the ssn arm and in the org arm
  *   D3  the serialiser's owner arms on the same values: '0'/'0' and 0/0 show the secret, ''/'' and NULL/NULL do not
  *   N4  changing an event's resources through saveNewResourcesList: one added, an unshared one dropped, ids as strings
+ *   N5  a registration is found by the end of its phone (8 digits find +47…), within its own event; in-/out-
+ *       registration by the stored phone touch that registration only
  * FIX rows (fail on the base tree, pass on the fix):
  *   F6  dropping a resource from one event leaves it linked to every other event (the DELETE went by resource_id only)
  *   F7  a resource id that is not an integer never becomes SQL text (the INSERT concatenated it; hermetic only)
  *   R1  EventService::resourceIdsFromRequest: positive integers (int, or digits only) within integer range, else null
  *   R2  EventController::updateEvent answers 400 for such a body after the owner check and before the write
+ *   F8  findRegistration: a phone holding a quote is bound (the base tree put it in the SQL text; hermetic only)
+ *   F9  findRegistration: % _ and \ in the phone match only themselves; the suffix match itself is kept (N5)
+ *   F10 in-/out-registration (updateRegistration): % and _ in the phone match only themselves
  *   F1  the guest (ssn null, organizations null) and an event stored with a NULL ssn (with a number, '' or NULL):
  *       NOT the owner. On the base tree this is the 201 of forum/pe-tasks/48710 (23312 active NULL-ssn events).
  *   F2  (d) ''/'' and NULL/NULL do NOT match, in the ssn arm and in the org arm
@@ -244,6 +249,20 @@ namespace {
         Db::getInstance()->pdo->query('SELECT event_id, resource_id FROM bb_event_resource ORDER BY event_id, resource_id')->fetchAll(\PDO::FETCH_NUM)
     );
 
+    /** A fresh database holding the given [id, event_id, phone] event registrations, and the REAL repository on it. */
+    $registrations = static function (array $rows): EventRepository {
+        $db = Db::fresh();
+        $insert = $db->pdo->prepare("INSERT INTO bb_participant (id, reservation_type, reservation_id, phone, quantity) VALUES (?, 'event', ?, ?, 1)");
+        foreach ($rows as [$id, $eventId, $phone]) {
+            $insert->execute([$id, $eventId, $phone]);
+        }
+        $db->sql = [];
+        return new EventRepository();
+    };
+    $foundId = static fn($row): ?int => is_array($row) ? (int)$row['id'] : null;
+    $column = static fn(string $name): array => Db::getInstance()->pdo->query("SELECT id, {$name} FROM bb_participant ORDER BY id")->fetchAll(\PDO::FETCH_KEY_PAIR);
+    const OP_AT = '2030-01-01 10:00:00';
+
     // --- P: every class under test is the HD_ROOT copy (a red-first run against another tree means nothing otherwise)
     $arm('P', function () use ($root, $check) {
         $stub = (string)(new \ReflectionClass(Db::class))->getFileName();
@@ -319,7 +338,48 @@ namespace {
         $same('N4 the same list again changes nothing', $links(), [[1, 2], [1, 4], [2, 3]]);
     });
 
+    $arm('N5', function () use ($registrations, $foundId, $column, $same) {
+        // A registration is still found by the end of its phone (stored with +47, looked up with 8 digits), only within
+        // its own event, and in-/out-registration by the stored phone still touch that registration only.
+        $repo = $registrations([[1, 10, '+4799999999'], [2, 10, '+4798888888'], [3, 11, '+4799999999']]);
+        $same('N5 8 digits find +47…', $foundId($repo->findRegistration(10, '99999999')), 1);
+        $same('N5 the whole number finds it', $foundId($repo->findRegistration(10, '+4799999999')), 1);
+        $same("N5 another event's registration by the same phone", $foundId($repo->findRegistration(11, '99999999')), 3);
+        $same('N5 a phone not registered finds nothing', $foundId($repo->findRegistration(10, '97777777')), null);
+        $repo->inRegistration(10, ['phone' => '+4799999999', 'from_' => OP_AT]);
+        $same('N5 in-registration by the stored phone: that row only', $column('from_'), [1 => OP_AT, 2 => null, 3 => null]);
+        $repo->outRegistration(10, ['phone' => '+4799999999', 'to_' => OP_AT]);
+        $same('N5 out-registration by the stored phone: that row only', $column('to_'), [1 => OP_AT, 2 => null, 3 => null]);
+    });
+
     // --- FIX -----------------------------------------------------------------------------------------
+    $arm('F8', function () use ($registrations, $foundId, $same, $check) {
+        // A phone holding a quote is bound, never SQL text. Hermetic only: no such value is sent to a running application.
+        $repo = $registrations([[1, 10, '+4799999999'], [2, 10, '+4798888888']]);
+        $same("F8 a phone with a quote finds nothing, and no SQL error", $foundId($repo->findRegistration(10, "1'2")), null);
+        $same("F8 a phone that closes the quote finds nothing", $foundId($repo->findRegistration(10, "x' OR '1'='1")), null);
+        $sent = implode("\n", Db::getInstance()->sql);
+        $check('F8 neither phone is in the SQL text sent', !str_contains($sent, "1'2") && !str_contains($sent, "OR '1'='1"), $sent);
+    });
+    $arm('F9', function () use ($registrations, $foundId, $same) {
+        // LIKE's wildcards in the phone match only themselves.
+        $repo = $registrations([[1, 10, '+4799999999'], [2, 10, '+4798888888'], [3, 10, '12\\x34']]);
+        $same("F9 '%' finds nothing", $foundId($repo->findRegistration(10, '%')), null);
+        $same("F9 '_9999999' finds nothing", $foundId($repo->findRegistration(10, '_9999999')), null);
+        $same("F9 a backslash is literal too", $foundId($repo->findRegistration(10, '\\')), null);
+        // Unescaped, the backslash would escape itself and leave the _ after it a wildcard: '\_34' would find '12\x34'.
+        $same("F9 '\\_34' does not find '12\\x34'", $foundId($repo->findRegistration(10, '\\_34')), null);
+        $same("F9 '\\x34' finds '12\\x34'", $foundId($repo->findRegistration(10, '\\x34')), 3);
+    });
+    $arm('F10', function () use ($registrations, $column, $same) {
+        // updateRegistration bound the phone, but LIKE kept % and _ as wildcards: in-/out-registration with the
+        // phone '%' set every registration of the event. A row stored with the literal phone '%' is still its own.
+        $repo = $registrations([[1, 10, '+4799999999'], [2, 10, '+4798888888'], [3, 10, '%'], [4, 11, '+4799999999']]);
+        $repo->outRegistration(10, ['phone' => '%', 'to_' => OP_AT]);
+        $same("F10 out-registration '%': only the row stored as '%'", $column('to_'), [1 => null, 2 => null, 3 => OP_AT, 4 => null]);
+        $repo->inRegistration(10, ['phone' => '+47_8888888', 'from_' => OP_AT]);
+        $same("F10 in-registration '+47_8888888': no row", $column('from_'), [1 => null, 2 => null, 3 => null, 4 => null]);
+    });
     $arm('F6', function () use ($resourceService, $saveResources, $links, $same) {
         // Event 2 shares resource 2 with event 1. Dropping it from event 1 must not drop it from event 2: the base
         // tree deleted bb_event_resource by resource_id alone.

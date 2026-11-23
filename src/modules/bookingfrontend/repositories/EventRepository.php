@@ -130,18 +130,31 @@ class EventRepository
         return $data['cnt'] ? $data['cnt'] : 0;
     }
 
+    /**
+     * The latest registration for this event whose stored phone ends with $phone (so 99999999 finds +4799999999).
+     * The phone is bound, and only matches itself: LIKE's wildcards in it are escaped.
+     */
     public function findRegistration(int $id, string $phone)
     {
         $sql = "SELECT id, email, from_, to_, quantity"
         . " FROM bb_participant"
         . " WHERE reservation_type='event'"
         . " AND reservation_id=:id"
-        . " AND phone LIKE '%{$phone}'"
+        . " AND phone LIKE :phone ESCAPE '\\'"
         . " ORDER BY id DESC";
 
         $stmt = $this->db->prepare($sql);
-        $stmt->execute(['id' => $id]);
+        $stmt->execute(['id' => $id, 'phone' => '%' . $this->likeLiteral($phone)]);
         return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * $value with LIKE's wildcards (% and _) and the escape character (\) escaped, so that in a pattern it matches
+     * only itself. The statements using it say ESCAPE '\'.
+     */
+    private function likeLiteral(string $value): string
+    {
+        return addcslashes($value, '\\%_');
     }
 
     public function updateDates($id, $data)
@@ -207,11 +220,11 @@ class EventRepository
         $sql = "UPDATE bb_participant SET $fieldName=:$fieldName"
         . " WHERE reservation_type='event'"
         . " AND reservation_id=:eventId"
-        . " AND phone LIKE :phone";
+        . " AND phone LIKE :phone ESCAPE '\\'";
         $stmt = $this->db->prepare($sql);
         $stmt->execute([
             'eventId' => $id,
-            'phone' => $phone,
+            'phone' => $this->likeLiteral($phone),
             $fieldName =>  $value
         ]);
     }

@@ -52,6 +52,8 @@ INSERT_CONCAT = ("        foreach ($resourceIds as $resourceId) {\n"
 PARSE_GUARD = ("            if (!is_int($id) || $id < 1 || $id > 2147483647) {\n"
                "                return null;\n"
                "            }\n")
+FIND_LIKE = "        . \" AND phone LIKE :phone ESCAPE '\\\\'\"\n        . \" ORDER BY id DESC\";"
+FIND_PARAMS = "$stmt->execute(['id' => $id, 'phone' => '%' . $this->likeLiteral($phone)]);"
 CONTROLLER_REFUSAL = ("        if (isset($newData['resource_ids'])) {\n"
                       "            $resourceIds = $this->service->resourceIdsFromRequest($newData['resource_ids']);\n"
                       "            if ($resourceIds === null) {\n"
@@ -95,6 +97,17 @@ MUTATIONS = [
     ("Mk", R, "the INSERT built by concatenation again", [(INSERT, INSERT_CONCAT)], ["F7"]),
     ("Ml", S, "any resource id accepted by the parser", [(PARSE_GUARD, "")], ["R1"]),
     ("Mm", C, "the controller's 400 for a bad resource_ids dropped", [(CONTROLLER_REFUSAL, "")], ["R2"]),
+    # --- C3: the registration lookups
+    ("Mn", R, "findRegistration's phone back in the SQL text",
+     [(FIND_LIKE, "        . \" AND phone LIKE '%{$phone}'\"\n        . \" ORDER BY id DESC\";"),
+      (FIND_PARAMS, "$stmt->execute(['id' => $id]);")], ["F8", "F9"]),
+    ("Mo", R, "findRegistration's wildcards no longer escaped",
+     [("'phone' => '%' . $this->likeLiteral($phone)", "'phone' => '%' . $phone")], ["F9"]),
+    ("Mp", R, "updateRegistration's wildcards no longer escaped",
+     [("'phone' => $this->likeLiteral($phone),", "'phone' => $phone,")], ["F10"]),
+    ("Mq", R, "findRegistration narrowed to an exact match (the suffix match dropped)",
+     [("'phone' => '%' . $this->likeLiteral($phone)", "'phone' => $this->likeLiteral($phone)")], ["N5"]),
+    ("Mr", R, "the backslash no longer escaped", [(r"addcslashes($value, '\\%_')", "addcslashes($value, '%_')")], ["F9"]),
 ]
 
 EQUIVALENT = [

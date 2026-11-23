@@ -523,9 +523,21 @@ export async function fetchApplication(id: number, secret?: string): Promise<IAp
     return response.json();
 }
 
-export async function fetchApplicationDocuments(applicationId: number | string, type_filter?: IDocumentCategoryQuery | IDocumentCategoryQuery[]): Promise<IDocument[]> {
-	const url = phpGWLink(["bookingfrontend", 'applications', applicationId, 'documents'],
-		type_filter && {type: Array.isArray(type_filter) ? type_filter.join(',') : type_filter});
+/**
+ * Fetch the documents of an application
+ * @param applicationId The application ID
+ * @param type_filter Optional document type filter(s)
+ * @param secret Optional secret for access without a login (the application's secret link)
+ */
+export async function fetchApplicationDocuments(applicationId: number | string, type_filter?: IDocumentCategoryQuery | IDocumentCategoryQuery[], secret?: string): Promise<IDocument[]> {
+	const params: Record<string, string> = {};
+	if (type_filter) {
+		params.type = Array.isArray(type_filter) ? type_filter.join(',') : type_filter;
+	}
+	if (secret) {
+		params.secret = secret;
+	}
+	const url = phpGWLink(["bookingfrontend", 'applications', applicationId, 'documents'], params);
 
 	const response = await fetch(url);
 	const result = await response.json();

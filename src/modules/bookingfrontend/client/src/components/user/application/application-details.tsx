@@ -888,7 +888,7 @@ const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
     });
     const {data: regulationDocuments} = useResourceRegulationDocuments(application?.resources || []);
     const {data: audience} = useBuildingAudience(application?.building_id);
-    const {data: applicationDocuments} = useApplicationDocuments(props.applicationId);
+    const {data: applicationDocuments} = useApplicationDocuments(props.applicationId, undefined, props.secret);
     const {data: scheduleEntities} = useApplicationScheduleEntities(props.applicationId, props.secret);
     // A recurring application stores ONE requested date; its whole series comes from the server,
     // which generates it as the case officer's recurring preview does (GH #1392).
@@ -1313,7 +1313,7 @@ const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
                                     {applicationDocuments.map(doc => (
                                         <div key={doc.id} className={styles.docRow}>
                                             <a
-                                                href={getDocumentLink(doc, 'application')}
+                                                href={getDocumentLink(doc, 'application', props.secret)}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
                                                 className={styles.docItem}

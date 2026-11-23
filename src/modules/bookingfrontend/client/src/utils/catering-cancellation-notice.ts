@@ -13,8 +13,9 @@
  * FINAL_ORDER_STATUSES. The cart holds drafts, which the guard never locks by the cancellation deadline: this
  * is a statement about what applies once the application is submitted.
  *
- * Several orders: the notice names the SOONEST deadline that is still open, and says separately that a deadline
- * has passed when some order's has. A past order never hides an open order's date.
+ * Several orders: the notice carries EVERY order whose deadline has passed (`past`) and EVERY order whose deadline is
+ * still open with its date (`open`, soonest first), so the checkout can say which order each statement is about.
+ * `soonestOpen` and `somePast` are the same facts in short. A past order never hides an open order's date.
  *
  * Pure (no React, no DOM, no translation), so tests/hospitality-deadline/run_cancellation_notice.mts can load it.
  */
@@ -24,6 +25,7 @@ import {computeHospitalityDeadline, earliestApplicationDate, isDeadlineOpen} fro
 export const FINAL_ORDER_STATUSES: readonly string[] = ['cancelled', 'delivered'];
 
 export interface NoticeOrder {
+    id: number;
     application_id: number;
     hospitality_id: number;
     status: string;
@@ -51,6 +53,18 @@ function servingTimeOf(iso: string | null | undefined): Date | null {
 }
 
 /**
+ * The instant an order's deadline counts back from, and the date the checkout names the order by: its stored
+ * serving time, else the earliest date of its OWN application; null when there is neither.
+ */
+export function orderAnchor(
+    order: NoticeOrder,
+    applications: ReadonlyArray<NoticeApplication>,
+): Date | null {
+    return servingTimeOf(order.serving_time_iso)
+        ?? earliestApplicationDate(applications.find(application => application.id === order.application_id));
+}
+
+/**
  * The last instant this order can be cancelled, or null when the notice has nothing to say about it
  * (no basis, offer not sent, no lead configured, final status).
  */
@@ -64,8 +78,7 @@ export function orderCancelBy(
     const offer = offers.find(candidate => candidate.id === order.hospitality_id);
     if (!offer) return null;
 
-    const anchor = servingTimeOf(order.serving_time_iso)
-        ?? earliestApplicationDate(applications.find(application => application.id === order.application_id));
+    const anchor = orderAnchor(order, applications);
     if (anchor === null || !Number.isFinite(anchor.getTime())) return null;
 
     const cancelBy = computeHospitalityDeadline(
@@ -77,30 +90,42 @@ export function orderCancelBy(
     return cancelBy !== null && Number.isFinite(cancelBy.getTime()) ? cancelBy : null;
 }
 
-export interface CancellationNotice {
+export interface CancellationNotice<T extends NoticeOrder = NoticeOrder> {
     /** The soonest cancellation deadline that is still open; null when every deadline has passed. */
     soonestOpen: Date | null;
     /** At least one order's own deadline has passed. */
     somePast: boolean;
+    /** EVERY order whose own deadline has passed, by order id. */
+    past: T[];
+    /** EVERY order whose deadline is still open, with that deadline: soonest first, equal deadlines by order id. */
+    open: Array<{order: T; cancelBy: Date}>;
 }
 
 /** null = nothing to say (no order has a deadline). `now` is an instant or epoch milliseconds. */
-export function cancellationNotice(
-    orders: ReadonlyArray<NoticeOrder>,
+export function cancellationNotice<T extends NoticeOrder>(
+    orders: ReadonlyArray<T>,
     offers: ReadonlyArray<NoticeOffer>,
     applications: ReadonlyArray<NoticeApplication>,
     now: Date | number,
-): CancellationNotice | null {
+): CancellationNotice<T> | null {
     let soonestOpen: Date | null = null;
     let somePast = false;
+    const past: T[] = [];
+    const open: Array<{order: T; cancelBy: Date}> = [];
     for (const order of orders) {
         const cancelBy = orderCancelBy(order, offers, applications);
         if (cancelBy === null) continue;
         if (!isDeadlineOpen(now, cancelBy)) {
             somePast = true;
-        } else if (soonestOpen === null || cancelBy < soonestOpen) {
-            soonestOpen = cancelBy;
+            past.push(order);
+        } else {
+            open.push({order, cancelBy});
+            if (soonestOpen === null || cancelBy < soonestOpen) {
+                soonestOpen = cancelBy;
+            }
         }
     }
-    return soonestOpen === null && !somePast ? null : {soonestOpen, somePast};
+    past.sort((a, b) => a.id - b.id);
+    open.sort((a, b) => a.cancelBy.getTime() - b.cancelBy.getTime() || a.order.id - b.order.id);
+    return soonestOpen === null && !somePast ? null : {soonestOpen, somePast, past, open};
 }

@@ -1319,3 +1319,5 @@ debug external logn	bookingfrontend	no	Feilsøk ekstern innlogging
 debug local login	bookingfrontend	no	Feilsøk lokal innlogging
 test person	bookingfrontend	no	Testperson
 support email address	bookingfrontend	no	Brukerstøtte e-post adresse
+cancellation_deadline_passed_orders	bookingfrontend	no	Gjelder bevertning:
+cancellation_deadline_info_order	bookingfrontend	no	Bevertning %1 kan avbestilles innen %2

@@ -1318,3 +1318,5 @@ debug external logn	bookingfrontend	en	Debug external login
 debug local login	bookingfrontend	en	Debug local login
 test person	bookingfrontend	en	Test person
 support email address	bookingfrontend	en	Support email address
+cancellation_deadline_passed_orders	bookingfrontend	en	Applies to:
+cancellation_deadline_info_order	bookingfrontend	en	The order on %1 can be cancelled until %2

@@ -51,6 +51,8 @@ import {
     isServingDayOpen,
     isoWeekdayInVenueTz,
     formatWeekdayName,
+    formatDeadlineDateTime,
+    localeFor,
 } from '@/utils/hospitality-deadline';
 import styles from './hospitality.module.scss';
 
@@ -95,10 +97,11 @@ function localizeField(field: Record<string, string> | null | undefined, lang: s
     return field[lang] || field[fallbackLng.key] || Object.values(field).find(v => !!v) || null;
 }
 
-/** «Ons. 23. desember»: short weekday, day and long month, first letter capital (the artboards' format). */
-function formatDayLabel(date: Date): string {
-    const text = date.toLocaleDateString('nb-NO', {weekday: 'short', day: 'numeric', month: 'long'});
-    return text.charAt(0).toLocaleUpperCase('nb-NO') + text.slice(1);
+/** «Ons. 23. desember» / «Wed 23 December»: short weekday, day and long month in the UI language, first letter capital (the artboards' format). */
+function formatDayLabel(date: Date, lang: string): string {
+    const locale = localeFor(lang);
+    const text = date.toLocaleDateString(locale, {weekday: 'short', day: 'numeric', month: 'long'});
+    return text.charAt(0).toLocaleUpperCase(locale) + text.slice(1);
 }
 
 /** The browser-local calendar day of a date, as a key (the same zone the labels and slots are built in). */
@@ -119,7 +122,7 @@ interface DateOption {
 }
 
 /** Build date options from application dates. Each option is a unique date+timerange from one application date entry. */
-function buildDateOptions(applications: IApplication[]): DateOption[] {
+function buildDateOptions(applications: IApplication[], lang: string): DateOption[] {
     const options: DateOption[] = [];
     applications.forEach(app => {
         app.dates?.forEach(d => {
@@ -129,7 +132,7 @@ function buildDateOptions(applications: IApplication[]): DateOption[] {
                 key: `${app.id}_${d.id}`,
                 from,
                 to,
-                dayLabel: formatDayLabel(from),
+                dayLabel: formatDayLabel(from, lang),
                 timeLabel: `${formatHm(from)}–${formatHm(to)}`,
                 applicationId: app.id,
             });
@@ -173,7 +176,7 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
     // The server's refusal of a save (e.g. a deadline that passed while the dialog was open).
     const [saveError, setSaveError] = useState<string | null>(null);
 
-    const dateOptions = useMemo(() => buildDateOptions(applications), [applications]);
+    const dateOptions = useMemo(() => buildDateOptions(applications, i18n.language), [applications, i18n.language]);
 
     // Collect all booked resource IDs from the applications
     const appResourceIds = useMemo(() => {
@@ -212,11 +215,11 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
             key: GRANDFATHERED_DATE_KEY,
             from: stored,
             to: stored,
-            dayLabel: formatDayLabel(stored),
+            dayLabel: formatDayLabel(stored, i18n.language),
             timeLabel: formatHm(stored),
             applicationId: existingOrder.application_id,
         };
-    }, [existingOrder, dateOptions]);
+    }, [existingOrder, dateOptions, i18n.language]);
 
     const visibleDateOptions = useMemo(
         () => grandfatheredOption ? [grandfatheredOption, ...dateOptions] : dateOptions,
@@ -485,12 +488,9 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
         return {
             isPastDeadline: false,
             text: t('bookingfrontend.cancellation_deadline_info')
-                .replace('%1', cancelBy.toLocaleDateString('nb-NO', {
-                    day: '2-digit', month: 'short', year: 'numeric',
-                    hour: '2-digit', minute: '2-digit'
-                })),
+                .replace('%1', formatDeadlineDateTime(cancelBy, i18n.language)),
         };
-    }, [selectedDateOption, hospitality, t]);
+    }, [selectedDateOption, hospitality, t, i18n.language]);
 
     // Initialize state on open / edit
     useEffect(() => {

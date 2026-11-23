@@ -313,6 +313,29 @@ export function localeFor(lang: string): string {
     return 'nb-NO';
 }
 
+/** no/nn keep the zero-padded day they always had («03. des.»); English reads «3 Dec». */
+function dayStyleFor(lang: string): '2-digit' | 'numeric' {
+    return lang === 'en' ? 'numeric' : '2-digit';
+}
+
+/** «24. nov.» / «24 Nov»: a day and month in the UI language (browser-local zone, as the callers always had). */
+export function formatDayMonth(date: Date, lang: string): string {
+    return date.toLocaleDateString(localeFor(lang), {day: dayStyleFor(lang), month: 'short'});
+}
+
+/** «3. des. 12:00» / «3 Dec 12:00»: how a notice names a serving time (the 24-hour clock, in every language). */
+export function formatDayMonthTime(date: Date, lang: string): string {
+    const time = `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+    return `${formatDayMonth(date, lang)} ${time}`;
+}
+
+/** «01. des. 2026, 12:00» / «1 Dec 2026, 12:00»: a cancellation deadline in the UI language. */
+export function formatDeadlineDateTime(date: Date, lang: string): string {
+    return date.toLocaleDateString(localeFor(lang), {
+        day: dayStyleFor(lang), month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
+    });
+}
+
 /**
  * Human list of the open weekdays, e.g. "man., tir., ons., tor., fre." in the app locale.
  * Uses Intl so no per-weekday translation keys are needed.

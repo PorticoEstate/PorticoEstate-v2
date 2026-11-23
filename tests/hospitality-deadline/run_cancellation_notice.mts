@@ -16,6 +16,11 @@
  *   7. cancelled / delivered orders contribute nothing (HospitalityOrderGuard::FINAL_ORDER_STATUSES);
  *   8. the deadline IS computeHospitalityDeadline's (open days, hours, weeks), the function the dialog uses;
  *   9. earliestApplicationDate: THIS application's earliest date only (the helper the order dialog shares).
+ *  10. WHICH ORDER (task 47995, record 47209): the notice carries EVERY past order (`past`, by id) and EVERY open
+ *      order with its own deadline (`open`, soonest first, ties by id), as the very order objects it was given;
+ *      orders it has nothing to say about are in neither list; a past order never hides an open one;
+ *  11. orderAnchor, the date the checkout names an order by: the stored serving time, else its OWN application's
+ *      earliest date, never another application's.
  *
  * Loaded through temp copies named .mts with the one relative import pointed at the copy (as
  * run_deadline_rule.mts does). HD_ROOT (optional) = a tree holding src/, for the mutation driver.
@@ -62,8 +67,12 @@ const offer = (id: number, value: number | null, unit: string | null, openDays: 
 });
 const kantine = offer(4, 2, 'days');
 const app = (id: number, ...from: string[]) => ({id, dates: from.map(f => ({from_: f}))});
+let nextOrderId = 1;
 const order = (application_id: number, serving: string | null | undefined, status = 'pending', hospitality_id = 4) =>
-    ({application_id, hospitality_id, status, serving_time_iso: serving});
+    ({id: nextOrderId++, application_id, hospitality_id, status, serving_time_iso: serving});
+/** An order with an id the test chooses (the lists are ordered by it where deadlines tie). */
+const orderWithId = (id: number, application_id: number, serving: string | null | undefined, status = 'pending', hospitality_id = 4) =>
+    ({id, application_id, hospitality_id, status, serving_time_iso: serving});
 
 const A = app(85110, '2026-12-03T12:00:00+01:00');          // the order's own application
 const B = app(85111, '2026-11-24T10:00:00+01:00');          // unrelated, EARLIER, no order
@@ -194,6 +203,75 @@ const DEC8_NOON = ms('2026-12-08T12:00:00+01:00');
         && D.earliestApplicationDate({}) === null && D.earliestApplicationDate(undefined) === null);
     check('earliestApplicationDate: reads ONE application: another earlier one is never consulted',
         D.earliestApplicationDate(A)?.getTime() === ms('2026-12-03T12:00:00+01:00'));
+}
+
+// 10. WHICH ORDER: every past and every open order, named. (A try: on a tree without the lists this section
+// fails as a check, instead of crashing the harness on the first missing field.)
+try {
+    const ids = (list: Array<{id: number}>) => list.map(o => o.id);
+    const openIds = (notice: any) => notice.open.map((entry: any) => entry.order.id);
+    const P1 = orderWithId(21, 85120, '2026-11-24T12:00:00+01:00');        // cancel-by 22. nov. 12:00: past
+    const P2 = orderWithId(20, 85120, '2026-11-23T10:00:00+01:00');        // cancel-by 21. nov. 10:00: past
+    const O1 = orderWithId(7, 85110, '2026-12-03T12:00:00+01:00');         // cancel-by 01. des. 12:00
+    const O2 = orderWithId(5, 85121, '2026-12-10T12:00:00+01:00');         // cancel-by 08. des. 12:00 (the LOWER id)
+    const O3 = orderWithId(9, 85110, '2026-12-03T12:00:00+01:00');         // the same deadline as O1, a higher id
+    const apps = [A, D2, B, C];
+
+    const twoPast = N.cancellationNotice([P1, O1, P2], [kantine], apps, NOW);
+    check('2 past + 1 open: BOTH past orders are named, by id', JSON.stringify(ids(twoPast.past)) === '[20,21]', JSON.stringify(ids(twoPast?.past ?? [])));
+    check('2 past + 1 open: the open order and its date are kept (R1: a past order never hides an open one)',
+        JSON.stringify(openIds(twoPast)) === '[7]' && twoPast.open[0].cancelBy.getTime() === DEC1_NOON && twoPast.somePast === true && twoPast.soonestOpen?.getTime() === DEC1_NOON,
+        show(twoPast));
+    check('2 past + 1 open: the same whatever order they arrive in',
+        JSON.stringify(ids(N.cancellationNotice([P2, P1, O1], [kantine], apps, NOW).past)) === '[20,21]');
+
+    const twoOpen = N.cancellationNotice([O1, P1, O2], [kantine], apps, NOW);
+    check('1 past + 2 open: EVERY open order is named, soonest FIRST (not by id, not as they arrived)',
+        JSON.stringify(openIds(twoOpen)) === '[7,5]', JSON.stringify(openIds(twoOpen)));
+    check('1 past + 2 open: each open order carries ITS OWN deadline',
+        twoOpen.open[0].cancelBy.getTime() === DEC1_NOON && twoOpen.open[1].cancelBy.getTime() === DEC8_NOON);
+    check('1 past + 2 open: the past one is named too', JSON.stringify(ids(twoOpen.past)) === '[21]');
+    check('1 past + 2 open: soonestOpen is the first open entry\'s date', twoOpen.soonestOpen?.getTime() === twoOpen.open[0].cancelBy.getTime());
+    check('open orders: the same list whatever order they arrive in',
+        JSON.stringify(openIds(N.cancellationNotice([O2, O1, P1], [kantine], apps, NOW))) === '[7,5]');
+    check('open orders: equal deadlines are ordered by order id',
+        JSON.stringify(openIds(N.cancellationNotice([O3, O1], [kantine], apps, NOW))) === '[7,9]', JSON.stringify(openIds(N.cancellationNotice([O3, O1], [kantine], apps, NOW))));
+
+    const allPast = N.cancellationNotice([P1, P2], [kantine], apps, NOW);
+    check('all past: no open order, no open date, both named', allPast.open.length === 0 && allPast.soonestOpen === null && JSON.stringify(ids(allPast.past)) === '[20,21]', show(allPast));
+    const allOpen = N.cancellationNotice([O1, O2], [kantine], apps, NOW);
+    check('all open: nothing past, both named', allOpen.past.length === 0 && allOpen.somePast === false && JSON.stringify(openIds(allOpen)) === '[7,5]');
+
+    check('the lists hold the very order objects it was given (the checkout reads location and id from them)',
+        twoPast.open[0].order === O1 && twoPast.past.includes(P1) && twoPast.past.includes(P2));
+    const skippedOnes = [
+        orderWithId(31, 85130, null),                                              // no basis
+        orderWithId(32, 85110, '2026-12-03T12:00:00+01:00', 'pending', 77),         // offer not sent
+        orderWithId(33, 85120, '2026-11-24T12:00:00+01:00', 'cancelled'),           // final status
+        orderWithId(34, 85120, '2026-11-24T12:00:00+01:00', 'delivered'),
+    ];
+    const withSkipped = N.cancellationNotice([...skippedOnes, O1, P1], [kantine], [...apps, app(85130)], NOW);
+    check('orders the notice has nothing to say about are in NEITHER list',
+        JSON.stringify(openIds(withSkipped)) === '[7]' && JSON.stringify(ids(withSkipped.past)) === '[21]', `${JSON.stringify(openIds(withSkipped))} ${JSON.stringify(ids(withSkipped.past))}`);
+    check('no order with a deadline: nothing to say', N.cancellationNotice(skippedOnes, [kantine], [...apps, app(85130)], NOW) === null);
+} catch (error) {
+    check('section 10 (the past and open lists) ran', false, (error as Error).message);
+}
+
+// 11. orderAnchor: the date the checkout names an order by
+try {
+    const stored = N.orderAnchor(orderWithId(1, 85110, '2026-12-10T12:00:00+01:00'), [A, B]);
+    check('anchor: the stored serving time wins over the application\'s date', stored?.getTime() === DEC8_NOON + 2 * 86400000, stored?.toISOString());
+    const own = N.orderAnchor(orderWithId(2, 85112, null), [A, B, E]);
+    check('anchor: no serving time → its OWN application\'s earliest date (5 Dec), never the earlier unrelated one (24 Nov)',
+        own?.getTime() === ms('2026-12-05T12:00:00+01:00'), own?.toISOString());
+    check('anchor: the omitted key reads like null', N.orderAnchor(orderWithId(3, 85112, undefined), [A, B, E])?.getTime() === ms('2026-12-05T12:00:00+01:00'));
+    check('anchor: an unreadable serving time falls to the own application',
+        N.orderAnchor(orderWithId(4, 85110, 'not a date'), [A, B])?.getTime() === ms('2026-12-03T12:00:00+01:00'));
+    check('anchor: none at all → null (no basis), never the group',
+        N.orderAnchor(orderWithId(5, 99999, null), [A, B]) === null && N.orderAnchor(orderWithId(6, 85130, null), [app(85130), B]) === null);
+} catch (error) {
+    check('section 11 (orderAnchor) ran', false, (error as Error).message);
 }
 
 if (fail) {

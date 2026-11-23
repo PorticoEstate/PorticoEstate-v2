@@ -99,7 +99,7 @@
 	min-width: 0;
 }
 
-/* While the picker is open the label moves above the form on a narrow screen: a 10rem label would leave it ~120px */
+/* While a field is being edited the label moves above the form on a narrow screen: a 10rem label would leave it ~120px */
 .hosp-show__field--stacked .app-show__value {
 	min-width: 0;
 }
@@ -112,6 +112,56 @@
 	/* the label's 10rem is a width in a row; in a column it would be a 10rem-high gap */
 	.hosp-show__field--stacked .app-show__label {
 		flex: 0 0 auto;
+	}
+
+	/* The input row (the picker's column form is left alone): the field takes the whole line (measured: at
+	   «flex: 1 1 8rem» it kept 130 of the 260 px beside the buttons, and cut «Kantine Kulturhuset» off), and
+	   Lagre/Avbryt wrap under it instead of leaving the card */
+	.hosp-show__field--stacked .hosp-show__edit-form:not(.hosp-show__edit-form--stacked) {
+		flex-wrap: wrap;
+	}
+
+	.hosp-show__field--stacked .hosp-show__edit-form > input:not([type="checkbox"]),
+	.hosp-show__field--stacked .hosp-show__edit-form > textarea,
+	.hosp-show__field--stacked .hosp-show__edit-form > select,
+	.hosp-show__field--stacked .hosp-show__edit-form > .hosp-show__edit-field {
+		flex: 1 1 100%;
+		min-width: 0;
+	}
+
+	/* An article row is 8 cells wide: on a narrow screen it wraps, the name on its own line (it was squeezed to 0px)
+	   and the buttons kept inside the card. The header row cannot line up with wrapped rows, so each cell carries
+	   its own label instead (data-label, set where the row is built). */
+	/* two classes: the plain .hosp-show__article-row { display: flex } further down would win a one-class rule */
+	.hosp-show__article-row.hosp-show__article-row--header {
+		display: none;
+	}
+
+	.hosp-show__article-row {
+		flex-wrap: wrap;
+		row-gap: 0.25rem;
+	}
+
+	.hosp-show__article-row .hosp-show__article-name {
+		flex: 1 1 calc(100% - 2rem);
+		white-space: normal;
+	}
+
+	.hosp-show__article-row .hosp-show__article-unit,
+	.hosp-show__article-row .hosp-show__article-price,
+	.hosp-show__article-row .hosp-show__article-active {
+		flex: 0 1 auto;
+		text-align: left;
+	}
+
+	.hosp-show__article-row [data-label]::before {
+		content: attr(data-label) ": ";
+		font-size: 0.75rem;
+		color: var(--ds-color-text-subtle, #68707c);
+	}
+
+	.hosp-show__article-row .hosp-show__article-actions {
+		margin-left: auto;
 	}
 }
 

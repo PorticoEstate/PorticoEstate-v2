@@ -687,13 +687,17 @@
 
 		valueSpan.innerHTML = formHtml;
 
+		// Every inline edit, not only the resource picker: on a narrow screen the label moves above the form, which
+		// then has the whole row (beside a 10rem label its Lagre/Avbryt buttons ended up outside the card).
+		// renderDetails replaces the row on save and cancel, so there is nothing to undo.
+		fieldEl.classList.add('hosp-show__field--stacked');
+
 		var editScope = 'field:' + fieldName;
 		collabStartEditing(editScope);
 
 		var input = valueSpan.querySelector('.hosp-show__edit-input');
 		if (fieldType === 'resource')
 		{
-			fieldEl.classList.add('hosp-show__field--stacked'); // renderDetails replaces the row, so nothing to undo
 			disposeMainResourcePicker();
 			_mainResourcePicker = initMainResourcePicker(valueSpan, hospitalityData);
 		} else if (input && input.tagName !== 'DIV') input.focus();
@@ -1398,11 +1402,12 @@
 			}
 
 			html += '<span class="hosp-show__article-name">' + esc(a.article_name || a.name) + '</span>';
-			html += '<span class="hosp-show__article-unit">' + esc(a.unit) + '</span>';
-			html += '<span class="hosp-show__article-price">' + basePrice + '</span>';
-			html += '<span class="hosp-show__article-price">' + overridePrice + '</span>';
-			html += '<span class="hosp-show__article-price hosp-show__article-price--effective">' + effectivePrice + '</span>';
-			html += '<span class="hosp-show__article-active">' + activeTag + '</span>';
+			// data-label: the column header's text, shown before the value on a narrow screen where the header row is hidden
+			html += '<span class="hosp-show__article-unit" data-label="' + esc(lang('unit')) + '">' + esc(a.unit) + '</span>';
+			html += '<span class="hosp-show__article-price" data-label="' + esc(lang('basePrice')) + '">' + basePrice + '</span>';
+			html += '<span class="hosp-show__article-price" data-label="' + esc(lang('overridePrice')) + '">' + overridePrice + '</span>';
+			html += '<span class="hosp-show__article-price hosp-show__article-price--effective" data-label="' + esc(lang('effectivePrice')) + '">' + effectivePrice + '</span>';
+			html += '<span class="hosp-show__article-active" data-label="' + esc(lang('active')) + '">' + activeTag + '</span>';
 
 			if (canWrite)
 			{

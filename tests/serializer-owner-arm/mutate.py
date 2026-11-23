@@ -51,6 +51,7 @@ T_AS_STORED = ("            if ($this->isViewersIdentifier($actualValue, $contex
                "                return true;\n"
                "            }\n")
 T_PAD_RETURN = "return $restored !== null && $this->isViewersIdentifier($restored, $contextValue);"
+T_PAD_ARM = "$restored = $contextKey === 'user_ssn' ? $this->restoreDroppedSsnZero($actualValue) : null;"
 T_PAD_LEN = "strlen($digits) !== 10"
 T_PAD_ZERO = " || ltrim($digits, '0') === ''"
 
@@ -95,6 +96,8 @@ MUTATIONS = [
     ("K12", "an all-zero value refused by every compare, not only by the pad",
      [(H, H_SAME, "return (string)$stored === (string)$viewer && ltrim((string)$stored, '0') !== '';"),
       (H, H_IN_LIST, "return in_array((string)$stored, $numbers, true) && ltrim((string)$stored, '0') !== '';")], ["Z1"]),
+    ("K13", "the 10-digit pad applied on every arm, not only the ssn arm (the user_ssn condition dropped)",
+     [(T, T_PAD_ARM, "$restored = $this->restoreDroppedSsnZero($actualValue);")], ["X-PAD"]),
     # --- one side's placeholder refusal on its own: the other side's covers it, so these must SURVIVE
     ("E1", "the placeholder refused on the stored side only (the viewer's side no longer)", NO_PH_VIEWER, "EQUIVALENT"),
     ("E2", "the placeholder refused on the viewer's side only (the stored side no longer)", NO_PH_STORED, "EQUIVALENT"),

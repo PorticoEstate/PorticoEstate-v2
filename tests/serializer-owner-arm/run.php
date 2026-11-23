@@ -42,6 +42,8 @@
  *   S12  a stored 10 digits plus a newline (not exactly 10 digits)  A2  the Application: '0' vs '00000'
  *   S14  a stored ten zeros vs eleven zeros (the pad does not pad an all-zero value)
  *   G3   group '05' vs 5
+ *   X-PAD  the organisation arm: a stored 10-digit '0994239929' vs the list ['00994239929'] (the pad is the ssn arm's
+ *          only; loosely the two were the same number)
  *
  * Red first: git archive 7cf8b902f src | tar -x -C /tmp/soa-base && HD_ROOT=/tmp/soa-base php tests/serializer-owner-arm/run.php
  * (every FIX row fails there; every BOTH row and P pass).
@@ -306,6 +308,7 @@ namespace {
     $row('S14', 'ssn', '0000000000', '00000000000', false);
     $row('A2', 'app', '0', '00000', false);
     $row('G3', 'group', '05', [5], false);
+    $row('X-PAD', 'org', '0994239929', ['00994239929'], false);
 
     // --- report -----------------------------------------------------------------------------------------------------
     foreach ($armResult as $name => $ok) {

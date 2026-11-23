@@ -3,6 +3,7 @@ namespace App\modules\bookingfrontend\repositories;
 
 use PDO;
 use App\Database\Db;
+use App\helpers\OwnerIdentifier;
 use App\modules\bookingfrontend\models\Event;
 use App\modules\bookingfrontend\models\Resource;
 
@@ -395,17 +396,24 @@ class EventRepository
 			$params[':facility_type_id'] = $facilityTypeId;
 		}
 		
-		// Handle visibility and logged-in filtering exactly like the original
+		// Handle visibility and logged-in filtering exactly like the original. The user's own events are the ones stored
+		// with their organisation number, and only a number that names one organisation has any: the '000000000' every
+		// citizen without an organisation logs in with names nobody's (OwnerIdentifier).
+		$ownOrgNumber = $loggedInAs && OwnerIdentifier::identifiesOrganization($loggedInAs) ? $loggedInAs : null;
 		if ($filterByOrganization && $loggedInAs) {
 			// Only show user's own events if explicitly filtering by organization only
-			$conditions[] = "bb_event.customer_organization_number = :logged_in_org";
-			$params[':logged_in_org'] = $loggedInAs;
-		} else if ($loggedInAs) {
+			if ($ownOrgNumber === null) {
+				$conditions[] = "1 = 0";
+			} else {
+				$conditions[] = "bb_event.customer_organization_number = :logged_in_org";
+				$params[':logged_in_org'] = $ownOrgNumber;
+			}
+		} else if ($ownOrgNumber !== null) {
 			// Show public events AND user's own events (most common case)
 			$conditions[] = "(bb_event.include_in_list = 1 OR bb_event.customer_organization_number = :logged_in_org)";
-			$params[':logged_in_org'] = $loggedInAs;
+			$params[':logged_in_org'] = $ownOrgNumber;
 		} else {
-			// Not logged in, only show public events
+			// Not logged in, or logged in with a number that names no organisation: only show public events
 			$conditions[] = "bb_event.include_in_list = 1";
 		}
 		

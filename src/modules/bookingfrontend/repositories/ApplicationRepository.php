@@ -1,6 +1,7 @@
 <?php
 namespace App\modules\bookingfrontend\repositories;
 
+use App\helpers\OwnerIdentifier;
 use App\modules\bookingfrontend\helpers\UserHelper;
 use App\modules\bookingfrontend\models\Article;
 use App\modules\bookingfrontend\models\User;
@@ -139,7 +140,11 @@ class ApplicationRepository
                     if (!empty($org['org_id'])) {
                         $orgIds[] = $org['org_id'];
                     }
-                    if (!empty($org['organization_number'])) {
+                    // Not the '000000000' MinId2 lists for every organisation with an ssn and no number: it names
+                    // none of them, so it would list every such organisation's applications (OwnerIdentifier). The
+                    // organisation's id above still lists its own.
+                    if (!empty($org['organization_number'])
+                        && OwnerIdentifier::identifiesOrganization($org['organization_number'])) {
                         $orgNumbers[] = $org['organization_number'];
                     }
                 }

@@ -2,6 +2,7 @@
 
 namespace App\modules\bookingfrontend\helpers;
 
+use App\helpers\OwnerIdentifier;
 use App\modules\phpgwapi\security\Sessions;
 use Psr\Http\Message\ServerRequestInterface;
 
@@ -67,6 +68,11 @@ class ApplicationHelper
      * Check if the current user can view the given application
      * Supports both secret-based access and direct access (org or ssn)
      *
+     * An identifier stored on the application makes nobody its owner when it is empty, nor when it is the
+     * organisation number '000000000': MinId2 gives that one to every citizen without an organisation and to every
+     * organisation with an ssn and no number, so it says nothing about whose application it is (OwnerIdentifier).
+     * The compares are strict, so a stored identifier that passes is also exactly the viewer's.
+     *
      * @param array $application The application data to check
      * @param ServerRequestInterface $request The request to check for secret parameter
      * @return bool True if user can view the application, false otherwise
@@ -80,8 +86,10 @@ class ApplicationHelper
         $session = Sessions::getInstance();
         $session_id = $session->get_session_id();
 
-        // Check if application belongs to current session
-        if ($application['status'] === 'NEWPARTIAL1' && $application['session_id'] === $session_id) {
+        // Check if application belongs to current session (a partial stored without one belongs to no request)
+        if ($application['status'] === 'NEWPARTIAL1'
+            && !OwnerIdentifier::isEmpty($application['session_id'])
+            && $application['session_id'] === $session_id) {
             return true;
         }
 
@@ -90,17 +98,19 @@ class ApplicationHelper
             $ssn = $this->userHelper->ssn;
             $orgnr = $this->userHelper->orgnr;
 
-            if ($application['customer_ssn'] === $ssn) {
+            if (!OwnerIdentifier::isEmpty($application['customer_ssn'])
+                && $application['customer_ssn'] === $ssn) {
                 return true;
             }
 
-            if ($application['customer_identifier_type'] === 'organization_number'
-                && $application['customer_organization_number'] === $orgnr) {
+            $ownedByNumber = $application['customer_identifier_type'] === 'organization_number'
+                && OwnerIdentifier::identifiesOrganization($application['customer_organization_number']);
+
+            if ($ownedByNumber && $application['customer_organization_number'] === $orgnr) {
                 return true;
             }
 
-            if ($application['customer_identifier_type'] === 'organization_number'
-                && $this->userHelper->organizations) {
+            if ($ownedByNumber && $this->userHelper->organizations) {
                 foreach ($this->userHelper->organizations as $org) {
                     if ($org['orgnr'] === $application['customer_organization_number']) {
                         return true;

@@ -36,7 +36,10 @@ FILES = [
     "src/modules/booking/services/CateringText.php",
     "src/modules/booking/services/CateringLangSwitch.php",
     "src/modules/booking/services/CateringMailRenderer.php",
+    # run_citizen.php has required CateringChangeText.php since 6ca0ca454 and this list did not hold it: the baseline died (rc 255).
+    "src/modules/booking/services/CateringChangeText.php",
     "src/modules/booking/services/TranslationLangSwitch.php",
+    "src/modules/booking/services/HospitalityOrderQuantity.php",
     "src/modules/booking/repositories/HospitalityOrderRepository.php",
     "src/modules/booking/controllers/HospitalityOrderController.php",
     "src/modules/bookingfrontend/services/applications/CateringChangeNotifier.php",
@@ -59,6 +62,7 @@ T = "src/modules/bookingfrontend/client/src/service/types/api/hospitality.types.
 CS = "src/modules/bookingfrontend/client/src/utils/catering-status.ts"
 OV = "src/modules/bookingfrontend/client/src/components/user/application/catering-overview.tsx"
 LANG = "src/modules/bookingfrontend/setup/phpgw_{}.lang"
+HOQ = "src/modules/booking/services/HospitalityOrderQuantity.php"
 
 GUARD_BLOCK = (
     "\t\ttry {\n"
@@ -216,6 +220,50 @@ MUTATIONS = [
      "catering_application_closed\tbookingfrontend\ten\t", "catering_application_closed_x\tbookingfrontend\ten\t"),
     ("Mj3", "mts", LANG.format("nn"), "the note's key is gone from the Nynorsk file",
      "catering_application_closed\tbookingfrontend\tnn\t", "catering_application_closed_x\tbookingfrontend\tnn\t"),
+    # --- (7) the quantity of a catering line is a positive WHOLE number (task 47994, C1) ----------------------
+    ("Mq1", "php", HOQ, "a fraction is no longer refused (the floor test is gone: 2.5 is read as 2)",
+     "if ($raw != floor($raw) || $raw > self::MAX) {", "if ($raw > self::MAX) {"),
+    ("Mq2", "php", HOQ, "a string with a fraction is accepted (\"2.5\" is read as 2)",
+     "'/^[0-9]+(?:\\.0+)?$/D'", "'/^[0-9]+(?:\\.[0-9]+)?$/D'"),
+    ("Mq3", "php", HOQ, "a string with a trailing newline is accepted (the D modifier is gone)",
+     "'/^[0-9]+(?:\\.0+)?$/D'", "'/^[0-9]+(?:\\.0+)?$/'"),
+    ("Mq4", "php", HOQ, "zero is a quantity",
+     "return $quantity >= 1 && $quantity <= self::MAX ? $quantity : null;", "return $quantity >= 0 && $quantity <= self::MAX ? $quantity : null;"),
+    ("Mq5", "php", HOQ, "no upper bound (a whole number above the column's capacity is accepted)",
+     "return $quantity >= 1 && $quantity <= self::MAX ? $quantity : null;", "return $quantity >= 1 ? $quantity : null;"),
+    ("Mq6", "php", HOQ, "a float above the column's capacity is not refused by value (PHP's (int) wraps 2^64+8192 to 8192)",
+     "if ($raw != floor($raw) || $raw > self::MAX) {", "if ($raw != floor($raw)) {"),
+    ("Mq7", "php", HOQ, "anything that is not an int, float or digit string is cast with (int) (true, [2] and \"2abc\"-like values pass)",
+     "        } else {\n            return null;\n        }\n\n        return $quantity", "        } else {\n            $quantity = (int)$raw;\n        }\n\n        return $quantity"),
+    ("Mq8", "php", HOQ, "a line without a quantity is refused instead of meaning 1",
+     "return isset($line['quantity']) ? self::whole($line['quantity']) : 1;", "return isset($line['quantity']) ? self::whole($line['quantity']) : null;"),
+    ("Mq9", "php", HOQ, "a null quantity is judged instead of meaning 1",
+     "return isset($line['quantity']) ? self::whole($line['quantity']) : 1;",
+     "return is_array($line) && array_key_exists('quantity', $line) ? self::whole($line['quantity']) : 1;"),
+    ("Mq10", "php", C, "createOrder judges nothing (the old float cast and <= 0 test are back)",
+     "\t\t\t\t// A whole number (task 47994): judged here, before the first write below, and stored as the int it was read as.\n"
+     "\t\t\t\t$quantity = HospitalityOrderQuantity::ofLine($line);\n\t\t\t\tif ($quantity === null) {\n",
+     "\t\t\t\t$quantity = isset($line['quantity']) ? (float)$line['quantity'] : 1;\n\t\t\t\tif ($quantity <= 0) {\n"),
+    ("Mq11", "php", C, "updateOrder's pre-pass does not refuse: a bad quantity is stored as 1",
+     "\t\t\t\t\tif ($quantity === null) {\n\t\t\t\t\t\treturn $this->refuseQuantity($response, $i);\n\t\t\t\t\t}\n\t\t\t\t\t$quantities[$i] = $quantity;",
+     "\t\t\t\t\t$quantities[$i] = $quantity ?? 1;"),
+    ("Mq12", "php", C, "updateOrder writes the order's own fields BEFORE it judges the quantities (the pre-pass comes after the write)",
+     "\t\t\t$quantities = [];\n",
+     "\t\t\tif (!empty($updateData)) {\n\t\t\t\t$updateData['modified_by'] = $bookingUserId;\n\t\t\t\t$this->orderRepo->update($orderId, $updateData);\n\t\t\t\t$updateData = [];\n\t\t\t}\n\t\t\t$quantities = [];\n"),
+    ("Mq13", "php", C, "the refusal text is not translated",
+     "'error' => lang('catering_quantity_not_whole'),", "'error' => 'quantity must be a whole number',"),
+    ("Mq14", "php", C, "the refusal always names line 0",
+     "'line' => $line,\n", "'line' => 0,\n"),
+    ("Mq15", "php", C, "the refusal is a 422, not this controller's 400",
+     "'line' => $line,\n\t\t], 400, $response);", "'line' => $line,\n\t\t], 422, $response);"),
+    ("Mq16", "php", C, "updateOrder's loop reads the raw quantity again instead of the judged int",
+     "\t\t\t\t\t$quantity = $quantities[$i];", "\t\t\t\t\t$quantity = (float)($line['quantity'] ?? 1);"),
+    ("Mq17", "php", LANG.format("no"), "the Norwegian (bokmål) text is gone",
+     "catering_quantity_not_whole\tbookingfrontend\tno\t", "catering_quantity_not_whole_x\tbookingfrontend\tno\t"),
+    ("Mq18", "php", LANG.format("nn"), "the Nynorsk text is gone",
+     "catering_quantity_not_whole\tbookingfrontend\tnn\t", "catering_quantity_not_whole_x\tbookingfrontend\tnn\t"),
+    ("Mq19", "php", LANG.format("en"), "the English text is gone",
+     "catering_quantity_not_whole\tbookingfrontend\ten\t", "catering_quantity_not_whole_x\tbookingfrontend\ten\t"),
 ]
 
 

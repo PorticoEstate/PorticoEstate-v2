@@ -1305,3 +1305,4 @@ billing_address	bookingfrontend	en	Billing address
 edit_billing_information	bookingfrontend	en	Edit billing information
 birth_number	bookingfrontend	en	National identity number
 recurring_billing_note	bookingfrontend	en	%1 is registered to %2, and the organisation is invoiced. The contact person and address you choose below are saved on the application.
+catering_quantity_not_whole	bookingfrontend	en	The quantity must be a whole number of 1 or more.

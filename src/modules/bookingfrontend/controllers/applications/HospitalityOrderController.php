@@ -11,6 +11,7 @@ use App\modules\booking\repositories\HospitalityArticleRepository;
 use App\modules\booking\repositories\HospitalityOrderRepository;
 use App\modules\booking\services\HospitalityDeadlineCalculator;
 use App\modules\booking\services\HospitalityOrderGuard;
+use App\modules\booking\services\HospitalityOrderQuantity;
 use App\modules\booking\services\HospitalityOrderDiff;
 use App\modules\booking\services\CateringMailRenderer;
 use App\modules\booking\services\CateringChangeText;
@@ -251,6 +252,22 @@ class HospitalityOrderController
 			$payload['until'] = $verdict['until']->format(\DateTimeInterface::ATOM);
 		}
 		return ResponseHelper::sendErrorResponse($payload, 409, $response);
+	}
+
+	/**
+	 * 400 for a line whose quantity is not a positive whole number (HospitalityOrderQuantity::ofLine), in the
+	 * applicant's language. `line` is the key of the offending line in the request's `lines`. Like every
+	 * validation refusal in this controller it is a 400; 409 is for the deadline guard only.
+	 *
+	 * @param int|string $line
+	 */
+	private function refuseQuantity(ResponseInterface $response, $line): ResponseInterface
+	{
+		return ResponseHelper::sendErrorResponse([
+			'error' => lang('catering_quantity_not_whole'),
+			'code' => 'quantity_not_whole',
+			'line' => $line,
+		], 400, $response);
 	}
 
 	/**
@@ -700,9 +717,10 @@ class HospitalityOrderController
 				if (empty($line['hospitality_article_id'])) {
 					return ResponseHelper::sendErrorResponse(['error' => "Line {$i}: hospitality_article_id is required"], 400, $response);
 				}
-				$quantity = isset($line['quantity']) ? (float)$line['quantity'] : 1;
-				if ($quantity <= 0) {
-					return ResponseHelper::sendErrorResponse(['error' => "Line {$i}: quantity must be positive"], 400, $response);
+				// A whole number (task 47994): judged here, before the first write below, and stored as the int it was read as.
+				$quantity = HospitalityOrderQuantity::ofLine($line);
+				if ($quantity === null) {
+					return $this->refuseQuantity($response, $i);
 				}
 
 				$articleId = (int)$line['hospitality_article_id'];
@@ -876,6 +894,20 @@ class HospitalityOrderController
 				$updateData['location_resource_id'] = $locationResourceId;
 			}
 
+			// The quantity of EVERY line is judged here, before the first write: the order's own fields are written
+			// just below, so a refusal from inside the lines loop would come after them (task 47994). Each is kept
+			// as the int it was read as, and that is what the loop below stores.
+			$quantities = [];
+			if (isset($body['lines']) && is_array($body['lines'])) {
+				foreach ($body['lines'] as $i => $line) {
+					$quantity = HospitalityOrderQuantity::ofLine($line);
+					if ($quantity === null) {
+						return $this->refuseQuantity($response, $i);
+					}
+					$quantities[$i] = $quantity;
+				}
+			}
+
 			if (!empty($updateData)) {
 				$updateData['modified_by'] = $bookingUserId;
 				$this->orderRepo->update($orderId, $updateData);
@@ -895,10 +927,7 @@ class HospitalityOrderController
 					if (empty($line['hospitality_article_id'])) {
 						return ResponseHelper::sendErrorResponse(['error' => "Line {$i}: hospitality_article_id is required"], 400, $response);
 					}
-					$quantity = isset($line['quantity']) ? (float)$line['quantity'] : 1;
-					if ($quantity <= 0) {
-						return ResponseHelper::sendErrorResponse(['error' => "Line {$i}: quantity must be positive"], 400, $response);
-					}
+					$quantity = $quantities[$i];
 
 					$articleId = (int)$line['hospitality_article_id'];
 					$pricing = $this->articleRepo->resolveEffectivePricing($articleId);

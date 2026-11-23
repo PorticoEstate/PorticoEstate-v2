@@ -1306,3 +1306,4 @@ billing_address	bookingfrontend	no	Fakturaadresse
 edit_billing_information	bookingfrontend	no	Rediger fakturainformasjon
 birth_number	bookingfrontend	no	Fødselsnummer
 recurring_billing_note	bookingfrontend	no	%1 er registrert på %2, og organisasjonen faktureres. Kontaktpersonen og adressen du velger nedenfor lagres på søknaden.
+catering_quantity_not_whole	bookingfrontend	no	Antall må være et helt tall på 1 eller mer.

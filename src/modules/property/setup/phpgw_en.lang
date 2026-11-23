@@ -1,4 +1,18 @@
 %1 Buildings has been updated to not active of %2 already not active	property	en	%1 Buildings has been updated to not active of %2 already not active
+import recipients	property	en	Import recipients
+csv or excel: header row followed by id, address, name, norwegian phone number and an ignored column.	property	en	CSV or Excel: header row followed by ID, address, name, Norwegian phone number and an ignored column.
+importing recipients	property	en	Importing recipients
+recipients imported	property	en	Recipients imported
+invalid phone numbers in rows	property	en	Invalid phone numbers in rows
+sending sms	property	en	Sending SMS
+sms sending completed	property	en	SMS sending completed
+recipients without confirmed sending	property	en	Recipients without confirmed sending (check the SMS log before sending again)
+sending interrupted. check the sms log before sending again. the current batch may have been partially sent.	property	en	Sending interrupted. Check the SMS log before sending again. The current batch may have been partially sent.
+keep this page open while sms messages are being sent.	property	en	Keep this page open while SMS messages are being sent.
+no recipients were imported.	property	en	No recipients were imported.
+file upload failed. check the file size and try again.	property	en	File upload failed. Check the file size and try again.
+could not import recipients	property	en	Could not import recipients
+invalid sms batch	property	en	Invalid SMS batch
 %1 Entrances has been updated to not active of %2 already not active	property	en	%1 Entrances has been updated to not active of %2 already not active
 %1 entries is added!	property	en	%1 entries is added!
 %1 entries is updated!	property	en	%1 entries is updated!

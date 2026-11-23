@@ -31,6 +31,7 @@
 use App\modules\phpgwapi\services\Cache;
 use App\modules\phpgwapi\services\Settings;
 use App\Database\Db;
+use App\modules\property\helpers\SmsRecipientImport;
 
 /**
  * Description
@@ -53,7 +54,9 @@ class property_uiexternal_communication extends phpgwapi_uicommon
 		'add_deviation'			 => true,
 		'get_other_deviations'	 => true,
 		'send_sms'				 => true,
-		'get_sms_recipients'	 => true
+		'get_sms_recipients'	 => true,
+		'import_sms_recipients'	 => true,
+		'send_sms_batch'		 => true
 	);
 	var $acl, $historylog, $bo;
 	private $acl_location, $acl_read, $acl_add, $acl_edit, $acl_delete, $receipt,
@@ -1301,6 +1304,75 @@ JS;
 		return $sms_recipients;
 	}
 
+	public function import_sms_recipients()
+	{
+		if (!$this->acl_add)
+		{
+			phpgw::no_access();
+		}
+
+		$file = $_FILES['file'] ?? null;
+		if (!$file || $file['error'] !== UPLOAD_ERR_OK || !is_uploaded_file($file['tmp_name']))
+		{
+			return ['error' => $this->smsLabel('File upload failed. Check the file size and try again.')];
+		}
+		try
+		{
+			return SmsRecipientImport::read($file['tmp_name'], pathinfo($file['name'], PATHINFO_EXTENSION));
+		}
+		catch (\PhpOffice\PhpSpreadsheet\Exception | \PhpOffice\PhpSpreadsheet\Reader\Exception | \RuntimeException $exception)
+		{
+			return ['error' => $this->smsLabel('Could not import recipients') . ': ' . $exception->getMessage()];
+		}
+	}
+
+	public function send_sms_batch()
+	{
+		if (!$this->acl_add)
+		{
+			phpgw::no_access();
+		}
+		$recipients = Sanitizer::get_var('recipients', 'string', 'POST');
+		$content = Sanitizer::get_var('sms_content', 'string', 'POST');
+		if (!is_array($recipients) || !$recipients || count($recipients) > 10 || !is_string($content) || trim($content) === '')
+		{
+			return ['error' => $this->smsLabel('Invalid SMS batch')];
+		}
+
+		$sms_service = CreateObject('sms.sms');
+		$failed = [];
+		foreach ($recipients as $recipient)
+		{
+			if (!is_string($recipient) || $recipient === '')
+			{
+				return ['error' => $this->smsLabel('Invalid SMS batch')];
+			}
+		}
+		foreach ($recipients as $recipient)
+		{
+			try
+			{
+				$result = $sms_service->websend2pv($this->account, $recipient, $content);
+				if (empty($result[0][0]))
+				{
+					$failed[] = $recipient;
+				}
+			}
+			catch (Exception $exception)
+			{
+				error_log('SMS send failed: ' . $exception->getMessage());
+				$failed[] = $recipient;
+			}
+		}
+		return ['failed' => $failed];
+	}
+
+	private function smsLabel(string $key): string
+	{
+		$translated = lang($key);
+		return str_starts_with($translated, '!') ? $key : $translated;
+	}
+
 	public function send_sms()
 	{
 		if (!$this->acl_add)
@@ -1380,6 +1452,8 @@ JS;
 			'tabs'				 => phpgwapi_jquery::tabview_generate($tabs, 0),
 			'value_active_tab'	 => 0,
 			'default_message'	 => $default_message,
+			'import_recipients_label' => $this->smsLabel('Import recipients'),
+			'import_recipients_help' => $this->smsLabel('CSV or Excel: header row followed by ID, address, name, Norwegian phone number and an ignored column.'),
 			'value_extra_sms_address' => $incoming_extra_sms_recipients
 		);
 		$this->flags['app_header']	 .= '::' . lang('sms');

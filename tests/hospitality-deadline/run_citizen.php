@@ -49,6 +49,7 @@ foreach ([
     'modules/booking/services/CateringText.php',
     'modules/booking/services/CateringLangSwitch.php',
     'modules/booking/services/CateringMailRenderer.php',
+    'modules/booking/services/CateringChangeText.php',
     'modules/booking/services/TranslationLangSwitch.php',
     'modules/booking/repositories/HospitalityOrderRepository.php',
     'modules/bookingfrontend/services/applications/CateringChangeNotifier.php',

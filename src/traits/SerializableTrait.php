@@ -303,21 +303,66 @@ trait SerializableTrait
                 return false;
             }
 
-            // If context value is an array, check if the actual value is in it
-            if (is_array($contextValue)) {
-                return in_array($actualValue, array_filter($contextValue, fn($v) => !$this->isEmptyIdentifier($v)));
-            }
-
-            if ($this->isEmptyIdentifier($contextValue)) {
+            // '000000000' is the number MinId2 lists for every organisation that has an ssn and no number (a citizen's
+            // personal organisation among them), and the session's number of a citizen who has no organisation: it names
+            // nobody in particular, so on either side it makes nobody the owner. Holding it does not make a citizen the
+            // owner of the objects stored with it.
+            if (\App\helpers\OwnerIdentifier::isPlaceholderOrgNumber($actualValue)) {
                 return false;
             }
 
-            // Regular comparison for non-array values
-            return $actualValue == $contextValue;
+            if (\App\helpers\OwnerIdentifier::isPlaceholderOrgNumber($contextValue)) {
+                return false;
+            }
+
+            if ($this->isViewersIdentifier($actualValue, $contextValue)) {
+                return true;
+            }
+
+            // An ssn stored with exactly 10 digits is an 11-digit ssn that lost its leading zero (a birth date on day
+            // 01-09); the loose compare matched it with the viewer's ssn as the same number. It is also tried with that
+            // zero back, so its owner stays the owner under the strict compare.
+            $restored = $contextKey === 'user_ssn' ? $this->restoreDroppedSsnZero($actualValue) : null;
+
+            return $restored !== null && $this->isViewersIdentifier($restored, $contextValue);
         }
 
         // Regular comparison for non-context values
         return $this->$field == $value;
+    }
+
+    /**
+     * Whether a value stored on the entity is the viewer's own identifier, or one of their list (the numbers of the
+     * viewer's organisations, the viewer's group ids): the same string, with an int taken as its digits (a group id 5 is
+     * '5'), and nothing empty on either side; empty elements and the placeholder are left out of a list. Loosely, PHP
+     * compared two digit strings as numbers: '0' equalled '00000', and '994239929' equalled '0994239929'.
+     */
+    private function isViewersIdentifier(mixed $stored, mixed $viewer): bool
+    {
+        if (is_array($viewer)) {
+            return \App\helpers\OwnerIdentifier::ownsByNumber($stored, $viewer);
+        }
+
+        return \App\helpers\OwnerIdentifier::sameIdentifier($stored, $viewer);
+    }
+
+    /**
+     * The 11-digit ssn a value of exactly 10 digits is with its dropped leading zero put back, or null for any other
+     * value: no other length is an ssn with one zero dropped. Ten zeros are not padded either: they are nobody's ssn,
+     * and padded they would equal an all-zero viewer value they are not the same string as.
+     */
+    private function restoreDroppedSsnZero(mixed $storedSsn): ?string
+    {
+        if (!is_string($storedSsn) && !is_int($storedSsn)) {
+            return null;
+        }
+
+        $digits = (string)$storedSsn;
+        if (strlen($digits) !== 10 || !ctype_digit($digits) || ltrim($digits, '0') === '') {
+            return null;
+        }
+
+        return '0' . $digits;
     }
 
     /**

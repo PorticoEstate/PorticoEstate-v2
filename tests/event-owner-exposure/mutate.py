@@ -6,6 +6,12 @@ One deliberate defect at a time in a TEMP COPY of the files the harness reads (n
 red on that copy, in the arm(s) named for the mutation, after a green baseline on the same copy. Every replacement
 must match exactly once. Any other exit (a crash, a fatal error) is CRASH and fails the run.
 
+Since the owner arm compares strictly (task 49173), Mb, Mc and Md are EQUIVALENT: each removes the empty check of ONE
+side, and the other side's check covers it (a strict compare matches an empty value only with the same empty value), so
+no input can tell them apart. They must survive; if one is caught, that claim is wrong and the run fails. Mi removes
+the checks of both sides together and must be caught. The rows they were written for, F7 and F10 (0 against NULL),
+are loose-compare defects that the strict compare refuses on its own.
+
 Usage:  python3 tests/event-owner-exposure/mutate.py      (PHP_BIN overrides the binary)
 Exit:   0 every mutation caught by its arm(s), 1 otherwise.
 """
@@ -36,41 +42,55 @@ FILES = [
 ]
 
 T = "src/traits/SerializableTrait.php"
+H = "src/helpers/OwnerIdentifier.php"
 E = "src/modules/bookingfrontend/models/Event.php"
 STORED = ("            if ($this->isEmptyIdentifier($actualValue)) {\n"
           "                return false;\n"
           "            }\n")
-FILTER = "in_array($actualValue, array_filter($contextValue, fn($v) => !$this->isEmptyIdentifier($v)))"
-CONTEXT = ("            if ($this->isEmptyIdentifier($contextValue)) {\n"
-           "                return false;\n"
-           "            }\n")
+PLACEHOLDER_STORED = ("            if (\\App\\helpers\\OwnerIdentifier::isPlaceholderOrgNumber($actualValue)) {\n"
+                      "                return false;\n"
+                      "            }\n")
+PLACEHOLDER_VIEWER = ("            if (\\App\\helpers\\OwnerIdentifier::isPlaceholderOrgNumber($contextValue)) {\n"
+                      "                return false;\n"
+                      "            }\n")
+COMPARE = ("        if (is_array($viewer)) {\n"
+           "            return \\App\\helpers\\OwnerIdentifier::ownsByNumber($stored, $viewer);\n"
+           "        }\n"
+           "\n"
+           "        return \\App\\helpers\\OwnerIdentifier::sameIdentifier($stored, $viewer);")
+FIELD = "            $actualValue = $this->$field;\n"
+NO_STORED_EMPTY = [(T, STORED, ""), (H, "self::isEmpty($stored) || ", ""),
+                   (H, "if (!self::identifiesOrganization($stored) ||", "if (self::isPlaceholderOrgNumber($stored) ||")]
+NO_VIEWER_EMPTY = [(H, "self::isEmpty($viewer) || ", "")]
+NO_LIST_EMPTY = [(H, "static fn($number) => is_scalar($number) && self::identifiesOrganization($number)",
+                  "static fn($number) => is_scalar($number) && !self::isPlaceholderOrgNumber($number)")]
 
 
 def loose_for(field):
-    """The guards skipped for one field only: that owner arm is compared loosely again."""
-    skip = f"$field !== '{field}' && "
-    return [
-        (STORED, STORED.replace("if ($this->isEmptyIdentifier($actualValue))", f"if ({skip}$this->isEmptyIdentifier($actualValue))")),
-        (FILTER, f"in_array($actualValue, $field === '{field}' ? $contextValue : array_filter($contextValue, fn($v) => !$this->isEmptyIdentifier($v)))"),
-        (CONTEXT, CONTEXT.replace("if ($this->isEmptyIdentifier($contextValue))", f"if ({skip}$this->isEmptyIdentifier($contextValue))")),
-    ]
+    """Every guard skipped for one field only: that owner arm is compared loosely again."""
+    return [(T, FIELD, FIELD + f"            if ($field === '{field}') {{\n"
+                               "                return is_array($contextValue) ? in_array($actualValue, $contextValue) : $actualValue == $contextValue;\n"
+                               "            }\n")]
 
 
-# (id, file, description, [(old, new), ...], arms that must go red)
+# (id, description, [(file, old, new), ...], arms that must go red, or "EQUIVALENT")
 MUTATIONS = [
-    ("Ma", T, "the loose compare restored (every guard removed)",
-     [(STORED, ""), (FILTER, "in_array($actualValue, $contextValue)"), (CONTEXT, "")],
+    ("Ma", "the loose compare restored (every guard removed)",
+     [(T, STORED, ""), (T, PLACEHOLDER_STORED, ""), (T, PLACEHOLDER_VIEWER, ""),
+      (T, COMPARE, "        return is_array($viewer) ? in_array($stored, $viewer) : $stored == $viewer;")],
      ["F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9", "F10"]),
-    ("Mb", T, "the empty-entity check removed", [(STORED, "")], ["F10"]),
-    ("Mc", T, "the empty-context check removed", [(CONTEXT, "")], ["F7"]),
-    ("Md", T, "the empty elements of a context list kept", [(FILTER, "in_array($actualValue, $contextValue)")], ["F7"]),
-    ("Me", T, "the ssn arm left loose", loose_for("customer_ssn"), ["F3", "F4"]),
-    ("Mf", T, "the organisation-number arm left loose", loose_for("customer_organization_number"), ["F1", "F2", "F5", "F6", "F9"]),
+    ("Mb", "the empty-entity check removed (trait and helper)", NO_STORED_EMPTY, "EQUIVALENT"),
+    ("Mc", "the empty-context check removed (sameIdentifier)", NO_VIEWER_EMPTY, "EQUIVALENT"),
+    ("Md", "the empty elements of a context list kept (ownsByNumber)", NO_LIST_EMPTY, "EQUIVALENT"),
+    ("Me", "the ssn arm left loose", loose_for("customer_ssn"), ["F3", "F4"]),
+    ("Mf", "the organisation-number arm left loose", loose_for("customer_organization_number"), ["F1", "F2", "F5", "F6", "F9"]),
     # --- the two docblocks back as they were: «when={…}» closed without «)», so the trait never reads the rule
-    ("Mg", E, "customer_identifier_type's docblock without its «)»",
-     [("\t * })\n\t */\n\tpublic $customer_identifier_type;", "\t *   }\n\t */\n\tpublic $customer_identifier_type;")], ["F11"]),
-    ("Mh", E, "customer_organization_number's docblock without its «)»",
-     [("\t * })\n\t * @Short\n\t */\n\tpublic $customer_organization_number;", "\t *  }\n\t * @Short\n\t */\n\tpublic $customer_organization_number;")], ["F11"]),
+    ("Mg", "customer_identifier_type's docblock without its «)»",
+     [(E, "\t * })\n\t */\n\tpublic $customer_identifier_type;", "\t *   }\n\t */\n\tpublic $customer_identifier_type;")], ["F11"]),
+    ("Mh", "customer_organization_number's docblock without its «)»",
+     [(E, "\t * })\n\t * @Short\n\t */\n\tpublic $customer_organization_number;", "\t *  }\n\t * @Short\n\t */\n\tpublic $customer_organization_number;")], ["F11"]),
+    ("Mi", "the empty checks of both sides removed together (Mb + Mc + Md)", NO_STORED_EMPTY + NO_VIEWER_EMPTY + NO_LIST_EMPTY,
+     ["F4", "F5"]),
 ]
 
 
@@ -97,24 +117,30 @@ def main():
             return 1
 
         survived, crashed, wrong_arm = [], [], []
-        for mid, rel, desc, pairs, arms in MUTATIONS:
-            path = os.path.join(tree, rel)
-            original = open(path, encoding="utf-8").read()
-            text = original
-            for old, new in pairs:
-                n = text.count(old)
-                if n != 1:
-                    print(f"{mid}: MUTATION DID NOT APPLY - pattern matched {n} times (need exactly 1): {desc}")
-                    return 1
-                text = text.replace(old, new, 1)
-            open(path, "w", encoding="utf-8").write(text)
+        originals = {rel: open(os.path.join(tree, rel), encoding="utf-8").read() for rel in FILES}
+        for mid, desc, pairs, arms in MUTATIONS:
             try:
+                for rel, old, new in pairs:
+                    path = os.path.join(tree, rel)
+                    text = open(path, encoding="utf-8").read()
+                    n = text.count(old)
+                    if n != 1:
+                        print(f"{mid}: MUTATION DID NOT APPLY - pattern matched {n} times in {rel} (need exactly 1): {desc}")
+                        return 1
+                    open(path, "w", encoding="utf-8").write(text.replace(old, new, 1))
                 rc, tail, stdout = run_harness(tree)
             finally:
-                open(path, "w", encoding="utf-8").write(original)
+                for rel, text in originals.items():
+                    open(os.path.join(tree, rel), "w", encoding="utf-8").write(text)
             red = set(re.findall(r"^FAIL  (\S+)$", stdout, re.M))
             m = re.search(r"FAIL (\d+) of (\d+)", tail)
-            if rc == 0:
+            if arms == "EQUIVALENT":
+                if rc == 0:
+                    print(f"{mid:3} survived (equivalent, as claimed)  {desc}")
+                else:
+                    print(f"{mid:3} CAUGHT   but claimed equivalent: rc={rc} red={sorted(red)}  {desc}")
+                    wrong_arm.append(mid)
+            elif rc == 0:
                 print(f"{mid:3} SURVIVED rc=0  {desc}")
                 survived.append(mid)
             elif rc != 1 or not m:
@@ -131,7 +157,8 @@ def main():
                 if ids:
                     print(f"{label}: {', '.join(ids)}")
             return 1
-        print(f"all {len(MUTATIONS)} mutations caught by their arms, 0 crashes, baseline green")
+        caught = sum(1 for x in MUTATIONS if x[3] != "EQUIVALENT")
+        print(f"all {caught} mutations caught by their arms, {len(MUTATIONS) - caught} equivalent ones survived, 0 crashes, baseline green")
         return 0
     finally:
         shutil.rmtree(tmp, ignore_errors=True)

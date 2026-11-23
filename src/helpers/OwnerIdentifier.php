@@ -11,6 +11,9 @@ namespace App\helpers;
  * event lists (EventRepository, booking_soevent) to whose applications and unlisted events a viewer is shown.
  * Loosely, a stored '' or NULL equals the null of a viewer with no session, and an empty element in a delegate's list
  * of organisations equals a stored '' or NULL.
+ *
+ * sameIdentifier() and ownsByNumber() are the compare itself, which SerializableTrait's owner arms use: the same string,
+ * an int taken as its digits.
  */
 final class OwnerIdentifier
 {
@@ -45,5 +48,43 @@ final class OwnerIdentifier
 	public static function identifiesOrganization(mixed $value): bool
 	{
 		return !self::isEmpty($value) && !self::isPlaceholderOrgNumber($value);
+	}
+
+	/**
+	 * Whether an identifier stored on an object is the viewer's own: both are non-empty scalars and the same string.
+	 * An int and its digits are the same identifier (a group id read as 5 and given as '5'). Nothing else is: compared
+	 * loosely, PHP takes two digit strings for numbers, so '0' equalled '00000' and '994239929' equalled '0994239929',
+	 * and a trailing space did not tell two numbers apart.
+	 */
+	public static function sameIdentifier(mixed $stored, mixed $viewer): bool
+	{
+		if (self::isEmpty($stored) || self::isEmpty($viewer) || !is_scalar($stored) || !is_scalar($viewer)) {
+			return false;
+		}
+
+		return (string)$stored === (string)$viewer;
+	}
+
+	/**
+	 * Whether a number stored on an object is one of the viewer's (the numbers of the organisations they act for).
+	 * Neither the stored number nor one in the list may be empty or the placeholder: those name no organisation, and the
+	 * placeholder is in the list of every viewer with a personal organisation (or any organisation that has an ssn and
+	 * no number). The compare is sameIdentifier()'s: the same string, an int taken as its digits. SerializableTrait also
+	 * passes a viewer's group ids through it; an id is never the placeholder.
+	 *
+	 * @param array<mixed>|null $viewerNumbers
+	 */
+	public static function ownsByNumber(mixed $stored, ?array $viewerNumbers): bool
+	{
+		if (!self::identifiesOrganization($stored) || !is_scalar($stored)) {
+			return false;
+		}
+
+		$numbers = array_map('strval', array_filter(
+			$viewerNumbers ?? [],
+			static fn($number) => is_scalar($number) && self::identifiesOrganization($number)
+		));
+
+		return in_array((string)$stored, $numbers, true);
 	}
 }

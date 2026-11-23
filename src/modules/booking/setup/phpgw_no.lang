@@ -1433,3 +1433,5 @@ notify_case_officer_on_catering_change	booking	no	Send e-post til saksbehandler 
 hospitality_order_quantity_not_whole	booking	no	Antall må være et helt tall på 1 eller mer.
 main_resource_inactive	booking	no	Ressursen «%1» er ikke aktiv og kan ikke velges som hovedressurs.
 main_resource_not_in_active_building	booking	no	Ressursen «%1» ligger ikke i en aktiv bygning og kan ikke velges som hovedressurs.
+deleteAssociationConfirm	booking	no	Deaktivere denne koblingen?
+building_select_no_results	booking	no	Ingen treff

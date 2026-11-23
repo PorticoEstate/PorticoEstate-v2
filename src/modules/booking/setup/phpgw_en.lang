@@ -1432,3 +1432,5 @@ notify_case_officer_on_catering_change	booking	en	Email the case officer when th
 hospitality_order_quantity_not_whole	booking	en	The quantity must be a whole number of 1 or more.
 main_resource_inactive	booking	en	The resource “%1” is not active and cannot be the main resource.
 main_resource_not_in_active_building	booking	en	The resource “%1” is not in an active building and cannot be the main resource.
+deleteAssociationConfirm	booking	en	Deactivate this association?
+building_select_no_results	booking	en	No results

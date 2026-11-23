@@ -160,7 +160,7 @@ class BuildingSelect {
         if (this.filtered.length === 0) {
             var empty = document.createElement('li');
             empty.className = 'building-select__empty';
-            empty.textContent = 'Ingen treff';
+            empty.textContent = this.container.dataset.langNoResults || '';
             this.dropdown.appendChild(empty);
             return;
         }

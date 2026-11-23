@@ -1632,7 +1632,7 @@
 		root.addEventListener('click', function (e) {
 			var btn = e.target.closest('[data-booking-action="delete-association"]');
 			if (!btn) return;
-			if (!confirm(lang('deleteAssociationConfirm') !== 'deleteAssociationConfirm' ? lang('deleteAssociationConfirm') : 'Deactivate this association?')) return;
+			if (!confirm(lang('deleteAssociationConfirm'))) return;
 			var assocId = btn.dataset.assocId;
 			var assocType = btn.dataset.assocType;
 			btn.disabled = true;
@@ -1658,7 +1658,7 @@
 		root.addEventListener('click', function (e) {
 			var btn = e.target.closest('[data-booking-action="activate-association"]');
 			if (!btn) return;
-			if (!confirm(lang('activateAssociationConfirm') !== 'activateAssociationConfirm' ? lang('activateAssociationConfirm') : 'Reactivate this association?')) return;
+			if (!confirm(lang('activateAssociationConfirm'))) return;
 			var assocId = btn.dataset.assocId;
 			var assocType = btn.dataset.assocType;
 			btn.disabled = true;

@@ -1407,3 +1407,7 @@ notify_case_officer_on_catering_change	booking	nn	Send e-post til sakshandsamar 
 hospitality_order_quantity_not_whole	booking	nn	Antalet må vere eit heilt tal på 1 eller meir.
 main_resource_inactive	booking	nn	Ressursen «%1» er ikkje aktiv og kan ikkje veljast som hovudressurs.
 main_resource_not_in_active_building	booking	nn	Ressursen «%1» ligg ikkje i ein aktiv bygning og kan ikkje veljast som hovudressurs.
+deleteAssociationConfirm	booking	nn	Deaktivere denne koplinga?
+activateAssociationConfirm	booking	nn	Aktiver denne koplinga igjen?
+activate	booking	nn	Aktiver
+building_select_no_results	booking	nn	Ingen treff

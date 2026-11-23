@@ -1306,3 +1306,15 @@ edit_billing_information	bookingfrontend	en	Edit billing information
 birth_number	bookingfrontend	en	National identity number
 recurring_billing_note	bookingfrontend	en	%1 is registered to %2, and the organisation is invoiced. The contact person and address you choose below are saved on the application.
 catering_quantity_not_whole	bookingfrontend	en	The quantity must be a whole number of 1 or more.
+close calendar without season	bookingfrontend	en	Close calendar when building has no season
+close calendar without season note	bookingfrontend	en	When enabled, buildings without a defined season are shown as closed
+allow old template	bookingfrontend	en	Allow old template
+allow old template note	bookingfrontend	en	When enabled, users who selected the old template stay on it. When disabled, the new pages are forced for paths that have a new version.
+highlighted buildings	bookingfrontend	en	Highlighted buildings
+comma separated building ids	bookingfrontend	en	Comma-separated building IDs
+develope mode	bookingfrontend	en	Developer mode
+bypass external login	bookingfrontend	en	Bypass external login
+debug external logn	bookingfrontend	en	Debug external login
+debug local login	bookingfrontend	en	Debug local login
+test person	bookingfrontend	en	Test person
+support email address	bookingfrontend	en	Support email address

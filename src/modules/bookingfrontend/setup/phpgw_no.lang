@@ -1307,3 +1307,15 @@ edit_billing_information	bookingfrontend	no	Rediger fakturainformasjon
 birth_number	bookingfrontend	no	Fødselsnummer
 recurring_billing_note	bookingfrontend	no	%1 er registrert på %2, og organisasjonen faktureres. Kontaktpersonen og adressen du velger nedenfor lagres på søknaden.
 catering_quantity_not_whole	bookingfrontend	no	Antall må være et helt tall på 1 eller mer.
+close calendar without season	bookingfrontend	no	Steng kalender når bygg mangler sesong
+close calendar without season note	bookingfrontend	no	Når aktiv vises bygg uten definert sesong som stengt
+allow old template	bookingfrontend	no	Tillat gammel mal
+allow old template note	bookingfrontend	no	Når aktiv kan brukere som har valgt den gamle malen bli værende på den. Når av tvinges de nye sidene for adresser som har en ny versjon.
+highlighted buildings	bookingfrontend	no	Utvalgte bygg
+comma separated building ids	bookingfrontend	no	Kommaseparerte bygg-ID-er
+develope mode	bookingfrontend	no	Utviklermodus
+bypass external login	bookingfrontend	no	Hopp over ekstern innlogging
+debug external logn	bookingfrontend	no	Feilsøk ekstern innlogging
+debug local login	bookingfrontend	no	Feilsøk lokal innlogging
+test person	bookingfrontend	no	Testperson
+support email address	bookingfrontend	no	Brukerstøtte e-post adresse

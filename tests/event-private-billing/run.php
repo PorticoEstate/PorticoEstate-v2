@@ -27,8 +27,10 @@
  * booking_uicommon::humanize(). A marker that is missing or not unique stops the harness with a FAIL line.
  *
  * What it proves:
- *   C1  the oracle can fail both ways in this run: a public event and a private one stored with a type and an
- *       empty number show their REAL name; a private one with no type shows the placeholder.
+ *   C1  the oracle can fail both ways in this run: a public event, and a private one viewed by the owner of its
+ *       stored number, show their REAL name; a private one with no type shows the placeholder. (Until the owner
+ *       arms required a non-empty identifier, tests/event-owner-exposure, a private event stored with a type and an
+ *       empty number also showed its real name to anyone; M1's stored-type checks are what tell the save apart.)
  *   C2  the render can show something other than «Organisasjonsnummer»: a stored ssn is shown as «Fødselsnummer».
  *   M1a «Organisasjonsnummer» with no number, private, saved: no type is stored, and the front page hides the name.
  *   M1b the same for «Fødselsnummer».
@@ -93,7 +95,9 @@ namespace {
     $root = getenv('HD_ROOT') ?: dirname(__DIR__, 2);
     $repo = dirname(__DIR__, 2);
 
-    // App\ classes from the tree under test, before composer (whose App\ points at this repo).
+    // Composer first, then App\ from the tree under test registered IN FRONT of it: composer prepends its own loader,
+    // whose App\ points at this repo, so registering ours before it would serve this repo's classes, not HD_ROOT's.
+    require (is_file($root . '/vendor/autoload.php') ? $root : $repo) . '/vendor/autoload.php';
     spl_autoload_register(static function (string $class) use ($root): void {
         if (str_starts_with($class, 'App\\')) {
             $file = $root . '/src/' . str_replace('\\', '/', substr($class, 4)) . '.php';
@@ -102,7 +106,6 @@ namespace {
             }
         }
     }, true, true);
-    require (is_file($root . '/vendor/autoload.php') ? $root : $repo) . '/vendor/autoload.php';
 
     const PB_PLACEHOLDER = '[lang:bookingfrontend.private event]';
     const PB_NAME = 'T1492 fixture event';
@@ -383,13 +386,21 @@ namespace {
     $privatePost = ['is_public' => '0', 'customer_organization_name' => '', 'customer_organization_id' => '',
         'customer_internal' => '0', 'customer_ssn' => '', 'customer_organization_number' => ''];
 
+    // --- P: the front-page oracle is the HD_ROOT copy (the edit() blocks are cut from HD_ROOT's file directly) ---
+    $arm('P', function () use ($root, $check) {
+        $want = realpath($root . '/src') . '/';
+        foreach ([\App\modules\bookingfrontend\models\Event::class, \App\traits\SerializableTrait::class, \booking_customer_identifier::class] as $class) {
+            $file = (string)realpath((string)(new \ReflectionClass($class))->getFileName());
+            $check("P {$class} loads from HD_ROOT", str_starts_with($file, $want), $file);
+        }
+    });
+
     // --- C: the instruments can fail ---------------------------------------------------------------
     $arm('C1', function () use ($same, $frontName, $base) {
         $same('C1 public, nothing stored: the real name', $frontName($base), PB_NAME);
-        $same('C1 private, «Organisasjonsnummer» + empty number stored: the real name (the leak this oracle must see)',
-            $frontName(['is_public' => 0, 'customer_identifier_type' => 'organization_number', 'customer_organization_number' => ''] + $base), PB_NAME);
-        $same('C1 private, ssn + empty ssn stored: the real name',
-            $frontName(['is_public' => 0, 'customer_identifier_type' => 'ssn', 'customer_ssn' => ''] + $base), PB_NAME);
+        // A private event's real name for the viewer it belongs to: what the oracle shows when it does show it.
+        $same('C1 private, the owner of the stored number: the real name',
+            $frontName(['is_public' => 0, 'customer_identifier_type' => 'organization_number', 'customer_organization_number' => '999999999'] + $base, ['999999999']), PB_NAME);
         $same('C1 private, nothing stored: the placeholder', $frontName(['is_public' => 0] + $base), PB_PLACEHOLDER);
     });
     $arm('C2', function () use ($same, $render, $base, $noOrgs) {

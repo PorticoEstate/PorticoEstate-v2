@@ -296,9 +296,20 @@ trait SerializableTrait
             // Get actual field value
             $actualValue = $this->$field;
 
+            // This compares something stored on the entity with the viewer's own identifier («customer_ssn=$user_ssn»):
+            // an empty value on either side identifies nobody, so it never matches. Loosely, a stored '' equals the
+            // null of a viewer with no session and made every such viewer the owner.
+            if ($this->isEmptyIdentifier($actualValue)) {
+                return false;
+            }
+
             // If context value is an array, check if the actual value is in it
             if (is_array($contextValue)) {
-                return in_array($actualValue, $contextValue);
+                return in_array($actualValue, array_filter($contextValue, fn($v) => !$this->isEmptyIdentifier($v)));
+            }
+
+            if ($this->isEmptyIdentifier($contextValue)) {
+                return false;
             }
 
             // Regular comparison for non-array values
@@ -307,6 +318,15 @@ trait SerializableTrait
 
         // Regular comparison for non-context values
         return $this->$field == $value;
+    }
+
+    /**
+     * Null, false, [] or a string that is empty after trim(). 0 and '0' are values, not empty.
+     */
+    private function isEmptyIdentifier(mixed $value): bool
+    {
+        return $value === null || $value === false || $value === []
+            || (is_string($value) && trim($value) === '');
     }
 
     /**

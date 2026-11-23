@@ -153,9 +153,11 @@ class EventService
             $userOrgs,
             fn($orgNumber) => !OwnerIdentifier::isEmpty($orgNumber) && !OwnerIdentifier::isPlaceholderOrgNumber($orgNumber)
         );
+        // Compared as strings: loosely, '0' equals '00000' and '994239929' equals '0994239929', so another
+        // organisation's spelling of the same digits would pass. An int on either side is still its own digits.
         $isOwnerByOrganization = !OwnerIdentifier::isEmpty($ownerOrgNum)
             && !OwnerIdentifier::isPlaceholderOrgNumber($ownerOrgNum)
-            && in_array($ownerOrgNum, $userOrgNumbers);
+            && in_array((string)$ownerOrgNum, array_map('strval', $userOrgNumbers), true);
 
         return $isOwnerBySsn || $isOwnerByOrganization;
     }

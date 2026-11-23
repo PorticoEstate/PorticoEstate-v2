@@ -73,24 +73,37 @@ STORED_EMPTY = "$isOwnerByOrganization = !OwnerIdentifier::isEmpty($ownerOrgNum)
 STORED_PLACEHOLDER = "&& !OwnerIdentifier::isPlaceholderOrgNumber($ownerOrgNum)\n            "
 ORG_ARM = ("$isOwnerByOrganization = !OwnerIdentifier::isEmpty($ownerOrgNum)\n"
            "            && !OwnerIdentifier::isPlaceholderOrgNumber($ownerOrgNum)\n"
-           "            && in_array($ownerOrgNum, $userOrgNumbers);")
+           "            && in_array((string)$ownerOrgNum, array_map('strval', $userOrgNumbers), true);")
+ORG_COMPARE = "in_array((string)$ownerOrgNum, array_map('strval', $userOrgNumbers), true)"
 
 # (id, file, description, [(old, new), ...], arms that must go red)
 MUTATIONS = [
     ("Ma", S, "the ssn arm compared bare again (both guards dropped)",
      [(SSN, "$isOwnerBySsn = $ssn === $ownerSsn;")], ["F1", "F2"]),
-    ("Mc", S, "empty elements of the delegate list kept",
-     [(LIST, "fn($orgNumber) => !OwnerIdentifier::isPlaceholderOrgNumber($orgNumber)")], ["F4"]),
-    ("Md", S, "the placeholder kept in the delegate list",
-     [(LIST, "fn($orgNumber) => !OwnerIdentifier::isEmpty($orgNumber)")], ["F5"]),
-    ("Me", S, "a stored placeholder number allowed", [(STORED_PLACEHOLDER, "")], ["F5"]),
-    ("Mf", S, "an empty stored number allowed", [(STORED_EMPTY, "$isOwnerByOrganization = ")], ["F4"]),
+    # Since task 48852 compares the org arm as strings (strict), each org guard has a twin on the other side, as the
+    # ssn arm's guards have (Eb1/Eb2): the list filter or the stored guard alone keeps an empty or placeholder number
+    # from matching. Dropping one is therefore equivalent (Ec-Ef below); dropping both sides of a pair must be caught.
+    ("Mcf", S, "empty numbers allowed on both sides (the list's empty filter and the stored empty guard dropped)",
+     [(LIST, "fn($orgNumber) => !OwnerIdentifier::isPlaceholderOrgNumber($orgNumber)"),
+      (STORED_EMPTY, "$isOwnerByOrganization = ")], ["F2", "F3"]),
+    ("Mde", S, "the placeholder allowed on both sides (the list's placeholder filter and the stored guard dropped)",
+     [(LIST, "fn($orgNumber) => !OwnerIdentifier::isEmpty($orgNumber)"), (STORED_PLACEHOLDER, "")], ["F5"]),
     ("Mg", S, "the org arm compared bare again (every org guard dropped)",
      [(ORG_ARM, "$isOwnerByOrganization = in_array($ownerOrgNum, $userOrgs);")], ["F2", "F3", "F4", "F5"]),
     ("Mh", O, "0 and '0' taken for empty",
      [("return $value === null || $value === false || $value === []",
        "return $value === null || $value === false || $value === [] || $value === 0 || $value === '0'")], ["D1", "D3"]),
     ("Mi", O, "whitespace taken for a value (no trim)", [("trim($value) === ''", "$value === ''")], ["F2"]),
+    # --- task 48852: the strict string org compare, and the two pins (facts 48854, 48855)
+    ("Ms", S, "the org arm loose again (in_array without strict)",
+     [(ORG_COMPARE, "in_array($ownerOrgNum, $userOrgNumbers)")], ["F11"]),
+    ("Mt", S, "T1: the ssn arm loose (== with both guards kept)", [("&& $ssn === $ownerSsn;", "&& $ssn == $ownerSsn;")], ["D4"]),
+    ("Mu", O, "T3: the placeholder recognised only unpadded (no trim)",
+     [("trim($value) === self::PLACEHOLDER_ORG_NUMBER", "$value === self::PLACEHOLDER_ORG_NUMBER")], ["D4"]),
+    ("Mv", S, "strict without strval: an int in the list no longer matches its own digits",
+     [(ORG_COMPARE, "in_array((string)$ownerOrgNum, $userOrgNumbers, true)")], ["N1"]),
+    ("Mw", S, "strict without the stored (string) cast: a stored int no longer matches its own digits",
+     [(ORG_COMPARE, "in_array($ownerOrgNum, array_map('strval', $userOrgNumbers), true)")], ["D1"]),
     # --- C2: the resource links
     ("Mj", R, "the DELETE no longer scoped to the event",
      [('" WHERE event_id = :event_id"', '" WHERE (event_id = :event_id OR 1 = 1)"')], ["F6"]),
@@ -111,6 +124,14 @@ MUTATIONS = [
 ]
 
 EQUIVALENT = [
+    # the strict string compare: one side's guard alone is enough (task 48852)
+    ("Ec", S, "empty elements of the delegate list kept (the stored empty guard still refuses)",
+     [(LIST, "fn($orgNumber) => !OwnerIdentifier::isPlaceholderOrgNumber($orgNumber)")]),
+    ("Ed", S, "the placeholder kept in the delegate list (the stored placeholder guard still refuses)",
+     [(LIST, "fn($orgNumber) => !OwnerIdentifier::isEmpty($orgNumber)")]),
+    ("Ee", S, "a stored placeholder number allowed (the list's filter still removes it)", [(STORED_PLACEHOLDER, "")]),
+    ("Ef", S, "an empty stored number allowed (the list's filter still removes empties)",
+     [(STORED_EMPTY, "$isOwnerByOrganization = ")]),
     ("Eb1", S, "the viewer's ssn guard alone dropped",
      [(SSN, "$isOwnerBySsn = !OwnerIdentifier::isEmpty($ownerSsn)\n            && $ssn === $ownerSsn;")]),
     ("Eb2", S, "the stored ssn guard alone dropped",

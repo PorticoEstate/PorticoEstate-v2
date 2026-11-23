@@ -46,6 +46,11 @@
  *   F4  each side alone: a NULL stored number against a list holding 0 (NULL == 0 loosely); a stored '0' or 0
  *       against a list holding false or null ('0' == false, 0 == null)
  *   F5  '000000000' on either side: never the owner; the real number in the same list still is (in N1)
+ * Added by task 48852 (pe-pm 48867, pe-ceo 48871; facts 48854, 48855):
+ *   D4  pins on correct code (pass on both trees): the ssn arm is strict ('01010112345' is not the stored
+ *       '1010112345'), and the placeholder is recognised padded (' 000000000' vs [' 000000000'] is NOT the owner)
+ *   F11 the org arm compares strings: a list number and a stored number that are different spellings of equal
+ *       digits ('0' vs '00000' or '000000', '994239929' vs '0994239929') do NOT make the owner (loose in_array did)
  *
  * Red first: git archive 38b813923 src | tar -x -C /tmp/op-base && HD_ROOT=/tmp/op-base php tests/event-owner-patch/run.php
  * Environment (optional): HD_ROOT = tree holding src/ (default: this repo). vendor/ comes from HD_ROOT if it has one,
@@ -283,7 +288,7 @@ namespace {
         $same('N1 owner by ssn', $owns(OP_SSN, null, OP_SSN, null), true);
         $same('N1 owner by ssn, event also stored with a number', $owns(OP_SSN, null, OP_SSN, OP_ORG), true);
         $same('N1 owner by org nr', $owns(null, [OP_ORG], null, OP_ORG), true);
-        $same('N1 owner by org nr, list as int (loose compare kept)', $owns(null, [(int)OP_ORG], null, OP_ORG), true);
+        $same('N1 owner by org nr, list as int (compared as its digits)', $owns(null, [(int)OP_ORG], null, OP_ORG), true);
         $same('N1 owner by org nr, list also holding a number-less org and the placeholder',
             $owns(OP_SSN, ['', null, OP_PLACEHOLDER, OP_ORG], null, OP_ORG), true);
         $same('N1 owner by org nr while logged in with another ssn', $owns('02020212345', [OP_ORG], OP_SSN, OP_ORG), true);
@@ -468,6 +473,18 @@ namespace {
         $same("F5 stored '000000000' vs ['000000000', a real number] NO", $owns(OP_SSN, [OP_PLACEHOLDER, OP_ORG], null, OP_PLACEHOLDER), false);
         $same("F5 stored '0' vs ['000000000'] NO (equal as numeric strings)", $owns(OP_SSN, [OP_PLACEHOLDER], null, '0'), false);
         $same("F5 stored '000000000' vs ['0'] NO", $owns(OP_SSN, ['0'], null, OP_PLACEHOLDER), false);
+    });
+
+    $arm('D4', function () use ($owns, $same) {
+        $same("D4 ssn arm strict: '01010112345' vs stored '1010112345' NO", $owns(OP_SSN, null, '1010112345', null), false);
+        $same("D4 ' 000000000' stored vs [' 000000000'] NO (padded placeholder)",
+            $owns('02020212345', [' ' . OP_PLACEHOLDER], null, ' ' . OP_PLACEHOLDER), false);
+    });
+    $arm('F11', function () use ($owns, $same) {
+        $same("F11 ['0'] vs stored '00000' NO", $owns(OP_SSN, ['0'], '02020212345', '00000'), false);
+        $same("F11 ['0'] vs stored '000000' NO", $owns(OP_SSN, ['0'], '02020212345', '000000'), false);
+        $same("F11 ['994239929'] vs stored '0994239929' NO", $owns(OP_SSN, [OP_ORG], '02020212345', '0' . OP_ORG), false);
+        $same("F11 ['0994239929'] vs stored '994239929' NO", $owns(OP_SSN, ['0' . OP_ORG], '02020212345', OP_ORG), false);
     });
 
     // --- report ----------------------------------------------------------------------------------------

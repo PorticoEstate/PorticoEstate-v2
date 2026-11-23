@@ -666,7 +666,7 @@
 		{
 			// The create form's picker: a building search, then that building's resources (initMainResourcePicker)
 			formHtml += '<div class="hosp-show__resource-edit">' +
-				'<div id="main-resource-building" class="building-select">' +
+				'<div id="main-resource-building" class="building-select" data-lang-no-results="' + esc(lang('building_select_no_results')) + '">' +
 				'<input type="text" class="building-select__input ds-input" autocomplete="off" ' +
 				'placeholder="' + esc(lang('searchBuildings')) + '..." aria-label="' + esc(lang('building')) + '" ' +
 				'aria-expanded="false" aria-autocomplete="list" role="combobox">' +
@@ -1148,7 +1148,7 @@
 		if (canWrite)
 		{
 			html += '<div class="hosp-show__tab-actions">' +
-				'<div id="inline-building-select" class="building-select" style="flex:1;max-width:20rem">' +
+				'<div id="inline-building-select" class="building-select" style="flex:1;max-width:20rem" data-lang-no-results="' + esc(lang('building_select_no_results')) + '">' +
 				'<input type="text" class="building-select__input ds-input" autocomplete="off" ' +
 				'placeholder="' + esc(lang('searchBuildings')) + '..." ' +
 				'aria-expanded="false" aria-autocomplete="list" role="combobox">' +

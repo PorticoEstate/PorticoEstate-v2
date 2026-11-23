@@ -1242,10 +1242,15 @@ class booking_uievent extends booking_uicommon
 			$customer['customer_organization_name'] = $event['customer_organization_name'];
 			$customer['customer_organization_id'] = $event['customer_organization_id'];
 			$organization = $this->organization_bo->read_single($event['customer_organization_id']);
-			$customer['customer_identifier_type'] = 'organization_number';
-			$customer['customer_ssn'] = $organization['customer_internal'];
-			$customer['customer_organization_number'] = $organization['organization_number'];
-			$customer['customer_internal'] = $organization['customer_internal'];
+			// Nothing is stored: suggest the organisation's own number, if it has one. Without a number there is
+			// nothing to suggest, and «Organisasjonsnummer» with an empty field is not what was stored.
+			if (!empty($organization['organization_number']))
+			{
+				$customer['customer_identifier_type'] = 'organization_number';
+				$customer['customer_ssn'] = $organization['customer_internal'];
+				$customer['customer_organization_number'] = $organization['organization_number'];
+				$customer['customer_internal'] = $organization['customer_internal'];
+			}
 		}
 
 		if ($_SERVER['REQUEST_METHOD'] == 'POST')
@@ -1350,12 +1355,14 @@ class booking_uievent extends booking_uicommon
 					}
 				}
 			}
-			elseif ($_POST['customer_identifier_type'] == 'ssn')
+			// The type extract_customer_identifier() resolved, not the one posted: a type posted with no number
+			// is no invoice information, and storing it would put a type on the event with an empty number.
+			elseif ($event['customer_identifier_type'] == 'ssn')
 			{
 				$event['customer_identifier_type'] = 'ssn';
 				$event['customer_ssn'] = Sanitizer::get_var('customer_ssn');
 			}
-			elseif ($_POST['customer_identifier_type'] == 'organization_number')
+			elseif ($event['customer_identifier_type'] == 'organization_number')
 			{
 				$event['customer_identifier_type'] = 'organization_number';
 				$event['customer_organization_number'] = Sanitizer::get_var('customer_organization_number', 'string', 'POST');
@@ -1744,7 +1751,7 @@ class booking_uievent extends booking_uicommon
 			$errors['booking'] = lang('Overlaps with existing booking %1. Remember to send a notification', " #" . implode(', #', $errors['booking'][0]));
 		}
 		$this->flash_form_errors($errors);
-		if ($customer['customer_identifier_type'])
+		if (!empty($customer['customer_identifier_type']))
 		{
 			$event['customer_identifier_type'] = $customer['customer_identifier_type'];
 			$event['customer_ssn'] = $customer['customer_ssn'];

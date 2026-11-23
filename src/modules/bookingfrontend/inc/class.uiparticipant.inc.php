@@ -267,7 +267,8 @@ ICAL;
 					$phone = Sanitizer::get_var('phone', 'string');
 					$participant = $this->bo->get_previous_registration($reservation_type, $reservation_id, $phone, $register_type);
 					$participant['register_type']	 = $register_type;
-					$participant['phone']			 = $phone;
+					// A registration that was found keeps the phone it was stored with; the request only named its number
+					$participant['phone']			 = !empty($participant['id']) ? $participant['phone'] : $phone;
 					$participant['email']			 = Sanitizer::get_var('email', 'email');
 
 					if($register_type == 'register_in' && Sanitizer::get_var('quantity', 'int') < $participant['quantity'])

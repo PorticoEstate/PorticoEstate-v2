@@ -1404,3 +1404,4 @@ catering_history_cancelled	booking	nn	Bevertning avbestilt — %1, %2. Endra av 
 catering_history_tag	booking	nn	Bevertning
 catering_mail_cancel_deadline	booking	nn	Avbestillingsfrist: %1
 notify_case_officer_on_catering_change	booking	nn	Send e-post til sakshandsamar når søkjar endrar bevertning
+hospitality_order_quantity_not_whole	booking	nn	Antalet må vere eit heilt tal på 1 eller meir.

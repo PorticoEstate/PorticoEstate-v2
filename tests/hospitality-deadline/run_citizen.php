@@ -20,6 +20,8 @@
  *   (7) the quantity of a catering line is a positive WHOLE number for every unit (task 47994): the value table of
  *       HospitalityOrderQuantity, and the real createOrder / updateOrder refusing a fraction, zero, a negative, a non-number
  *       or a number above the column's capacity with a translated 400 and NOTHING written, and still saving a whole one.
+ *   (8) the same rule in the ADMIN order API (addLine, updateLine): a translated 400 in that controller's {error} shape, nothing
+ *       written, the judged int stored and recorded in the changelog (task 47994, C1b).
  *
  * Mail is never sent (the notifier is a recording stub) and storage/emails is never touched.
  *
@@ -136,6 +138,8 @@ final class CitizenStubRepo extends HospitalityOrderRepository
     public array $changelog = [];
     /** @var list<string> */
     public array $calls = [];
+    /** @var list<array> what updateOrderLine() was handed, as handed */
+    public array $lineUpdates = [];
     /** @var list<mixed> the `quantity` addOrderLine() was handed, as handed (an int stays an int): what was STORED, before the column's own rounding */
     public array $lineQuantities = [];
     /** @var list<array> */
@@ -250,6 +254,26 @@ final class CitizenStubRepo extends HospitalityOrderRepository
         ];
         $this->wrote = true;
         return $id;
+    }
+
+    public function getOrderLineById(int $lineId): ?array
+    {
+        foreach ($this->lines as $rows) {
+            foreach ($rows as $line) {
+                if ((int)$line['id'] === $lineId) {
+                    return $line;
+                }
+            }
+        }
+        return null;
+    }
+
+    public function updateOrderLine(int $lineId, array $data): bool
+    {
+        $this->calls[] = 'updateOrderLine';
+        $this->lineUpdates[] = $data;
+        $this->wrote = true;
+        return true;
     }
 
     public function deleteOrderLine(int $lineId): bool
@@ -869,6 +893,97 @@ foreach (['no', 'nn', 'en'] as $langCode) {
 $citizenText = (string)file_get_contents($root . '/src/modules/bookingfrontend/controllers/applications/HospitalityOrderController.php');
 $same('the citizen controller no longer casts a line quantity to float, and no English «quantity must be positive» is left',
     [substr_count($citizenText, "(float)\$line['quantity']"), substr_count($citizenText, 'quantity must be positive')], [0, 0]);
+
+
+// =======================================================================================================
+// 8. The same rule in the ADMIN order API: addLine and updateLine (task 47994, C1b). An officer's request used to reach the
+//    database as it was sent: 2.5 was stored, and 0, -1 or a word came back as a 500 carrying the database's own message.
+// =======================================================================================================
+$adminOrder = static function (CitizenStubRepo $repo) use ($adminRef): object {
+    $controller = $adminRef->newInstanceWithoutConstructor();
+    $adminRef->getProperty('repository')->setValue($controller, $repo);
+    $adminRef->getProperty('articleRepository')->setValue($controller, new StubArticleRepo());
+    $adminRef->getProperty('userSettings')->setValue($controller, ['account_id' => 5]);
+    $adminRef->getProperty('acl')->setValue($controller, new class extends \App\modules\phpgwapi\security\Acl {
+        public function __construct()
+        {
+        }
+
+        public function check($location, $required, $appname = '')
+        {
+            return true;
+        }
+    });
+    return $controller;
+};
+/** POST /booking/hospitality-orders/{id}/lines with this JSON body text. Returns [response, repo]. */
+$addLineQ = static function (string $json, int $orderId = 7) use ($newRepo, $adminOrder, $invoke): array {
+    $repo = $newRepo();
+    return [$invoke($adminOrder($repo), 'addLine', 'POST', ['id' => $orderId], $json), $repo];
+};
+/** PUT /booking/hospitality-orders/{id}/lines/{lineId} (line 407 is order 7's, line 408 is order 8's, both 3.00). Returns [response, repo]. */
+$updateLineQ = static function (string $json, int $orderId = 7, int $lineId = 407) use ($newRepo, $adminOrder, $invoke): array {
+    $repo = $newRepo();
+    return [$invoke($adminOrder($repo), 'updateLine', 'PUT', ['id' => $orderId, 'lineId' => $lineId], $json), $repo];
+};
+$adminWriteCalls = ['addOrderLine', 'updateOrderLine', 'deleteOrderLine', 'create', 'update'];
+$adminWroteNothing = static fn(CitizenStubRepo $repo): array => [$repo->wrote, array_values(array_intersect($repo->calls, $adminWriteCalls)), count($repo->entries)];
+$adminRefusal = '!booking.hospitality_order_quantity_not_whole';
+
+foreach ($refusedQuantities as $literal) {
+    [$r, $repo] = $addLineQ('{"changelog_comment":"Rettet","hospitality_article_id":11,"quantity":' . $literal . '}');
+    $same("admin addLine, quantity {$literal}: no exception", $r['threw']?->getMessage(), null);
+    $same("admin addLine, quantity {$literal}: 400 with the translated error (this controller's {error} shape)",
+        [$r['status'], json_decode($r['body'], true)], [400, ['error' => $adminRefusal]]);
+    $same("admin addLine, quantity {$literal}: nothing written (no line, no changelog entry)", $adminWroteNothing($repo), [false, [], 0]);
+}
+// updateLine also refuses a PRESENT null: the column is NOT NULL and there is no default to fall back on.
+foreach (array_merge($refusedQuantities, ['null']) as $literal) {
+    [$r, $repo] = $updateLineQ('{"changelog_comment":"Rettet","quantity":' . $literal . '}');
+    $same("admin updateLine, quantity {$literal}: no exception", $r['threw']?->getMessage(), null);
+    $same("admin updateLine, quantity {$literal}: 400 with the translated error",
+        [$r['status'], json_decode($r['body'], true)], [400, ['error' => $adminRefusal]]);
+    $same("admin updateLine, quantity {$literal}: nothing written (the line is still 3.00, no changelog entry)",
+        [$adminWroteNothing($repo), array_column($repo->lines[7], 'quantity')], [[false, [], 0], ['3.00']]);
+}
+
+// Accepted: stored (and recorded in the changelog) as the int that was judged.
+foreach ([['2', 2], ['"2"', 2], ['2.0', 2], ['"2.0"', 2], ['1e1', 10], ['99999999', 99999999]] as [$literal, $want]) {
+    [$r, $repo] = $addLineQ('{"changelog_comment":"Rettet","hospitality_article_id":11,"quantity":' . $literal . '}');
+    $same("admin addLine, quantity {$literal}: 201, one line added, one changelog entry", [$r['status'], array_count_values($repo->calls)['addOrderLine'] ?? 0, count($repo->entries)], [201, 1, 1]);
+    $same("admin addLine, quantity {$literal}: the line AND the changelog carry the int {$want}", [$repo->lineQuantities, $repo->entries[0]['new_value']['quantity'] ?? null], [[$want], $want]);
+    [$r, $repo] = $updateLineQ('{"changelog_comment":"Rettet","quantity":' . $literal . '}');
+    $same("admin updateLine, quantity {$literal}: 200, the line updated once", [$r['status'], array_count_values($repo->calls)['updateOrderLine'] ?? 0], [200, 1]);
+    $same("admin updateLine, quantity {$literal}: the repository is handed the int {$want}", array_column($repo->lineUpdates, 'quantity'), [$want]);
+}
+[$r, $repo] = $addLineQ('{"changelog_comment":"Rettet","hospitality_article_id":11}');
+$same('admin addLine, no quantity key: 201 and one line (unchanged)', [$r['status'], count($repo->lineQuantities)], [201, 1]);
+$same('admin addLine, no quantity key: the line is the int 1', $repo->lineQuantities, [1]);
+[$r, $repo] = $addLineQ('{"changelog_comment":"Rettet","hospitality_article_id":11,"quantity":null}');
+$same('admin addLine, quantity null: 201 and one line (unchanged)', [$r['status'], count($repo->lineQuantities)], [201, 1]);
+$same('admin addLine, quantity null: the line is the int 1', $repo->lineQuantities, [1]);
+[$r, $repo] = $updateLineQ('{"changelog_comment":"Rettet","comment":"Uten gluten"}');
+$same('admin updateLine with NO quantity key (a comment-only edit): 200, and the repository is not handed a quantity',
+    [$r['status'], array_count_values($repo->calls)['updateOrderLine'] ?? 0, array_key_exists('quantity', $repo->lineUpdates[0] ?? ['quantity' => 'present'])], [200, 1, false]);
+
+// Order: the refusals that were already there keep their place relative to the new one.
+[$r, $repo] = $addLineQ('{"hospitality_article_id":11,"quantity":2.5}');
+$same('admin order: changelog_comment is asked for before the quantity (addLine)', [$r['status'], json_decode($r['body'], true)], [400, ['error' => 'changelog_comment is required']]);
+[$r, $repo] = $addLineQ('{"changelog_comment":"Rettet","quantity":2.5}');
+$same('admin order: the article id is asked for before the quantity (addLine)', [$r['status'], json_decode($r['body'], true)], [400, ['error' => 'hospitality_article_id is required']]);
+[$r, $repo] = $addLineQ('{"changelog_comment":"Rettet","hospitality_article_id":11,"quantity":2.5}', 999);
+$same('admin order: an unknown order is 404 before the quantity (addLine)', [$r['status'], json_decode($r['body'], true)], [404, ['error' => 'Order not found']]);
+[$r, $repo] = $updateLineQ('{"quantity":2.5}');
+$same('admin order: changelog_comment is asked for before the quantity (updateLine)', [$r['status'], json_decode($r['body'], true)], [400, ['error' => 'changelog_comment is required']]);
+[$r, $repo] = $updateLineQ('{"changelog_comment":"Rettet","quantity":2.5}', 7, 408);
+$same('admin order: a line of another order is 404 before the quantity (updateLine)', [$r['status'], json_decode($r['body'], true)], [404, ['error' => 'Order line not found']]);
+
+foreach (['no', 'nn', 'en'] as $langCode) {
+    $langRows = preg_grep('/^hospitality_order_quantity_not_whole\tbooking\t' . $langCode . '\t\S/', explode("\n", (string)file_get_contents($root . "/src/modules/booking/setup/phpgw_{$langCode}.lang")));
+    $same("lang: hospitality_order_quantity_not_whole has exactly one non-empty {$langCode} row in booking", count($langRows), 1);
+}
+$adminText = (string)file_get_contents($root . '/src/modules/booking/controllers/HospitalityOrderController.php');
+$same('the admin controller no longer hands the raw `quantity` on: no «$body[\'quantity\'] ?? 1»', substr_count($adminText, "\$body['quantity'] ?? 1"), 0);
 
 
 // =======================================================================================================

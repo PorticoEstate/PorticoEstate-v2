@@ -10,6 +10,7 @@ use App\modules\booking\repositories\HospitalityOrderRepository;
 use App\modules\booking\models\HospitalityOrder;
 use App\modules\booking\models\HospitalityOrderLine;
 use App\modules\booking\services\CateringChangeText;
+use App\modules\booking\services\HospitalityOrderQuantity;
 use App\modules\booking\services\TranslationLangSwitch;
 use App\Database\Db;
 
@@ -137,6 +138,16 @@ class HospitalityOrderController
 	{
 		$response->getBody()->write(json_encode(['error' => $message]));
 		return $response->withHeader('Content-Type', 'application/json')->withStatus($status);
+	}
+
+	/**
+	 * 400 for a line quantity that is not a positive whole number (HospitalityOrderQuantity), in the officer's language.
+	 * Without it the raw value reached the database: 2.5 was stored, and 0, -1 or a word came back as a 500 carrying
+	 * the database's own message.
+	 */
+	private function refuseQuantity(Response $response): Response
+	{
+		return $this->jsonError($response, lang('booking.hospitality_order_quantity_not_whole'), 400);
 	}
 
 	/**
@@ -584,6 +595,12 @@ class HospitalityOrderController
 				return $this->jsonError($response, 'hospitality_article_id is required');
 			}
 
+			// A positive whole number, for every unit (task 47994). An absent or null quantity still means 1.
+			$quantity = HospitalityOrderQuantity::ofLine($body);
+			if ($quantity === null) {
+				return $this->refuseQuantity($response);
+			}
+
 			// Snapshot effective pricing from the article system
 			$pricing = $this->articleRepository->resolveEffectivePricing((int)$body['hospitality_article_id']);
 			if (!$pricing) {
@@ -597,7 +614,7 @@ class HospitalityOrderController
 			$lineData = [
 				'order_id' => $orderId,
 				'hospitality_article_id' => (int)$body['hospitality_article_id'],
-				'quantity' => $body['quantity'] ?? 1,
+				'quantity' => $quantity,
 				'unit_price' => $pricing['effective_price'],
 				'tax_code' => $pricing['effective_tax_code'],
 				'comment' => $body['comment'] ?? null,
@@ -660,6 +677,17 @@ class HospitalityOrderController
 			$changelogComment = $this->requireChangelogComment($body);
 			if (!$changelogComment) {
 				return $this->jsonError($response, 'changelog_comment is required');
+			}
+
+			// A positive whole number, for every unit (task 47994). Read ONCE and written back, so the value that is judged is
+			// the value the repository stores and the changelog records. An absent key leaves the quantity alone (a comment-only
+			// edit); a key that is present is judged, null included: this column is NOT NULL and has no default to apply here.
+			if (array_key_exists('quantity', $body)) {
+				$quantity = HospitalityOrderQuantity::whole($body['quantity']);
+				if ($quantity === null) {
+					return $this->refuseQuantity($response);
+				}
+				$body['quantity'] = $quantity;
 			}
 
 			// Diff line fields for changelog

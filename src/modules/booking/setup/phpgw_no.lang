@@ -1430,3 +1430,4 @@ catering_history_cancelled	booking	no	Bevertning avbestilt — %1, %2. Endret av
 catering_history_tag	booking	no	Bevertning
 catering_mail_cancel_deadline	booking	no	Avbestillingsfrist: %1
 notify_case_officer_on_catering_change	booking	no	Send e-post til saksbehandler når søker endrer bevertning
+hospitality_order_quantity_not_whole	booking	no	Antall må være et helt tall på 1 eller mer.

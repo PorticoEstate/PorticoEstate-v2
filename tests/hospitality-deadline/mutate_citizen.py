@@ -52,6 +52,9 @@ FILES = [
     "src/modules/bookingfrontend/setup/phpgw_no.lang",
     "src/modules/bookingfrontend/setup/phpgw_en.lang",
     "src/modules/bookingfrontend/setup/phpgw_nn.lang",
+    "src/modules/booking/setup/phpgw_no.lang",
+    "src/modules/booking/setup/phpgw_en.lang",
+    "src/modules/booking/setup/phpgw_nn.lang",
 ]
 
 C = "src/modules/bookingfrontend/controllers/applications/HospitalityOrderController.php"
@@ -63,6 +66,8 @@ CS = "src/modules/bookingfrontend/client/src/utils/catering-status.ts"
 OV = "src/modules/bookingfrontend/client/src/components/user/application/catering-overview.tsx"
 LANG = "src/modules/bookingfrontend/setup/phpgw_{}.lang"
 HOQ = "src/modules/booking/services/HospitalityOrderQuantity.php"
+ADM = "src/modules/booking/controllers/HospitalityOrderController.php"
+LANGB = "src/modules/booking/setup/phpgw_{}.lang"
 
 GUARD_BLOCK = (
     "\t\ttry {\n"
@@ -264,6 +269,37 @@ MUTATIONS = [
      "catering_quantity_not_whole\tbookingfrontend\tnn\t", "catering_quantity_not_whole_x\tbookingfrontend\tnn\t"),
     ("Mq19", "php", LANG.format("en"), "the English text is gone",
      "catering_quantity_not_whole\tbookingfrontend\ten\t", "catering_quantity_not_whole_x\tbookingfrontend\ten\t"),
+    # --- (8) the same rule in the ADMIN order API: addLine and updateLine (task 47994, C1b) --------------------
+    ("Ma1", "php", ADM, "addLine judges nothing (the raw body quantity is stored again)",
+     "\t\t\t$quantity = HospitalityOrderQuantity::ofLine($body);\n\t\t\tif ($quantity === null) {\n\t\t\t\treturn $this->refuseQuantity($response);\n\t\t\t}\n",
+     "\t\t\t$quantity = $body['quantity'] ?? 1;\n"),
+    ("Ma2", "php", ADM, "addLine judges the quantity but stores the raw body value (a string stays a string)",
+     "'quantity' => $quantity,\n\t\t\t\t'unit_price' => $pricing['effective_price'],", "'quantity' => $body['quantity'] ?? 1,\n\t\t\t\t'unit_price' => $pricing['effective_price'],"),
+    ("Ma3", "php", ADM, "addLine judges the quantity BEFORE it asks for the article id",
+     "\t\t\tif (empty($body['hospitality_article_id'])) {\n\t\t\t\treturn $this->jsonError($response, 'hospitality_article_id is required');\n\t\t\t}\n\n"
+     "\t\t\t// A positive whole number, for every unit (task 47994). An absent or null quantity still means 1.\n"
+     "\t\t\t$quantity = HospitalityOrderQuantity::ofLine($body);\n\t\t\tif ($quantity === null) {\n\t\t\t\treturn $this->refuseQuantity($response);\n\t\t\t}\n",
+     "\t\t\t$quantity = HospitalityOrderQuantity::ofLine($body);\n\t\t\tif ($quantity === null) {\n\t\t\t\treturn $this->refuseQuantity($response);\n\t\t\t}\n"
+     "\t\t\tif (empty($body['hospitality_article_id'])) {\n\t\t\t\treturn $this->jsonError($response, 'hospitality_article_id is required');\n\t\t\t}\n"),
+    ("Ma4", "php", ADM, "updateLine judges nothing (the raw body goes to the repository)",
+     "\t\t\t\t$quantity = HospitalityOrderQuantity::whole($body['quantity']);\n\t\t\t\tif ($quantity === null) {\n\t\t\t\t\treturn $this->refuseQuantity($response);\n\t\t\t\t}\n",
+     "\t\t\t\t$quantity = $body['quantity'];\n"),
+    ("Ma5", "php", ADM, "updateLine judges the quantity but does not write the int back (the raw value is stored)",
+     "\t\t\t\t$body['quantity'] = $quantity;\n", ""),
+    ("Ma6", "php", ADM, "updateLine treats a PRESENT null as absent (it reaches the NOT NULL column)",
+     "if (array_key_exists('quantity', $body)) {", "if (isset($body['quantity'])) {"),
+    ("Ma7", "php", ADM, "updateLine judges even when the key is absent (a comment-only edit is refused)",
+     "if (array_key_exists('quantity', $body)) {", "if (true) {"),
+    ("Ma8", "php", ADM, "the refusal is a 500 again",
+     "return $this->jsonError($response, lang('booking.hospitality_order_quantity_not_whole'), 400);", "return $this->jsonError($response, lang('booking.hospitality_order_quantity_not_whole'), 500);"),
+    ("Ma9", "php", ADM, "the refusal text is not translated",
+     "return $this->jsonError($response, lang('booking.hospitality_order_quantity_not_whole'), 400);", "return $this->jsonError($response, 'quantity must be a whole number', 400);"),
+    ("Ma10", "php", LANGB.format("no"), "the Norwegian (bokmål) text is gone",
+     "hospitality_order_quantity_not_whole\tbooking\tno\t", "hospitality_order_quantity_not_whole_x\tbooking\tno\t"),
+    ("Ma11", "php", LANGB.format("nn"), "the Nynorsk text is gone",
+     "hospitality_order_quantity_not_whole\tbooking\tnn\t", "hospitality_order_quantity_not_whole_x\tbooking\tnn\t"),
+    ("Ma12", "php", LANGB.format("en"), "the English text is gone",
+     "hospitality_order_quantity_not_whole\tbooking\ten\t", "hospitality_order_quantity_not_whole_x\tbooking\ten\t"),
 ]
 
 

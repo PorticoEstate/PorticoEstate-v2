@@ -1429,3 +1429,4 @@ catering_history_cancelled	booking	en	Catering cancelled — %1, %2. Changed by 
 catering_history_tag	booking	en	Catering
 catering_mail_cancel_deadline	booking	en	Cancellation deadline: %1
 notify_case_officer_on_catering_change	booking	en	Email the case officer when the applicant changes catering
+hospitality_order_quantity_not_whole	booking	en	The quantity must be a whole number of 1 or more.

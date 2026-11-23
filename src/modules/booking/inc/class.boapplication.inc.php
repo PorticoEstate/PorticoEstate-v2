@@ -4,6 +4,7 @@ use App\modules\phpgwapi\services\Cache;
 use App\modules\phpgwapi\services\Log;
 use App\modules\booking\services\EmailService;
 use App\modules\phpgwapi\helpers\EmailTwigHelper;
+use App\modules\phpgwapi\services\PreferencesReader;
 
 phpgw::import_class('booking.bocommon');
 
@@ -186,7 +187,7 @@ class booking_boapplication extends booking_bocommon
 
 		$mail_addresses = array();
 		foreach ($extra_mail_addresses as $user_id => $extra_mail_address) {
-			$prefs = CreateObject('phpgwapi.preferences', $user_id)->read();
+			$prefs = PreferencesReader::read((int)$user_id, ['booking', 'common']);
 			if (isset($prefs['booking']['notify_on_new']) && ($prefs['booking']['notify_on_new'] & 1)) {
 				$mail_addresses[] = $prefs['common']['email'];
 			}
@@ -244,7 +245,7 @@ class booking_boapplication extends booking_bocommon
 
 		$cellphones = array();
 		foreach ($extra_mail_addresses as $user_id => $extra_mail_address) {
-			$prefs = CreateObject('phpgwapi.preferences', $user_id)->read();
+			$prefs = PreferencesReader::read((int)$user_id, ['booking', 'common']);
 			if (isset($prefs['booking']['notify_on_new']) && ($prefs['booking']['notify_on_new'] & 2)) {
 				$cellphones[] = $prefs['common']['cellphone'];
 			}
@@ -347,7 +348,7 @@ class booking_boapplication extends booking_bocommon
 		foreach ($users as $user)
 		{
 
-			$prefs = CreateObject('phpgwapi.preferences', $user)->read();
+			$prefs = PreferencesReader::read((int)$user, ['common']);
 
 			if (!empty($prefs['common']['email']))
 			{

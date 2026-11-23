@@ -3,6 +3,7 @@
 namespace App\modules\bookingfrontend\services;
 
 use App\Database\Db;
+use App\helpers\OwnerIdentifier;
 use App\modules\bookingfrontend\helpers\UserHelper;
 use App\modules\bookingfrontend\models\Event;
 use App\modules\bookingfrontend\models\Resource;
@@ -111,6 +112,14 @@ class EventService
         $stmt->execute([':id' => $id]);
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
+    /**
+     * Whether the viewer owns the event, by its ssn or by an organisation they are a delegate of.
+     *
+     * An identifier that is empty on either side never matches (OwnerIdentifier::isEmpty, the rule the serialiser's
+     * owner arms use): a guest has no ssn, and was otherwise the owner of every event stored without one. The
+     * organisation number MinId2 gives every organisation with an ssn and no number ('000000000') is the same for
+     * all of them, so it never matches either, on either side.
+     */
     public function checkEventOwnerShip(array $existingEvent)
     {
         $ownerSsn = $existingEvent['customer_ssn'];
@@ -119,10 +128,20 @@ class EventService
         $userOrgs = $this->bouser->organizations
             ? array_column($this->bouser->organizations, 'orgnr')
             : [];
-        return
-            $ssn === $ownerSsn ||
-            in_array($ownerOrgNum, $userOrgs);
 
+        $isOwnerBySsn = !OwnerIdentifier::isEmpty($ssn)
+            && !OwnerIdentifier::isEmpty($ownerSsn)
+            && $ssn === $ownerSsn;
+
+        $userOrgNumbers = array_filter(
+            $userOrgs,
+            fn($orgNumber) => !OwnerIdentifier::isEmpty($orgNumber) && !OwnerIdentifier::isPlaceholderOrgNumber($orgNumber)
+        );
+        $isOwnerByOrganization = !OwnerIdentifier::isEmpty($ownerOrgNum)
+            && !OwnerIdentifier::isPlaceholderOrgNumber($ownerOrgNum)
+            && in_array($ownerOrgNum, $userOrgNumbers);
+
+        return $isOwnerBySsn || $isOwnerByOrganization;
     }
     public function updateEvent(array $data, array $existingEvent)
     {

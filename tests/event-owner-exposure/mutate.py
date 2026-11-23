@@ -23,6 +23,7 @@ PHP = os.environ.get("PHP_BIN", "php")
 # Everything the harness reads from HD_ROOT (the client files are read from this repo when HD_ROOT has none).
 FILES = [
     "src/traits/SerializableTrait.php",
+    "src/helpers/OwnerIdentifier.php",
     "src/modules/bookingfrontend/models/Event.php",
     "src/modules/bookingfrontend/models/Booking.php",
     "src/modules/bookingfrontend/models/helper/BaseScheduleEntity.php",

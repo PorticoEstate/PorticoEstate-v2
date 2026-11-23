@@ -321,12 +321,12 @@ trait SerializableTrait
     }
 
     /**
-     * Null, false, [] or a string that is empty after trim(). 0 and '0' are values, not empty.
+     * Null, false, [] or a string that is empty after trim(). 0 and '0' are values, not empty. The rule lives in
+     * OwnerIdentifier, so the owner check of the event PATCH route applies the same one.
      */
     private function isEmptyIdentifier(mixed $value): bool
     {
-        return $value === null || $value === false || $value === []
-            || (is_string($value) && trim($value) === '');
+        return \App\helpers\OwnerIdentifier::isEmpty($value);
     }
 
     /**

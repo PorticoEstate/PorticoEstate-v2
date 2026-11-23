@@ -202,7 +202,13 @@ namespace {
     // --- P: every class under test is the HD_ROOT copy (a red-first run against another tree means nothing otherwise)
     $arm('P', function () use ($root, $check) {
         $want = realpath($root . '/src') . '/';
-        foreach ([Event::class, Booking::class, BookingApplication::class, Organization::class, \App\traits\SerializableTrait::class] as $class) {
+        $classes = [Event::class, Booking::class, BookingApplication::class, Organization::class, \App\traits\SerializableTrait::class];
+        // The trait reads its empty rule from OwnerIdentifier where the tree has it (trees before task 48753 do not):
+        // without this, composer's loader would take the helper from this repo and test another tree's rule.
+        if (is_file($root . '/src/helpers/OwnerIdentifier.php')) {
+            $classes[] = \App\helpers\OwnerIdentifier::class;
+        }
+        foreach ($classes as $class) {
             $file = (string)realpath((string)(new \ReflectionClass($class))->getFileName());
             $check("P {$class} loads from HD_ROOT", str_starts_with($file, $want), $file);
         }

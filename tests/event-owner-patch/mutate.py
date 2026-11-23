@@ -31,10 +31,37 @@ FILES = [
     "src/modules/bookingfrontend/models/Event.php",
     "src/modules/bookingfrontend/models/helper/BaseScheduleEntity.php",
     "src/modules/bookingfrontend/services/EventService.php",
+    "src/modules/bookingfrontend/repositories/EventRepository.php",
+    "src/modules/bookingfrontend/controllers/EventController.php",
 ]
 
 S = "src/modules/bookingfrontend/services/EventService.php"
 O = "src/helpers/OwnerIdentifier.php"
+R = "src/modules/bookingfrontend/repositories/EventRepository.php"
+C = "src/modules/bookingfrontend/controllers/EventController.php"
+
+INSERT = ("        $insertStmt = $this->db->prepare(\n"
+          "            \"INSERT INTO bb_event_resource (event_id, resource_id) VALUES (:event_id, :resource_id)\"\n"
+          "        );\n"
+          "        foreach ($resourceIds as $resourceId) {\n"
+          "            $insertStmt->execute([':event_id' => $eventId, ':resource_id' => (int)$resourceId]);\n"
+          "        }\n")
+INSERT_CONCAT = ("        foreach ($resourceIds as $resourceId) {\n"
+                 "            $this->db->prepare(\"INSERT INTO bb_event_resource (event_id, resource_id) VALUES ($eventId, $resourceId)\")->execute();\n"
+                 "        }\n")
+PARSE_GUARD = ("            if (!is_int($id) || $id < 1 || $id > 2147483647) {\n"
+               "                return null;\n"
+               "            }\n")
+CONTROLLER_REFUSAL = ("        if (isset($newData['resource_ids'])) {\n"
+                      "            $resourceIds = $this->service->resourceIdsFromRequest($newData['resource_ids']);\n"
+                      "            if ($resourceIds === null) {\n"
+                      "                return ResponseHelper::sendErrorResponse(\n"
+                      "                    ['error' => 'Invalid resource_ids'],\n"
+                      "                    400\n"
+                      "                );\n"
+                      "            }\n"
+                      "            $newData['resource_ids'] = $resourceIds;\n"
+                      "        }\n")
 
 SSN = ("$isOwnerBySsn = !OwnerIdentifier::isEmpty($ssn)\n"
        "            && !OwnerIdentifier::isEmpty($ownerSsn)\n"
@@ -62,6 +89,12 @@ MUTATIONS = [
      [("return $value === null || $value === false || $value === []",
        "return $value === null || $value === false || $value === [] || $value === 0 || $value === '0'")], ["D1", "D3"]),
     ("Mi", O, "whitespace taken for a value (no trim)", [("trim($value) === ''", "$value === ''")], ["F2"]),
+    # --- C2: the resource links
+    ("Mj", R, "the DELETE no longer scoped to the event",
+     [('" WHERE event_id = :event_id"', '" WHERE (event_id = :event_id OR 1 = 1)"')], ["F6"]),
+    ("Mk", R, "the INSERT built by concatenation again", [(INSERT, INSERT_CONCAT)], ["F7"]),
+    ("Ml", S, "any resource id accepted by the parser", [(PARSE_GUARD, "")], ["R1"]),
+    ("Mm", C, "the controller's 400 for a bad resource_ids dropped", [(CONTROLLER_REFUSAL, "")], ["R2"]),
 ]
 
 EQUIVALENT = [

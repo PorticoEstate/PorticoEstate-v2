@@ -73,24 +73,41 @@ class EventRepository
         return json_decode($stmt->fetch()['event_resources']);
     }
 
-    public function deleteResources(array $resourceIds)
+    /**
+     * Unlink the given resources from this event only; the same resources stay linked to every other event.
+     */
+    public function deleteResources(int $eventId, array $resourceIds)
     {
-        $deleteSql =
-        "DELETE FROM bb_event_resource
-        WHERE resource_id IN (" . implode(', ', $resourceIds) . ")";
-        $insertStmt = $this->db->prepare($deleteSql);
-        $insertStmt->execute();
+        if (!$resourceIds) {
+            return;
+        }
+        $params = [':event_id' => $eventId];
+        $placeholders = [];
+        foreach (array_values($resourceIds) as $i => $resourceId) {
+            $placeholders[] = ":resource_id_{$i}";
+            $params[":resource_id_{$i}"] = (int)$resourceId;
+        }
+        $deleteSql = "DELETE FROM bb_event_resource"
+            . " WHERE event_id = :event_id"
+            . " AND resource_id IN (" . implode(', ', $placeholders) . ")";
+        $deleteStmt = $this->db->prepare($deleteSql);
+        $deleteStmt->execute($params);
     }
 
-    public function insertResources(int $id, array $resourceIds)
+    /**
+     * Link the given resources to this event, as bound integers.
+     */
+    public function insertResources(int $eventId, array $resourceIds)
     {
-        $insertSql = "INSERT INTO bb_event_resource (event_id, resource_id) VALUES ";
-        $insertSql .= implode(', ', array_map(function($value) {
-            return "($value[id], $value[resourceId])";
-        }, $resourceIds));
-
-        $insertStmt = $this->db->prepare($insertSql);
-        $insertStmt->execute();
+        if (!$resourceIds) {
+            return;
+        }
+        $insertStmt = $this->db->prepare(
+            "INSERT INTO bb_event_resource (event_id, resource_id) VALUES (:event_id, :resource_id)"
+        );
+        foreach ($resourceIds as $resourceId) {
+            $insertStmt->execute([':event_id' => $eventId, ':resource_id' => (int)$resourceId]);
+        }
     }
 
     public function currentParticipants(int $id, $registeredIn = false): int

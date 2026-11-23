@@ -15,7 +15,10 @@
  * The classes under test are the REAL code from HD_ROOT: App\helpers\OwnerIdentifier (where the tree has it),
  * App\traits\SerializableTrait, bookingfrontend Event, EventService. EventService is built without its constructor
  * (which opens the database and reads the session) and given the viewer the way UserHelper holds it: ssn (null without
- * a login) and organizations (null, or rows with an 'orgnr'). Stubs: Translation (the private-event placeholder).
+ * a login) and organizations (null, or rows with an 'orgnr'). Stubs: Translation (the private-event placeholder) and
+ * App\Database\Db: an in-memory SQLite database (bb_event_resource, bb_participant) under the real EventRepository,
+ * recording every SQL text it is given. SQLite stands in for PostgreSQL only for what is asked here: which rows a
+ * statement touches, and whether a request value became SQL text.
  *
  * P   every class under test is the HD_ROOT copy.
  * NO-BREAK rows (pass on the base tree AND on the fix):
@@ -24,7 +27,12 @@
  *   N3  the guest may not change an event stored with an ssn, or with a number and the ssn ''
  *   D1  pinned values (pe-pm 48749 (d)): '0'/'0' and 0/0 MATCH, in the ssn arm and in the org arm
  *   D3  the serialiser's owner arms on the same values: '0'/'0' and 0/0 show the secret, ''/'' and NULL/NULL do not
+ *   N4  changing an event's resources through saveNewResourcesList: one added, an unshared one dropped, ids as strings
  * FIX rows (fail on the base tree, pass on the fix):
+ *   F6  dropping a resource from one event leaves it linked to every other event (the DELETE went by resource_id only)
+ *   F7  a resource id that is not an integer never becomes SQL text (the INSERT concatenated it; hermetic only)
+ *   R1  EventService::resourceIdsFromRequest: positive integers (int, or digits only) within integer range, else null
+ *   R2  EventController::updateEvent answers 400 for such a body after the owner check and before the write
  *   F1  the guest (ssn null, organizations null) and an event stored with a NULL ssn (with a number, '' or NULL):
  *       NOT the owner. On the base tree this is the 201 of forum/pe-tasks/48710 (23312 active NULL-ssn events).
  *   F2  (d) ''/'' and NULL/NULL do NOT match, in the ssn arm and in the org arm
@@ -53,6 +61,60 @@ namespace App\modules\phpgwapi\services {
         public function translate($key, $args = [], $force = false, $app = '')
         {
             return "[lang:{$app}.{$key}]";
+        }
+    }
+}
+
+namespace App\Database {
+    /**
+     * Stand-in for App\Database\Db: the same prepare() the repository calls, on an in-memory SQLite database holding
+     * the two tables EventRepository writes, with every prepared SQL text recorded. ERRMODE_EXCEPTION, as
+     * DatabaseServiceProvider opens the real one. ARRAY_AGG and array_to_json are given the meaning resourceIds()
+     * needs from PostgreSQL (a JSON list of the group's values; NULL for no rows).
+     */
+    final class Db
+    {
+        private static ?self $instance = null;
+        public \PDO $pdo;
+        /** @var list<string> */
+        public array $sql = [];
+
+        public static function getInstance($dsn = '', $username = null, $password = null, $options = null): self
+        {
+            return self::$instance ??= new self();
+        }
+
+        public static function fresh(): self
+        {
+            return self::$instance = new self();
+        }
+
+        private function __construct()
+        {
+            $pdo = \PDO::connect('sqlite::memory:');
+            $pdo->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+            $pdo->createAggregate(
+                'ARRAY_AGG',
+                static function ($context, $rownumber, $value) { $context[] = $value; return $context; },
+                static fn($context) => $context === null ? null : json_encode($context),
+                1
+            );
+            $pdo->createFunction('array_to_json', static fn($value) => $value, 1);
+            $pdo->exec('CREATE TABLE bb_event_resource (event_id INTEGER NOT NULL, resource_id INTEGER NOT NULL, PRIMARY KEY (event_id, resource_id))');
+            $pdo->exec('CREATE TABLE bb_participant (id INTEGER PRIMARY KEY AUTOINCREMENT, reservation_type TEXT NOT NULL,'
+                . ' reservation_id INTEGER NOT NULL, from_ TEXT, to_ TEXT, phone TEXT, email TEXT, quantity INTEGER NOT NULL DEFAULT 1, name TEXT)');
+            $this->pdo = $pdo;
+        }
+
+        public function prepare(string $sql, array $options = []): \PDOStatement
+        {
+            $this->sql[] = $sql;
+            return $this->pdo->prepare($sql, $options);
+        }
+
+        public function __call($method, $arguments)
+        {
+            return $this->pdo->$method(...$arguments);
         }
     }
 }
@@ -88,7 +150,9 @@ namespace {
         }
     }, true, true);
 
+    use App\Database\Db;
     use App\modules\bookingfrontend\models\Event;
+    use App\modules\bookingfrontend\repositories\EventRepository;
     use App\modules\bookingfrontend\services\EventService;
 
     const OP_SSN = '01010112345';
@@ -127,7 +191,8 @@ namespace {
         }
     };
     foreach (['src/traits/SerializableTrait.php', 'src/modules/bookingfrontend/models/Event.php',
-              'src/modules/bookingfrontend/services/EventService.php'] as $needed) {
+              'src/modules/bookingfrontend/services/EventService.php', 'src/modules/bookingfrontend/repositories/EventRepository.php',
+              'src/modules/bookingfrontend/controllers/EventController.php'] as $needed) {
         if (!is_file($root . '/' . $needed)) {
             echo 'FAIL harness cannot load the code under test — ', $needed, ' is missing under ', $root, "\n";
             echo "Event owner PATCH harness: FAIL 1 of 1 checks\n";
@@ -154,10 +219,37 @@ namespace {
         ]);
     };
 
+    /**
+     * A fresh in-memory database holding the given [event_id, resource_id] links, and the REAL service on the REAL
+     * repository over it (the constructor is skipped: it opens the session; saveNewResourcesList needs neither).
+     */
+    $resourceService = static function (array $links): EventService {
+        $db = Db::fresh();
+        $insert = $db->pdo->prepare('INSERT INTO bb_event_resource (event_id, resource_id) VALUES (?, ?)');
+        foreach ($links as [$eventId, $resourceId]) {
+            $insert->execute([$eventId, $resourceId]);
+        }
+        $db->sql = [];
+        $service = (new \ReflectionClass(EventService::class))->newInstanceWithoutConstructor();
+        $service->repository = new EventRepository();
+        return $service;
+    };
+    /** EventService::saveNewResourcesList, as updateEvent calls it for a PATCH body carrying resource_ids. */
+    $saveResources = static function (EventService $service, int $eventId, mixed $resourceIds): void {
+        (new \ReflectionMethod(EventService::class, 'saveNewResourcesList'))
+            ->invoke($service, ['resource_ids' => $resourceIds], ['id' => $eventId]);
+    };
+    $links = static fn(): array => array_map(
+        static fn(array $r) => [(int)$r[0], (int)$r[1]],
+        Db::getInstance()->pdo->query('SELECT event_id, resource_id FROM bb_event_resource ORDER BY event_id, resource_id')->fetchAll(\PDO::FETCH_NUM)
+    );
+
     // --- P: every class under test is the HD_ROOT copy (a red-first run against another tree means nothing otherwise)
     $arm('P', function () use ($root, $check) {
+        $stub = (string)(new \ReflectionClass(Db::class))->getFileName();
+        $check('P App\Database\Db is the in-memory stand-in of this harness', $stub === __FILE__, $stub);
         $want = realpath($root . '/src') . '/';
-        $classes = [Event::class, EventService::class, \App\traits\SerializableTrait::class];
+        $classes = [Event::class, EventService::class, EventRepository::class, \App\traits\SerializableTrait::class];
         if (is_file($root . '/src/helpers/OwnerIdentifier.php')) {
             $classes[] = \App\helpers\OwnerIdentifier::class;
         }
@@ -215,7 +307,77 @@ namespace {
         $same('D3 trait org NULL/[NULL] NO', $byOrg(null, [null]), null);
     });
 
+    $arm('N4', function () use ($resourceService, $saveResources, $links, $same) {
+        // Changing an event's resources still works where the base tree did it right: add one, drop one no other
+        // event uses, ids given as ints or as strings of digits.
+        $service = $resourceService([[1, 1], [1, 2], [2, 3]]);
+        $saveResources($service, 1, [1, 2, 4]);
+        $same('N4 a resource added', $links(), [[1, 1], [1, 2], [1, 4], [2, 3]]);
+        $saveResources($service, 1, ['2', '4']);
+        $same('N4 an unshared resource dropped', $links(), [[1, 2], [1, 4], [2, 3]]);
+        $saveResources($service, 1, [2, 4]);
+        $same('N4 the same list again changes nothing', $links(), [[1, 2], [1, 4], [2, 3]]);
+    });
+
     // --- FIX -----------------------------------------------------------------------------------------
+    $arm('F6', function () use ($resourceService, $saveResources, $links, $same) {
+        // Event 2 shares resource 2 with event 1. Dropping it from event 1 must not drop it from event 2: the base
+        // tree deleted bb_event_resource by resource_id alone.
+        $service = $resourceService([[1, 1], [1, 2], [2, 2], [3, 2]]);
+        $saveResources($service, 1, [1]);
+        $same('F6 dropping a shared resource from event 1 leaves events 2 and 3 linked', $links(), [[1, 1], [2, 2], [3, 2]]);
+        $service = $resourceService([[1, 1], [1, 2], [2, 1], [2, 2]]);
+        $saveResources($service, 1, []);
+        $same('F6 emptying event 1 leaves event 2 whole', $links(), [[2, 1], [2, 2]]);
+    });
+    $arm('F7', function () use ($resourceService, $saveResources, $links, $same, $check) {
+        // A resource id that is not an integer must never become SQL text. Hermetic only: no such value is sent to a
+        // running application. The base tree concatenated it into the VALUES list, so this one adds a row for event 999.
+        $service = $resourceService([[1, 1]]);
+        $crafted = '2), (999, 3';
+        try {
+            $saveResources($service, 1, [1, $crafted]);
+        } catch (\PDOException $e) {
+            // A refusal by the database is acceptable; what is checked is what was written and what SQL was sent.
+        }
+        $same('F7 no row for any event other than 1', array_values(array_filter($links(), static fn($l) => $l[0] !== 1)), []);
+        $sent = implode("\n", Db::getInstance()->sql);
+        $check('F7 the crafted value is in no SQL text sent', !str_contains($sent, '999'), $sent);
+        $check('F7 the INSERT is prepared with placeholders', str_contains($sent, ':resource_id'), $sent);
+    });
+    $arm('R1', function () use ($same) {
+        $service = (new \ReflectionClass(EventService::class))->newInstanceWithoutConstructor();
+        $parse = static fn($v) => $service->resourceIdsFromRequest($v);
+        $same('R1 ints', $parse([5, 7]), [5, 7]);
+        $same('R1 strings of digits, a duplicate', $parse(['5', 7, '5']), [5, 7]);
+        $same('R1 the empty list (drops every resource, as before)', $parse([]), []);
+        $same('R1 the largest integer id', $parse(['2147483647']), [2147483647]);
+        foreach ([
+            "'abc'" => ['abc'], "'5abc'" => ['5abc'], '1.5' => [1.5], '1.0' => [1.0], 'true' => [true], 'null' => [null],
+            '0' => [0], "'0'" => ['0'], '-3' => [-3], "'-3'" => ['-3'], "' 5'" => [' 5'], '[[1]]' => [[1]],
+            "'2), (999, 3'" => ['2), (999, 3'], 'beyond integer' => [2147483648], "'99999999999'" => ['99999999999'],
+            'a map' => ['a' => 1], 'a string' => '5', 'an int' => 5,
+        ] as $label => $value) {
+            $same("R1 refused: {$label}", $parse($value), null);
+        }
+    });
+    $arm('R2', function () use ($root, $check) {
+        // The controller refuses such a body with 400 after the owner check and before anything is written.
+        $source = (string)file_get_contents($root . '/src/modules/bookingfrontend/controllers/EventController.php');
+        $start = strpos($source, 'public function updateEvent(');
+        $end = $start === false ? false : strpos($source, 'public function ', $start + 10);
+        $body = $start === false ? '' : substr($source, $start, $end === false ? null : $end - $start);
+        $at = static fn(string $needle) => strpos($body, $needle);
+        $owner = $at('checkEventOwnerShip(');
+        $parse = $at('resourceIdsFromRequest(');
+        $refuse = $at("'Invalid resource_ids'");
+        $write = $at('->updateEvent(');
+        $check('R2 updateEvent parses resource_ids', $parse !== false);
+        $check('R2 and answers 400 Invalid resource_ids', $refuse !== false && str_contains(substr($body, (int)$refuse, 120), '400'));
+        $check('R2 after the owner check, before the write', $owner !== false && $parse !== false && $write !== false
+            && $owner < $parse && $parse < $refuse && $refuse < $write);
+        $check('R2 the parsed ids replace the body\'s', str_contains($body, "\$newData['resource_ids'] = \$resourceIds;"));
+    });
     $arm('F1', function () use ($owns, $same) {
         $same('F1 guest vs an org event stored with ssn NULL', $owns(null, null, null, OP_ORG), false);
         $same('F1 guest vs ssn NULL, number NULL', $owns(null, null, null, null), false);

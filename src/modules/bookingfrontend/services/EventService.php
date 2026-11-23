@@ -75,26 +75,42 @@ class EventService
             }
         }
         if (count($toDelete) > 0) {
-            $this->repository->deleteResources($toDelete);
+            $this->repository->deleteResources($existingEvent['id'], $toDelete);
         }
 
         //Set new resources
-        $shouldInsert = false;
         $toInsert = [];
         foreach ($data['resource_ids'] as $newResource) {
             if (!in_array($newResource, $resourceIds)) {
-                $shouldInsert = true;
-                array_push($toInsert,
-                    [
-                        'id' => $existingEvent['id'],
-                        'resourceId' => $newResource
-                    ]
-                );
+                $toInsert[] = $newResource;
             }
         }
-        if ($shouldInsert) {
+        if (count($toInsert) > 0) {
             $this->repository->insertResources($existingEvent['id'], $toInsert);
         }
+    }
+
+    /**
+     * The resource_ids of a PATCH body as a list of distinct ints, or null when it is not a list of positive integers
+     * (an int, or a string of digits only) within bb_resource.id's integer range. Anything else is refused rather than
+     * cast: '5abc' is not resource 5.
+     */
+    public function resourceIdsFromRequest(mixed $value): ?array
+    {
+        if (!is_array($value) || !array_is_list($value)) {
+            return null;
+        }
+        $ids = [];
+        foreach ($value as $id) {
+            if (is_string($id) && ctype_digit($id) && strlen($id) <= 10) {
+                $id = (int)$id;
+            }
+            if (!is_int($id) || $id < 1 || $id > 2147483647) {
+                return null;
+            }
+            $ids[] = $id;
+        }
+        return array_values(array_unique($ids));
     }
 
     private function saveNewDates(int $id, array $data)

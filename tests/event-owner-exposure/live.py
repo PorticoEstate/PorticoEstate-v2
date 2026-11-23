@@ -22,6 +22,8 @@ Arms (the names of run.php where they are the same question):
   F1  no session, private, organisation-number type + '': no secret, contact, organizer, description, customer_ssn;
       the placeholder                                                     F3  the same for an ssn type + ''
   F4  the logged-in citizen, not the owner, on F1's row: the same          F6  a PUBLIC event stored as F1: the name, no secret
+  N13 owners keep customer_identifier_type (+ customer_organization_number by org nr)
+  F11 no session gets neither of those two, on a public and a private event with a number
 Exit: 0 all GREEN, 1 any RED, 2 a control failed (the run proves nothing).
 """
 import http.cookiejar
@@ -36,6 +38,8 @@ import urllib.request
 BASE = os.environ.get('PB_BASE', 'https://pe-api.test')
 PLACEHOLDER = os.environ.get('PB_PLACEHOLDER', 'Privat arrangement')
 GATED = ['secret', 'contact_name', 'contact_email', 'contact_phone', 'organizer', 'description', 'customer_ssn']
+# Owner-only since their docblocks were closed with «)»; reported apart, so the rows above read the same as in run.php.
+IDS = ['customer_identifier_type', 'customer_organization_number']
 
 CTX = ssl.create_default_context()
 CTX.check_hostname = False
@@ -109,6 +113,11 @@ def shape(entry):
 	return entry.get('name'), [k for k in GATED if entry.get(k) not in (None, '')]
 
 
+def ids(entry):
+	"""Which of customer_identifier_type / customer_organization_number the payload carries (never the values)."""
+	return [] if entry is None else [k for k in IDS if entry.get(k) not in (None, '')]
+
+
 def main():
 	if len(sys.argv) != 2:
 		sys.exit(__doc__)
@@ -131,13 +140,17 @@ def main():
 	try:
 		# --- C + N: owners keep everything (must hold on base AND tip) ---------------------------------------
 		fx.set(0, "'organization_number'", lit(orgs[0]))
-		name, keys = shape(schedule_entry(citizen, fx, fx.row()))
+		entry = schedule_entry(citizen, fx, fx.row())
+		name, keys = shape(entry)
 		ok1 = name == before['name'] and {'secret', 'contact_name', 'organizer'} <= set(keys)
 		results.append(('N1 owner by organisation number', ok1, f'name {name!r}; gated keys present: {keys}'))
+		results.append(('N13 owner by organisation number keeps type + number (isOrgAdmin)', ids(entry) == IDS, f'present: {ids(entry)}'))
 		fx.set(0, "'ssn'", 'NULL', lit(ssn))
-		name, keys = shape(schedule_entry(citizen, fx, fx.row()))
+		entry = schedule_entry(citizen, fx, fx.row())
+		name, keys = shape(entry)
 		ok2 = name == before['name'] and {'secret', 'contact_name', 'organizer', 'customer_ssn'} <= set(keys)
 		results.append(('N2 owner by ssn', ok2, f'name {name!r}; gated keys present: {keys}'))
+		results.append(('N13 owner by ssn keeps the type', ids(entry) == ['customer_identifier_type'], f'present: {ids(entry)}'))
 		if not (ok1 and ok2):
 			print('CONTROL FAILED - an owner does not see their own event on the served code; nothing below would mean anything')
 			for label, ok, detail in results:
@@ -147,9 +160,14 @@ def main():
 		results.append(('N2b the same event, no session', name == PLACEHOLDER and keys == [], f'name {name!r}; gated keys present: {keys}'))
 
 		fx.set(1, "'organization_number'", lit(orgs[0]))
-		name, keys = shape(schedule_entry(anon, fx, fx.row()))
+		entry = schedule_entry(anon, fx, fx.row())
+		name, keys = shape(entry)
 		results.append(('N4 public with a number, no session', name == before['name'] and 'secret' not in keys and 'customer_ssn' not in keys,
 						f'name {name!r}; gated keys present: {keys}'))
+		results.append(('F11 public with a number, no session: neither type nor number', ids(entry) == [], f'present: {ids(entry)}'))
+		fx.set(0, "'organization_number'", lit(orgs[0]))
+		entry = schedule_entry(anon, fx, fx.row())
+		results.append(('F11 private with a number, no session: neither type nor number', ids(entry) == [], f'present: {ids(entry)}'))
 
 		for is_public, want in ((1, 1), (0, 0)):
 			fx.set(is_public, 'NULL')

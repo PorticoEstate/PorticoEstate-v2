@@ -28,8 +28,8 @@
  *   N9  the booking Application's owner gets customer_ssn
  *   N10 Organization's «$user_has_access=true» fields, and N11 Event's «$expose_name=1», are as before
  *   N12 the legacy PHP front page never serialises through the trait, and the edit/cancel links read no gated field
- *   N13 today, as found: customer_identifier_type and customer_organization_number are shown to every viewer (their
- *       docblocks lack the «)» the trait's pattern needs); this fix does not change that
+ *   N13 owners by organisation number and by ssn keep customer_identifier_type and customer_organization_number, on a
+ *       private and a public event (the client's isOrgAdmin compares the delegate's number against them)
  *   N14 the client readers of the gated keys: the popper's owner test is a strict compare against the logged-in user's
  *       ssn (a user exists only after an ssn login), the application page's Edit and the «own» pending_change key on
  *       the secret being present
@@ -43,8 +43,11 @@
  *   F8  the booking Application with an empty ssn against no session
  *   F9  a direct-booking event whose secret is its application's, stored with a type and no number: not served
  *   F10 the stored side alone: a NULL stored number against a viewer value 0 / [0] (both equal NULL loosely)
+ *   F11 customer_identifier_type and customer_organization_number: no session and non-owners no longer get them, on
+ *       public or private events (their docblocks closed «when={…}» without «)», so the trait never read the rule)
  *
  * Red first: git archive 6ca0ca454 src | tar -x -C /tmp/oe-base && HD_ROOT=/tmp/oe-base php tests/event-owner-exposure/run.php
+ * (F1-F11 fail there; F11 alone also fails on the tree with the guard but without the two docblock fixes.)
  * Environment (optional): HD_ROOT = tree holding src/ (default: this repo). vendor/ comes from HD_ROOT if it has one,
  * else from this repo; App\ classes always load from HD_ROOT.
  * Exit code: 0 all pass, 1 any failure (an arm that throws is a FAIL line, never a crash).
@@ -109,9 +112,9 @@ namespace {
     const OE_SSN = '01010112345';
     /**
      * Fields only an owner may see (the contact set is also shown on a public event). customer_identifier_type and
-     * customer_organization_number are NOT here: their docblocks close «when={…}» without the «)» the trait's pattern
-     * needs, so they fall to the plain @Expose branch and every viewer gets them, for every event (N13). That is how
-     * the base tree behaves and this fix does not change it.
+     * customer_organization_number are owner-only too, but only since their docblocks got the «)» the trait's pattern
+     * needs; before that every viewer got them. They have their own rows (N13 owners keep them, F11 nobody else gets
+     * them) so the no-break rows here stay true of the base tree as well.
      */
     const OE_OWNER_ONLY = ['secret', 'customer_ssn'];
     const OE_PRIVATE_GATED = ['secret', 'customer_ssn', 'contact_name', 'contact_email', 'contact_phone', 'organizer', 'description'];
@@ -289,18 +292,27 @@ namespace {
         $ser = strpos($ctl, '$serialized = $userModel->serialize();');
         $check('N14 the client gets a user only after an ssn login validated (so user.ssn is that ssn)',
             $at !== false && $ser !== false && $at < $ser && str_contains(substr($ctl, $at, $ser - $at), 'if (empty($external_login_info))'));
+        $converter = @file_get_contents($client . '/components/building-calendar/util/event-converter.ts');
+        $check('N14 isOrgAdmin: an event\'s number is read only for an organisation-number type (absent type → no number)',
+            $converter !== false && (bool)preg_match("/if\\s*\\(\\s*eventData\\.customer_identifier_type === 'organization_number'\\s*\\)\\s*\\{\\s*eventOrgNumber = eventData\\.customer_organization_number;/", $converter));
+        $check('N14 isOrgAdmin: the delegate match is strict (an absent number is undefined and matches no delegate)',
+            $converter !== false && str_contains($converter, 'org.organization_number === eventOrgNumber'));
         $details = @file_get_contents($client . '/components/user/application/application-details.tsx');
         $check('N14 application page: Edit only when the event carries its secret', $details !== false && str_contains($details, 'showEdit = !!ev.secret;'));
         $svc = (string)file_get_contents($root . '/src/modules/bookingfrontend/services/ScheduleEntityService.php');
         $check('N14 «own» events (pending_change) are the ones whose payload carries the secret', str_contains($svc, "if (isset(\$eventData['secret'])) {"));
     });
     $arm('N13', function () use ($event, $ctx, $same) {
-        // Today, as found: the two fields whose @Expose(when={…} lacks its «)» are shown to every viewer.
-        $out = $event(['is_public' => 1])->serialize($ctx());
-        $same('N13 no session, public: customer_identifier_type shown (unconditional today)', $out['customer_identifier_type'] ?? null, 'organization_number');
-        $same('N13 no session, public: customer_organization_number shown (unconditional today)', $out['customer_organization_number'] ?? null, OE_ORG);
-        $out = $event()->serialize($ctx('02020212345', ['111111111']));
-        $same('N13 non-owner, private: customer_organization_number shown (unconditional today)', $out['customer_organization_number'] ?? null, OE_ORG);
+        // Owners keep customer_identifier_type and customer_organization_number, on a private and on a public event:
+        // the client's isOrgAdmin (event-converter.ts) matches the delegate's organisation number against these two.
+        foreach ([0 => 'private', 1 => 'public'] as $isPublic => $label) {
+            $out = $event(['is_public' => $isPublic])->serialize($ctx(null, [OE_ORG]));
+            $same("N13 owner by org nr, {$label}: customer_identifier_type", $out['customer_identifier_type'] ?? null, 'organization_number');
+            $same("N13 owner by org nr, {$label}: customer_organization_number (what isOrgAdmin compares)", $out['customer_organization_number'] ?? null, OE_ORG);
+            $out = $event(['is_public' => $isPublic, 'customer_identifier_type' => 'ssn', 'customer_organization_number' => null, 'customer_ssn' => OE_SSN])
+                ->serialize($ctx(OE_SSN, null));
+            $same("N13 owner by ssn, {$label}: customer_identifier_type", $out['customer_identifier_type'] ?? null, 'ssn');
+        }
     });
 
     // --- FIX -----------------------------------------------------------------------------------------
@@ -342,6 +354,16 @@ namespace {
         // The stored side on its own: a NULL stored number against a viewer value that equals NULL loosely (0).
         $same('F10 stored NULL vs a viewer 0: no secret', $event(['customer_organization_number' => null])->serialize($ctx(null, 0))['secret'] ?? null, null);
         $same('F10b stored NULL vs a viewer list [0]: no secret', $event(['customer_organization_number' => null])->serialize($ctx(null, [0]))['secret'] ?? null, null);
+    });
+    $arm('F11', function () use ($event, $ctx, $same, $present) {
+        // The two fields whose @Expose(when={…} lacked its «)» went to every viewer for every event. Now only owners.
+        $both = ['customer_identifier_type', 'customer_organization_number'];
+        $same('F11 no session, public with a number: neither field', $present($event(['is_public' => 1])->serialize($ctx()), $both), []);
+        $same('F11 no session, private with a number: neither field', $present($event()->serialize($ctx()), $both), []);
+        $same('F11 logged-in non-owner, private: neither field', $present($event()->serialize($ctx('02020212345', ['111111111'])), $both), []);
+        $same('F11 logged-in non-owner, public: neither field', $present($event(['is_public' => 1])->serialize($ctx('02020212345', ['111111111'])), $both), []);
+        $same('F11 no session, ssn event: no customer_identifier_type',
+            $present($event(['customer_identifier_type' => 'ssn', 'customer_organization_number' => null, 'customer_ssn' => OE_SSN])->serialize($ctx()), $both), []);
     });
     $arm('F8', function () use ($same, $bookingApplication) {
         $a = $bookingApplication(['id' => 9, 'customer_ssn' => '']);

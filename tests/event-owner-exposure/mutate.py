@@ -35,6 +35,7 @@ FILES = [
 ]
 
 T = "src/traits/SerializableTrait.php"
+E = "src/modules/bookingfrontend/models/Event.php"
 STORED = ("            if ($this->isEmptyIdentifier($actualValue)) {\n"
           "                return false;\n"
           "            }\n")
@@ -64,6 +65,11 @@ MUTATIONS = [
     ("Md", T, "the empty elements of a context list kept", [(FILTER, "in_array($actualValue, $contextValue)")], ["F7"]),
     ("Me", T, "the ssn arm left loose", loose_for("customer_ssn"), ["F3", "F4"]),
     ("Mf", T, "the organisation-number arm left loose", loose_for("customer_organization_number"), ["F1", "F2", "F5", "F6", "F9"]),
+    # --- the two docblocks back as they were: «when={…}» closed without «)», so the trait never reads the rule
+    ("Mg", E, "customer_identifier_type's docblock without its «)»",
+     [("\t * })\n\t */\n\tpublic $customer_identifier_type;", "\t *   }\n\t */\n\tpublic $customer_identifier_type;")], ["F11"]),
+    ("Mh", E, "customer_organization_number's docblock without its «)»",
+     [("\t * })\n\t * @Short\n\t */\n\tpublic $customer_organization_number;", "\t *  }\n\t * @Short\n\t */\n\tpublic $customer_organization_number;")], ["F11"]),
 ]
 
 

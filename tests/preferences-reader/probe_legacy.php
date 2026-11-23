@@ -33,8 +33,9 @@
  * in a rolled-back arm. The replica runs the loop's else-branch (booking/inc/class.uiapplication.inc.php, add_contact,
  * the part that is not direct booking) with the REAL bo->get_partials_list(), bo->update() and
  * bo->send_notification($application, true), in that order, WITHOUT collect_users() and the commit (neither reads a
- * preference). A source-shape guard fails if the sequence it copies changes in uiapplication.inc.php; the guard is
- * shown failing on a doctored copy. The real method is the live HTTP arm.
+ * preference). A source-shape guard fails when a fragment of the sequence it copies is missing or out of order in
+ * uiapplication.inc.php, matched against the source with its comments stripped; two controls show it refusing a
+ * doctored copy. The real method is the live HTTP arm.
  *
  * A2 and A3 are private methods, called through reflection so that the mutant of :189 and the mutant of
  * :247 each have an arm of their own. A4-A6 never reach sms.sms (checked in the source).
@@ -209,7 +210,11 @@ $lostpwAccount = static function (): array {
 
 /**
  * The sequence A8 copies out of uiapplication::add_contact, as literal fragments that must occur in this order inside
- * the function. Returns '' when the shape is as copied, else the first fragment that is missing or out of order.
+ * the function, in the source with its comments stripped (as $singletonCalls reads a class). The function has
+ * commented-out copies of some of these lines and a direct-booking branch with others, and a match on the raw source
+ * took those for the else branch's: a reorder of the else branch, a deleted update() and an else branch left with only
+ * send_notification all passed. The comment stripping is inside the closure, so the closure needs no other variable.
+ * Returns '' when the shape is as copied, else the first fragment that is missing or out of order.
  */
 const PL_ADD_CONTACT_SHAPE = [
     "foreach (\$partials['results'] as &\$application)",
@@ -224,6 +229,14 @@ const PL_ADD_CONTACT_SHAPE = [
     "\$this->bo->send_notification(\$application, true);",
 ];
 $addContactShape = static function (string $source): string {
+    $code = '';
+    foreach (token_get_all($source) as $t) {
+        if (is_array($t) && in_array($t[0], [T_COMMENT, T_DOC_COMMENT], true)) {
+            continue;
+        }
+        $code .= is_array($t) ? $t[1] : $t;
+    }
+    $source = $code;
     $start = strpos($source, 'function add_contact()');
     if ($start === false) {
         return 'function add_contact() not found';

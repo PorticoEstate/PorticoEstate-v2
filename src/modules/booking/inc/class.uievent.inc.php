@@ -6,6 +6,7 @@ use App\modules\phpgwapi\services\Log;
 use App\modules\phpgwapi\services\Cache;
 use App\Database\Db;
 use App\modules\booking\helpers\CommentParts;
+use App\modules\booking\helpers\EventFormFallback;
 
 phpgw::import_class('booking.uicommon');
 
@@ -337,6 +338,21 @@ class booking_uievent extends booking_uicommon
 		$entity = $this->extract_form_data($defaults);
 		$errors = $this->validate($entity);
 		return array($entity, $errors);
+	}
+
+	/**
+	 * The edit form shows the application's participants and audience when the event has none (#1498).
+	 * Display only: the caller runs this on a GET, and a POST is validated against the event's own rows.
+	 */
+	protected function fill_form_from_application(array &$event)
+	{
+		if (empty($event['application_id']) || (!empty($event['agegroups']) && !empty($event['audience'])))
+		{
+			return;
+		}
+
+		$application = CreateObject('booking.boapplication')->read_single((int)$event['application_id']);
+		$event = array_merge($event, EventFormFallback::fillFor($event, $application ?: array()));
 	}
 
 	protected function add_comment(&$event, $comment, $type = 'comment')
@@ -1170,6 +1186,11 @@ class booking_uievent extends booking_uicommon
 		if (!$event)
 		{
 			phpgw::no_access('booking', lang('missing entry. Id %1 is invalid', $id));
+		}
+
+		if ($_SERVER['REQUEST_METHOD'] !== 'POST')
+		{
+			$this->fill_form_from_application($event);
 		}
 
 		$resource_participant_limit_gross = CreateObject('booking.soresource')->get_participant_limit($event['resources'], true);

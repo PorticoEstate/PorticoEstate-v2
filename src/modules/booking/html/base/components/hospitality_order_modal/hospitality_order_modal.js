@@ -25,6 +25,12 @@
  *       // For date filtering (hospitality page knows this, app page gets it per-hospitality)
  *       hospMainResourceId: 1,
  *
+ *       // For the kitchen's opening hours, which bound the times of an order served in the kitchen's
+ *       // own room (hospitality page knows the building, app page gets it per-hospitality)
+ *       hospBuildingId: 10,
+ *       seasonsBaseUrl: '/bookingfrontend/buildings',   // + /{id}/seasons
+ *       serverSettingsUrl: '/api/server-settings',
+ *
  *       // Helpers (from host page)
  *       lang: function(key) {},
  *       esc: function(str) {},
@@ -39,6 +45,62 @@
 var HospitalityOrderModal = (function () {
 	'use strict';
 
+	function pad2(n) {
+		return String(n).padStart(2, '0');
+	}
+
+	/**
+	 * Whether an instant falls inside the opening hours defined by a set of seasons.
+	 *
+	 * A line-for-line port of isWithinBusinessHours in the citizen client
+	 * (bookingfrontend/client/src/service/utils/business-hours.ts), which the citizen's order dialog uses
+	 * for an on-site order (hospitality-order-modal.tsx, `timeSlots`). That file is TypeScript on luxon and
+	 * cannot be loaded by this plain script, so the rule is repeated here; the harness in
+	 * tests/hospitality-admin-order-modal compares the two over every quarter hour of a week. If the rule
+	 * changes there, it changes here: read its comments first, the three exits below are deliberately asymmetric.
+	 *
+	 *   1. no seasons at all                -> open or closed per the admin setting
+	 *   2. no ACTIVE season covers the date -> CLOSED
+	 *   3. no boundaries that weekday       -> CLOSED
+	 *
+	 * An EMPTY `resourceIds` means "no filter" (every season matches); the caller must pass the kitchen's id.
+	 */
+	function isWithinBusinessHours(date, resourceIds, seasons, closeWhenNoSeasons) {
+		if (!seasons || seasons.length === 0) {
+			return !closeWhenNoSeasons;
+		}
+		var weekday = date.getDay() === 0 ? 7 : date.getDay(); // ISO: Monday = 1 ... Sunday = 7, as luxon's `weekday`
+		var timeStr = pad2(date.getHours()) + ':' + pad2(date.getMinutes()) + ':' + pad2(date.getSeconds());
+		var at = date.getTime();
+
+		var activeSeasons = seasons.filter(function (season) {
+			var hasMatchingResources = resourceIds.length === 0 ||
+				(Array.isArray(season.resources) ? season.resources : []).some(function (r) {
+					return resourceIds.indexOf(String(r.id)) !== -1;
+				});
+			return season.active && at >= Date.parse(season.from_) && at <= Date.parse(season.to_) && hasMatchingResources;
+		});
+		if (activeSeasons.length === 0) {
+			return false;
+		}
+
+		var dayBoundaries = [];
+		activeSeasons.forEach(function (season) {
+			(season.boundaries || []).forEach(function (b) {
+				if (b.wday === weekday) dayBoundaries.push(b);
+			});
+		});
+		if (dayBoundaries.length === 0) {
+			return false;
+		}
+
+		// A boundary reaching 23:45 or later ends at midnight. This extends the END only; it never opens the morning.
+		return dayBoundaries.some(function (b) {
+			var effectiveTo = b.to_ >= '23:45:00' ? '24:00:00' : b.to_;
+			return b.from_ <= timeStr && effectiveTo >= timeStr;
+		});
+	}
+
 	function open(opts) {
 		var lang = opts.lang;
 		var esc = opts.esc;
@@ -49,7 +111,10 @@ var HospitalityOrderModal = (function () {
 		var fixedApplicationId = opts.applicationId || null;
 		var hospitalities = opts.hospitalities || [];
 		var hospMainResourceId = opts.hospMainResourceId || null;
+		var hospBuildingId = opts.hospBuildingId || null;
 
+		var seasonsBaseUrl = opts.seasonsBaseUrl || null;
+		var serverSettingsUrl = opts.serverSettingsUrl || null;
 		var ordersStoreUrl = opts.ordersStoreUrl;
 		var applicationsBaseUrl = opts.applicationsBaseUrl;
 		var relevantAppsUrl = opts.relevantAppsUrl || null;
@@ -118,6 +183,11 @@ var HospitalityOrderModal = (function () {
 		var _appResourceIds = null; // resource IDs from the selected application's dates
 		var _allLocations = null;   // full unfiltered location list from API
 		var _currentHospMainResourceId = hospMainResourceId;
+		var _currentHospBuildingId = hospBuildingId;
+		var _selectedLocIsMain = false; // the chosen location is the kitchen's own room (served on site)
+		var _hoursByBuilding = {};      // building id -> {seasons, closeWhenNoSeasons}, once fetched
+		var _hoursRequested = {};       // building id -> true while its request is in flight
+		var _awaitingHours = false;     // the time list is empty until the hours arrive
 		var dateSelect = document.querySelector('[data-booking-role="serving-date"]');
 		var timeSelect = document.querySelector('[data-booking-role="serving-time"]');
 
@@ -158,13 +228,78 @@ var HospitalityOrderModal = (function () {
 				sign + pad(Math.floor(absOff / 60)) + ':' + pad(absOff % 60);
 		}
 
+		/**
+		 * Opening hours of the building that owns the KITCHEN resource: its seasons, and whether a building
+		 * without seasons is closed. The same two sources the citizen dialog reads (useBuildingSeasons and
+		 * useServerSettings in bookingfrontend/client), both public GETs. Fetched on the first need, once
+		 * per building.
+		 */
+		function requestKitchenHours(buildingId) {
+			var key = String(buildingId);
+			if (_hoursRequested[key]) return;
+			_hoursRequested[key] = true;
+
+			Promise.all([
+				fetchJson(seasonsBaseUrl + '/' + encodeURIComponent(buildingId) + '/seasons'),
+				fetchJson(serverSettingsUrl + '?include_configs=true')
+			]).then(function (res) {
+				// Anything but a list is not "no seasons" (that would read as open): it is a failed fetch.
+				if (!Array.isArray(res[0])) throw new Error('seasons');
+				var settings = res[1] && res[1].bookingfrontend_config;
+				_hoursByBuilding[key] = {
+					seasons: res[0],
+					closeWhenNoSeasons: !!(settings && settings.close_calendar_without_season)
+				};
+				return true;
+			}).catch(function (err) {
+				opts.showToast(lang('error') + ': ' + err.message, 'danger');
+				return false;
+			}).then(function (arrived) {
+				delete _hoursRequested[key];
+				var waiting = _awaitingHours;
+				_awaitingHours = false;
+				// Still on the kitchen's room, still on a date: fill the list. After a failure it stays empty;
+				// choosing the room again asks again.
+				if (arrived && waiting) populateTimeSlots(dateSelect.value);
+			});
+		}
+
+		/**
+		 * The slots that fall inside the kitchen's opening hours, as the citizen dialog bounds an on-site
+		 * order; null while the hours are on their way. Without the kitchen resource, or the building whose
+		 * seasons define its hours, nothing can be judged: offer NOTHING, never everything (an empty resource
+		 * list to isWithinBusinessHours would match every season).
+		 */
+		function slotsWithinKitchenHours(slots) {
+			if (!_currentHospMainResourceId || !_currentHospBuildingId || !seasonsBaseUrl || !serverSettingsUrl) return [];
+			var hours = _hoursByBuilding[String(_currentHospBuildingId)];
+			if (!hours) {
+				requestKitchenHours(_currentHospBuildingId);
+				return null;
+			}
+			var kitchen = [String(_currentHospMainResourceId)];
+			return slots.filter(function (slot) {
+				return isWithinBusinessHours(slot, kitchen, hours.seasons, hours.closeWhenNoSeasons);
+			});
+		}
+
 		function populateTimeSlots(dateIdx) {
 			timeSelect.innerHTML = '<option value="">' + esc(lang('selectTime')) + '</option>';
 			timeSelect.disabled = true;
+			_awaitingHours = false;
 			if (dateIdx === '' || !_appDates[dateIdx]) return;
 
 			var range = _appDates[dateIdx];
 			var slots = generate15MinIntervals(range.from_, range.to_);
+			// An order served in the kitchen's own room is bounded by the kitchen's opening hours, as in the citizen
+			// dialog; a remote room is not (the food is eaten away from the kitchen: the application's own times rule).
+			if (_selectedLocIsMain) {
+				slots = slotsWithinKitchenHours(slots);
+				if (slots === null) {
+					_awaitingHours = true;
+					return;
+				}
+			}
 			slots.forEach(function (slot) {
 				var opt = document.createElement('option');
 				opt.value = fmtLocalIso(slot);
@@ -231,13 +366,10 @@ var HospitalityOrderModal = (function () {
 					}
 				});
 
-				// Filter location selector to only resources in this application.
+				// Filter location selector to the kitchen's own room and the resources in this application.
 				// Use _allLocations (full list) as source if available; otherwise mapResponse handles it on fetch.
 				if (locSelector && _allLocations) {
-					var filtered = _allLocations.filter(function (loc) {
-						return _appResourceIds[loc.id];
-					});
-					locSelector.setItems(filtered);
+					locSelector.setItems(_allLocations.filter(isOfferedLocation));
 				}
 
 				filterAndPopulateDates();
@@ -247,6 +379,16 @@ var HospitalityOrderModal = (function () {
 		dateSelect.addEventListener('change', function () {
 			populateTimeSlots(this.value);
 		});
+
+		/**
+		 * May the admin put this delivery location on an order? The kitchen's own room («main»: the food is served
+		 * on site and the room needs no booking) always; a remote room only when the application booked it. The
+		 * same rule as the citizen dialog (bookingfrontend client, hospitality-order-modal.tsx, availableLocations).
+		 * Only called once the application's resources are known.
+		 */
+		function isOfferedLocation(loc) {
+			return loc.location_type === 'main' || !!_appResourceIds[loc.id];
+		}
 
 		// ── Location selector ──
 		function initLocationSelector(locationsUrl) {
@@ -267,18 +409,17 @@ var HospitalityOrderModal = (function () {
 						return loc;
 					});
 					_allLocations = locations.slice();
-					// Filter to only resources present in the selected application
+					// Filter to the kitchen's own room and the resources present in the selected application
 					if (_appResourceIds) {
-						locations = locations.filter(function (loc) {
-							return _appResourceIds[loc.id];
-						});
+						locations = locations.filter(isOfferedLocation);
 					}
 					return locations;
 				},
 				placeholder: lang('location') + '...',
-				emptyText: lang('noOrders'),
-				onChange: function (id) {
+				emptyText: lang('noDeliveryLocations'),
+				onChange: function (id, name, item) {
 					_selectedLocId = id;
+					_selectedLocIsMain = !!item && item.location_type === 'main';
 					filterAndPopulateDates();
 				}
 			});
@@ -302,9 +443,12 @@ var HospitalityOrderModal = (function () {
 						// Update main resource id for date filtering
 						var selected = hospitalities.find(function (h) { return h.id == id; });
 						_currentHospMainResourceId = selected ? parseInt(selected.resource_id, 10) : null;
+						// The building that owns the kitchen resource: its seasons are the kitchen's opening hours
+						_currentHospBuildingId = selected ? parseInt(selected.building_id, 10) || null : null;
 
 						// Reset and reinitialize location selector for this hospitality
 						_selectedLocId = null;
+						_selectedLocIsMain = false;
 						_allAppDates = [];
 						_appDates = [];
 						dateSelect.innerHTML = '<option value="">' + esc(lang('selectDate')) + '</option>';

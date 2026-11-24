@@ -1434,3 +1434,4 @@ main_resource_inactive	booking	en	The resource “%1” is not active and cannot
 main_resource_not_in_active_building	booking	en	The resource “%1” is not in an active building and cannot be the main resource.
 deleteAssociationConfirm	booking	en	Deactivate this association?
 building_select_no_results	booking	en	No results
+no_delivery_locations	booking	en	No locations available for this hospitality

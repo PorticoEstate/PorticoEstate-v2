@@ -2379,12 +2379,21 @@
 		var ordersStoreUrl = root.dataset.hospitalityOrdersUrl;
 		if (ordersStoreUrl) ordersStoreUrl = ordersStoreUrl.split('?')[0];
 
+		// The kitchen's opening hours (seasons and the server setting), read as the citizen dialog does
+		var seasonsBaseUrl = root.dataset.seasonsBaseUrl;
+		if (seasonsBaseUrl) seasonsBaseUrl = seasonsBaseUrl.split('?')[0];
+
+		var serverSettingsUrl = root.dataset.serverSettingsUrl;
+		if (serverSettingsUrl) serverSettingsUrl = serverSettingsUrl.split('?')[0];
+
 		HospitalityOrderModal.open({
 			applicationId: appId,
 			hospitalities: _hospOrdersHospitalities,
 			ordersStoreUrl: ordersStoreUrl,
 			applicationsBaseUrl: applicationsBaseUrl,
 			deliveryLocationsBaseUrl: hospitalityBaseUrl,
+			seasonsBaseUrl: seasonsBaseUrl,
+			serverSettingsUrl: serverSettingsUrl,
 			lang: lang,
 			esc: esc,
 			fetchJson: fetchJson,

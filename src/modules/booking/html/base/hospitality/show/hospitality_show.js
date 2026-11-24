@@ -15,6 +15,8 @@
 	var deliveryLocationsUrl = root.dataset.deliveryLocationsUrl ? root.dataset.deliveryLocationsUrl.split('?')[0] : null;
 	var relevantAppsUrl = root.dataset.relevantAppsUrl ? root.dataset.relevantAppsUrl.split('?')[0] : null;
 	var applicationsBaseUrl = root.dataset.applicationsBaseUrl ? root.dataset.applicationsBaseUrl.split('?')[0] : null;
+	var seasonsBaseUrl = root.dataset.seasonsBaseUrl ? root.dataset.seasonsBaseUrl.split('?')[0] : null;
+	var serverSettingsUrl = root.dataset.serverSettingsUrl ? root.dataset.serverSettingsUrl.split('?')[0] : null;
 	var canWrite = root.dataset.canWrite === '1';
 	var descriptionMaxLength = parseInt(root.dataset.descriptionMaxLength, 10);
 
@@ -1964,6 +1966,9 @@
 		HospitalityOrderModal.open({
 			hospitalityId: parseInt(root.dataset.hospitalityId, 10),
 			hospMainResourceId: hospitalityData ? hospitalityData.resource_id : null,
+			hospBuildingId: hospitalityData ? hospitalityData.resource_building_id : null,
+			seasonsBaseUrl: seasonsBaseUrl,
+			serverSettingsUrl: serverSettingsUrl,
 			ordersStoreUrl: ordersStoreUrl,
 			applicationsBaseUrl: applicationsBaseUrl,
 			relevantAppsUrl: relevantAppsUrl,

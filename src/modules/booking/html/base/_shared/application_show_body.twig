@@ -211,7 +211,9 @@
 	 data-lang-regulation="{{ lang('booking.regulation') }}"
 	{% if enable_hospitality %}
 	 data-hospitality-orders-url="{{ phpgw_link('/booking/hospitality-orders') }}"
-	 data-hospitality-base-url="{{ phpgw_link('/booking/hospitality') }}"{% endif %}
+	 data-hospitality-base-url="{{ phpgw_link('/booking/hospitality') }}"
+	 data-seasons-base-url="{{ phpgw_link('/bookingfrontend/buildings') }}"
+	 data-server-settings-url="{{ phpgw_link('/api/server-settings') }}"{% endif %}
 	 data-applications-base-url="{{ phpgw_link('/booking/applications') }}"
 	{% if enable_hospitality %}
 	 data-lang-hospitality-orders="{{ lang('booking.hospitality_orders') }}"
@@ -219,6 +221,7 @@
 	 data-lang-serving-time="{{ lang('booking.serving_time') }}"
 	 data-lang-location="{{ lang('booking.location') }}"
 	 data-lang-no-orders="{{ lang('booking.no_orders') }}"
+	 data-lang-no-delivery-locations="{{ lang('booking.no_delivery_locations') }}"
 	 data-lang-pending-status="{{ lang('booking.pending_status') }}"
 	 data-lang-confirmed="{{ lang('booking.confirmed') }}"
 	 data-lang-delivered="{{ lang('booking.delivered') }}"

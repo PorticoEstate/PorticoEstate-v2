@@ -1435,3 +1435,4 @@ main_resource_inactive	booking	no	Ressursen «%1» er ikke aktiv og kan ikke vel
 main_resource_not_in_active_building	booking	no	Ressursen «%1» ligger ikke i en aktiv bygning og kan ikke velges som hovedressurs.
 deleteAssociationConfirm	booking	no	Deaktivere denne koblingen?
 building_select_no_results	booking	no	Ingen treff
+no_delivery_locations	booking	no	Ingen tilgjengelige lokaler for denne bevertningen

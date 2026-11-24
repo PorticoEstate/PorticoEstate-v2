@@ -1411,3 +1411,4 @@ deleteAssociationConfirm	booking	nn	Deaktivere denne koplinga?
 activateAssociationConfirm	booking	nn	Aktiver denne koplinga igjen?
 activate	booking	nn	Aktiver
 building_select_no_results	booking	nn	Ingen treff
+no_delivery_locations	booking	nn	Ingen tilgjengelege lokale for denne bevertninga

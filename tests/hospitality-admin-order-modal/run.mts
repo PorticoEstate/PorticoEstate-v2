@@ -17,8 +17,9 @@
  *   L4  nothing offered → the NEW «no delivery locations» text; the hospitality and application pickers, which are
  *       not part of this change, keep «Ingen bestillinger»                                    (FIX row)
  *   L5  main chosen → the times are the application's own times INSIDE the kitchen's opening hours, with an edge row at
- *       open and at close; the hours are fetched on the first need, from the citizen's two endpoints; a hospitality
- *       whose hours cannot be judged offers NO time, never every time                         (FIX row)
+ *       open and at close; the hours are fetched on the first need, from the citizen's two endpoints; where they cannot
+ *       be judged or fetched there is NO bound (the application's own times, the failure shown once): the bound has no
+ *       server rule behind it and must never stop a case officer from ordering (pe-ceo 49668)  (FIX row)
  *   L6  a remote room chosen, or no room chosen yet → the times are the application's own range, as on base
  *   L7  PARITY: over every quarter hour of a week, the dialog's on-site list equals what the citizen client's own
  *       isWithinBusinessHours (business-hours.ts, run through luxon) says; the dialog repeats that rule in plain JS
@@ -301,6 +302,7 @@ type Cfg = {
     dates?: any[];
     seasons?: unknown;                 // the body of /seasons: an array, or anything else for a malformed answer
     seasonsStatus?: number;
+    settingsStatus?: number;
     closeWhenNoSeasons?: boolean;
     hospBuildingId?: number | null;    // hospitality page: what resource_building_id says
     holdDates?: boolean;
@@ -336,7 +338,8 @@ async function boot(cfg: Cfg) {
         const path = url.split('?')[0];
         const make = () => {
             const known = path in routes;
-            const status = path === `${SEASONS_URL}/10/seasons` && cfg.seasonsStatus ? cfg.seasonsStatus : known ? 200 : 404;
+            const status = path === `${SEASONS_URL}/10/seasons` && cfg.seasonsStatus ? cfg.seasonsStatus
+                : path === SETTINGS_URL && cfg.settingsStatus ? cfg.settingsStatus : known ? 200 : 404;
             return {ok: status === 200, status, json: async () => structuredClone(known ? routes[path]() : {})};
         };
         if (holds.has(path)) return new Promise(res => { held[path] = () => res(make()); });
@@ -550,24 +553,33 @@ try {
         check('L5/no-seasons-closed', 'no seasons and close_calendar_without_season on → no time', closed.times().length === 0, show(closed.times().length));
     });
     await attempt('L5/unjudgeable', async () => {
-        // the hours cannot be judged: offer nothing, never everything
+        // The hours cannot be judged: NO BOUND, the application's own times, as without it (pe-ceo 49668: the bound is a
+        // client-side convenience with no server rule, and must never stop a case officer from ordering).
         const noBuilding = await boot({ctx: 'app', hospitalities: [{...H6, building_id: null}], locations: [MAIN], dates: WED});
         await noBuilding.start('dates-first'); await noBuilding.chooseLocation(MAIN);
-        check('L5[app]/no-building', 'the kitchen resource is in no building → no time, and no request', noBuilding.times().length === 0 && noBuilding.seasonsCalls().length === 0, show({times: noBuilding.times().length, calls: noBuilding.calls}));
+        check('L5[app]/no-building', 'the kitchen resource is in no building → the application\'s own times, and no request', same(noBuilding.times(), WED_ALL) && noBuilding.seasonsCalls().length === 0, show({times: noBuilding.times().length, calls: noBuilding.calls}));
         const hospNoBuilding = await boot({ctx: 'hosp', hospBuildingId: null, locations: [MAIN], dates: WED});
         await hospNoBuilding.start('dates-first'); await hospNoBuilding.chooseLocation(MAIN);
-        check('L5[hosp]/no-building', 'hospitality page without a building → no time, and no request', hospNoBuilding.times().length === 0 && hospNoBuilding.seasonsCalls().length === 0, show({times: hospNoBuilding.times().length, calls: hospNoBuilding.calls}));
+        check('L5[hosp]/no-building', 'hospitality page without a building → the application\'s own times, and no request', same(hospNoBuilding.times(), WED_ALL) && hospNoBuilding.seasonsCalls().length === 0, show({times: hospNoBuilding.times().length, calls: hospNoBuilding.calls}));
 
+        // the seasons request fails: the application's own times, the failure said once, the answer kept
         const broken = await boot({ctx: 'app', locations: [MAIN, MUSIC3], dates: WED, seasonsStatus: 500});
         await broken.start('dates-first'); await broken.chooseLocation(MAIN);
-        check('L5/error-closed', 'the seasons request fails → no time, and the failure is shown', broken.times().length === 0 && broken.toasts.length === 1 && broken.toasts[0][1] === 'danger', show({times: broken.times().length, toasts: broken.toasts}));
+        check('L5/error-open', 'the seasons request fails → the application\'s own times, and the failure is shown', same(broken.times(), WED_ALL) && broken.toasts.length === 1 && broken.toasts[0][1] === 'danger', show({times: broken.times().length, toasts: broken.toasts}));
         await broken.chooseLocation(MUSIC3);
         await broken.chooseLocation(MAIN);
-        check('L5/error-retry', 'choosing the kitchen room again asks again', broken.seasonsCalls().length === 2, show(broken.seasonsCalls()));
+        check('L5/error-once', 'choosing the kitchen room again neither asks again nor says it again, and the times are still the application\'s own',
+            broken.seasonsCalls().length === 1 && broken.toasts.length === 1 && same(broken.times(), WED_ALL), show({calls: broken.seasonsCalls(), toasts: broken.toasts.length, times: broken.times().length}));
 
-        const malformed = await boot({ctx: 'app', locations: [MAIN], dates: WED, seasons: {error: 'x'}});
+        // an answer that is not a list is a failed fetch, not «no seasons»: the setting that closes a building without seasons must not close it
+        const malformed = await boot({ctx: 'app', locations: [MAIN], dates: WED, seasons: {error: 'x'}, closeWhenNoSeasons: true});
         await malformed.start('dates-first'); await malformed.chooseLocation(MAIN);
-        check('L5/malformed-closed', 'an answer that is not a list of seasons is a failure, not "no seasons"', malformed.times().length === 0 && malformed.toasts.length === 1, show({times: malformed.times().length, toasts: malformed.toasts.length}));
+        check('L5/malformed-open', 'an answer that is not a list of seasons → the application\'s own times and the failure shown, even where close_calendar_without_season is on', same(malformed.times(), WED_ALL) && malformed.toasts.length === 1 && malformed.toasts[0][1] === 'danger', show({times: malformed.times().length, toasts: malformed.toasts.length}));
+
+        // the settings request fails and the seasons arrive: the seasons still bound the times, the setting reads «false» (the citizen's `?? false`)
+        const noSettings = await boot({ctx: 'app', locations: [MAIN], dates: WED, settingsStatus: 500});
+        await noSettings.start('dates-first'); await noSettings.chooseLocation(MAIN);
+        check('L5/settings-failed', 'the settings request fails, the seasons arrive → still bounded by the seasons, and no failure shown (the citizen shows none)', same(noSettings.times(), WED_KITCHEN) && noSettings.toasts.length === 0, show({times: noSettings.times().length, toasts: noSettings.toasts.length}));
     });
 
     // =================================================================================================================

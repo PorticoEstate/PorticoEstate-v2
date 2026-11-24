@@ -185,7 +185,7 @@ var HospitalityOrderModal = (function () {
 		var _currentHospMainResourceId = hospMainResourceId;
 		var _currentHospBuildingId = hospBuildingId;
 		var _selectedLocIsMain = false; // the chosen location is the kitchen's own room (served on site)
-		var _hoursByBuilding = {};      // building id -> {seasons, closeWhenNoSeasons}, once fetched
+		var _hoursByBuilding = {};      // building id -> {seasons, closeWhenNoSeasons} once fetched, false when the fetch failed
 		var _hoursRequested = {};       // building id -> true while its request is in flight
 		var _awaitingHours = false;     // the time list is empty until the hours arrive
 		var dateSelect = document.querySelector('[data-booking-role="serving-date"]');
@@ -241,42 +241,45 @@ var HospitalityOrderModal = (function () {
 
 			Promise.all([
 				fetchJson(seasonsBaseUrl + '/' + encodeURIComponent(buildingId) + '/seasons'),
-				fetchJson(serverSettingsUrl + '?include_configs=true')
+				// A setting that cannot be read is «false», as the citizen dialog reads it (`?? false`): the seasons still bound the times.
+				fetchJson(serverSettingsUrl + '?include_configs=true').catch(function () { return null; })
 			]).then(function (res) {
-				// Anything but a list is not "no seasons" (that would read as open): it is a failed fetch.
+				// Anything but a list is not "no seasons": it is a failed fetch.
 				if (!Array.isArray(res[0])) throw new Error('seasons');
 				var settings = res[1] && res[1].bookingfrontend_config;
 				_hoursByBuilding[key] = {
 					seasons: res[0],
 					closeWhenNoSeasons: !!(settings && settings.close_calendar_without_season)
 				};
-				return true;
 			}).catch(function (err) {
+				// The bound is a convenience with no server rule behind it, and it must never stop a case officer from
+				// ordering: hours that cannot be fetched leave the times as the application's own, as without the bound.
+				// The failure is said out loud, once; the answer is kept, so the same dialog does not ask again.
+				_hoursByBuilding[key] = false;
 				opts.showToast(lang('error') + ': ' + err.message, 'danger');
-				return false;
-			}).then(function (arrived) {
+			}).then(function () {
 				delete _hoursRequested[key];
 				var waiting = _awaitingHours;
 				_awaitingHours = false;
-				// Still on the kitchen's room, still on a date: fill the list. After a failure it stays empty;
-				// choosing the room again asks again.
-				if (arrived && waiting) populateTimeSlots(dateSelect.value);
+				// Still on the kitchen's room, still on a date: fill the list.
+				if (waiting) populateTimeSlots(dateSelect.value);
 			});
 		}
 
 		/**
 		 * The slots that fall inside the kitchen's opening hours, as the citizen dialog bounds an on-site
-		 * order; null while the hours are on their way. Without the kitchen resource, or the building whose
-		 * seasons define its hours, nothing can be judged: offer NOTHING, never everything (an empty resource
-		 * list to isWithinBusinessHours would match every season).
+		 * order; null while the hours are on their way. Where the hours cannot be judged (no kitchen resource,
+		 * no building whose seasons define them, no place to read them from, or a fetch that failed) there is
+		 * no bound: the application's own times, as without it.
 		 */
 		function slotsWithinKitchenHours(slots) {
-			if (!_currentHospMainResourceId || !_currentHospBuildingId || !seasonsBaseUrl || !serverSettingsUrl) return [];
+			if (!_currentHospMainResourceId || !_currentHospBuildingId || !seasonsBaseUrl || !serverSettingsUrl) return slots;
 			var hours = _hoursByBuilding[String(_currentHospBuildingId)];
-			if (!hours) {
+			if (hours === undefined) {
 				requestKitchenHours(_currentHospBuildingId);
 				return null;
 			}
+			if (hours === false) return slots;
 			var kitchen = [String(_currentHospMainResourceId)];
 			return slots.filter(function (slot) {
 				return isWithinBusinessHours(slot, kitchen, hours.seasons, hours.closeWhenNoSeasons);

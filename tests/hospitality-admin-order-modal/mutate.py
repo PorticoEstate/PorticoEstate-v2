@@ -2,6 +2,8 @@
 """
 Mutation check for run.mts (the admin «Opprett bestilling» dialog, task 49612).
 
+A harness that never finishes (HANG) is red too: the run is killed by a timeout and counted.
+
 One deliberate defect at a time is applied to a TEMP COPY of the files the harness reads (never to the tree) and the harness
 is pointed at it with HM_ROOT; it must go red for each, on the rows the defect is about. The baseline on the same copy must
 be green first, and every replacement must match exactly once. A final arm runs the harness on the tree as it was on base
@@ -60,9 +62,9 @@ MUTANTS = [
      "emptyText: lang('noDeliveryLocations'),", "emptyText: lang('noOrders'),", {"L4"}),
     ("M7", MODAL, "every chosen location counts as the kitchen room (a remote room is bounded too)",
      "_selectedLocIsMain = !!item && item.location_type === 'main';", "_selectedLocIsMain = true;", {"L6"}),
-    ("M8", MODAL, "a hospitality whose hours cannot be judged offers every time (fails open)",
-     "if (!_currentHospMainResourceId || !_currentHospBuildingId || !seasonsBaseUrl || !serverSettingsUrl) return [];",
-     "if (!_currentHospMainResourceId || !_currentHospBuildingId || !seasonsBaseUrl || !serverSettingsUrl) return slots;", {"L5"}),
+    ("M8", MODAL, "a hospitality whose hours cannot be judged offers NO time (fails CLOSED; pe-ceo 49668 ruled fail-open)",
+     "if (!_currentHospMainResourceId || !_currentHospBuildingId || !seasonsBaseUrl || !serverSettingsUrl) return slots;",
+     "if (!_currentHospMainResourceId || !_currentHospBuildingId || !seasonsBaseUrl || !serverSettingsUrl) return [];", {"L5"}),
     ("M9", MODAL, "Sunday is weekday 0 instead of 7 (the ISO weekday luxon gives the citizen rule)",
      "var weekday = date.getDay() === 0 ? 7 : date.getDay();", "var weekday = date.getDay();", {"L7"}),
     ("M10", MODAL, "the boundary's weekday is not compared (every boundary applies every day)",
@@ -73,15 +75,23 @@ MUTANTS = [
      "var hasMatchingResources = resourceIds.length === 0 ||", "var hasMatchingResources = true ||", {"L7"}),
     ("M13", MODAL, "a season's end is not honoured (the season that ends mid-day Saturday stays open)",
      "at <= Date.parse(season.to_)", "true", {"L7"}),
-    ("M14", MODAL, "a failed or malformed seasons answer reads as «no seasons» (fails open)",
+    ("M14", MODAL, "an answer that is not a list reads as «no seasons» (so close_calendar_without_season closes the kitchen on a broken answer)",
      "if (!Array.isArray(res[0])) throw new Error('seasons');", "if (!Array.isArray(res[0])) res[0] = [];", {"L5"}),
     ("M15", MODAL, "the chosen-room flag survives a change of hospitality (a stale «main» bounds the new one)",
      "_selectedLocId = null;\n\t\t\t\t\t\t_selectedLocIsMain = false;", "_selectedLocId = null;", {"L6"}),
     ("M16", MODAL, "a late answer re-fills the list whatever the user did meanwhile",
-     "if (arrived && waiting) populateTimeSlots(dateSelect.value);", "if (arrived) populateTimeSlots(dateSelect.value);", {"L5"}),
+     "if (waiting) populateTimeSlots(dateSelect.value);", "populateTimeSlots(dateSelect.value);", {"L5"}),
     ("M17", MODAL, "the hours are fetched on open instead of on the first need",
      "var _awaitingHours = false;     // the time list is empty until the hours arrive",
      "var _awaitingHours = false;     // the time list is empty until the hours arrive\n\t\tsetTimeout(function () { if (seasonsBaseUrl && hospBuildingId) requestKitchenHours(hospBuildingId); }, 0);", {"L5"}),
+    ("M23", MODAL, "a FAILED seasons fetch leaves no time (fails CLOSED after the fetch; pe-ceo 49668 ruled fail-open)",
+     "if (hours === false) return slots;", "if (hours === false) return [];", {"L5"}),
+    ("M24", MODAL, "a failed SETTINGS request takes the seasons' bound with it (the citizen reads a missing setting as false and still bounds)",
+     "fetchJson(serverSettingsUrl + '?include_configs=true').catch(function () { return null; })", "fetchJson(serverSettingsUrl + '?include_configs=true')", {"L5"}),
+    ("M25", MODAL, "a failed seasons fetch is not said (no toast)",
+     "_hoursByBuilding[key] = false;\n\t\t\t\topts.showToast(lang('error') + ': ' + err.message, 'danger');", "_hoursByBuilding[key] = false;", {"L5"}),
+    ("M26", MODAL, "a failed fetch is not remembered: the dialog asks again by itself, for ever (the run is killed by its timeout)",
+     "_hoursByBuilding[key] = false;", "", {"HANG", "L5"}),
     ("M18", APP_TWIG, "the application page loses the new text's attribute",
      "\t data-lang-no-delivery-locations=\"{{ lang('booking.no_delivery_locations') }}\"\n", "", {"L4", "S1"}),
     ("M19", HOSP_TWIG, "the hospitality page loses the new text's attribute",
@@ -98,7 +108,10 @@ MUTANTS = [
 def run(tree):
     env = dict(os.environ)
     env["HM_ROOT"] = tree
-    p = subprocess.run([NODE, HARNESS], env=env, capture_output=True, text=True)
+    try:
+        p = subprocess.run([NODE, HARNESS], env=env, capture_output=True, text=True, timeout=int(os.environ.get("HM_TIMEOUT", "90")))
+    except subprocess.TimeoutExpired:
+        return 124, "killed by the timeout: the dialog never settled", ["FAIL HANG the harness did not finish"], {"HANG"}
     out = (p.stdout + p.stderr).strip().splitlines()
     fails = [l for l in out if l.startswith("FAIL")]
     groups = set()
@@ -142,7 +155,7 @@ def main():
             continue
         open(path, "w", encoding="utf-8").write(text.replace(old, new))
         rc, last, fails, groups = run(tree)
-        missed = want - groups
+        missed = set() if (want & groups) and "HANG" in want else want - groups
         verdict = "RED as expected" if rc != 0 and not missed else ("NOT RED" if rc == 0 else f"red, but NOT on {sorted(missed)}")
         if rc == 0 or missed:
             bad += 1

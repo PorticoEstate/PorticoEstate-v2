@@ -23,6 +23,9 @@
  *   LV3  the bound at work: 85095 / h5: the kitchen room → no time (13:00-14:00 is before it opens), the remote room → 13:00-14:00
  *   LV4  (--save) 85106 / h6, kitchen room, 20:00 → Lagre → 201, and the order is on the application's order tab
  *   LV5  the empty text: hospitality 10's page, Lokale → the new text; the orders list's own empty text is not it
+ *   LV6  the failure arm (pe-ceo 49668: the bound must never stop a case officer from ordering): the seasons request is ABORTED
+ *        in the browser (LV6) or answered 200 with something that is not a list (LV6/malformed); 85095 / h5, kitchen room →
+ *        the application's own 13:00-14:00 (LV3 shows 0 when the hours arrive) and a danger toast, once. Writes nothing.
  */
 const fs = require('fs');
 const os = require('os');
@@ -219,6 +222,24 @@ const quarters = (from, to) => {
         check('LV5', 'hospitality 10 (no delivery location): Lokale shows the new text, not «Ingen bestillinger»',
             rows.length === 1 && !!root.delivery && rows[0] === root.delivery && rows[0] !== root.orders, JSON.stringify({ rows, root }));
         await shots(page, 'lv5-hospitality10-empty');
+        await ctx.close();
+    });
+
+    // ---- LV6 the hours cannot be fetched ---------------------------------------------------------------------------------
+    for (const [id, how, intercept] of [
+        ['LV6', 'the seasons request fails (aborted in the browser)', route => route.abort()],
+        ['LV6/malformed', 'the seasons request answers 200 with something that is not a list', route => route.fulfill({ status: 200, contentType: 'application/json', body: '{"error":"x"}' })],
+    ]) await row(id, async () => {
+        const { ctx, page, requests } = await newPage(1280, 900);
+        await page.route('**/bookingfrontend/buildings/*/seasons*', intercept);   // before the page loads: nothing reaches the server
+        await openApplicationDialog(page, 85095, 'Fana kulturhus servering');
+        await chooseLocation(page, 'Anretning (main)');
+        const toasts = await texts(page, '.app-show__toast[data-color="danger"]');   // the toast lives 3 s on this page; chooseLocation waited 1.5 s
+        const times = await options(page, 'serving-time');
+        check(id, how + ' → the kitchen room offers the application\'s own 13:00-14:00 (LV3: none when the hours arrive)', same(times, quarters('13:00', '14:00')), JSON.stringify(times));
+        check(id + '/toast', 'and the failure is said, once', toasts.length === 1, JSON.stringify(toasts));
+        check(id + '/asked-once', 'and the seasons were asked for once', requests.filter(r => /\/bookingfrontend\/buildings\/10\/seasons/.test(r)).length === 1, JSON.stringify(requests.filter(r => /seasons/.test(r))));
+        await shots(page, id.toLowerCase().replace('/', '-') + '-app85095-h5-main');
         await ctx.close();
     });
 

@@ -1320,3 +1320,5 @@ test person	bookingfrontend	en	Test person
 support email address	bookingfrontend	en	Support email address
 cancellation_deadline_passed_orders	bookingfrontend	en	Applies to:
 cancellation_deadline_info_order	bookingfrontend	en	The order on %1 can be cancelled until %2
+catering_amount_too_large	bookingfrontend	en	The amount for one of the lines is too large.
+catering_order_total_too_large	bookingfrontend	en	The order total is too large.

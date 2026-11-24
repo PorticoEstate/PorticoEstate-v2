@@ -1437,3 +1437,5 @@ deleteAssociationConfirm	booking	no	Deaktivere denne koblingen?
 building_select_no_results	booking	no	Ingen treff
 no_delivery_locations	booking	no	Ingen tilgjengelige lokaler for denne bevertningen
 opening_hours_unavailable	booking	no	Kunne ikke hente åpningstidene – alle tider vises.
+hospitality_order_amount_too_large	booking	no	Beløpet for én av linjene er for stort.
+hospitality_order_total_too_large	booking	no	Totalbeløpet for bestillingen er for stort.

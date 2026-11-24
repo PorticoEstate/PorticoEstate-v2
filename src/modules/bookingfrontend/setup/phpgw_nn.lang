@@ -1320,3 +1320,5 @@ test person	bookingfrontend	nn	Testperson
 support email address	bookingfrontend	nn	Brukerstøtte e-post adresse
 cancellation_deadline_passed_orders	bookingfrontend	nn	Gjeld bevertning:
 cancellation_deadline_info_order	bookingfrontend	nn	Bevertning %1 kan avbestillast innan %2
+catering_amount_too_large	bookingfrontend	nn	Beløpet for éi av linjene er for stort.
+catering_order_total_too_large	bookingfrontend	nn	Totalbeløpet for bestillinga er for stort.

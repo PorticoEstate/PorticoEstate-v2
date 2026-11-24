@@ -12,6 +12,7 @@ use App\modules\booking\repositories\HospitalityOrderRepository;
 use App\modules\booking\services\HospitalityDeadlineCalculator;
 use App\modules\booking\services\HospitalityOrderGuard;
 use App\modules\booking\services\HospitalityOrderQuantity;
+use App\modules\booking\services\HospitalityOrderAmount;
 use App\modules\booking\services\HospitalityOrderDiff;
 use App\modules\booking\services\CateringMailRenderer;
 use App\modules\booking\services\CateringChangeText;
@@ -268,6 +269,25 @@ class HospitalityOrderController
 			'code' => 'quantity_not_whole',
 			'line' => $line,
 		], 400, $response);
+	}
+
+	/**
+	 * 422 for an order whose amounts the money columns cannot hold (HospitalityOrderAmount, §49596), in the applicant's
+	 * language: `code` says which rule, `line` names the first line that does not fit (the key in the request's `lines`).
+	 * Judged after the deadline guard and the line checks, before anything is written.
+	 *
+	 * @param array{code: string, line: int|string|null} $refusal
+	 */
+	private function refuseAmount(ResponseInterface $response, array $refusal): ResponseInterface
+	{
+		$payload = [
+			'error' => lang($refusal['code'] === HospitalityOrderAmount::CODE_LINE ? 'catering_amount_too_large' : 'catering_order_total_too_large'),
+			'code' => $refusal['code'],
+		];
+		if ($refusal['line'] !== null) {
+			$payload['line'] = $refusal['line'];
+		}
+		return ResponseHelper::sendErrorResponse($payload, 422, $response);
 	}
 
 	/**
@@ -738,7 +758,8 @@ class HospitalityOrderController
 					return ResponseHelper::sendErrorResponse(['error' => "Line {$i}: article is inactive"], 400, $response);
 				}
 
-				$resolvedLines[] = [
+				// Keyed as the request keys it, so a refusal below names the request's own line.
+				$resolvedLines[$i] = [
 					'hospitality_article_id' => $articleId,
 					'quantity' => $quantity,
 					'unit_price' => (float)$pricing['effective_price'],
@@ -747,26 +768,36 @@ class HospitalityOrderController
 				];
 			}
 
+			// The amounts (§49596): what the money columns can hold, in whole øre, before the first write below.
+			$amountRefusal = HospitalityOrderAmount::refusal($resolvedLines, $resolvedLines, [], $this->articleRepo->getTaxPercentByCode());
+			if ($amountRefusal !== null) {
+				return $this->refuseAmount($response, $amountRefusal);
+			}
+
 			// Get booking user ID for changelog
 			$bookingUserId = $this->getBookingUserId();
 
-			// Create the order
-			$orderId = $this->orderRepo->create([
-				'application_id' => $applicationId,
-				'hospitality_id' => $hospitalityId,
-				'location_resource_id' => $locationResourceId,
-				'status' => HospitalityOrder::STATUS_PENDING,
-				'comment' => $body['comment'] ?? null,
-				'special_requirements' => $body['special_requirements'] ?? null,
-				'serving_time_iso' => $body['serving_time_iso'] ?? null,
-				'created_by' => $bookingUserId,
-			]);
+			// The order and its lines in ONE transaction (§49596): all of it lands, or none of it. It is committed
+			// before the re-read, the changelog entry and the officer's mail below, so nobody is told of a rolled-back add.
+			$orderId = $this->orderRepo->transactional(function () use ($applicationId, $hospitalityId, $locationResourceId, $body, $bookingUserId, $resolvedLines): int {
+				$orderId = $this->orderRepo->create([
+					'application_id' => $applicationId,
+					'hospitality_id' => $hospitalityId,
+					'location_resource_id' => $locationResourceId,
+					'status' => HospitalityOrder::STATUS_PENDING,
+					'comment' => $body['comment'] ?? null,
+					'special_requirements' => $body['special_requirements'] ?? null,
+					'serving_time_iso' => $body['serving_time_iso'] ?? null,
+					'created_by' => $bookingUserId,
+				]);
 
-			// Add lines
-			foreach ($resolvedLines as $lineData) {
-				$lineData['order_id'] = $orderId;
-				$this->orderRepo->addOrderLine($lineData);
-			}
+				foreach ($resolvedLines as $lineData) {
+					$lineData['order_id'] = $orderId;
+					$this->orderRepo->addOrderLine($lineData);
+				}
+
+				return $orderId;
+			});
 
 			$order = $this->readAfterWrite($orderId, 'add');
 
@@ -908,12 +939,10 @@ class HospitalityOrderController
 				}
 			}
 
-			if (!empty($updateData)) {
-				$updateData['modified_by'] = $bookingUserId;
-				$this->orderRepo->update($orderId, $updateData);
-			}
-
-			// Replace lines if provided
+			// The replacing lines, validated and priced BEFORE the first write (§49596): this block used to run after the
+			// order's own fields were saved, so a refused line left the comment written. The refusals keep their order.
+			// null = the request does not replace the lines.
+			$resolvedLines = null;
 			if (isset($body['lines']) && is_array($body['lines'])) {
 				if (empty($body['lines'])) {
 					return ResponseHelper::sendErrorResponse(['error' => 'lines array must not be empty'], 400, $response);
@@ -940,7 +969,8 @@ class HospitalityOrderController
 						return ResponseHelper::sendErrorResponse(['error' => "Line {$i}: article does not belong to this hospitality"], 400, $response);
 					}
 
-					$resolvedLines[] = [
+					// Keyed as the request keys it, so a refusal below names the request's own line.
+					$resolvedLines[$i] = [
 						'hospitality_article_id' => $articleId,
 						'quantity' => $quantity,
 						'unit_price' => (float)$pricing['effective_price'],
@@ -949,18 +979,41 @@ class HospitalityOrderController
 					];
 				}
 
-				// Delete existing lines
-				$existingLines = $this->orderRepo->getOrderLines($orderId);
-				foreach ($existingLines as $existingLine) {
-					$this->orderRepo->deleteOrderLine((int)$existingLine['id']);
-				}
-
-				// Add new lines
-				foreach ($resolvedLines as $lineData) {
-					$lineData['order_id'] = $orderId;
-					$this->orderRepo->addOrderLine($lineData);
+				// The amounts (§49596), in whole øre: the new lines replace every stored one, so the order's total
+				// after the write is theirs; the stored lines are the total it is allowed to come down from.
+				$amountRefusal = HospitalityOrderAmount::refusal(
+					$resolvedLines,
+					$resolvedLines,
+					$this->orderRepo->getOrderLines($orderId),
+					$this->articleRepo->getTaxPercentByCode()
+				);
+				if ($amountRefusal !== null) {
+					return $this->refuseAmount($response, $amountRefusal);
 				}
 			}
+
+			// The order's own fields and its lines in ONE transaction (§49596): all of it lands, or none of it. It is
+			// committed before the re-read, the changelog entry and the officer's mail below.
+			$this->orderRepo->transactional(function () use ($orderId, $updateData, $bookingUserId, $resolvedLines): void {
+				if (!empty($updateData)) {
+					$updateData['modified_by'] = $bookingUserId;
+					$this->orderRepo->update($orderId, $updateData);
+				}
+
+				if ($resolvedLines !== null) {
+					// Delete existing lines
+					$existingLines = $this->orderRepo->getOrderLines($orderId);
+					foreach ($existingLines as $existingLine) {
+						$this->orderRepo->deleteOrderLine((int)$existingLine['id']);
+					}
+
+					// Add new lines
+					foreach ($resolvedLines as $lineData) {
+						$lineData['order_id'] = $orderId;
+						$this->orderRepo->addOrderLine($lineData);
+					}
+				}
+			});
 
 			$updatedOrder = $this->readAfterWrite($orderId, 'change');
 

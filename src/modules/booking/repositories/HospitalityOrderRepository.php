@@ -103,6 +103,41 @@ class HospitalityOrderRepository
         return (int)$stmt->fetchColumn();
     }
 
+    /**
+     * Run $work as ONE transaction (§49596): every write it makes lands, or none does.
+     *
+     * When a transaction is already open (a caller's), $work joins it and that caller's commit or rollback decides.
+     * Otherwise this opens one, commits it when $work returns, and when $work throws ANYTHING rolls it back and
+     * rethrows: a PHP Error half-way through a run of writes leaves them as partial as a PDOException does, and the
+     * handlers above catch Exception only.
+     *
+     * The callers re-read, write their changelog entry and tell anyone only AFTER this returns, so a change that is
+     * rolled back is never reported.
+     *
+     * @template T
+     * @param callable(): T $work
+     * @return T
+     */
+    public function transactional(callable $work): mixed
+    {
+        $own = !$this->db->inTransaction();
+        if ($own) {
+            $this->db->beginTransaction();
+        }
+        try {
+            $result = $work();
+            if ($own) {
+                $this->db->commit();
+            }
+            return $result;
+        } catch (\Throwable $e) {
+            if ($own && $this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
+            throw $e;
+        }
+    }
+
     public function getById(int $id): ?array
     {
         $sql = "SELECT o.*,

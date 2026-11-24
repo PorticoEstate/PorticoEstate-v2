@@ -40,6 +40,8 @@ FILES = [
     "src/modules/booking/services/CateringChangeText.php",
     "src/modules/booking/services/TranslationLangSwitch.php",
     "src/modules/booking/services/HospitalityOrderQuantity.php",
+    # Both controllers' write paths judge the amount bound (§49596): without it the baseline dies on a missing class.
+    "src/modules/booking/services/HospitalityOrderAmount.php",
     "src/modules/booking/repositories/HospitalityOrderRepository.php",
     "src/modules/booking/controllers/HospitalityOrderController.php",
     "src/modules/bookingfrontend/services/applications/CateringChangeNotifier.php",

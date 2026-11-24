@@ -11,6 +11,7 @@ use App\modules\booking\models\HospitalityOrder;
 use App\modules\booking\models\HospitalityOrderLine;
 use App\modules\booking\services\CateringChangeText;
 use App\modules\booking\services\HospitalityOrderQuantity;
+use App\modules\booking\services\HospitalityOrderAmount;
 use App\modules\booking\services\TranslationLangSwitch;
 use App\Database\Db;
 
@@ -148,6 +149,42 @@ class HospitalityOrderController
 	private function refuseQuantity(Response $response): Response
 	{
 		return $this->jsonError($response, lang('booking.hospitality_order_quantity_not_whole'), 400);
+	}
+
+	/**
+	 * 422 for a line or an order total the money columns cannot hold (HospitalityOrderAmount, §49596), in the officer's
+	 * language, with the rule's `code`. Without it the database answered «numeric field overflow» and the officer was
+	 * shown its raw SQLSTATE.
+	 *
+	 * @param array{code: string, line: int|string|null} $refusal
+	 */
+	private function refuseAmount(Response $response, array $refusal): Response
+	{
+		$key = $refusal['code'] === HospitalityOrderAmount::CODE_LINE
+			? 'booking.hospitality_order_amount_too_large'
+			: 'booking.hospitality_order_total_too_large';
+		$response->getBody()->write(json_encode(['error' => lang($key), 'code' => $refusal['code']]));
+		return $response->withHeader('Content-Type', 'application/json')->withStatus(422);
+	}
+
+	/**
+	 * Whether this line write would leave amounts the money columns cannot hold (HospitalityOrderAmount, §49596).
+	 *
+	 * @param array      $line   the line as it will be stored: quantity, unit_price, tax_code
+	 * @param int|null   $lineId the stored line it replaces; null when it is added
+	 * @return array{code: string, line: int|string|null}|null
+	 */
+	private function amountRefusal(int $orderId, array $line, ?int $lineId): ?array
+	{
+		$before = $this->repository->getOrderLines($orderId);
+		$after = [];
+		foreach ($before as $stored) {
+			$after[] = $lineId !== null && (int)$stored['id'] === $lineId ? $line : $stored;
+		}
+		if ($lineId === null) {
+			$after[] = $line;
+		}
+		return HospitalityOrderAmount::refusal([$line], $after, $before, $this->articleRepository->getTaxPercentByCode());
 	}
 
 	/**
@@ -620,6 +657,12 @@ class HospitalityOrderController
 				'comment' => $body['comment'] ?? null,
 			];
 
+			// The amounts (§49596): the new line, and the order's gross total with it, before the line is written.
+			$amountRefusal = $this->amountRefusal($orderId, $lineData, null);
+			if ($amountRefusal !== null) {
+				return $this->refuseAmount($response, $amountRefusal);
+			}
+
 			$lineId = $this->repository->addOrderLine($lineData);
 
 			$this->recordChanges($orderId, 'line_add', null, [
@@ -688,6 +731,20 @@ class HospitalityOrderController
 					return $this->refuseQuantity($response);
 				}
 				$body['quantity'] = $quantity;
+			}
+
+			// The amounts (§49596), when the edit touches one: the line as updateOrderLine() will leave it (what the body
+			// sends, else what is stored; the body may carry unit_price and tax_code too), before it is written. Billing
+			// prices the line as quantity × unit_price, which is what is judged, also when only unit_price changes.
+			if (array_key_exists('quantity', $body) || array_key_exists('unit_price', $body) || array_key_exists('tax_code', $body)) {
+				$asStored = [];
+				foreach (['quantity', 'unit_price', 'tax_code'] as $field) {
+					$asStored[$field] = array_key_exists($field, $body) ? $body[$field] : ($oldLine[$field] ?? null);
+				}
+				$amountRefusal = $this->amountRefusal($orderId, $asStored, $lineId);
+				if ($amountRefusal !== null) {
+					return $this->refuseAmount($response, $amountRefusal);
+				}
 			}
 
 			// Diff line fields for changelog

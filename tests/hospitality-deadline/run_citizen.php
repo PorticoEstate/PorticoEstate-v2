@@ -70,6 +70,11 @@ $quantityFile = $root . '/src/modules/booking/services/HospitalityOrderQuantity.
 if (is_file($quantityFile)) {
     require_once $quantityFile;
 }
+// The amount bound (§49596) is judged by both controllers' write paths; its own rows are in tests/hospitality-amount/.
+$amountFile = $root . '/src/modules/booking/services/HospitalityOrderAmount.php';
+if (is_file($amountFile)) {
+    require_once $amountFile;
+}
 
 use App\modules\booking\controllers\HospitalityOrderController as AdminOrderController;
 use App\modules\booking\repositories\HospitalityArticleRepository;
@@ -156,6 +161,15 @@ final class CitizenStubRepo extends HospitalityOrderRepository
 
     public function __construct()
     {
+    }
+
+    /** One transaction (§49596). The stub has no connection: it runs the work and counts the bracket. */
+    public int $transactions = 0;
+
+    public function transactional(callable $work): mixed
+    {
+        $this->transactions++;
+        return $work();
     }
 
     public function getById(int $id): ?array
@@ -384,13 +398,23 @@ final class StubHospitalityRepo extends HospitalityRepository
 
 final class StubArticleRepo extends HospitalityArticleRepository
 {
+    /** The article's price and tax code. 45.00 at code 1 (25 %) unless a row needs an amount that fits (§49596). */
+    public static float $price = 45.0;
+    public static int $taxCode = 1;
+
     public function __construct()
     {
     }
 
     public function resolveEffectivePricing(int $articleId): ?array
     {
-        return ['effective_price' => 45.0, 'effective_tax_code' => 1];
+        return ['effective_price' => self::$price, 'effective_tax_code' => self::$taxCode];
+    }
+
+    /** fm_ecomva as the fixture lines describe it: code 1 is 25 % (their tax_percent), code 0 is 0 %. */
+    public function getTaxPercentByCode(): array
+    {
+        return [0 => 0, 1 => 25];
     }
 
     public function getArticleById(int $id): ?array
@@ -863,6 +887,9 @@ $same('update, line 1 is fractional: 400 naming line 1, nothing written, comment
 
 // Accepted: whole numbers, in any spelling the table accepts, are stored as the INT they were read as.
 foreach ([['2', 2], ['"2"', 2], ['2.0', 2], ['"2.0"', 2], ['1e1', 10], ['"007"', 7], ['99999999', 99999999]] as [$literal, $want]) {
+    // 99,999,999 × 45.00 is 4,499,999,955.00, which no money column holds: since §49596 it is refused with a 422 before anything
+    // is written (tests/hospitality-amount). The quantity's upper edge is held here at a price that fits: 1.00 at 0 %.
+    [StubArticleRepo::$price, StubArticleRepo::$taxCode] = $literal === '99999999' ? [1.0, 0] : [45.0, 1];
     [$r, $repo, $notifier] = $createQ('[{"hospitality_article_id":11,"quantity":' . $literal . '}]');
     // Two rows each: that it is SAVED (true before this change too) and what was stored (an int; before this change a float).
     $same("create, quantity {$literal}: 201 and one order", [$r['status'], array_count_values($repo->calls)['create'] ?? 0], [201, 1]);
@@ -872,6 +899,7 @@ foreach ([['2', 2], ['"2"', 2], ['2.0', 2], ['"2.0"', 2], ['1e1', 10], ['"007"',
         [$r['status'], $repo->orders[7]['comment'], array_count_values($repo->calls)['update'] ?? 0], [200, 'CHANGED', 1]);
     $same("update, quantity {$literal}: the replacing line is stored as the int {$want}", $repo->lineQuantities, [$want]);
 }
+[StubArticleRepo::$price, StubArticleRepo::$taxCode] = [45.0, 1];
 [$r, $repo] = $createQ('[{"hospitality_article_id":11}]');
 $same('create, no quantity key: 201 and one line (unchanged)', [$r['status'], count($repo->lineQuantities)], [201, 1]);
 $same('create, no quantity key: the line is the int 1', $repo->lineQuantities, [1]);
@@ -927,13 +955,19 @@ $adminOrder = static function (CitizenStubRepo $repo) use ($adminRef): object {
     return $controller;
 };
 /** POST /booking/hospitality-orders/{id}/lines with this JSON body text. Returns [response, repo]. */
-$addLineQ = static function (string $json, int $orderId = 7) use ($newRepo, $adminOrder, $invoke): array {
+$addLineQ = static function (string $json, int $orderId = 7, ?callable $arrange = null) use ($newRepo, $adminOrder, $invoke): array {
     $repo = $newRepo();
+    if ($arrange !== null) {
+        $arrange($repo);
+    }
     return [$invoke($adminOrder($repo), 'addLine', 'POST', ['id' => $orderId], $json), $repo];
 };
 /** PUT /booking/hospitality-orders/{id}/lines/{lineId} (line 407 is order 7's, line 408 is order 8's, both 3.00). Returns [response, repo]. */
-$updateLineQ = static function (string $json, int $orderId = 7, int $lineId = 407) use ($newRepo, $adminOrder, $invoke): array {
+$updateLineQ = static function (string $json, int $orderId = 7, int $lineId = 407, ?callable $arrange = null) use ($newRepo, $adminOrder, $invoke): array {
     $repo = $newRepo();
+    if ($arrange !== null) {
+        $arrange($repo);
+    }
     return [$invoke($adminOrder($repo), 'updateLine', 'PUT', ['id' => $orderId, 'lineId' => $lineId], $json), $repo];
 };
 $adminWriteCalls = ['addOrderLine', 'updateOrderLine', 'deleteOrderLine', 'create', 'update'];
@@ -959,13 +993,24 @@ foreach (array_merge($refusedQuantities, ['null']) as $literal) {
 
 // Accepted: stored (and recorded in the changelog) as the int that was judged.
 foreach ([['2', 2], ['"2"', 2], ['2.0', 2], ['"2.0"', 2], ['1e1', 10], ['99999999', 99999999]] as [$literal, $want]) {
-    [$r, $repo] = $addLineQ('{"changelog_comment":"Rettet","hospitality_article_id":11,"quantity":' . $literal . '}');
+    // As in section 7: 99,999,999 is held at a price that fits (1.00 at 0 %), for the added line and for the stored one (§49596).
+    $fits = $literal === '99999999';
+    [StubArticleRepo::$price, StubArticleRepo::$taxCode] = $fits ? [1.0, 0] : [45.0, 1];
+    // An added line of 99,999,999.00 fits only an order holding nothing else; an updated one only if it is the order's one line.
+    $arrangeAdd = $fits ? static function (CitizenStubRepo $repo): void {
+        $repo->lines[7] = [];
+    } : null;
+    $arrangeUpdate = $fits ? static function (CitizenStubRepo $repo): void {
+        $repo->lines[7][0] = array_replace($repo->lines[7][0], ['unit_price' => '1.00', 'tax_code' => 0, 'tax_percent' => 0, 'amount' => '3.00']);
+    } : null;
+    [$r, $repo] = $addLineQ('{"changelog_comment":"Rettet","hospitality_article_id":11,"quantity":' . $literal . '}', 7, $arrangeAdd);
     $same("admin addLine, quantity {$literal}: 201, one line added, one changelog entry", [$r['status'], array_count_values($repo->calls)['addOrderLine'] ?? 0, count($repo->entries)], [201, 1, 1]);
     $same("admin addLine, quantity {$literal}: the line AND the changelog carry the int {$want}", [$repo->lineQuantities, $repo->entries[0]['new_value']['quantity'] ?? null], [[$want], $want]);
-    [$r, $repo] = $updateLineQ('{"changelog_comment":"Rettet","quantity":' . $literal . '}');
+    [$r, $repo] = $updateLineQ('{"changelog_comment":"Rettet","quantity":' . $literal . '}', 7, 407, $arrangeUpdate);
     $same("admin updateLine, quantity {$literal}: 200, the line updated once", [$r['status'], array_count_values($repo->calls)['updateOrderLine'] ?? 0], [200, 1]);
     $same("admin updateLine, quantity {$literal}: the repository is handed the int {$want}", array_column($repo->lineUpdates, 'quantity'), [$want]);
 }
+[StubArticleRepo::$price, StubArticleRepo::$taxCode] = [45.0, 1];
 [$r, $repo] = $addLineQ('{"changelog_comment":"Rettet","hospitality_article_id":11}');
 $same('admin addLine, no quantity key: 201 and one line (unchanged)', [$r['status'], count($repo->lineQuantities)], [201, 1]);
 $same('admin addLine, no quantity key: the line is the int 1', $repo->lineQuantities, [1]);

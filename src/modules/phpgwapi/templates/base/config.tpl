@@ -1,5 +1,5 @@
 <!-- BEGIN header -->
-<form method="POST" action="{action_url}">
+<form method="POST" action="{action_url}" class="pure-form config-form">
 <table class="pure-table pure-table-bordered">
 	<thead>
 		<tr>

@@ -1,5 +1,5 @@
 <!-- BEGIN header -->
-<form method="POST" action="{action_url}">
+<form method="POST" action="{action_url}" class="pure-form config-form">
 <table class="basic" align="center">
    <tr>
     <td colspan="2">&nbsp;<h1>{title}</h1></td>

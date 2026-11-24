@@ -2,8 +2,8 @@
 <div class="{error_class} msg">
 	{error}
 </div>
-<form method="post" action="{action_url}">
-	<table class="pure-table pure-table-bordered pure-table-striped pure-form">
+<form method="post" action="{action_url}" class="pure-form config-form">
+	<table class="pure-table pure-table-bordered pure-table-striped">
 		<thead>
 			<tr>
 				<th colspan="2">{title}</th>

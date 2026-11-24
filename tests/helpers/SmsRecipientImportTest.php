@@ -4,6 +4,7 @@ require_once __DIR__ . '/../../vendor/autoload.php';
 
 use App\modules\property\helpers\SmsRecipientImport;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xls;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use PHPUnit\Framework\TestCase;
 
@@ -108,5 +109,76 @@ class SmsRecipientImportTest extends TestCase
 		{
 			unlink($path);
 		}
+	}
+
+	public function testSavedExcelFilterSkipsHiddenRows(): void
+	{
+		$path = tempnam(sys_get_temp_dir(), 'sms-xlsx-');
+		$book = new Spreadsheet();
+		try
+		{
+			$sheet = $book->getActiveSheet();
+			$sheet->fromArray([
+				['ID', 'Address', 'Name', 'Phone', 'Type'],
+				['1', 'Road', 'Visible', '91234567', 'Keep'],
+				['2', 'Road', 'Hidden', '87654321', 'Hide'],
+				['3', 'Road', 'Invalid hidden', 'invalid', 'Hide'],
+				['4', 'Road', 'Invalid visible', 'invalid', 'Keep'],
+			]);
+			$sheet->setAutoFilter('A1:E5');
+			$sheet->getAutoFilter()->getColumn('E')->createRule()->setValue('Keep');
+			(new Xlsx($book))->save($path);
+
+			$this->assertSame([
+				'recipients' => [['label' => '1 - Road - Visible', 'phone' => '91234567']],
+				'invalid_rows' => [5],
+			], SmsRecipientImport::read($path, 'xlsx'));
+		}
+		finally
+		{
+			$book->disconnectWorksheets();
+			unlink($path);
+		}
+	}
+
+	/**
+	 * @dataProvider excelFormats
+	 */
+	public function testExcelSkipsManuallyHiddenRowsAndReportsWhenAllAreHidden(string $extension): void
+	{
+		$path = tempnam(sys_get_temp_dir(), 'sms-excel-');
+		$book = new Spreadsheet();
+		try
+		{
+			$sheet = $book->getActiveSheet();
+			$sheet->fromArray([
+				['ID', 'Address', 'Name', 'Phone', 'Type'],
+				['1', 'Road', 'Hidden', '91234567', 'X'],
+				['2', 'Road', 'Visible', '87654321', 'X'],
+			]);
+			$sheet->getRowDimension(2)->setVisible(false);
+			$writer = $extension === 'xls' ? new Xls($book) : new Xlsx($book);
+			$writer->save($path);
+			$this->assertSame([
+				'recipients' => [['label' => '2 - Road - Visible', 'phone' => '87654321']],
+				'invalid_rows' => [],
+			], SmsRecipientImport::read($path, $extension));
+
+			$sheet->getRowDimension(3)->setVisible(false);
+			$writer->save($path);
+			$this->expectException(RuntimeException::class);
+			$this->expectExceptionMessage('No visible recipients');
+			SmsRecipientImport::read($path, $extension);
+		}
+		finally
+		{
+			$book->disconnectWorksheets();
+			unlink($path);
+		}
+	}
+
+	public static function excelFormats(): array
+	{
+		return [['xls'], ['xlsx']];
 	}
 }

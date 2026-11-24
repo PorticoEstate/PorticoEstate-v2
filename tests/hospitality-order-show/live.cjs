@@ -19,6 +19,11 @@
  *   datenotime       D2   (205) a date with no preselected slot, no time: the warning, nothing sent
  *   datepreselect    D2p  (205) the stored date re-picked, the stored slot preselected and not chosen: the warning, nothing sent
  *
+ * Before any arm the driver reads the SERVED page and prints what order_show.js it inlines («served_page_inlines»); a run
+ * without --patch refuses to start (exit 2) unless that is this checkout's file — i.e. unless pe-ceo has served the commit.
+ * --expect base is the one exception: the NEGATIVE CONTROL, run while the served file is still the base one, where the
+ * arms must FAIL (49763's defect, reproduced) — the proof that the driver can fail.
+ *
  * --patch <file>: PRE-FLIGHT without serving. The served page's inlined base order_show.js (git show 7891c67b6:…) is
  * replaced in the response by <file> (route interception); nothing is written to the served tree. A run with no --patch
  * tests what the server serves: that is the dev window. The output says which one it was.
@@ -41,6 +46,7 @@ const ORDERS = opt('orders', '204,205,206,207').split(',').map(Number);
 const WIDTHS = opt('widths', '1280,375').split(',').map(Number);
 const PATCH = opt('patch', null);
 const OUT = opt('out', null);
+const EXPECT = opt('expect', 'fix');   // what the SERVED page must inline when there is no --patch: 'fix' (this checkout's file, the window) or 'base' (the negative control)
 const BASE_SHA = process.env.HM_BASE_SHA || '7891c67b6';
 const JS_REL = 'src/modules/booking/html/base/hospitality/order_show/order_show.js';
 const EXE = process.env.CHROMIUM_EXE || process.env.HOME + '/Library/Caches/ms-playwright/chromium-1248/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing';
@@ -224,13 +230,26 @@ function expectations(o) {
 (async () => {
   if (!process.env.LIVE_PASSWD) { console.error('set LIVE_PASSWD (AUTH-DETAILS.md)'); process.exit(2); }
   const browser = await chromium.launch({ executablePath: EXE, headless: true });
-  const header = { browser: 'Chromium ' + browser.version(), playwright_core: require(path.join(path.dirname(require.resolve(process.env.PWCORE)), 'package.json')).version, client: PATCH ? 'PATCHED via route interception (PRE-FLIGHT, not served): ' + PATCH : 'served order_show.js (the dev window)', repo_head: execFileSync('git', ['-C', REPO, 'rev-parse', '--short', 'HEAD']).toString().trim(), tz: 'Europe/Oslo' };
+  const header = { browser: 'Chromium ' + browser.version(), playwright_core: require(path.join(path.dirname(require.resolve(process.env.PWCORE)), 'package.json')).version, client: PATCH ? 'PATCHED via route interception (PRE-FLIGHT, not served): ' + PATCH : 'served order_show.js (the dev window)', driver_checkout_head: execFileSync('git', ['-C', REPO, 'rev-parse', '--short', 'HEAD']).toString().trim(), tz: 'Europe/Oslo' };
   console.log(JSON.stringify({ header }));
   const results = [];
   for (const width of WIDTHS) {
     const ctx = await browser.newContext({ ignoreHTTPSErrors: true, viewport: { width, height: 900 }, timezoneId: 'Europe/Oslo', locale: 'nb-NO' });
     const login = await ctx.request.post('https://pe-api.test/login', { form: { login: 'henning', passwd: process.env.LIVE_PASSWD, logindomain: 'default' } });
     if (login.status() !== 200) { console.error('login ' + login.status()); process.exit(2); }
+    if (!header.served_page_inlines) {
+      // What the SERVER hands out, not what this checkout holds: the page inlines order_show.js, so look for it there.
+      const html = await (await ctx.request.get('https://pe-api.test/booking/view/hospitality-orders/' + ORDERS[0])).text();
+      const mine = fs.readFileSync(path.join(REPO, JS_REL), 'utf8');
+      const base = execFileSync('git', ['-C', REPO, 'show', `${BASE_SHA}:${JS_REL}`]).toString();
+      header.served_page_inlines = html.includes(mine) ? "this checkout's order_show.js (the fix)" : html.includes(base) ? `the BASE order_show.js (${BASE_SHA})` : "NEITHER this checkout's file NOR the base file";
+      console.log(JSON.stringify({ served_page_inlines: header.served_page_inlines }));
+      const want = PATCH || EXPECT === 'base' ? 'the BASE' : "this checkout's";   // with --patch the served file is the base one and the route swaps it
+      if (!header.served_page_inlines.startsWith(want)) {
+        console.error(`NOT RUNNING: the served page inlines ${header.served_page_inlines}, this run (${PATCH ? '--patch' : '--expect ' + EXPECT}) needs ${want} file. ${PATCH || EXPECT === 'base' ? '' : 'Ask pe-ceo to serve the commit first.'}`);
+        process.exit(2);
+      }
+    }
     for (const id of ORDERS) for (const arm of ARMS) {
       let r;
       try { r = await runArm(browser, ctx, width, id, arm); } catch (e) { r = { width, order: id, arm, row: rowOf(id, arm), verdict: 'FAIL', problems: ['driver error: ' + e.message] }; }

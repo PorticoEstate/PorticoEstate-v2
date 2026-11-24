@@ -594,6 +594,12 @@
 
 			if (fieldType === 'datetime')
 			{
+				// The serving time (and the application its date belongs to) goes with a save only
+				// when the officer chose a time. Nothing chosen is not «clear it»: the time list can
+				// hold no slot for the stored time (no date lists the location, several dates, a
+				// stored time off the date's grid), and it then reads as the empty placeholder.
+				if (!el.dataset.timeTouched) return;
+
 				var dateEl = el.querySelector('[data-edit-date]');
 				var timeEl = el.querySelector('[data-edit-time]');
 				newValue = timeEl.value || null;
@@ -620,10 +626,29 @@
 		return payload;
 	}
 
+	// True when the officer picked a date and has not chosen a time for it: the save is then
+	// refused, because a date alone is never sent and the officer would believe it was saved.
+	function datePickedWithoutTime()
+	{
+		var lacking = false;
+		root.querySelectorAll('[data-edit-field]').forEach(function (el)
+		{
+			if (el.dataset.fieldType !== 'datetime') return;
+			if (el.dataset.dateTouched && !el.dataset.timeTouched) lacking = true;
+		});
+		return lacking;
+	}
+
 	root.addEventListener('click', function (e)
 	{
 		var btn = e.target.closest('#save-all-changes');
 		if (!btn) return;
+
+		if (datePickedWithoutTime())
+		{
+			showToast(lang('selectTime'), 'warning');
+			return;
+		}
 
 		var detailPayload = collectDetailChanges();
 		var hasDetailChanges = Object.keys(detailPayload).length > 0;
@@ -782,9 +807,21 @@
 				populateEditTimeSlots(timeEl, 0, currentValue);
 			}
 
+			// A new date rebuilds the time list with nothing chosen from it yet: the time mark goes,
+			// and the date mark says a time is now owed (datePickedWithoutTime).
 			dateEl.addEventListener('change', function ()
 			{
+				delete wrapper.dataset.timeTouched;
+				if (this.value === '') delete wrapper.dataset.dateTouched;
+				else wrapper.dataset.dateTouched = '1';
 				populateEditTimeSlots(timeEl, this.value, currentValue);
+			});
+
+			// Only the officer's own choice in the time list counts; the slot preselected for the
+			// stored time does not.
+			timeEl.addEventListener('change', function ()
+			{
+				wrapper.dataset.timeTouched = '1';
 			});
 		});
 	}

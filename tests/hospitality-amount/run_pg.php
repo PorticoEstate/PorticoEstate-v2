@@ -3,7 +3,8 @@
 /**
  * The catering write paths against a REAL PostgreSQL (§49596): one transaction per applicant create/update (lane 10),
  * nothing told before the commit (lane 13), the real numeric(10,2) columns (lanes 1, 2, 8, 11), and billing's own
- * arithmetic through numeric(10,2) next to the guard's (lane 14).
+ * arithmetic through numeric(10,2) next to the guard's (lane 14), and the bound itself on a real numeric(10,2) column:
+ * an order AT it is stored, one øre over it is SQLSTATE 22003 and refused by the guard (lane 14b).
  *
  *   HD_PG_DSN='pgsql:host=127.0.0.1;port=5435;dbname=postgres' HD_PG_USER=postgres HD_PG_PASS=... \
  *       php tests/hospitality-amount/run_pg.php
@@ -524,6 +525,60 @@ function hd_run(string $root, Db $db, PDO $peer, string $scratch): int
     foreach (['lane 4, one unit more' => [['640000', '125.00', 9]], 'lane 8, C6' => [['799999', '125.00', 9], ['280898', '356.00', 9]]] as $label => $l) {
         $same("lane 14 {$label}: bb_payment.amount cannot hold what billing would write", $billGross($l), null);
         $same("lane 14 {$label}: ...and the guard refuses it", $haveClass ? ($cls::refusal($asLines($l), $asLines($l), [], $percents)['code'] ?? null) : 'no class', 'order_total_too_large');
+    }
+
+    // =================================================================================================================
+    // Lane 14b: the bound ITSELF, on a real numeric(10,2) column (§49596). Lane 14 shows the guard's arithmetic is
+    // billing's and CASTs the one-unit-over sum through numeric(10,2) (22003); lane 3 stores a single LINE at the bound.
+    // Nothing INSERTed an order's GROSS total (net + VAT) into a column: the at-bound gross was never stored, and the
+    // over-bound one never met a column's SQLSTATE. (A source mutant of MAX_CENTS was already red without this lane; what
+    // this lane adds is the column's side of the pair, which no source mutant reaches.)
+    // Each order below is judged by HospitalityOrderAmount itself; its gross is then INSERTed the way billing binds money
+    // (the float sum of the lines' stored amount + tax, through a prepared statement) into a numeric(10,2) column - the
+    // type of bb_payment.amount (information_schema, test database: numeric 10,2) - and read back on the second connection.
+    //   AT the bound (99,999,999.99):   stored, read back as the guard's value, and the guard lets it through.
+    //   one øre OVER (100,000,000.00):  SQLSTATE 22003, nothing stored, and the guard refuses it (order_total_too_large).
+    // The pair is its own positive control: the same statement on the same column stores one and refuses the other.
+    // Not modelled: add_payment writes the sum as a quoted literal (Db::validate_insert), not a bound parameter; the
+    // column's range check is the same for both, so the guard's bound is what is pinned here, not billing's quoting.
+    // =================================================================================================================
+    $db->exec('CREATE TABLE bb_payment (id serial PRIMARY KEY, amount numeric(10,2) NOT NULL)'); // stand-in: the money column only
+    $billSum = static function (array $lines) use ($billLine): float {
+        $sum = 0.0;
+        foreach ($lines as [$q, $p, $code]) {
+            [[$amount, $tax]] = $billLine($q, $p, $code);
+            $sum += (float)$amount + (float)$tax;           // sopurchase_order: (float)amount + (float)tax, summed over the lines
+        }
+        return $sum;
+    };
+    $payment = $db->prepare('INSERT INTO bb_payment (amount) VALUES (:amount) RETURNING id');
+    foreach ([
+        // label => [lines (quantity, unit price, tax code), the guard's gross in øre, what the column stores (null: refuses)]
+        'AT the bound, one line (1 × 79,999,999.99, 25 %)' => [[['1', '79999999.99', 9]], 9999999999, '99999999.99'],
+        'AT the bound, two lines (40,000,000.00 + 39,999,999.99, both 25 %)' => [[['1', '40000000.00', 9], ['1', '39999999.99', 9]], 9999999999, '99999999.99'],
+        'one øre OVER, one line (640,000 × 125.00, 25 %)' => [[['640000', '125.00', 9]], 10000000000, null],
+        'one øre OVER, two lines (2 × 40,000,000.00, 25 %)' => [[['1', '40000000.00', 9], ['1', '40000000.00', 9]], 10000000000, null],
+    ] as $label => [$l, $oreGross, $stored]) {
+        $guardGross = $haveClass ? $cls::gross($asLines($l), $percents) : null;
+        $refusal = $haveClass ? ($cls::refusal($asLines($l), $asLines($l), [], $percents)['code'] ?? null) : 'no class';
+        $rows = $count('bb_payment');
+        $sqlstate = null;
+        $readBack = null;
+        try {
+            $payment->execute([':amount' => $billSum($l)]);
+            $readBack = (string)hd_select($peer, 'SELECT amount FROM bb_payment WHERE id = ' . (int)$payment->fetchColumn())->fetchColumn();
+        } catch (\PDOException $e) {
+            $sqlstate = (string)($e->errorInfo[0] ?? $e->getCode());
+        }
+        $same("lane 14b {$label}: the guard's gross is {$oreGross} øre", $guardGross, $oreGross);
+        if ($stored !== null) {
+            $same("lane 14b {$label}: INSERTed through PDO as billing binds it -> stored, and read back as {$stored}", [$sqlstate, $readBack], [null, $stored]);
+            $same("lane 14b {$label}: ...the read-back is the guard's value", $readBack === null ? null : $toOre($readBack), $guardGross);
+            $same("lane 14b {$label}: ...the guard lets the order through", $refusal, null);
+        } else {
+            $same("lane 14b {$label}: INSERTed through PDO as billing binds it -> SQLSTATE 22003 (numeric field overflow), nothing stored", [$sqlstate, $count('bb_payment') - $rows], ['22003', 0]);
+            $same("lane 14b {$label}: ...and the guard refuses the same order", $refusal, 'order_total_too_large');
+        }
     }
 
     if (getenv('HD_SHOW_LOG')) {

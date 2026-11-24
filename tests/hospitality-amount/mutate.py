@@ -85,6 +85,8 @@ MUTANTS = [
      [(HOA, "public const MAX_CENTS = 9999999999;", "public const MAX_CENTS = 10000000000;")]),
     ("A11", "the effective price is the BASE price, not the override (lane 6)",
      [(ART, "'effective_price' => $article['override_price'] ?? $article['base_price'],", "'effective_price' => $article['base_price'],")]),
+    ("A12", "the bound is one øre too LOW (99,999,999.99, which numeric(10,2) stores, is refused: lane 14b's at-bound order)",
+     [(HOA, "public const MAX_CENTS = 9999999999;", "public const MAX_CENTS = 9999999998;")]),
     # --- the applicant's controller ---
     ("C1", "createOrder judges nothing",
      [(C, "$amountRefusal = HospitalityOrderAmount::refusal($resolvedLines, $resolvedLines, [], $this->articleRepo->getTaxPercentByCode());", "$amountRefusal = null;")]),

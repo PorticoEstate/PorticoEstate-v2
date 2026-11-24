@@ -190,8 +190,14 @@ const quarters = (from, to) => {
         check('LV4/shown', 'the order is on the application\'s Bestillinger tab', /Fana kulturhus mat og drikke/.test(tab) && /Anretning/.test(tab), tab.replace(/\s+/g, ' ').slice(0, 160));
         await shots(page, 'lv4-app85106-order-saved');
         const id = body.id ?? (body.order && body.order.id);
-        console.log(`ORDER ${id} created on application 85106.`);
-        console.log(`REVERT: DELETE FROM bb_hospitality_order WHERE id=${id} AND application_id=85106;   -- read back: SELECT count(*) FROM bb_hospitality_order WHERE id=${id};  (expect 0)`);
+        check('LV4/id', 'the 201 body carries the new order\'s id', Number.isInteger(Number(id)) && Number(id) > 0, JSON.stringify(body).slice(0, 160));
+        if (Number(id) > 0) {
+            console.log(`ORDER ${id} created on application 85106. Revert it (psql via docker exec), CHILD ROWS FIRST: three tables hold foreign keys to the order.`);
+            console.log(`REVERT:    DELETE FROM bb_hospitality_order_changelog WHERE order_id=${id}; DELETE FROM bb_hospitality_order_document WHERE owner_id=${id}; DELETE FROM bb_hospitality_order_line WHERE order_id=${id}; DELETE FROM bb_hospitality_order WHERE id=${id} AND application_id=85106;`);
+            console.log(`READ-BACK: SELECT (SELECT count(*) FROM bb_hospitality_order WHERE id=${id}) AS orders, (SELECT count(*) FROM bb_hospitality_order_changelog WHERE order_id=${id}) AS changelog, (SELECT count(*) FROM bb_hospitality_order_document WHERE owner_id=${id}) AS documents, (SELECT count(*) FROM bb_hospitality_order_line WHERE order_id=${id}) AS lines;   -- expect 0 0 0 0`);
+        } else {
+            console.log('ORDER id unknown. Find it: SELECT id, created FROM bb_hospitality_order WHERE application_id=85106 AND hospitality_id=6 ORDER BY id DESC LIMIT 3;  then revert as above.');
+        }
         await ctx.close();
     });
     else console.log('SKIP LV4 (no --save: nothing is written)');

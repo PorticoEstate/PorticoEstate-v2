@@ -1,0 +1,175 @@
+#!/usr/bin/env python3
+"""
+Mutation check for run.mts (the admin «Opprett bestilling» dialog, task 49612).
+
+One deliberate defect at a time is applied to a TEMP COPY of the files the harness reads (never to the tree) and the harness
+is pointed at it with HM_ROOT; it must go red for each, on the rows the defect is about. The baseline on the same copy must
+be green first, and every replacement must match exactly once. A final arm runs the harness on the tree as it was on base
+(7891c67b6) and prints which rows are FIX rows (red there) and which are controls (green there).
+
+Usage:  LUXON_DIR=<path to luxon> python3 tests/hospitality-admin-order-modal/mutate.py [--no-base]
+
+LUXON_DIR is needed by row L7 (the citizen client's own rule, run through luxon, is the oracle); without it the baseline
+is red and the script says so rather than skipping the row.
+"""
+import os
+import re
+import shutil
+import subprocess
+import sys
+import tempfile
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+ROOT = os.path.abspath(os.path.join(HERE, "..", ".."))
+NODE = os.environ.get("NODE_BIN", "node")
+HARNESS = os.path.join(HERE, "run.mts")
+BASE = os.environ.get("HM_BASE_SHA", "7891c67b6")
+
+BOOKING = "src/modules/booking"
+MODAL = f"{BOOKING}/html/base/components/hospitality_order_modal/hospitality_order_modal.js"
+APP_JS = f"{BOOKING}/html/base/application/show/application_show.js"
+HOSP_JS = f"{BOOKING}/html/base/hospitality/show/hospitality_show.js"
+APP_TWIG = f"{BOOKING}/html/base/_shared/application_show_body.twig"
+HOSP_TWIG = f"{BOOKING}/html/base/hospitality/show/hospitality_show.twig"
+LANG_NN = f"{BOOKING}/setup/phpgw_nn.lang"
+FILES = [
+    MODAL,
+    f"{BOOKING}/html/base/components/search_select/search_select.js",
+    APP_TWIG, HOSP_TWIG, APP_JS, HOSP_JS,
+    f"{BOOKING}/repositories/HospitalityRepository.php",
+    f"{BOOKING}/setup/phpgw_no.lang", LANG_NN, f"{BOOKING}/setup/phpgw_en.lang",
+    "src/modules/bookingfrontend/client/src/service/api/api-utils.ts",
+    "src/modules/bookingfrontend/client/src/service/utils/business-hours.ts",
+    "src/modules/bookingfrontend/client/src/components/checkout/hospitality/hospitality-order-modal.tsx",
+]
+
+# (id, file, what, old, new, the row groups that MUST go red)
+MUTANTS = [
+    ("M1", MODAL, "the main arm is dropped from the location rule (the app filter alone, as on base)",
+     "return loc.location_type === 'main' || !!_appResourceIds[loc.id];", "return !!_appResourceIds[loc.id];", {"L2"}),
+    ("M2", MODAL, "the application filter is dropped from the location rule (every delivery location offered)",
+     "return loc.location_type === 'main' || !!_appResourceIds[loc.id];", "return true;", {"L3"}),
+    ("M3", MODAL, "the hours bound is dropped (the on-site list is the application's own range)",
+     "return slots.filter(function (slot) {\n\t\t\t\treturn isWithinBusinessHours(slot, kitchen, hours.seasons, hours.closeWhenNoSeasons);\n\t\t\t});",
+     "return slots;", {"L5", "L7"}),
+    ("M4", MODAL, "SITE 1 only (the dates arrive after the locations): the filtered list is not set, the full one is",
+     "locSelector.setItems(_allLocations.filter(isOfferedLocation));", "locSelector.setItems(_allLocations);", {"L3"}),
+    ("M5", MODAL, "SITE 2 only (the locations arrive after the dates): the response is not filtered",
+     "locations = locations.filter(isOfferedLocation);", "", {"L3"}),
+    ("M6", MODAL, "the Lokale picker's empty text goes back to «Ingen bestillinger»",
+     "emptyText: lang('noDeliveryLocations'),", "emptyText: lang('noOrders'),", {"L4"}),
+    ("M7", MODAL, "every chosen location counts as the kitchen room (a remote room is bounded too)",
+     "_selectedLocIsMain = !!item && item.location_type === 'main';", "_selectedLocIsMain = true;", {"L6"}),
+    ("M8", MODAL, "a hospitality whose hours cannot be judged offers every time (fails open)",
+     "if (!_currentHospMainResourceId || !_currentHospBuildingId || !seasonsBaseUrl || !serverSettingsUrl) return [];",
+     "if (!_currentHospMainResourceId || !_currentHospBuildingId || !seasonsBaseUrl || !serverSettingsUrl) return slots;", {"L5"}),
+    ("M9", MODAL, "Sunday is weekday 0 instead of 7 (the ISO weekday luxon gives the citizen rule)",
+     "var weekday = date.getDay() === 0 ? 7 : date.getDay();", "var weekday = date.getDay();", {"L7"}),
+    ("M10", MODAL, "the boundary's weekday is not compared (every boundary applies every day)",
+     "if (b.wday === weekday) dayBoundaries.push(b);", "dayBoundaries.push(b);", {"L7"}),
+    ("M11", MODAL, "an inactive season counts",
+     "return season.active && at >=", "return at >=", {"L7"}),
+    ("M12", MODAL, "a season of ANOTHER resource counts (the resource match is dropped)",
+     "var hasMatchingResources = resourceIds.length === 0 ||", "var hasMatchingResources = true ||", {"L7"}),
+    ("M13", MODAL, "a season's end is not honoured (the season that ends mid-day Saturday stays open)",
+     "at <= Date.parse(season.to_)", "true", {"L7"}),
+    ("M14", MODAL, "a failed or malformed seasons answer reads as «no seasons» (fails open)",
+     "if (!Array.isArray(res[0])) throw new Error('seasons');", "if (!Array.isArray(res[0])) res[0] = [];", {"L5"}),
+    ("M15", MODAL, "the chosen-room flag survives a change of hospitality (a stale «main» bounds the new one)",
+     "_selectedLocId = null;\n\t\t\t\t\t\t_selectedLocIsMain = false;", "_selectedLocId = null;", {"L6"}),
+    ("M16", MODAL, "a late answer re-fills the list whatever the user did meanwhile",
+     "if (arrived && waiting) populateTimeSlots(dateSelect.value);", "if (arrived) populateTimeSlots(dateSelect.value);", {"L5"}),
+    ("M17", MODAL, "the hours are fetched on open instead of on the first need",
+     "var _awaitingHours = false;     // the time list is empty until the hours arrive",
+     "var _awaitingHours = false;     // the time list is empty until the hours arrive\n\t\tsetTimeout(function () { if (seasonsBaseUrl && hospBuildingId) requestKitchenHours(hospBuildingId); }, 0);", {"L5"}),
+    ("M18", APP_TWIG, "the application page loses the new text's attribute",
+     "\t data-lang-no-delivery-locations=\"{{ lang('booking.no_delivery_locations') }}\"\n", "", {"L4", "S1"}),
+    ("M19", HOSP_TWIG, "the hospitality page loses the new text's attribute",
+     "\t data-lang-no-delivery-locations=\"{{ lang('booking.no_delivery_locations') }}\"\n", "", {"L4", "S2"}),
+    ("M20", LANG_NN, "the nn row of the new key is missing",
+     "\nno_delivery_locations\tbooking\tnn\tIngen tilgjengelege lokale for denne bevertninga", "", {"S3"}),
+    ("M21", HOSP_JS, "the hospitality page stops passing the kitchen's building to the dialog",
+     "hospBuildingId: hospitalityData ? hospitalityData.resource_building_id : null,", "", {"S5"}),
+    ("M22", APP_JS, "the application page stops passing the hours' URLs to the dialog",
+     "seasonsBaseUrl: seasonsBaseUrl,\n\t\t\tserverSettingsUrl: serverSettingsUrl,", "", {"S5"}),
+]
+
+
+def run(tree):
+    env = dict(os.environ)
+    env["HM_ROOT"] = tree
+    p = subprocess.run([NODE, HARNESS], env=env, capture_output=True, text=True)
+    out = (p.stdout + p.stderr).strip().splitlines()
+    fails = [l for l in out if l.startswith("FAIL")]
+    groups = set()
+    for l in fails:
+        m = re.match(r"FAIL ([LS]\d+)", l)
+        if m:
+            groups.add(m.group(1))
+    return p.returncode, (out[-1] if out else ""), fails, groups
+
+
+def fresh_tree():
+    tree = tempfile.mkdtemp(prefix="hospitality-admin-order-modal-mut-")
+    for rel in FILES:
+        dst = os.path.join(tree, rel)
+        os.makedirs(os.path.dirname(dst), exist_ok=True)
+        shutil.copy(os.path.join(ROOT, rel), dst)
+    return tree
+
+
+def main():
+    bad = 0
+    tree = fresh_tree()
+    rc, last, fails, groups = run(tree)
+    print(f"BASELINE (current files, unmutated): rc={rc}  {last}")
+    if rc != 0:
+        print("  the baseline is not green, so no mutant result below means anything:")
+        for l in fails[:8]:
+            print("   ", l[:160])
+        shutil.rmtree(tree)
+        sys.exit(1)
+    shutil.rmtree(tree)
+
+    for mid, rel, what, old, new, want in MUTANTS:
+        tree = fresh_tree()
+        path = os.path.join(tree, rel)
+        text = open(path, encoding="utf-8").read()
+        if text.count(old) != 1:
+            print(f"{mid}  REPLACEMENT DID NOT MATCH ONCE ({text.count(old)}x)  {what}")
+            bad += 1
+            shutil.rmtree(tree)
+            continue
+        open(path, "w", encoding="utf-8").write(text.replace(old, new))
+        rc, last, fails, groups = run(tree)
+        missed = want - groups
+        verdict = "RED as expected" if rc != 0 and not missed else ("NOT RED" if rc == 0 else f"red, but NOT on {sorted(missed)}")
+        if rc == 0 or missed:
+            bad += 1
+        print(f"{mid}  rc={rc}  {verdict}  red rows: {sorted(groups)}  — {what}")
+        shutil.rmtree(tree)
+
+    if "--no-base" not in sys.argv:
+        tree = tempfile.mkdtemp(prefix="hospitality-admin-order-modal-base-")
+        ok = True
+        for rel in FILES:
+            r = subprocess.run(["git", "-C", ROOT, "show", f"{BASE}:{rel}"], capture_output=True)
+            if r.returncode != 0:
+                print(f"BASE {BASE}: cannot read {rel}")
+                ok = False
+                break
+            dst = os.path.join(tree, rel)
+            os.makedirs(os.path.dirname(dst), exist_ok=True)
+            open(dst, "wb").write(r.stdout)
+        if ok:
+            rc, last, fails, groups = run(tree)
+            print(f"BASE {BASE}: rc={rc}  {last}")
+            print(f"  FIX rows (red on base): {sorted(groups)}")
+        shutil.rmtree(tree)
+
+    print("ALL MUTANTS RED" if bad == 0 else f"{bad} PROBLEM(S)")
+    sys.exit(1 if bad else 0)
+
+
+if __name__ == "__main__":
+    main()

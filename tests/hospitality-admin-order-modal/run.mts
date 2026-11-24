@@ -24,6 +24,13 @@
  *   L7  PARITY: over every quarter hour of a week, the dialog's on-site list equals what the citizen client's own
  *       isWithinBusinessHours (business-hours.ts, run through luxon) says; the dialog repeats that rule in plain JS
  *   L8  Lagre posts the main room with the chosen time
+ *   L9  a change of hospitality drops the previous one's Lokale list (Opus final Q2, forum/pe-general/49764): the new one's
+ *       own list is fetched and offered, whether the two kitchens differ or share one main room with on-site 0 → 1 (h4 → h5
+ *       on test); an answer still on its way for the previous one when the officer switches is not kept as the new one's
+ *       (FIX row; the row where the first list was never opened is the control: green on 775c8d0eb)
+ *   L10 an hours answer the rule cannot read (boundaries that are not a list; a null resource, season or boundary) is a failed
+ *       fetch: the application's own times, ONE translated toast, the cause logged, NO unhandled rejection (Opus final Q3b)
+ *       (FIX row). The row that proves the harness SEES an unhandled rejection is its control
  *   S*  static anchors: the twig attributes and lang rows that carry the new text, the orders list's own «Ingen
  *       bestillinger», the host pages passing the hours' sources, the citizen's rule and data sources this copies
  *
@@ -83,7 +90,20 @@ const attempt = async (id: string, scenario: () => Promise<void>) => {
 const show = (v: unknown) => JSON.stringify(v);
 
 const logError = console.error;
-console.error = (...args: unknown[]) => { if (!String(args[0]).startsWith('SearchSelect:')) logError(...args); };   // the picker logs a failed request; the row reads the outcome
+/** What the dialog itself logs (its own catch of an hours answer it cannot read): kept, for the L10 rows to read. */
+const modalLogs: string[] = [];
+console.error = (...args: unknown[]) => {
+    const head = String(args[0]);
+    if (head.startsWith('SearchSelect:')) return;   // the picker logs a failed request; the row reads the outcome
+    if (head.startsWith('HospitalityOrderModal:')) { modalLogs.push(args.map(String).join(' ')); return; }
+    logError(...args);
+};
+/**
+ * Node ends the process on an unhandled rejection, which would hide every row after it. Counted instead, so a row can say
+ * «none»; the L10 control proves this listener fires, and the last row proves no row of the harness left one behind.
+ */
+const unhandled: string[] = [];
+process.on('unhandledRejection', reason => { unhandled.push(String((reason as Error)?.message ?? reason)); });
 
 // A missing file is a failed check, never a crash: a harness that dies has not looked at anything.
 const read = (rel: string): string => {
@@ -294,6 +314,16 @@ const SEASONS = [
 type Hosp = {id: number; name: string; resource_id: number; building_id: number | null};
 const H6: Hosp = {id: 6, name: 'Fana kulturhus mat og drikke', resource_id: 482, building_id: 10};
 const H5: Hosp = {id: 5, name: 'Fana kulturhus servering', resource_id: 482, building_id: 10};
+/**
+ * The test server's pair (pe-ceo, forum/pe-tasks-sonnet/49771): «Bevertning til konferanserommet» (h4) is remote-only and
+ * «Lunsj i Spiseriet» (h5) is on-site-only, and both are served from the same main room 941. h4's delivery locations hold no
+ * main room at all; h5's hold nothing else.
+ */
+const SPISERI: Loc = {id: 941, name: 'Spiseriet', location_type: 'main'};
+const H4: Hosp = {id: 4, name: 'Bevertning til konferanserommet', resource_id: 941, building_id: 10};
+const H5_SPISERIET: Hosp = {id: 5, name: 'Lunsj i Spiseriet', resource_id: 941, building_id: 10};
+/** The hours of room 941 (building 10): Wednesday 10:00-16:00, as S1 gives room 482. */
+const SEASONS_941 = [{id: 7, ...FAR, active: 1, resources: [{id: 941}], boundaries: [bound(3, '10:00:00', '16:00:00')]}];
 
 // ---- one dialog on stub elements ------------------------------------------------------------------------------------
 type Cfg = {
@@ -309,6 +339,7 @@ type Cfg = {
     hospBuildingId?: number | null;    // hospitality page: what resource_building_id says
     holdDates?: boolean;
     holdHours?: boolean;
+    holdLocations?: number[];          // hospitality ids whose delivery-locations request stays on its way until released
 };
 
 const SEASONS_URL = '/bookingfrontend/buildings';
@@ -324,6 +355,7 @@ async function boot(cfg: Cfg) {
         '/booking/applications/85106/dates': () => cfg.dates ?? WED,
         '/booking/hospitality/6/delivery-locations': () => locations(6),
         '/booking/hospitality/5/delivery-locations': () => locations(5),
+        '/booking/hospitality/4/delivery-locations': () => locations(4),
         '/booking/hospitality/6/relevant-applications': () => [{id: 85106, status: 'NEW', contact_name: 'T46184'}],
         '/booking/hospitality/5/relevant-applications': () => [{id: 85106, status: 'NEW', contact_name: 'T46184'}],
         [`${SEASONS_URL}/10/seasons`]: () => cfg.seasons ?? SEASONS,
@@ -334,6 +366,7 @@ async function boot(cfg: Cfg) {
     const holds = new Set<string>();
     if (cfg.holdDates) holds.add('/booking/applications/85106/dates');
     if (cfg.holdHours) { holds.add(`${SEASONS_URL}/10/seasons`); holds.add(SETTINGS_URL); }
+    for (const id of cfg.holdLocations ?? []) holds.add(`/booking/hospitality/${id}/delivery-locations`);
 
     (globalThis as any).fetch = (url: string) => {
         calls.push(url);
@@ -397,8 +430,12 @@ async function boot(cfg: Cfg) {
         calls, toasts, posted,
         seasonsCalls: () => calls.filter(u => u.includes('/seasons')),
         settingsCalls: () => calls.filter(u => u.includes('server-settings')),
+        locationCalls: (hospitalityId: number) => calls.filter(u => u === `/booking/hospitality/${hospitalityId}/delivery-locations`),
+        /** The id of the room chosen in Lokale, as the hidden input Lagre reads it through; '' when none is chosen. */
+        locationValue: () => inBox('modal-order-loc-container', 'input[type="hidden"]').value,
         release: async (path: string) => { held[path]?.(); delete held[path]; holds.delete(path); await settle(); },
         releaseDates: () => run.release('/booking/applications/85106/dates'),
+        releaseLocations: (hospitalityId: number) => run.release(`/booking/hospitality/${hospitalityId}/delivery-locations`),
         releaseHours: async () => { await run.release(`${SEASONS_URL}/10/seasons`); await run.release(SETTINGS_URL); },
         /** Open the picker (focus) and read what it shows: the offered labels, or the empty text. */
         pick: async (box: string) => {
@@ -680,6 +717,129 @@ try {
     });
 
     // =================================================================================================================
+    // L9: a change of hospitality drops the previous one's Lokale list (Opus final Q2)
+    //
+    // The list is fetched on the first focus of the picker and cached for the application's dates, which push it into the
+    // picker of the hospitality chosen NOW. Kept across a switch, the new picker is handed the old one's list and never asks
+    // for its own. Only the application page has a hospitality picker, so these run in that context.
+    // =================================================================================================================
+    await attempt('L9/h4-h5', async () => {
+        // the tester's flow: the meeting room's hospitality first, then the Spiseriet's, in the same dialog
+        const t = await boot({ctx: 'app', hospitalities: [H4, H5_SPISERIET], locations: {4: [MUSIC3], 5: [SPISERI]}, dates: WED, seasons: SEASONS_941});
+        await t.chooseHospitality(H4);
+        const first = await t.locations();
+        check('L9/h4-h5/first', 'h4 (remote only) offers the booked meeting room, as it did on base', same(first.offered, [label(MUSIC3)]), show(first));
+        await t.click('modal-order-loc-container', label(MUSIC3));
+        check('L9/h4-h5/chosen', 'control: the meeting room is chosen under h4 (the hidden value Lagre reads is its id)', t.locationValue() === String(MUSIC3.id), show(t.locationValue()));
+
+        await t.chooseHospitality(H5_SPISERIET);
+        check('L9/h4-h5/cleared', 'the room chosen under h4 is gone after the switch', t.locationValue() === '', show(t.locationValue()));
+        const second = await t.locations();
+        check('L9/h4-h5/fetched', 'h5 fetches ITS OWN delivery locations (one call)', t.locationCalls(5).length === 1, show(t.locationCalls(5)));
+        check('L9/h4-h5/offered', 'h5 offers the Spiseriet (main 941, on-site under h5) and not h4\'s meeting room',
+            same(second.offered, [label(SPISERI)]) && second.empty === null, show(second));
+        await t.click('modal-order-loc-container', label(SPISERI));
+        check('L9/h4-h5/times', 'the Spiseriet chosen → the times are bounded by the kitchen\'s hours, as for any on-site order', same(t.times(), WED_KITCHEN), show(t.times()));
+
+        await t.chooseHospitality(H4);
+        const back = await t.locations();
+        check('L9/h4-h5/back', 'and back to h4: h4\'s own list again, not h5\'s', same(back.offered, [label(MUSIC3)]), show(back));
+    });
+    await attempt('L9/kitchens', async () => {
+        // two hospitalities with DIFFERENT kitchens: the first one's main room must not be offered under the second
+        const t = await boot({ctx: 'app', hospitalities: [H6, H5_SPISERIET], locations: {6: [MAIN], 5: [SPISERI, ARTIST, MUSIC3]}, dates: WED, seasons: SEASONS_941});
+        await t.chooseHospitality(H6);
+        const first = await t.locations();
+        check('L9/kitchens/first', 'the first hospitality offers its kitchen room (482)', same(first.offered, [label(MAIN)]), show(first));
+        await t.chooseHospitality(H5_SPISERIET);
+        const second = await t.locations();
+        check('L9/kitchens/fetched', 'the second hospitality fetches its own delivery locations (one call)', t.locationCalls(5).length === 1, show(t.locationCalls(5)));
+        check('L9/kitchens/offered', 'the second offers ITS kitchen room (941) and the room the application booked, and not the first one\'s kitchen',
+            same(second.offered, [label(SPISERI), label(MUSIC3)]), show(second));
+    });
+    await attempt('L9/not-opened', async () => {
+        // CONTROL (green on 775c8d0eb too, as Opus measured): nothing was cached because the first list was never opened
+        const t = await boot({ctx: 'app', hospitalities: [H4, H5_SPISERIET], locations: {4: [MUSIC3], 5: [SPISERI]}, dates: WED, seasons: SEASONS_941});
+        await t.chooseHospitality(H4);
+        await t.chooseHospitality(H5_SPISERIET);
+        const second = await t.locations();
+        check('L9/not-opened', 'control: the first list never opened → the second hospitality offers its own', same(second.offered, [label(SPISERI)]) && t.locationCalls(5).length === 1, show({second, calls: t.locationCalls(5)}));
+    });
+    await attempt('L9/in-flight', async () => {
+        // The first list is still on its way when the officer switches, and the application's dates for the second hospitality
+        // arrive after it has landed: the late answer must not become the second one's cache.
+        const t = await boot({ctx: 'app', hospitalities: [H4, H5_SPISERIET], locations: {4: [MUSIC3], 5: [SPISERI]}, dates: WED, seasons: SEASONS_941, holdLocations: [4], holdDates: true});
+        await t.chooseHospitality(H4);
+        await t.locations();                       // h4's list is requested on this focus, and held
+        await t.chooseHospitality(H5_SPISERIET);   // the officer moves on; h5's dates are requested, and held
+        await t.releaseLocations(4);               // h4's answer lands now
+        await t.releaseDates();                    // h5's dates arrive after it: the application's dates reach the picker only now
+        const second = await t.locations();
+        check('L9/in-flight/offered', 'h4\'s late answer is not h5\'s list: h5 offers the Spiseriet', same(second.offered, [label(SPISERI)]), show(second));
+        check('L9/in-flight/fetched', 'h5 fetched its own delivery locations (one call)', t.locationCalls(5).length === 1, show(t.locationCalls(5)));
+    });
+
+    // =================================================================================================================
+    // L10: an hours answer the rule cannot read is a failed fetch (Opus final Q3b)
+    //
+    // `getSeasons` cannot emit these shapes (asserted by Opus), so the rows build them on purpose: the dialog's promise is
+    // «fail open on ANY failure», and a throw inside the synchronous filter was the one failure that escaped it (0 times, no
+    // toast, an unhandled rejection from the promise chain that fills the list).
+    // =================================================================================================================
+    await attempt('L10/instrument', async () => {
+        const mark = unhandled.length;
+        Promise.reject(new Error('L10-control'));
+        await settle();
+        const seen = unhandled.slice(mark);
+        unhandled.splice(mark);   // the control's own rejection is not a leak
+        check('L10/instrument', 'control: the harness sees an unhandled rejection when one happens (so «none» in the rows below means none)', same(seen, ['L10-control']), show(seen));
+    });
+    const S1 = SEASONS[0] as any;
+    const MALFORMED: Record<string, unknown[]> = {
+        'boundaries-object': [{...S1, boundaries: {wday: 3, from_: '10:00:00', to_: '16:00:00'}}],
+        'resource-null': [{...S1, resources: [null]}],
+        'season-null': [S1, null],
+        'boundary-null': [{...S1, boundaries: [null]}],
+    };
+    for (const ctx of CONTEXTS) for (const [shape, seasons] of Object.entries(MALFORMED)) await attempt(`L10[${ctx}/${shape}]`, async () => {
+        const at = `[${ctx}/${shape}]`;
+        const mark = unhandled.length;
+        const logMark = modalLogs.length;
+        const t = await boot({ctx, locations: [MAIN, MUSIC3], dates: WED, seasons});
+        await t.start('dates-first');
+        await t.chooseLocation(MAIN);
+        await settle();
+        check(`L10${at}/times`, 'the application\'s own times, in a list that can be chosen from (fail open)', same(t.times(), WED_ALL) && t.timeSel().disabled === false, show({times: t.times().length, disabled: t.timeSel().disabled}));
+        check(`L10${at}/toast`, 'ONE danger toast, in the translated words',
+            t.toasts.length === 1 && t.toasts[0][1] === 'danger' && t.toasts[0][0] === NO_HOURS, show({toasts: t.toasts, expected: NO_HOURS}));
+        check(`L10${at}/unhandled`, 'no unhandled rejection', unhandled.length === mark, show(unhandled.slice(mark)));
+        const logs = modalLogs.slice(logMark);
+        check(`L10${at}/logged`, 'the cause is logged once, for the developer, with the error named', logs.length === 1 && /TypeError/.test(logs[0]), show(logs));
+        await t.chooseLocation(MUSIC3);
+        await t.chooseLocation(MAIN);
+        check(`L10${at}/kept`, 'choosing the kitchen room again neither asks nor says it again, and the times are still the application\'s own',
+            t.seasonsCalls().length === 1 && t.toasts.length === 1 && same(t.times(), WED_ALL) && unhandled.length === mark && modalLogs.length === logMark + 1,
+            show({calls: t.seasonsCalls().length, toasts: t.toasts.length, times: t.times().length, unhandled: unhandled.slice(mark), logs: modalLogs.length - logMark}));
+    });
+    await attempt('L10/later-date', async () => {
+        // the malformed element lies in a season that only covers THURSDAY: Wednesday is bounded as usual, and the throw happens later,
+        // inside the date picker's change handler (not in the promise chain that filled the first list)
+        const mark = unhandled.length;
+        const thursday = {id: 9, from_: '2026-12-03T00:00:00+01:00', to_: '2026-12-03T23:59:59+01:00', active: 1, resources: [{id: 482}], boundaries: {wday: 4}};
+        const t = await boot({ctx: 'app', locations: [MAIN], dates: [date('2026-12-02', '08:00', '20:00', 1), date('2026-12-03', '08:00', '20:00', 2)], seasons: [S1, thursday]});
+        await t.start('dates-first');
+        await t.chooseLocation(MAIN);
+        await t.pickDate(0);
+        check('L10/later-date/first', 'Wednesday, before the malformed season applies: bounded by the kitchen\'s hours, and nothing said', same(t.times(), WED_KITCHEN) && t.toasts.length === 0, show({times: t.times().length, toasts: t.toasts.length}));
+        await t.pickDate(1);
+        check('L10/later-date/second', 'Thursday, where it applies: the application\'s own times and ONE translated toast, nothing thrown out of the date picker',
+            same(t.times(), WED_ALL) && t.toasts.length === 1 && t.toasts[0][0] === NO_HOURS && t.toasts[0][1] === 'danger', show({times: t.times().length, toasts: t.toasts}));
+        await t.pickDate(0);
+        check('L10/later-date/kept', 'back to Wednesday: the answer is kept (the application\'s own times, no second toast)', same(t.times(), WED_ALL) && t.toasts.length === 1, show({times: t.times().length, toasts: t.toasts.length}));
+        check('L10/later-date/unhandled', 'no unhandled rejection', unhandled.length === mark, show(unhandled.slice(mark)));
+    });
+
+    // =================================================================================================================
     // S: static anchors
     // =================================================================================================================
     const appTwig = read(FILES.appTwig);
@@ -732,6 +892,8 @@ try {
         check('S9', 'the citizen dialog still bounds an on-site order with isWithinBusinessHours over the kitchen\'s seasons and close_calendar_without_season',
             /isWithinBusinessHours\(/.test(cm) && /close_calendar_without_season/.test(cm) && /String\(hospitality\.resource_id\)/.test(cm));
     }
+    // Every row above ran with the unhandled-rejection counter on: none may have left one behind (the L10 control proves it can fire).
+    check('L10/no-leak', 'no row of this harness left an unhandled rejection behind', unhandled.length === 0, show(unhandled));
 } catch (error) {
     console.error('the harness itself crashed:', error);
     process.exit(2);

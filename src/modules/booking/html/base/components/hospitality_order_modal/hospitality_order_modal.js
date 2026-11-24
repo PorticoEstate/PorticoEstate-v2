@@ -229,6 +229,18 @@ var HospitalityOrderModal = (function () {
 		}
 
 		/**
+		 * The kitchen's opening hours of this building cannot be used, because they could not be fetched or because the
+		 * answer is not shaped as the rule reads it. The bound is a convenience with no server rule behind it, and it must
+		 * never stop a case officer from ordering: the times stay the application's own, as without the bound. The failure
+		 * is said out loud, once, in words the officer can use (not the browser's or the server's message); the answer is
+		 * kept, so the same dialog neither asks again nor says it again.
+		 */
+		function dropKitchenHours(key) {
+			_hoursByBuilding[key] = false;
+			opts.showToast(lang('openingHoursUnavailable'), 'danger');
+		}
+
+		/**
 		 * Opening hours of the building that owns the KITCHEN resource: its seasons, and whether a building
 		 * without seasons is closed. The same two sources the citizen dialog reads (useBuildingSeasons and
 		 * useServerSettings in bookingfrontend/client), both public GETs. Fetched on the first need, once
@@ -252,12 +264,7 @@ var HospitalityOrderModal = (function () {
 					closeWhenNoSeasons: !!(settings && settings.close_calendar_without_season)
 				};
 			}).catch(function () {
-				// The bound is a convenience with no server rule behind it, and it must never stop a case officer from
-				// ordering: hours that cannot be fetched leave the times as the application's own, as without the bound.
-				// The failure is said out loud, once, in words the officer can use (not the browser's or the server's
-				// message); the answer is kept, so the same dialog does not ask again.
-				_hoursByBuilding[key] = false;
-				opts.showToast(lang('openingHoursUnavailable'), 'danger');
+				dropKitchenHours(key);
 			}).then(function () {
 				delete _hoursRequested[key];
 				var waiting = _awaitingHours;
@@ -270,21 +277,30 @@ var HospitalityOrderModal = (function () {
 		/**
 		 * The slots that fall inside the kitchen's opening hours, as the citizen dialog bounds an on-site
 		 * order; null while the hours are on their way. Where the hours cannot be judged (no kitchen resource,
-		 * no building whose seasons define them, no place to read them from, or a fetch that failed) there is
-		 * no bound: the application's own times, as without it.
+		 * no building whose seasons define them, no place to read them from, a fetch that failed, or an answer the
+		 * rule cannot read) there is no bound: the application's own times, as without it.
 		 */
 		function slotsWithinKitchenHours(slots) {
 			if (!_currentHospMainResourceId || !_currentHospBuildingId || !seasonsBaseUrl || !serverSettingsUrl) return slots;
-			var hours = _hoursByBuilding[String(_currentHospBuildingId)];
+			var key = String(_currentHospBuildingId);
+			var hours = _hoursByBuilding[key];
 			if (hours === undefined) {
 				requestKitchenHours(_currentHospBuildingId);
 				return null;
 			}
 			if (hours === false) return slots;
 			var kitchen = [String(_currentHospMainResourceId)];
-			return slots.filter(function (slot) {
-				return isWithinBusinessHours(slot, kitchen, hours.seasons, hours.closeWhenNoSeasons);
-			});
+			try {
+				return slots.filter(function (slot) {
+					return isWithinBusinessHours(slot, kitchen, hours.seasons, hours.closeWhenNoSeasons);
+				});
+			} catch (error) {
+				// A list whose elements are not what the rule reads (a season, a resource or a boundary that is null, boundaries
+				// that are not a list) throws here, in the middle of filling the time list: a failed fetch in all but name.
+				console.error('HospitalityOrderModal: the kitchen\'s opening hours could not be applied', error);
+				dropKitchenHours(key);
+				return slots;
+			}
 		}
 
 		function populateTimeSlots(dateIdx) {
@@ -396,6 +412,7 @@ var HospitalityOrderModal = (function () {
 
 		// ── Location selector ──
 		function initLocationSelector(locationsUrl) {
+			var picker = null;
 			var container = document.getElementById('modal-order-loc-container');
 			// Clear any previous selector state
 			var hiddenInput = container.querySelector('input[type="hidden"]');
@@ -403,7 +420,7 @@ var HospitalityOrderModal = (function () {
 			var textInput = container.querySelector('.search-select__input');
 			if (textInput) textInput.value = '';
 
-			return new SearchSelect(container, {
+			picker = new SearchSelect(container, {
 				apiUrl: locationsUrl,
 				idField: 'id',
 				labelField: '_label',
@@ -412,7 +429,9 @@ var HospitalityOrderModal = (function () {
 						loc._label = loc.name + ' (' + loc.location_type + ')';
 						return loc;
 					});
-					_allLocations = locations.slice();
+					// Only the current picker's answer is the cache: one made for the previous hospitality, whose request was
+					// still on its way when the officer switched, must not put that hospitality's list back.
+					if (picker === locSelector) _allLocations = locations.slice();
 					// Filter to the kitchen's own room and the resources present in the selected application
 					if (_appResourceIds) {
 						locations = locations.filter(isOfferedLocation);
@@ -427,6 +446,7 @@ var HospitalityOrderModal = (function () {
 					filterAndPopulateDates();
 				}
 			});
+			return picker;
 		}
 
 		var locSelector = null;
@@ -453,6 +473,10 @@ var HospitalityOrderModal = (function () {
 						// Reset and reinitialize location selector for this hospitality
 						_selectedLocId = null;
 						_selectedLocIsMain = false;
+						// The cached list is the previous hospitality's. Kept, the application's dates would put it into the new
+						// picker (loadAppDates, below), which then never fetches its own: where the kitchens differ, or the
+						// on-site and remote settings do, the officer is offered rooms that are not this hospitality's.
+						_allLocations = null;
 						_allAppDates = [];
 						_appDates = [];
 						dateSelect.innerHTML = '<option value="">' + esc(lang('selectDate')) + '</option>';

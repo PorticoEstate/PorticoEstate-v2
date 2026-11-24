@@ -10,6 +10,7 @@ be green first, and every replacement must match exactly once. A final arm runs 
 (7891c67b6) and prints which rows are FIX rows (red there) and which are controls (green there).
 
 Usage:  LUXON_DIR=<path to luxon> python3 tests/hospitality-admin-order-modal/mutate.py [--no-base]
+        HM_BASE_SHA=775c8d0eb ...   runs the last arm against that commit instead (the parent of the 49771 fix-up: the L9/L10 rows are red there)
 
 LUXON_DIR is needed by row L7 (the citizen client's own rule, run through luxon, is the oracle); without it the baseline
 is red and the script says so rather than skipping the row.
@@ -52,7 +53,7 @@ MUTANTS = [
     ("M2", MODAL, "the application filter is dropped from the location rule (every delivery location offered)",
      "return loc.location_type === 'main' || !!_appResourceIds[loc.id];", "return true;", {"L3"}),
     ("M3", MODAL, "the hours bound is dropped (the on-site list is the application's own range)",
-     "return slots.filter(function (slot) {\n\t\t\t\treturn isWithinBusinessHours(slot, kitchen, hours.seasons, hours.closeWhenNoSeasons);\n\t\t\t});",
+     "return slots.filter(function (slot) {\n\t\t\t\t\treturn isWithinBusinessHours(slot, kitchen, hours.seasons, hours.closeWhenNoSeasons);\n\t\t\t\t});",
      "return slots;", {"L5", "L7"}),
     ("M4", MODAL, "SITE 1 only (the dates arrive after the locations): the filtered list is not set, the full one is",
      "locSelector.setItems(_allLocations.filter(isOfferedLocation));", "locSelector.setItems(_allLocations);", {"L3"}),
@@ -102,15 +103,26 @@ MUTANTS = [
      "hospBuildingId: hospitalityData ? hospitalityData.resource_building_id : null,", "", {"S5"}),
     ("M22", APP_JS, "the application page stops passing the hours' URLs to the dialog",
      "seasonsBaseUrl: seasonsBaseUrl,\n\t\t\tserverSettingsUrl: serverSettingsUrl,", "", {"S5"}),
-    ("M27", MODAL, "the failure toast shows the raw message again (the browser's «Failed to fetch», or «seasons»)",
+    ("M27", MODAL, "the failure toast shows a raw message again (the dialog's own «seasons» after «Feil:», as on 11e47556c)",
      "opts.showToast(lang('openingHoursUnavailable'), 'danger');",
-     "opts.showToast(lang('error') + ': ' + (arguments[0] && arguments[0].message), 'danger');", {"L5"}),
+     "opts.showToast(lang('error') + ': seasons', 'danger');", {"L5"}),
     ("M28", APP_TWIG, "the application page loses the failure text's attribute (the toast would show the raw key)",
      "\t data-lang-opening-hours-unavailable=\"{{ lang('booking.opening_hours_unavailable') }}\"\n", "", {"L5", "S1"}),
     ("M29", HOSP_TWIG, "the hospitality page loses the failure text's attribute",
      "\t data-lang-opening-hours-unavailable=\"{{ lang('booking.opening_hours_unavailable') }}\"\n", "", {"L5", "S2"}),
     ("M30", LANG_NN, "the nn row of the failure text's key is missing",
      "\nopening_hours_unavailable\tbooking\tnn\tKunne ikkje hente opningstidene – alle tider blir viste.", "", {"S3"}),
+    # --- the fix-up on 775c8d0eb (task 49771): Opus final Q2 (the stale Lokale list) and Q3b (malformed season elements) ---
+    ("M31", MODAL, "Q2: the cached Lokale list is not dropped when the hospitality changes (the new picker is handed the old list)",
+     "\t\t\t\t\t\t_allLocations = null;\n", "", {"L9"}),
+    ("M32", MODAL, "Q2: a picker made for the PREVIOUS hospitality may still write the cache when its late answer lands",
+     "if (picker === locSelector) _allLocations = locations.slice();", "_allLocations = locations.slice();", {"L9"}),
+    ("M33", MODAL, "Q3b: the try/catch is dropped (the catch rethrows: a malformed season throws out of the filter, as on 775c8d0eb)",
+     "} catch (error) {", "} catch (error) {\n\t\t\t\tthrow error;", {"L10"}),
+    ("M34", MODAL, "Q3b: a malformed answer fails CLOSED (no time) instead of open",
+     "dropKitchenHours(key);\n\t\t\t\treturn slots;", "dropKitchenHours(key);\n\t\t\t\treturn [];", {"L10"}),
+    ("M35", MODAL, "Q3b: a malformed answer is swallowed without a trace in the console",
+     "console.error('HospitalityOrderModal: the kitchen\\'s opening hours could not be applied', error);\n\t\t\t\t", "", {"L10"}),
 ]
 
 

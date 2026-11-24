@@ -89,7 +89,7 @@ MUTANTS = [
     ("M24", MODAL, "a failed SETTINGS request takes the seasons' bound with it (the citizen reads a missing setting as false and still bounds)",
      "fetchJson(serverSettingsUrl + '?include_configs=true').catch(function () { return null; })", "fetchJson(serverSettingsUrl + '?include_configs=true')", {"L5"}),
     ("M25", MODAL, "a failed seasons fetch is not said (no toast)",
-     "_hoursByBuilding[key] = false;\n\t\t\t\topts.showToast(lang('error') + ': ' + err.message, 'danger');", "_hoursByBuilding[key] = false;", {"L5"}),
+     "opts.showToast(lang('openingHoursUnavailable'), 'danger');", "", {"L5"}),
     ("M26", MODAL, "a failed fetch is not remembered: the dialog asks again by itself, for ever (the run is killed by its timeout)",
      "_hoursByBuilding[key] = false;", "", {"HANG", "L5"}),
     ("M18", APP_TWIG, "the application page loses the new text's attribute",
@@ -102,6 +102,15 @@ MUTANTS = [
      "hospBuildingId: hospitalityData ? hospitalityData.resource_building_id : null,", "", {"S5"}),
     ("M22", APP_JS, "the application page stops passing the hours' URLs to the dialog",
      "seasonsBaseUrl: seasonsBaseUrl,\n\t\t\tserverSettingsUrl: serverSettingsUrl,", "", {"S5"}),
+    ("M27", MODAL, "the failure toast shows the raw message again (the browser's «Failed to fetch», or «seasons»)",
+     "opts.showToast(lang('openingHoursUnavailable'), 'danger');",
+     "opts.showToast(lang('error') + ': ' + (arguments[0] && arguments[0].message), 'danger');", {"L5"}),
+    ("M28", APP_TWIG, "the application page loses the failure text's attribute (the toast would show the raw key)",
+     "\t data-lang-opening-hours-unavailable=\"{{ lang('booking.opening_hours_unavailable') }}\"\n", "", {"L5", "S1"}),
+    ("M29", HOSP_TWIG, "the hospitality page loses the failure text's attribute",
+     "\t data-lang-opening-hours-unavailable=\"{{ lang('booking.opening_hours_unavailable') }}\"\n", "", {"L5", "S2"}),
+    ("M30", LANG_NN, "the nn row of the failure text's key is missing",
+     "\nopening_hours_unavailable\tbooking\tnn\tKunne ikkje hente opningstidene – alle tider blir viste.", "", {"S3"}),
 ]
 
 

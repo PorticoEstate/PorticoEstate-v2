@@ -25,7 +25,8 @@
  *   LV5  the empty text: hospitality 10's page, Lokale → the new text; the orders list's own empty text is not it
  *   LV6  the failure arm (pe-ceo 49668: the bound must never stop a case officer from ordering): the seasons request is ABORTED
  *        in the browser (LV6) or answered 200 with something that is not a list (LV6/malformed); 85095 / h5, kitchen room →
- *        the application's own 13:00-14:00 (LV3 shows 0 when the hours arrive) and a danger toast, once. Writes nothing.
+ *        the application's own 13:00-14:00 (LV3 shows 0 when the hours arrive) and a danger toast, once, in the page's own
+ *        translated words (its data-lang-opening-hours-unavailable, not the browser's or the server's message). Writes nothing.
  */
 const fs = require('fs');
 const os = require('os');
@@ -237,7 +238,8 @@ const quarters = (from, to) => {
         const toasts = await texts(page, '.app-show__toast[data-color="danger"]');   // the toast lives 3 s on this page; chooseLocation waited 1.5 s
         const times = await options(page, 'serving-time');
         check(id, how + ' → the kitchen room offers the application\'s own 13:00-14:00 (LV3: none when the hours arrive)', same(times, quarters('13:00', '14:00')), JSON.stringify(times));
-        check(id + '/toast', 'and the failure is said, once', toasts.length === 1, JSON.stringify(toasts));
+        const expected = await page.$eval('#application-show', e => e.dataset.langOpeningHoursUnavailable || '');
+        check(id + '/toast', 'and the failure is said once, in the page\'s own translated words', toasts.length === 1 && !!expected && toasts[0] === expected, JSON.stringify({ toasts, expected }));
         check(id + '/asked-once', 'and the seasons were asked for once', requests.filter(r => /\/bookingfrontend\/buildings\/10\/seasons/.test(r)).length === 1, JSON.stringify(requests.filter(r => /seasons/.test(r))));
         await shots(page, id.toLowerCase().replace('/', '-') + '-app85095-h5-main');
         await ctx.close();

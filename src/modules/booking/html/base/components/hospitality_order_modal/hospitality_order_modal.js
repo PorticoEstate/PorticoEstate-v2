@@ -251,12 +251,13 @@ var HospitalityOrderModal = (function () {
 					seasons: res[0],
 					closeWhenNoSeasons: !!(settings && settings.close_calendar_without_season)
 				};
-			}).catch(function (err) {
+			}).catch(function () {
 				// The bound is a convenience with no server rule behind it, and it must never stop a case officer from
 				// ordering: hours that cannot be fetched leave the times as the application's own, as without the bound.
-				// The failure is said out loud, once; the answer is kept, so the same dialog does not ask again.
+				// The failure is said out loud, once, in words the officer can use (not the browser's or the server's
+				// message); the answer is kept, so the same dialog does not ask again.
 				_hoursByBuilding[key] = false;
-				opts.showToast(lang('error') + ': ' + err.message, 'danger');
+				opts.showToast(lang('openingHoursUnavailable'), 'danger');
 			}).then(function () {
 				delete _hoursRequested[key];
 				var waiting = _awaitingHours;

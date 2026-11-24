@@ -244,6 +244,8 @@ const appLang = hostLang(read(FILES.appTwig));
 const hospLang = hostLang(read(FILES.hospTwig));
 const NO_ORDERS = langNo['booking.no_orders'];
 const NO_DELIVERY = langNo['booking.no_delivery_locations'];
+/** What the failure toast must say: the twig attribute's .lang row, never the browser's or the server's message. */
+const NO_HOURS = langNo['booking.opening_hours_unavailable'];
 
 // ---- fixtures, shaped like the live responses ---------------------------------------------------------------------
 type Loc = {id: number; name: string; location_type: 'main' | 'remote'};
@@ -565,7 +567,7 @@ try {
         // the seasons request fails: the application's own times, the failure said once, the answer kept
         const broken = await boot({ctx: 'app', locations: [MAIN, MUSIC3], dates: WED, seasonsStatus: 500});
         await broken.start('dates-first'); await broken.chooseLocation(MAIN);
-        check('L5/error-open', 'the seasons request fails → the application\'s own times, and the failure is shown', same(broken.times(), WED_ALL) && broken.toasts.length === 1 && broken.toasts[0][1] === 'danger', show({times: broken.times().length, toasts: broken.toasts}));
+        check('L5/error-open', 'the seasons request fails → the application\'s own times, and the failure is shown in the translated words', same(broken.times(), WED_ALL) && broken.toasts.length === 1 && broken.toasts[0][1] === 'danger' && broken.toasts[0][0] === NO_HOURS, show({times: broken.times().length, toasts: broken.toasts, expected: NO_HOURS}));
         await broken.chooseLocation(MUSIC3);
         await broken.chooseLocation(MAIN);
         check('L5/error-once', 'choosing the kitchen room again neither asks again nor says it again, and the times are still the application\'s own',
@@ -574,13 +576,20 @@ try {
         // an answer that is not a list is a failed fetch, not «no seasons»: the setting that closes a building without seasons must not close it
         const malformed = await boot({ctx: 'app', locations: [MAIN], dates: WED, seasons: {error: 'x'}, closeWhenNoSeasons: true});
         await malformed.start('dates-first'); await malformed.chooseLocation(MAIN);
-        check('L5/malformed-open', 'an answer that is not a list of seasons → the application\'s own times and the failure shown, even where close_calendar_without_season is on', same(malformed.times(), WED_ALL) && malformed.toasts.length === 1 && malformed.toasts[0][1] === 'danger', show({times: malformed.times().length, toasts: malformed.toasts.length}));
+        check('L5/malformed-open', 'an answer that is not a list of seasons → the application\'s own times and the failure shown, even where close_calendar_without_season is on', same(malformed.times(), WED_ALL) && malformed.toasts.length === 1 && malformed.toasts[0][1] === 'danger' && malformed.toasts[0][0] === NO_HOURS, show({times: malformed.times().length, toasts: malformed.toasts}));
 
         // the settings request fails and the seasons arrive: the seasons still bound the times, the setting reads «false» (the citizen's `?? false`)
         const noSettings = await boot({ctx: 'app', locations: [MAIN], dates: WED, settingsStatus: 500});
         await noSettings.start('dates-first'); await noSettings.chooseLocation(MAIN);
         check('L5/settings-failed', 'the settings request fails, the seasons arrive → still bounded by the seasons, and no failure shown (the citizen shows none)', same(noSettings.times(), WED_KITCHEN) && noSettings.toasts.length === 0, show({times: noSettings.times().length, toasts: noSettings.toasts.length}));
+
+        // the same toast on the hospitality page, through ITS twig (the attribute is wired per page)
+        const hospBroken = await boot({ctx: 'hosp', locations: [MAIN], dates: WED, seasonsStatus: 500});
+        await hospBroken.start('dates-first'); await hospBroken.chooseLocation(MAIN);
+        check('L5[hosp]/error-text', 'hospitality page, the seasons request fails → the application\'s own times and the translated failure text', same(hospBroken.times(), WED_ALL) && hospBroken.toasts.length === 1 && hospBroken.toasts[0][0] === NO_HOURS, show({times: hospBroken.times().length, toasts: hospBroken.toasts, expected: NO_HOURS}));
     });
+    check('L5/toast-text', 'the failure text is a real sentence in the lang row: not the raw key, and nothing of a browser or server message in it',
+        !!NO_HOURS && NO_HOURS !== 'openingHoursUnavailable' && !/Failed|fetch|HTTP|seasons|Error|Feil:/i.test(NO_HOURS), show(NO_HOURS));
 
     // =================================================================================================================
     // L6: a remote room, or no room, keeps the application's own times
@@ -682,12 +691,20 @@ try {
         const closed = appTwig.indexOf('{% endif %}', guard);
         check('S1', 'application page: the attribute is there, inside the enable_hospitality guard that holds data-lang-no-orders', at > 0 && guard > 0 && closed > at && appTwig.indexOf('data-lang-no-orders', guard) > 0 && appTwig.indexOf('data-lang-no-orders', guard) < closed);
         check('S2', 'hospitality page: the attribute is there', hospTwig.includes(ATTR));
+        const HOURS_ATTR = `data-lang-opening-hours-unavailable="{{ lang('booking.opening_hours_unavailable') }}"`;
+        const hat = appTwig.indexOf(HOURS_ATTR);
+        const hguard = appTwig.lastIndexOf('{% if enable_hospitality %}', hat);
+        const hclosed = appTwig.indexOf('{% endif %}', hguard);
+        check('S1/hours', 'application page: the failure text\'s attribute is there, inside the enable_hospitality guard', hat > 0 && hguard > 0 && hclosed > hat);
+        check('S2/hours', 'hospitality page: the failure text\'s attribute is there', hospTwig.includes(HOURS_ATTR));
         check('S2/orders', 'both pages still carry the orders list\'s data-lang-no-orders', appTwig.includes(`data-lang-no-orders="{{ lang('booking.no_orders') }}"`) && hospTwig.includes(`data-lang-no-orders="{{ lang('booking.no_orders') }}"`));
     }
     {
-        const rows = [FILES.langNo, FILES.langNn, FILES.langEn].map(f => langRows(read(f))['booking.no_delivery_locations']);
-        check('S3', 'the new key has a row in no, nn and en', rows.every(r => !!r && r.length > 3), show(rows));
-        check('S3/distinct', 'and the three are three different texts', new Set(rows).size === 3, show(rows));
+        for (const key of ['no_delivery_locations', 'opening_hours_unavailable']) {
+            const rows = [FILES.langNo, FILES.langNn, FILES.langEn].map(f => langRows(read(f))[`booking.${key}`]);
+            check(`S3/${key}`, 'the key has a row in no, nn and en', rows.every(r => !!r && r.length > 3), show(rows));
+            check(`S3/${key}/distinct`, 'and the three are three different texts', new Set(rows).size === 3, show(rows));
+        }
     }
     {
         const appJs = read(FILES.appJs);

@@ -93,17 +93,23 @@ export type ServingTimeHelp =
  * - Delivery, or on-site with the kitchen's hours not known: the booking's own times when the list offers any
  *   (for delivery the list IS the booking's slots). With no time offered, nothing is named.
  * - On-site with the kitchen's hours known and times offered: the first and last time the list offers.
- * - On-site with the kitchen's hours known and no time offered: `closed` only when the kitchen has no opening
- *   that day. Otherwise `none`, which names no hours and never reads as a closure.
+ * - On-site with no time offered: `closed` when the kitchen's hours can be judged and the kitchen has no opening
+ *   that day. That includes a building with no season rows while close-without-season is on, whose span is null.
+ *   Otherwise `none`, which names no hours and never reads as a closure. Hours that cannot be judged (building
+ *   unknown, seasons still loading) are `none` too.
+ *
+ * `kitchenHoursKnown` means the kitchen's seasons define its hours, so a range can be named from them.
+ * `kitchenHoursJudgeable` means the kitchen's seasons are loaded, an empty list included, so `kitchenSpan` is an answer.
  */
 export function servingTimeHelp(input: {
 	isDelivery: boolean;
 	offered: string[];
+	kitchenHoursJudgeable: boolean;
 	kitchenHoursKnown: boolean;
 	kitchenSpan: {from: string; to: string} | null;
 }): ServingTimeHelp {
 	if (input.offered.length === 0) {
-		const kitchenClosedThatDay = !input.isDelivery && input.kitchenHoursKnown && input.kitchenSpan === null;
+		const kitchenClosedThatDay = !input.isDelivery && input.kitchenHoursJudgeable && input.kitchenSpan === null;
 		return kitchenClosedThatDay ? {kind: 'closed'} : {kind: 'none'};
 	}
 	if (input.isDelivery || !input.kitchenHoursKnown) return {kind: 'application'};

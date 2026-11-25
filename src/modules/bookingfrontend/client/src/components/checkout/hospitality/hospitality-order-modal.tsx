@@ -281,8 +281,14 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
         && !!locationId
         && String(locationId) === String(hospitality.resource_id);
 
-    // The kitchen's hours are known once its seasons have loaded for a building that has them. Without them the help
-    // under the time field does not name the kitchen's hours (see servingTimeHelp).
+    // The kitchen's hours can be judged once its building is known and its seasons have loaded. An EMPTY season list is
+    // a real answer: the building has no season rows, so with close-without-season on the kitchen is closed every day.
+    // Still loading, or no building, and the hours cannot be judged (see servingTimeHelp).
+    const kitchenHoursJudgeable = !!hospitality?.resource_id
+        && hospitality.building_id !== null
+        && hospitality.building_id !== undefined
+        && !!kitchenSeasons;
+    // The kitchen's hours are DEFINED by its seasons once there is at least one. Only then can the help name a range.
     const kitchenHoursKnown = !!hospitality?.resource_id
         && hospitality.building_id !== null
         && hospitality.building_id !== undefined
@@ -334,9 +340,9 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
     }, [selectedDateOption, hospitality, kitchenSeasons, closeWhenNoSeasons, isDelivery]);
 
     // The kitchen's own span on the chosen day, read only to tell a closed kitchen from one that is open but offers
-    // no time inside the booking. Null while the kitchen's hours are not known.
+    // no time inside the booking. Null while the kitchen's hours cannot be judged, and on a day it has no opening.
     const kitchenSpan = useMemo(() => {
-        if (!kitchenHoursKnown || !hospitality?.resource_id || !selectedDateOption
+        if (!kitchenHoursJudgeable || !hospitality?.resource_id || !selectedDateOption
             || selectedDateOption.key === GRANDFATHERED_DATE_KEY) return null;
         return kitchenOpeningSpanOnDay(
             selectedDateOption.from,
@@ -344,11 +350,11 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
             kitchenSeasons,
             closeWhenNoSeasons
         );
-    }, [selectedDateOption, hospitality, kitchenHoursKnown, kitchenSeasons, closeWhenNoSeasons]);
+    }, [selectedDateOption, hospitality, kitchenHoursJudgeable, kitchenSeasons, closeWhenNoSeasons]);
 
     // The help under the time field. The same array the select renders decides the text and any range it names.
     const timeHelp = selectedDateOption && selectedDateOption.key !== GRANDFATHERED_DATE_KEY
-        ? servingTimeHelp({isDelivery, offered: timeSlots, kitchenHoursKnown, kitchenSpan})
+        ? servingTimeHelp({isDelivery, offered: timeSlots, kitchenHoursJudgeable, kitchenHoursKnown, kitchenSpan})
         : null;
 
     /**

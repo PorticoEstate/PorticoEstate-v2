@@ -15,18 +15,29 @@
  * that weekday holding it, and a boundary reaching 23:45 is open to midnight.
  *
  * Cases:
- *   - grid: 6 kitchen-hour sets x 8 booking windows x 7 weekdays, each run on-site AND as delivery = 672 cases. Each
- *     case checks the list, the kitchen's day span, and the help. The help must name the list's first and last time
- *     on-site, and must never name a range the list does not offer.
+ *   - grid: 8 kitchen sets x 9 booking windows x 9 days (Mon 23 .. Sun 29 Nov 2026, then the two 2026 DST changes,
+ *     Sun 29 Mar and Sun 25 Oct), each run on-site AND as delivery. Each case checks the list, the kitchen's day span,
+ *     and the help. The help must name the list's first and last time on-site, and must never name a range the list
+ *     does not offer. The no-season-rows set has no season rows at all: with close-without-season on, it is closed.
+ *     The DST kitchen opens 01:30 and closes 22:00, so it straddles the 02:00-03:00 hour on the transition days.
  *   - pins: hand-written expectations (not the oracle), including the real kitchen's Tuesday and Monday hours.
  *   - coverage: every help kind must occur in the grid, or the grid did not exercise it.
  *
- * Exit code: 0 all pass, 1 any failure, 2 the loader could not load the module under test.
+ * Exit code: 0 all pass, 1 any failure, 2 the loader could not load the module under test, or the runtime cannot
+ * show the DST gap (the DST rows would then test nothing).
  */
 import {mkdtempSync, readFileSync, symlinkSync, writeFileSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {dirname, join, resolve} from 'node:path';
 import {fileURLToPath, pathToFileURL} from 'node:url';
+
+// The venue's zone, pinned in the process so the DST rows judge the wall clock the citizen sees, whatever machine runs
+// this. The control proves the spring gap exists in this runtime: 02:00 on 29 Mar 2026 reads back as 03:00.
+process.env.TZ = 'Europe/Oslo';
+if (new Date(2026, 2, 29, 2, 0).getHours() !== 3) {
+    console.error('loader: this runtime shows no 02:00 on 29 Mar 2026 under Europe/Oslo; the DST rows would test nothing');
+    process.exit(2);
+}
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = resolve(here, '../..');
@@ -65,7 +76,13 @@ interface ServingModule {
         closeWhenNoSeasons: boolean,
     ): string[];
     kitchenOpeningSpanOnDay(day: Date, resourceId: string, seasons: unknown[] | undefined, closeWhenNoSeasons: boolean): Span;
-    servingTimeHelp(input: {isDelivery: boolean; offered: string[]; kitchenHoursKnown: boolean; kitchenSpan: Span}): Help;
+    servingTimeHelp(input: {
+        isDelivery: boolean;
+        offered: string[];
+        kitchenHoursJudgeable: boolean;
+        kitchenHoursKnown: boolean;
+        kitchenSpan: Span;
+    }): Help;
 }
 
 let mod: ServingModule;
@@ -130,6 +147,17 @@ const KITCHEN_SETS: {name: string; seasons: SeasonRecord[]}[] = [
             {active: false, from: '2026-01-01', to: '2026-12-31', boundaries: daily(WEEK, '00:00', '23:45')},
         ],
     },
+    {
+        // The building has no season rows at all. With close-without-season on, the kitchen is closed on every day.
+        name: 'no-season-rows',
+        seasons: [],
+    },
+    {
+        // Opens before 02:00 and closes after 03:00 on every weekday, so it straddles the transition hour on 29 Mar and
+        // on 25 Oct.
+        name: 'dst-straddle-01-30-22',
+        seasons: [{active: true, from: '2026-01-01', to: '2029-12-31', boundaries: daily(WEEK, '01:30', '22:00')}],
+    },
 ];
 
 const WINDOWS: [string, string][] = [
@@ -141,6 +169,15 @@ const WINDOWS: [string, string][] = [
     ['07:07', '09:00'],
     ['11:30', '13:30'],
     ['15:00', '23:59'],
+    // Runs across the 02:00-03:00 hour that the spring change removes and the autumn change repeats.
+    ['01:00', '04:00'],
+];
+
+/** Mon 23 Nov 2026 .. Sun 29 Nov 2026, then the two 2026 DST changes (both Sundays). */
+const DAYS: Date[] = [
+    ...Array.from({length: 7}, (_, i) => new Date(2026, 10, 23 + i)),
+    new Date(2026, 2, 29), // 29 Mar: 02:00 -> 03:00, so 02:00-02:59 does not exist
+    new Date(2026, 9, 25), // 25 Oct: 03:00 -> 02:00, so 02:00-02:59 occurs twice
 ];
 
 /** The module's Season objects, built from the same records the oracle reads. */
@@ -222,9 +259,11 @@ const kinds = new Map<string, number>();
 let gridCases = 0;
 for (const set of KITCHEN_SETS) {
     const seasons = toSeasons(set.seasons);
+    // The kitchen's building is known and its season list is loaded (an empty list included): the hours are judgeable.
+    // The hours are DEFINED by seasons only when there is at least one, as in the modal.
+    const hoursDefined = set.seasons.length > 0;
     for (const window of WINDOWS) {
-        for (let i = 0; i < 7; i++) {
-            const day = new Date(2026, 10, 23 + i); // Mon 23 Nov 2026 .. Sun 29 Nov 2026
+        for (const day of DAYS) {
             const booking = bookingOn(day, window);
             const label = `${set.name} ${window.join('-')} ${isoDate(day)}`;
 
@@ -240,20 +279,32 @@ for (const set of KITCHEN_SETS) {
             check(`${label} day span`, showSpan(span) === showSpan(expectedSpan),
                 `got ${showSpan(span)} expected ${showSpan(expectedSpan)}`);
 
-            const onsite = mod.servingTimeHelp({isDelivery: false, offered, kitchenHoursKnown: true, kitchenSpan: span});
+            const onsite = mod.servingTimeHelp({
+                isDelivery: false, offered, kitchenHoursJudgeable: true, kitchenHoursKnown: hoursDefined, kitchenSpan: span,
+            });
             const wantOnsite = expectedHelp(expectedOffered, expectedSpan, false);
             check(`${label} on-site`, showHelp(onsite) === showHelp(wantOnsite),
                 `got ${showHelp(onsite)} expected ${showHelp(wantOnsite)}`);
+            if (onsite.kind === 'kitchen') {
+                // The text names the list's first and last time, and nothing the list does not offer.
+                check(`${label} text bounds are the list's first and last`,
+                    onsite.from === offered[0] && onsite.to === offered[offered.length - 1],
+                    `text ${onsite.from}-${onsite.to} list ${offered[0]}-${offered[offered.length - 1]}`);
+            }
             kinds.set(onsite.kind, (kinds.get(onsite.kind) ?? 0) + 1);
 
             // Delivery: the list is the booking's own slots, whatever the kitchen's hours.
             const deliverySlots = mod.generateTimeSlots(
                 booking.from.getHours(), booking.from.getMinutes(), booking.to.getHours(), booking.to.getMinutes(),
             );
+            // The oracle keeps the wall-clock starts 02:00-02:45 on 29 Mar, as the module does. The grid agrees with the
+            // module on them and does not judge whether a start that does not exist that day should be offered.
             const expectedSlots = oracleStarts(booking.from, booking.to).map(hhmm);
             check(`${label} delivery slots`, deliverySlots.join(',') === expectedSlots.join(','),
                 `got [${deliverySlots.join(',')}] expected [${expectedSlots.join(',')}]`);
-            const delivery = mod.servingTimeHelp({isDelivery: true, offered: deliverySlots, kitchenHoursKnown: true, kitchenSpan: span});
+            const delivery = mod.servingTimeHelp({
+                isDelivery: true, offered: deliverySlots, kitchenHoursJudgeable: true, kitchenHoursKnown: hoursDefined, kitchenSpan: span,
+            });
             const wantDelivery = expectedHelp(expectedSlots, expectedSpan, true);
             check(`${label} delivery`, showHelp(delivery) === showHelp(wantDelivery),
                 `got ${showHelp(delivery)} expected ${showHelp(wantDelivery)}`);
@@ -277,7 +328,9 @@ function pinOnsite(name: string, seasons: unknown[], day: Date, window: [string,
     const booking = bookingOn(day, window);
     const offered = mod.offeredServingTimes(booking, RESOURCE, seasons, true);
     const span = mod.kitchenOpeningSpanOnDay(day, RESOURCE, seasons, true);
-    const got = mod.servingTimeHelp({isDelivery: false, offered, kitchenHoursKnown: true, kitchenSpan: span});
+    const got = mod.servingTimeHelp({
+        isDelivery: false, offered, kitchenHoursJudgeable: true, kitchenHoursKnown: seasons.length > 0, kitchenSpan: span,
+    });
     check(`pin ${name}`, showHelp(got) === showHelp(want), `got ${showHelp(got)} expected ${showHelp(want)}`);
 }
 
@@ -297,29 +350,38 @@ pinOnsite('real kitchen Mon 23 Nov names 08:00-22:00', monTueSet, MON_23, ['06:0
 pinOnsite('gap kitchen 07-17 names 08:00-16:00 across the gap', splitSet, WED_25, ['07:00', '17:00'],
     {kind: 'kitchen', from: '08:00', to: '16:00'});
 
-// Hours cannot be judged: no seasons, close-without-season on. The list is empty and the text must say no times.
+// Close-without-season on, and the building has no season rows: the kitchen is closed every day, so the text is the
+// closed message, not the no-times line. The span is null because no season makes any instant open.
+pinOnsite('Wed 25 with no season rows and close-without-season on is closed', [], WED_25, ['18:00', '20:00'], {kind: 'closed'});
+// Hours cannot be judged: the seasons have not loaded yet (undefined), close-without-season on. The list is empty and the
+// text says no times, never closed. A null building id is the same input here: the modal passes judgeable false for it.
 {
     const booking = bookingOn(WED_25, ['18:00', '20:00']);
-    const offered = mod.offeredServingTimes(booking, RESOURCE, [], true);
-    const got = mod.servingTimeHelp({isDelivery: false, offered, kitchenHoursKnown: false, kitchenSpan: null});
-    check('pin unjudgeable on-site is none, not a range', offered.length === 0 && showHelp(got) === 'none',
+    const offered = mod.offeredServingTimes(booking, RESOURCE, undefined, true);
+    const got = mod.servingTimeHelp({isDelivery: false, offered, kitchenHoursJudgeable: false, kitchenHoursKnown: false, kitchenSpan: null});
+    check('pin unjudgeable on-site (seasons not loaded) is none, not closed', offered.length === 0 && showHelp(got) === 'none',
         `list ${offered.length}, got ${showHelp(got)}`);
 }
-// No seasons, close-without-season off: the list is the booking's own slots and the text is the booking's times.
+// No season rows, close-without-season off: the kitchen is open every day, so the list is the booking's own slots and
+// the text is the booking's times, not a closure. The span is the whole day, and that still names nothing.
 {
     const booking = bookingOn(WED_25, ['18:00', '20:00']);
     const offered = mod.offeredServingTimes(booking, RESOURCE, [], false);
-    const got = mod.servingTimeHelp({isDelivery: false, offered, kitchenHoursKnown: false, kitchenSpan: null});
-    check('pin open-always kitchen is the booking times', showHelp(got) === 'application', `got ${showHelp(got)}`);
+    const span = mod.kitchenOpeningSpanOnDay(WED_25, RESOURCE, [], false);
+    const got = mod.servingTimeHelp({isDelivery: false, offered, kitchenHoursJudgeable: true, kitchenHoursKnown: false, kitchenSpan: span});
+    check('pin open-always kitchen (no season rows, close off) is the booking times', showHelp(got) === 'application',
+        `got ${showHelp(got)}`);
 }
 // Delivery: the booking's own slots, named as the booking's times; a window with no grid start names nothing.
 check('pin delivery 18-20 is application',
     showHelp(mod.servingTimeHelp({
-        isDelivery: true, offered: mod.generateTimeSlots(18, 0, 20, 0), kitchenHoursKnown: true, kitchenSpan: null,
+        isDelivery: true, offered: mod.generateTimeSlots(18, 0, 20, 0), kitchenHoursJudgeable: true, kitchenHoursKnown: true,
+        kitchenSpan: null,
     })) === 'application');
 check('pin delivery 18:07-18:10 has no grid start: none',
     showHelp(mod.servingTimeHelp({
-        isDelivery: true, offered: mod.generateTimeSlots(18, 7, 18, 10), kitchenHoursKnown: true, kitchenSpan: null,
+        isDelivery: true, offered: mod.generateTimeSlots(18, 7, 18, 10), kitchenHoursJudgeable: true, kitchenHoursKnown: true,
+        kitchenSpan: null,
     })) === 'none');
 
 const KINDS = ['kitchen', 'application', 'closed', 'none'] as const;
@@ -328,7 +390,7 @@ for (const kind of KINDS) {
 }
 
 const pinChecks = passed + failures.length - checksBeforePins;
-console.log(`grid: ${gridCases} cases (${KITCHEN_SETS.length} kitchen sets x ${WINDOWS.length} windows x 7 weekdays, on-site and delivery)`);
+console.log(`grid: ${gridCases} cases (${KITCHEN_SETS.length} kitchen sets x ${WINDOWS.length} windows x ${DAYS.length} days, on-site and delivery)`);
 console.log(`help kinds in the grid: ${KINDS.map(k => `${k}=${kinds.get(k) ?? 0}`).join(' ')}`);
 console.log(`pins: ${pinChecks}`);
 console.log(`checks: ${passed + failures.length}, passed: ${passed}, failed: ${failures.length}`);

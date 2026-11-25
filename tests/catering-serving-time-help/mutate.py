@@ -32,16 +32,27 @@ MUTANTS = [
      "return kitchenClosedThatDay ? {kind: 'closed'} : input.isDelivery ? {kind: 'none'} : {kind: 'application'};"),
     # The closed message on a kitchen that is open that day, with no overlap with the booking.
     ('closed-on-no-overlap',
-     'const kitchenClosedThatDay = !input.isDelivery && input.kitchenHoursKnown && input.kitchenSpan === null;',
-     'const kitchenClosedThatDay = !input.isDelivery && input.kitchenHoursKnown;'),
+     'const kitchenClosedThatDay = !input.isDelivery && input.kitchenHoursJudgeable && input.kitchenSpan === null;',
+     'const kitchenClosedThatDay = !input.isDelivery && input.kitchenHoursJudgeable;'),
     # Hours that cannot be judged shown as a range.
     ('unjudgeable-hours-show-range',
      "if (input.isDelivery || !input.kitchenHoursKnown) return {kind: 'application'};",
      "if (input.isDelivery) return {kind: 'application'};"),
     # Hours that cannot be judged read as a closure.
     ('unjudgeable-empty-reads-closed',
-     'const kitchenClosedThatDay = !input.isDelivery && input.kitchenHoursKnown && input.kitchenSpan === null;',
+     'const kitchenClosedThatDay = !input.isDelivery && input.kitchenHoursJudgeable && input.kitchenSpan === null;',
      'const kitchenClosedThatDay = !input.isDelivery && input.kitchenSpan === null;'),
+    # A building with no season rows, close-without-season on: closed on every day. This mutant reads it as no times.
+    ('no-season-rows-read-as-no-times',
+     'const kitchenClosedThatDay = !input.isDelivery && input.kitchenHoursJudgeable && input.kitchenSpan === null;',
+     'const kitchenClosedThatDay = !input.isDelivery && input.kitchenHoursKnown && input.kitchenSpan === null;'),
+    # The wall-clock start is built from elapsed minutes after local midnight. Exact on every day except the two DST
+    # changes, where the list's starts drift by an hour. Only the DST rows of the grid can catch it.
+    ('dst-elapsed-minutes-not-wall-clock',
+     "\t\tbooking.to.getMinutes(),\n\t).filter(hm => {\n\t\tconst [h, m] = hm.split(':').map(Number);\n"
+     "\t\tconst at = new Date(day.getFullYear(), day.getMonth(), day.getDate(), h, m);",
+     "\t\tbooking.to.getMinutes(),\n\t).filter(hm => {\n\t\tconst [h, m] = hm.split(':').map(Number);\n"
+     "\t\tconst at = new Date(new Date(day.getFullYear(), day.getMonth(), day.getDate()).getTime() + (h * 60 + m) * 60000);"),
     # The booking's first start is not rounded up to the grid: 07:07 is offered as 07:07, not 07:15.
     ('start-not-rounded-up',
      'let m = Math.ceil(fromMinute / 15) * 15;',

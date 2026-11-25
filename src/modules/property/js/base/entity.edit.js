@@ -177,7 +177,7 @@ this.fileuploader = function ()
 
 this.refresh_files = function ()
 {
-	var strURL = get_files_java_url;
+	var strURL = phpGWLink(get_files_java_url, {});
 
 	try
 	{
@@ -319,7 +319,7 @@ this.onActionsClick = function (action)
 	}
 
 	var api = new DataTable('#datatable-container_4');
-	var selected = api.rows({selected: true}).data();
+	var selected = api.rows({ selected: true }).data();
 
 	var numSelected = selected.length;
 
@@ -371,7 +371,8 @@ this.onActionsClick = function (action)
 		});
 
 
-		var requestUrl2 = get_controls_url + '?location_id=' + encodeURIComponent(location_id) + '&id=' + encodeURIComponent(item_id);
+		var oArgs = { location_id: encodeURIComponent(location_id), id: encodeURIComponent(item_id) };
+		var requestUrl2 = phpGWLink(get_controls_url, oArgs);
 		JqueryPortico.updateinlineTableHelper('datatable-container_4', requestUrl2);
 	}
 }
@@ -423,7 +424,8 @@ add_control = function ()
 		}
 	});
 
-	var requestUrl2 = get_controls_url + '?location_id=' + encodeURIComponent(location_id) + '&id=' + encodeURIComponent(item_id);
+	var oArgs = { location_id: encodeURIComponent(location_id), id: encodeURIComponent(item_id) };
+	var requestUrl2 = phpGWLink(get_controls_url, oArgs);
 	JqueryPortico.updateinlineTableHelper('datatable-container_4', requestUrl2);
 };
 
@@ -453,10 +455,15 @@ $(function ()
 	var click_action_on_table = false;
 	$("#check_lst_time_span").on('change', function ()
 	{
-		var requestUrl = get_checklists_url + '?location_id=' + encodeURIComponent(location_id) + '&id=' + encodeURIComponent(item_id) + '&year=' + encodeURIComponent($(this).val());
+		var oArgs = {
+			location_id: encodeURIComponent(location_id),
+			id: encodeURIComponent(item_id),
+			year: encodeURIComponent($(this).val())
+		};
+		var requestUrl = phpGWLink(get_checklists_url, oArgs);
 		var _oTable = JqueryPortico.updateinlineTableHelper('datatable-container_5', requestUrl);
 
-		requestUrl = get_cases_url + '?location_id=' + encodeURIComponent(location_id) + '&id=' + encodeURIComponent(item_id) + '&year=' + encodeURIComponent($(this).val());
+		requestUrl = phpGWLink(get_cases_url, oArgs);
 		JqueryPortico.updateinlineTableHelper('datatable-container_6', requestUrl);
 
 		if (click_action_on_table == false)
@@ -492,7 +499,9 @@ function updateCaseTable(check_list_id)
 	{
 		return;
 	}
-	var requestUrl = get_cases_for_checklist_url + '?check_list_id=' + encodeURIComponent(check_list_id);
+	var oArgs = { check_list_id: encodeURIComponent(check_list_id) };
+
+	var requestUrl = phpGWLink(get_cases_for_checklist_url, oArgs);
 	JqueryPortico.updateinlineTableHelper('datatable-container_6', requestUrl);
 }
 

@@ -10,6 +10,7 @@ import {
     IHospitalityOrder,
 } from '@/service/types/api/hospitality.types';
 import {
+    HospitalityOrderRefusal,
     useAvailableHospitalities,
     useDeleteHospitalityOrder,
     useHospitalityOrders,
@@ -105,7 +106,8 @@ const CateringOverview: FC<CateringOverviewProps> = ({application}) => {
     const [activeHospitality, setActiveHospitality] = useState<IHospitality | null>(null);
     const [editingOrder, setEditingOrder] = useState<IHospitalityOrder | undefined>(undefined);
     const [cancelTarget, setCancelTarget] = useState<IHospitalityOrder | null>(null);
-    const [cancelErrors, setCancelErrors] = useState<Record<number, string>>({});
+    // The server's refusal of a cancel, per order. `tooLate` is the deadline guard's 409: the card then also says who to ask.
+    const [cancelErrors, setCancelErrors] = useState<Record<number, {message: string; tooLate: boolean} | null>>({});
 
     // The cart's dialog keeps its form state in effects keyed on this array: it must be stable.
     const applications = useMemo(() => [application], [application]);
@@ -210,14 +212,17 @@ const CateringOverview: FC<CateringOverviewProps> = ({application}) => {
     const confirmCancel = async () => {
         const order = cancelTarget;
         if (!order) return;
-        setCancelErrors(prev => ({...prev, [order.id]: ''}));
+        setCancelErrors(prev => ({...prev, [order.id]: null}));
         try {
             await deleteMutation.mutateAsync(order.id);
         } catch (error) {
             // The server refuses a cancellation whose deadline has passed (409) and says why.
             setCancelErrors(prev => ({
                 ...prev,
-                [order.id]: error instanceof Error ? error.message : String(error),
+                [order.id]: {
+                    message: error instanceof Error ? error.message : String(error),
+                    tooLate: error instanceof HospitalityOrderRefusal && error.status === 409,
+                },
             }));
         } finally {
             setCancelTarget(null);
@@ -362,10 +367,17 @@ const CateringOverview: FC<CateringOverviewProps> = ({application}) => {
                                     </Paragraph>
                                 )}
 
+                                {/* The server refused the cancel. Refused as too late, the kitchen's contact follows under it,
+                                    the same one the change dialog shows. */}
                                 {cancelErrors[order.id] && (
-                                    <Alert data-color="danger" data-size="sm" role="alert">
-                                        {cancelErrors[order.id]}
-                                    </Alert>
+                                    <>
+                                        <Alert data-color="danger" data-size="sm" role="alert">
+                                            {cancelErrors[order.id]?.message}
+                                        </Alert>
+                                        {cancelErrors[order.id]?.tooLate && order.contact && (
+                                            <KitchenContact contact={order.contact}/>
+                                        )}
+                                    </>
                                 )}
 
                                 {/* A closed action is gone. A deadline is explained once, by the Alert at the top; any other

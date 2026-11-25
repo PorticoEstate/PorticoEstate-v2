@@ -9,8 +9,9 @@ import {
 } from "@/service/types/api/hospitality.types";
 
 /**
- * The server refused a change to an order. 409 is the deadline guard (a deadline passed, the order is locked or
- * the application is closed); the controller uses 409 for nothing else, so the status alone says «too late».
+ * The server refused a change to an order or its cancellation. 409 is the deadline guard (a deadline passed, the
+ * order is locked or the application is closed); the controller uses 409 for nothing else, so the status alone says
+ * «too late».
  */
 export class HospitalityOrderRefusal extends Error {
     constructor(message: string, readonly status: number) {
@@ -177,7 +178,7 @@ export function useDeleteHospitalityOrder(applicationId: number) {
             });
             if (!response.ok) {
                 const errorData = await response.json();
-                throw new Error(errorData.error || 'Failed to delete order');
+                throw new HospitalityOrderRefusal(errorData.error || 'Failed to delete order', response.status);
             }
             return response.json();
         },

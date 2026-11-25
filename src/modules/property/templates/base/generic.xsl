@@ -80,6 +80,9 @@
 													<xsl:attribute name="data-validation">
 														<xsl:text>number</xsl:text>
 													</xsl:attribute>
+													<xsl:attribute name="data-validation-allowing">
+														<xsl:text>negative</xsl:text>
+													</xsl:attribute>
 												</xsl:if>
 											</input>
 										</xsl:otherwise>

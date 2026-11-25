@@ -33,7 +33,7 @@ import {
 } from '../hooks/hospitality-hooks';
 import KitchenContact from '@/components/user/application/kitchen-contact';
 import {useBuildingSeasons, useServerSettings} from '@/service/hooks/api-hooks';
-import {generateTimeSlots, offeredServingTimes, servingTimeBounds} from '@/service/utils/serving-times';
+import {generateTimeSlots, kitchenOpeningSpanOnDay, offeredServingTimes, servingTimeHelp} from '@/service/utils/serving-times';
 import {formatCurrency} from '@/utils/cost-utils';
 import {
     formatOreOrDash,
@@ -281,8 +281,8 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
         && !!locationId
         && String(locationId) === String(hospitality.resource_id);
 
-    // The kitchen's hours are known once its seasons have loaded for a building that has them. Without them the
-    // time field's help falls back to the application's own times, as before.
+    // The kitchen's hours are known once its seasons have loaded for a building that has them. Without them the help
+    // under the time field does not name the kitchen's hours (see servingTimeHelp).
     const kitchenHoursKnown = !!hospitality?.resource_id
         && hospitality.building_id !== null
         && hospitality.building_id !== undefined
@@ -333,9 +333,23 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
         // isDelivery, so a change between two delivery places correctly does not re-run it.)
     }, [selectedDateOption, hospitality, kitchenSeasons, closeWhenNoSeasons, isDelivery]);
 
-    // The on-site help names the first and last time this list offers. It reads the same array the select
-    // renders, so the text cannot promise a time the list refuses.
-    const offeredBounds = servingTimeBounds(timeSlots);
+    // The kitchen's own span on the chosen day, read only to tell a closed kitchen from one that is open but offers
+    // no time inside the booking. Null while the kitchen's hours are not known.
+    const kitchenSpan = useMemo(() => {
+        if (!kitchenHoursKnown || !hospitality?.resource_id || !selectedDateOption
+            || selectedDateOption.key === GRANDFATHERED_DATE_KEY) return null;
+        return kitchenOpeningSpanOnDay(
+            selectedDateOption.from,
+            String(hospitality.resource_id),
+            kitchenSeasons,
+            closeWhenNoSeasons
+        );
+    }, [selectedDateOption, hospitality, kitchenHoursKnown, kitchenSeasons, closeWhenNoSeasons]);
+
+    // The help under the time field. The same array the select renders decides the text and any range it names.
+    const timeHelp = selectedDateOption && selectedDateOption.key !== GRANDFATHERED_DATE_KEY
+        ? servingTimeHelp({isDelivery, offered: timeSlots, kitchenHoursKnown, kitchenSpan})
+        : null;
 
     /**
      * The exact instant that will be sent as serving_time_iso. Derived once so the cutoff check,
@@ -963,21 +977,21 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
                             {!selectedDateOption && (
                                 <Field.Description>{t('bookingfrontend.hospitality_dialog_time_before_day')}</Field.Description>
                             )}
-                            {selectedDateOption && selectedDateOption.key !== GRANDFATHERED_DATE_KEY && (
+                            {timeHelp && selectedDateOption && (
                                 <Field.Description>
-                                    {/* Names only what the list below offers. A delivery, or kitchen hours that have not
-                                        loaded, keeps the booking's own times. On-site, the first and last time the list
-                                        offers; when it offers none that day, the closed message. */}
-                                    {isDelivery || !kitchenHoursKnown
-                                        ? t('bookingfrontend.hospitality_dialog_time_within_application')
-                                            .replace('%1', formatHm(selectedDateOption.from))
-                                            .replace('%2', formatHm(selectedDateOption.to))
-                                        : offeredBounds
-                                            ? t('bookingfrontend.hospitality_dialog_time_within_kitchen')
-                                                .replace('%1', hospitality.resource_name)
-                                                .replace('%2', offeredBounds.from)
-                                                .replace('%3', offeredBounds.to)
-                                            : t('bookingfrontend.serving_day_closed')}
+                                    {/* Names only a range the list below offers. See servingTimeHelp for each case. */}
+                                    {timeHelp.kind === 'kitchen'
+                                        ? t('bookingfrontend.hospitality_dialog_time_within_kitchen')
+                                            .replace('%1', hospitality.resource_name)
+                                            .replace('%2', timeHelp.from)
+                                            .replace('%3', timeHelp.to)
+                                        : timeHelp.kind === 'application'
+                                            ? t('bookingfrontend.hospitality_dialog_time_within_application')
+                                                .replace('%1', formatHm(selectedDateOption.from))
+                                                .replace('%2', formatHm(selectedDateOption.to))
+                                            : timeHelp.kind === 'closed'
+                                                ? t('bookingfrontend.serving_day_closed')
+                                                : t('bookingfrontend.hospitality_dialog_time_none')}
                                 </Field.Description>
                             )}
                             <Select

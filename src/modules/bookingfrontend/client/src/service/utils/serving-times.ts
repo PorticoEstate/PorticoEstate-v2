@@ -59,3 +59,54 @@ export function servingTimeBounds(offered: string[]): {from: string; to: string}
 	if (offered.length === 0) return null;
 	return {from: offered[0], to: offered[offered.length - 1]};
 }
+
+/**
+ * The kitchen's own first and last start on the day, on the same 15-minute grid and judged by the same
+ * isWithinBusinessHours as the list. It is never named in the text. It only tells a closed kitchen (null) from
+ * one that is open that day but offers no time inside the booking.
+ */
+export function kitchenOpeningSpanOnDay(
+	day: Date,
+	resourceId: string,
+	seasons: Season[] | undefined,
+	closeWhenNoSeasons: boolean,
+): {from: string; to: string} | null {
+	const open = generateTimeSlots(0, 0, 23, 45).filter(hm => {
+		const [h, m] = hm.split(':').map(Number);
+		const at = new Date(day.getFullYear(), day.getMonth(), day.getDate(), h, m);
+		return isWithinBusinessHours(at, [resourceId], seasons, closeWhenNoSeasons);
+	});
+	return servingTimeBounds(open);
+}
+
+/** What the help under the on-site Klokkeslett field says. The modal words it; servingTimeHelp decides it. */
+export type ServingTimeHelp =
+	| {kind: 'kitchen'; from: string; to: string}
+	| {kind: 'application'}
+	| {kind: 'closed'}
+	| {kind: 'none'};
+
+/**
+ * Which help text the time field shows, from the same `offered` array the select renders. A range is only ever
+ * named when the list offers a time inside it.
+ *
+ * - Delivery, or on-site with the kitchen's hours not known: the booking's own times when the list offers any
+ *   (for delivery the list IS the booking's slots). With no time offered, nothing is named.
+ * - On-site with the kitchen's hours known and times offered: the first and last time the list offers.
+ * - On-site with the kitchen's hours known and no time offered: `closed` only when the kitchen has no opening
+ *   that day. Otherwise `none`, which names no hours and never reads as a closure.
+ */
+export function servingTimeHelp(input: {
+	isDelivery: boolean;
+	offered: string[];
+	kitchenHoursKnown: boolean;
+	kitchenSpan: {from: string; to: string} | null;
+}): ServingTimeHelp {
+	if (input.offered.length === 0) {
+		const kitchenClosedThatDay = !input.isDelivery && input.kitchenHoursKnown && input.kitchenSpan === null;
+		return kitchenClosedThatDay ? {kind: 'closed'} : {kind: 'none'};
+	}
+	if (input.isDelivery || !input.kitchenHoursKnown) return {kind: 'application'};
+	const bounds = servingTimeBounds(input.offered);
+	return bounds ? {kind: 'kitchen', ...bounds} : {kind: 'none'};
+}

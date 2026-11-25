@@ -1632,7 +1632,7 @@
 		root.addEventListener('click', function (e) {
 			var btn = e.target.closest('[data-booking-action="delete-association"]');
 			if (!btn) return;
-			if (!confirm(lang('deleteAssociationConfirm') !== 'deleteAssociationConfirm' ? lang('deleteAssociationConfirm') : 'Deactivate this association?')) return;
+			if (!confirm(lang('deleteAssociationConfirm'))) return;
 			var assocId = btn.dataset.assocId;
 			var assocType = btn.dataset.assocType;
 			btn.disabled = true;
@@ -1658,7 +1658,7 @@
 		root.addEventListener('click', function (e) {
 			var btn = e.target.closest('[data-booking-action="activate-association"]');
 			if (!btn) return;
-			if (!confirm(lang('activateAssociationConfirm') !== 'activateAssociationConfirm' ? lang('activateAssociationConfirm') : 'Reactivate this association?')) return;
+			if (!confirm(lang('activateAssociationConfirm'))) return;
 			var assocId = btn.dataset.assocId;
 			var assocType = btn.dataset.assocType;
 			btn.disabled = true;
@@ -1995,7 +1995,8 @@
 		comments.forEach(function (comment) {
 			var typeTag = '';
 			if (comment.type && comment.type !== 'comment') {
-				typeTag = ' <span class="booking-tag ds-tag" data-color="neutral">' + esc(comment.type) + '</span>';
+				// A catering change by the applicant (GH #1425) comes with its tag already translated.
+				typeTag = ' <span class="booking-tag ds-tag" data-color="neutral">' + esc(comment.type_label || comment.type) + '</span>';
 			}
 			// The element the comment is about (ref #1392), and for the case officer a
 			// reply on that same element through the comment modal.
@@ -2378,12 +2379,21 @@
 		var ordersStoreUrl = root.dataset.hospitalityOrdersUrl;
 		if (ordersStoreUrl) ordersStoreUrl = ordersStoreUrl.split('?')[0];
 
+		// The kitchen's opening hours (seasons and the server setting), read as the citizen dialog does
+		var seasonsBaseUrl = root.dataset.seasonsBaseUrl;
+		if (seasonsBaseUrl) seasonsBaseUrl = seasonsBaseUrl.split('?')[0];
+
+		var serverSettingsUrl = root.dataset.serverSettingsUrl;
+		if (serverSettingsUrl) serverSettingsUrl = serverSettingsUrl.split('?')[0];
+
 		HospitalityOrderModal.open({
 			applicationId: appId,
 			hospitalities: _hospOrdersHospitalities,
 			ordersStoreUrl: ordersStoreUrl,
 			applicationsBaseUrl: applicationsBaseUrl,
 			deliveryLocationsBaseUrl: hospitalityBaseUrl,
+			seasonsBaseUrl: seasonsBaseUrl,
+			serverSettingsUrl: serverSettingsUrl,
 			lang: lang,
 			esc: esc,
 			fetchJson: fetchJson,

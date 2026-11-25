@@ -4,6 +4,7 @@ namespace App\modules\booking\repositories;
 
 use App\Database\Db;
 use App\modules\booking\models\HospitalityOrder;
+use App\modules\booking\services\HospitalityOrderGuard;
 use PDO;
 
 class HospitalityOrderRepository
@@ -73,6 +74,69 @@ class HospitalityOrderRepository
     }
 
     // -- Orders --
+
+    /**
+     * How many OPEN orders of this hospitality are served at this location. THE one definition of "open" for
+     * the main-resource change (it decides whether moving the main would strand orders), so the refusal and
+     * any count of it are the same SQL:
+     *   - the order is not in a final status (HospitalityOrderGuard::FINAL_ORDER_STATUSES), and
+     *   - its serving time is unknown (NULL) or has not started yet.
+     * Deliberately on the safe side: an order with NO serving time and an order whose date lies years ahead (the
+     * database holds a few corrupt far-future dates) both count as open, so they block the move rather than
+     * being silently left behind. Compared against the current time as naive UTC, the way serving_time_iso is
+     * stored, so the database session's time zone does not matter.
+     */
+    public function countOpenAtLocation(int $hospitalityId, int $locationResourceId): int
+    {
+        $final = implode(', ', array_map(
+            static fn(string $status): string => "'" . $status . "'",
+            HospitalityOrderGuard::FINAL_ORDER_STATUSES // constants, never request input
+        ));
+        $stmt = $this->db->prepare(
+            "SELECT count(*) FROM bb_hospitality_order
+              WHERE hospitality_id = :hospitality_id
+                AND location_resource_id = :location_resource_id
+                AND status NOT IN ({$final})
+                AND (serving_time_iso IS NULL OR serving_time_iso > (now() AT TIME ZONE 'UTC'))"
+        );
+        $stmt->execute([':hospitality_id' => $hospitalityId, ':location_resource_id' => $locationResourceId]);
+        return (int)$stmt->fetchColumn();
+    }
+
+    /**
+     * Run $work as ONE transaction (§49596): every write it makes lands, or none does.
+     *
+     * When a transaction is already open (a caller's), $work joins it and that caller's commit or rollback decides.
+     * Otherwise this opens one, commits it when $work returns, and when $work throws ANYTHING rolls it back and
+     * rethrows: a PHP Error half-way through a run of writes leaves them as partial as a PDOException does, and the
+     * handlers above catch Exception only.
+     *
+     * The callers re-read, write their changelog entry and tell anyone only AFTER this returns, so a change that is
+     * rolled back is never reported.
+     *
+     * @template T
+     * @param callable(): T $work
+     * @return T
+     */
+    public function transactional(callable $work): mixed
+    {
+        $own = !$this->db->inTransaction();
+        if ($own) {
+            $this->db->beginTransaction();
+        }
+        try {
+            $result = $work();
+            if ($own) {
+                $this->db->commit();
+            }
+            return $result;
+        } catch (\Throwable $e) {
+            if ($own && $this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
+            throw $e;
+        }
+    }
 
     public function getById(int $id): ?array
     {
@@ -423,6 +487,40 @@ class HospitalityOrderRepository
             $out[(int)$row['order_id']] = self::utcToVenueIso($row['changed_at']);
         }
         return $out;
+    }
+
+    /**
+     * Every "changed by the applicant" entry on the application's orders, newest first, each with
+     * the order it belongs to (hospitality_name, serving_time_iso, location_name), for the admin
+     * «Historikk» (GH #1425 S4). Read-only: the Historikk shows these, nothing is copied into
+     * bb_application_comment.
+     *
+     * @return list<array> changelog rows; changed_at as an ISO-8601 instant in venue time and
+     *                     old_value / new_value decoded
+     */
+    public function getApplicantChangesByApplication(int $applicationId): array
+    {
+        $sql = "SELECT cl.id, cl.order_id, cl.changed_at, cl.comment, cl.old_value, cl.new_value,
+                       bu.name AS booking_user_name,
+                       h.name AS hospitality_name, r.name AS location_name, o.serving_time_iso
+                FROM bb_hospitality_order_changelog cl
+                JOIN bb_hospitality_order o ON o.id = cl.order_id
+                LEFT JOIN bb_hospitality h ON h.id = o.hospitality_id
+                LEFT JOIN bb_resource r ON r.id = o.location_resource_id
+                LEFT JOIN bb_user bu ON bu.id = cl.booking_user_id
+                WHERE o.application_id = :application_id
+                  AND cl.change_type = 'applicant_change'
+                ORDER BY cl.changed_at DESC, cl.id DESC";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([':application_id' => $applicationId]);
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        foreach ($rows as &$row) {
+            $row['changed_at'] = self::utcToVenueIso($row['changed_at']);
+            $row['old_value'] = $row['old_value'] ? json_decode($row['old_value'], true) : null;
+            $row['new_value'] = $row['new_value'] ? json_decode($row['new_value'], true) : null;
+        }
+        unset($row);
+        return $rows;
     }
 
     /**

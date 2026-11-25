@@ -8,6 +8,11 @@
 	</xsl:variable>
 
 	<xsl:call-template name="msgbox"/>
+	<xsl:if test="resource/direct_booking_conflict_html != ''">
+		<div class="ds-alert" data-color="warning" role="alert">
+			<xsl:value-of disable-output-escaping="yes" select="resource/direct_booking_conflict_html"/>
+		</div>
+	</xsl:if>
 	<script type="text/javascript">
 		var resource_id = "<xsl:value-of select="resource/id"/>";
 		var default_schema = "<xsl:value-of select="resource/activity_name"/>";

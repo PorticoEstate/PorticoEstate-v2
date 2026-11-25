@@ -2412,15 +2412,17 @@ export function useAvailableResourcesMultiDomain(
  * Hook to fetch documents for an application
  * @param applicationId The application ID
  * @param typeFilter Optional document type filter(s)
+ * @param secret Optional secret for access without a login (the application's secret link)
  * @returns Query result containing array of documents
  */
 export function useApplicationDocuments(
 	applicationId: number | string,
-	typeFilter?: IDocumentCategoryQuery | IDocumentCategoryQuery[]
+	typeFilter?: IDocumentCategoryQuery | IDocumentCategoryQuery[],
+	secret?: string
 ): UseQueryResult<IDocument[]> {
 	return useQuery({
-		queryKey: ['applicationDocuments', applicationId, typeFilter],
-		queryFn: () => fetchApplicationDocuments(applicationId, typeFilter),
+		queryKey: ['applicationDocuments', applicationId, typeFilter, secret],
+		queryFn: () => fetchApplicationDocuments(applicationId, typeFilter, secret),
 		retry: 2,
 		refetchOnWindowFocus: false,
 	});

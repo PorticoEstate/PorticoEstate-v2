@@ -53,8 +53,12 @@ final class HospitalityOrderGuard
     /** Application statuses in which catering may still be handled from Min side. */
     private const OPEN_APPLICATION_STATUSES = [self::DRAFT_STATUS, 'NEW', 'PENDING', 'ACCEPTED'];
 
-    /** Order statuses that can no longer be changed or cancelled by the applicant. */
-    private const FINAL_ORDER_STATUSES = ['cancelled', 'delivered'];
+    /**
+     * Order statuses that can no longer be changed or cancelled by the applicant. Public so that the one place that
+     * asks "is this order still open?" in SQL (HospitalityOrderRepository::countOpenAtLocation) reads this list
+     * instead of keeping a second copy.
+     */
+    public const FINAL_ORDER_STATUSES = ['cancelled', 'delivered'];
 
     private HospitalityDeadlineCalculator $calculator;
 

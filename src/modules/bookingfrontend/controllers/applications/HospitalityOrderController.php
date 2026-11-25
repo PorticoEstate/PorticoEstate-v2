@@ -11,8 +11,11 @@ use App\modules\booking\repositories\HospitalityArticleRepository;
 use App\modules\booking\repositories\HospitalityOrderRepository;
 use App\modules\booking\services\HospitalityDeadlineCalculator;
 use App\modules\booking\services\HospitalityOrderGuard;
+use App\modules\booking\services\HospitalityOrderQuantity;
+use App\modules\booking\services\HospitalityOrderAmount;
 use App\modules\booking\services\HospitalityOrderDiff;
 use App\modules\booking\services\CateringMailRenderer;
+use App\modules\booking\services\CateringChangeText;
 use App\modules\bookingfrontend\models\User;
 use App\modules\bookingfrontend\services\applications\CateringChangeNotifier;
 use App\modules\bookingfrontend\services\applications\CitizenHospitalityOrder;
@@ -253,6 +256,41 @@ class HospitalityOrderController
 	}
 
 	/**
+	 * 400 for a line whose quantity is not a positive whole number (HospitalityOrderQuantity::ofLine), in the
+	 * applicant's language. `line` is the key of the offending line in the request's `lines`. Like every
+	 * validation refusal in this controller it is a 400; 409 is for the deadline guard only.
+	 *
+	 * @param int|string $line
+	 */
+	private function refuseQuantity(ResponseInterface $response, $line): ResponseInterface
+	{
+		return ResponseHelper::sendErrorResponse([
+			'error' => lang('catering_quantity_not_whole'),
+			'code' => 'quantity_not_whole',
+			'line' => $line,
+		], 400, $response);
+	}
+
+	/**
+	 * 422 for an order whose amounts the money columns cannot hold (HospitalityOrderAmount, §49596), in the applicant's
+	 * language: `code` says which rule, `line` names the first line that does not fit (the key in the request's `lines`).
+	 * Judged after the deadline guard and the line checks, before anything is written.
+	 *
+	 * @param array{code: string, line: int|string|null} $refusal
+	 */
+	private function refuseAmount(ResponseInterface $response, array $refusal): ResponseInterface
+	{
+		$payload = [
+			'error' => lang($refusal['code'] === HospitalityOrderAmount::CODE_LINE ? 'catering_amount_too_large' : 'catering_order_total_too_large'),
+			'code' => $refusal['code'],
+		];
+		if ($refusal['line'] !== null) {
+			$payload['line'] = $refusal['line'];
+		}
+		return ResponseHelper::sendErrorResponse($payload, 422, $response);
+	}
+
+	/**
 	 * What the applicant may do with an existing order right now, for GET /hospitality-orders. The
 	 * client shows exactly this and offers nothing else; the write endpoints re-check it.
 	 *
@@ -319,7 +357,11 @@ class HospitalityOrderController
 	 * officer. Called after the write has gone through; neither part can fail the request.
 	 *
 	 * No bb_application row is touched (the application process is frozen) and no application
-	 * comment is written (that path mails the whole group and bumps frontend_modified).
+	 * comment is written (that path mails the whole group and bumps frontend_modified); the admin
+	 * «Historikk» shows these entries by reading them (booking ApplicationController::showComments).
+	 * `modified` («Sist endret») is deliberately left alone: the operator ruled 2026-11-23 (task
+	 * 47036) that a catering change does not move it — it also dates the applicant's own status
+	 * timeline and the anonymiser's retention clock.
 	 *
 	 * @param array|null $before the order before the change; null when it was just added
 	 * @param array|null $after  the order after the change
@@ -343,12 +385,6 @@ class HospitalityOrderController
 			return;
 		}
 
-		$comments = [
-			CateringMailRenderer::KIND_ADDED => 'Order added by applicant via Min side',
-			CateringMailRenderer::KIND_CHANGED => 'Order changed by applicant via Min side',
-			CateringMailRenderer::KIND_CANCELLED => 'Order cancelled by applicant via Min side',
-		];
-
 		// The table requires an author, so a call with no resolvable booking user (a hand-made
 		// ?secret= request) leaves no entry — as before — but the officer is still told.
 		try {
@@ -359,7 +395,8 @@ class HospitalityOrderController
 					'change_type' => 'applicant_change',
 					'old_value' => $diff['old'] ?: null,
 					'new_value' => $diff['new'] ?: null,
-					'comment' => $comments[$kind],
+					// The kind is read back from this exact text (CateringChangeText::kindOf).
+					'comment' => CateringChangeText::ENTRY_COMMENTS[$kind],
 				]);
 			}
 		} catch (\Throwable $e) {
@@ -379,6 +416,8 @@ class HospitalityOrderController
 					'activity_name' => $this->activityName(isset($application['activity_id']) ? (int)$application['activity_id'] : null),
 					'organization_name' => $application['customer_organization_name'] ?? null,
 					'case_officer_id' => (int)($application['case_officer_id'] ?? 0),
+					// D1: with no case officer to mail, the building's case officers are.
+					'building_id' => (int)($application['building_id'] ?? 0),
 				],
 				'order' => [
 					'id' => (int)$after['id'],
@@ -387,9 +426,35 @@ class HospitalityOrderController
 				'fallback_date' => $this->orderRepo->getEarliestApplicationDate($applicationId),
 				'diff' => $diff,
 				'summary' => $kind === CateringMailRenderer::KIND_CHANGED ? [] : HospitalityOrderDiff::summary($after),
+				'changed_at' => (new \DateTimeImmutable('now', new \DateTimeZone(self::LOCAL_TIMEZONE)))->format(\DateTimeInterface::ATOM),
+				'context' => CateringChangeText::contextOf($after),
+				'cancel_deadline' => $kind === CateringMailRenderer::KIND_CANCELLED ? null : $this->cancelDeadline($application, $after),
 			]);
 		} catch (\Throwable $e) {
 			error_log("Catering change notification failed for order {$after['id']}: " . $e->getMessage());
+		}
+	}
+
+	/**
+	 * The order's cancellation deadline for the officer's mail (GH #1425 S5): the `until` of the
+	 * guard's cancel verdict, the same value the applicant's own order list shows (actionsFor). Null
+	 * when the guard gives none (no deadline basis, billed, paid at checkout), or when it cannot be
+	 * worked out — the mail then simply has no deadline line.
+	 */
+	private function cancelDeadline(array $application, array $order): ?string
+	{
+		try {
+			$until = $this->verdict(
+				HospitalityOrderGuard::ACTION_CANCEL,
+				$application,
+				$order,
+				$this->hospitalityRow((int)($order['hospitality_id'] ?? 0)),
+				$this->toVenueTime($order['serving_time_iso'] ?? null) ?? $this->earliestApplicationDate((int)$application['id'])
+			)['until'];
+			return $until?->format(\DateTimeInterface::ATOM);
+		} catch (\Throwable $e) {
+			error_log("Catering change mail: no cancellation deadline for order {$order['id']}: " . $e->getMessage());
+			return null;
 		}
 	}
 
@@ -672,9 +737,10 @@ class HospitalityOrderController
 				if (empty($line['hospitality_article_id'])) {
 					return ResponseHelper::sendErrorResponse(['error' => "Line {$i}: hospitality_article_id is required"], 400, $response);
 				}
-				$quantity = isset($line['quantity']) ? (float)$line['quantity'] : 1;
-				if ($quantity <= 0) {
-					return ResponseHelper::sendErrorResponse(['error' => "Line {$i}: quantity must be positive"], 400, $response);
+				// A whole number (task 47994): judged here, before the first write below, and stored as the int it was read as.
+				$quantity = HospitalityOrderQuantity::ofLine($line);
+				if ($quantity === null) {
+					return $this->refuseQuantity($response, $i);
 				}
 
 				$articleId = (int)$line['hospitality_article_id'];
@@ -692,7 +758,8 @@ class HospitalityOrderController
 					return ResponseHelper::sendErrorResponse(['error' => "Line {$i}: article is inactive"], 400, $response);
 				}
 
-				$resolvedLines[] = [
+				// Keyed as the request keys it, so a refusal below names the request's own line.
+				$resolvedLines[$i] = [
 					'hospitality_article_id' => $articleId,
 					'quantity' => $quantity,
 					'unit_price' => (float)$pricing['effective_price'],
@@ -701,26 +768,36 @@ class HospitalityOrderController
 				];
 			}
 
+			// The amounts (§49596): what the money columns can hold, in whole øre, before the first write below.
+			$amountRefusal = HospitalityOrderAmount::refusal($resolvedLines, $resolvedLines, [], $this->articleRepo->getTaxPercentByCode());
+			if ($amountRefusal !== null) {
+				return $this->refuseAmount($response, $amountRefusal);
+			}
+
 			// Get booking user ID for changelog
 			$bookingUserId = $this->getBookingUserId();
 
-			// Create the order
-			$orderId = $this->orderRepo->create([
-				'application_id' => $applicationId,
-				'hospitality_id' => $hospitalityId,
-				'location_resource_id' => $locationResourceId,
-				'status' => HospitalityOrder::STATUS_PENDING,
-				'comment' => $body['comment'] ?? null,
-				'special_requirements' => $body['special_requirements'] ?? null,
-				'serving_time_iso' => $body['serving_time_iso'] ?? null,
-				'created_by' => $bookingUserId,
-			]);
+			// The order and its lines in ONE transaction (§49596): all of it lands, or none of it. It is committed
+			// before the re-read, the changelog entry and the officer's mail below, so nobody is told of a rolled-back add.
+			$orderId = $this->orderRepo->transactional(function () use ($applicationId, $hospitalityId, $locationResourceId, $body, $bookingUserId, $resolvedLines): int {
+				$orderId = $this->orderRepo->create([
+					'application_id' => $applicationId,
+					'hospitality_id' => $hospitalityId,
+					'location_resource_id' => $locationResourceId,
+					'status' => HospitalityOrder::STATUS_PENDING,
+					'comment' => $body['comment'] ?? null,
+					'special_requirements' => $body['special_requirements'] ?? null,
+					'serving_time_iso' => $body['serving_time_iso'] ?? null,
+					'created_by' => $bookingUserId,
+				]);
 
-			// Add lines
-			foreach ($resolvedLines as $lineData) {
-				$lineData['order_id'] = $orderId;
-				$this->orderRepo->addOrderLine($lineData);
-			}
+				foreach ($resolvedLines as $lineData) {
+					$lineData['order_id'] = $orderId;
+					$this->orderRepo->addOrderLine($lineData);
+				}
+
+				return $orderId;
+			});
 
 			$order = $this->readAfterWrite($orderId, 'add');
 
@@ -848,12 +925,24 @@ class HospitalityOrderController
 				$updateData['location_resource_id'] = $locationResourceId;
 			}
 
-			if (!empty($updateData)) {
-				$updateData['modified_by'] = $bookingUserId;
-				$this->orderRepo->update($orderId, $updateData);
+			// The quantity of EVERY line is judged here, before the first write: the order's own fields are written
+			// just below, so a refusal from inside the lines loop would come after them (task 47994). Each is kept
+			// as the int it was read as, and that is what the loop below stores.
+			$quantities = [];
+			if (isset($body['lines']) && is_array($body['lines'])) {
+				foreach ($body['lines'] as $i => $line) {
+					$quantity = HospitalityOrderQuantity::ofLine($line);
+					if ($quantity === null) {
+						return $this->refuseQuantity($response, $i);
+					}
+					$quantities[$i] = $quantity;
+				}
 			}
 
-			// Replace lines if provided
+			// The replacing lines, validated and priced BEFORE the first write (§49596): this block used to run after the
+			// order's own fields were saved, so a refused line left the comment written. The refusals keep their order.
+			// null = the request does not replace the lines.
+			$resolvedLines = null;
 			if (isset($body['lines']) && is_array($body['lines'])) {
 				if (empty($body['lines'])) {
 					return ResponseHelper::sendErrorResponse(['error' => 'lines array must not be empty'], 400, $response);
@@ -867,10 +956,7 @@ class HospitalityOrderController
 					if (empty($line['hospitality_article_id'])) {
 						return ResponseHelper::sendErrorResponse(['error' => "Line {$i}: hospitality_article_id is required"], 400, $response);
 					}
-					$quantity = isset($line['quantity']) ? (float)$line['quantity'] : 1;
-					if ($quantity <= 0) {
-						return ResponseHelper::sendErrorResponse(['error' => "Line {$i}: quantity must be positive"], 400, $response);
-					}
+					$quantity = $quantities[$i];
 
 					$articleId = (int)$line['hospitality_article_id'];
 					$pricing = $this->articleRepo->resolveEffectivePricing($articleId);
@@ -883,7 +969,8 @@ class HospitalityOrderController
 						return ResponseHelper::sendErrorResponse(['error' => "Line {$i}: article does not belong to this hospitality"], 400, $response);
 					}
 
-					$resolvedLines[] = [
+					// Keyed as the request keys it, so a refusal below names the request's own line.
+					$resolvedLines[$i] = [
 						'hospitality_article_id' => $articleId,
 						'quantity' => $quantity,
 						'unit_price' => (float)$pricing['effective_price'],
@@ -892,18 +979,41 @@ class HospitalityOrderController
 					];
 				}
 
-				// Delete existing lines
-				$existingLines = $this->orderRepo->getOrderLines($orderId);
-				foreach ($existingLines as $existingLine) {
-					$this->orderRepo->deleteOrderLine((int)$existingLine['id']);
-				}
-
-				// Add new lines
-				foreach ($resolvedLines as $lineData) {
-					$lineData['order_id'] = $orderId;
-					$this->orderRepo->addOrderLine($lineData);
+				// The amounts (§49596), in whole øre: the new lines replace every stored one, so the order's total
+				// after the write is theirs; the stored lines are the total it is allowed to come down from.
+				$amountRefusal = HospitalityOrderAmount::refusal(
+					$resolvedLines,
+					$resolvedLines,
+					$this->orderRepo->getOrderLines($orderId),
+					$this->articleRepo->getTaxPercentByCode()
+				);
+				if ($amountRefusal !== null) {
+					return $this->refuseAmount($response, $amountRefusal);
 				}
 			}
+
+			// The order's own fields and its lines in ONE transaction (§49596): all of it lands, or none of it. It is
+			// committed before the re-read, the changelog entry and the officer's mail below.
+			$this->orderRepo->transactional(function () use ($orderId, $updateData, $bookingUserId, $resolvedLines): void {
+				if (!empty($updateData)) {
+					$updateData['modified_by'] = $bookingUserId;
+					$this->orderRepo->update($orderId, $updateData);
+				}
+
+				if ($resolvedLines !== null) {
+					// Delete existing lines
+					$existingLines = $this->orderRepo->getOrderLines($orderId);
+					foreach ($existingLines as $existingLine) {
+						$this->orderRepo->deleteOrderLine((int)$existingLine['id']);
+					}
+
+					// Add new lines
+					foreach ($resolvedLines as $lineData) {
+						$lineData['order_id'] = $orderId;
+						$this->orderRepo->addOrderLine($lineData);
+					}
+				}
+			});
 
 			$updatedOrder = $this->readAfterWrite($orderId, 'change');
 

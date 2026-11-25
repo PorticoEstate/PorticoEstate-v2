@@ -1,5 +1,5 @@
 <!-- BEGIN header -->
-<form method="POST" action="{action_url}">
+<form method="POST" action="{action_url}" class="pure-form config-form">
 	<table class="pure-table pure-table-bordered pure-table-striped pure-form">
 		<tr class="th">
 			<td colspan="2">&nbsp;<b>{title}</b></td>
@@ -201,7 +201,7 @@
 			</td>
 		</tr>
 		<tr>
-			<td>{lang_hide_price_category}:<br/><small>{lang_hide_price_category_note}</small></td>
+			<td>{lang_hide_price_category}:<br/><small>{lang_hide_price_category_note_no_choice}</small></td>
 			<td>
 				<select name="newsettings[hide_price_category]" class="pure-u-1">
 					<option value="0"{selected_hide_price_category_0}>{lang_No}</option>

@@ -1555,6 +1555,20 @@
 				));
 		}
 
+		/**
+		 * After a delete the officer lands on the application the allocation was
+		 * made for; an allocation with no application goes back to the building calendar.
+		 */
+		private function redirect_after_delete( array $allocation )
+		{
+			if (!empty($allocation['application_id']))
+			{
+				self::redirect(array('menuaction' => 'booking.uiapplication.show', 'id' => $allocation['application_id']));
+			}
+
+			self::redirect(array('menuaction' => 'booking.uimassbooking.schedule', 'id' => $allocation['building_id']));
+		}
+
 		public function delete()
 		{
 			$id = Sanitizer::get_var('id', 'int');
@@ -1594,7 +1608,7 @@
 						//	$err = $this->bo->so->delete_allocation($id);
 						$err = $this->bo->delete($id);
 
-						self::redirect(array('menuaction' => 'booking.uimassbooking.schedule', 'id' => $allocation['building_id']));
+						$this->redirect_after_delete($allocation);
 					}
 				}
 				else
@@ -1654,7 +1668,7 @@
 					}
 					if ($step == 3)
 					{
-						self::redirect(array('menuaction' => 'booking.uimassbooking.schedule', 'id' => $allocation['building_id']));
+						$this->redirect_after_delete($allocation);
 					}
 				}
 			}

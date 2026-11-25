@@ -159,6 +159,27 @@
     animation: highlightedEventPulse 1.4s ease-in-out 3;
 }
 
+// The wrapper around the calendar (#1537) takes the grid area the calendar itself was placed in, so the grid that holds
+// it (the desktop columns, the mobile areas, the tablet .closed state) places it exactly as it placed the calendar.
+// Without it the wrapper is auto-placed in one column and the calendar is 14px narrower.
+.calendarBody {
+    grid-area: calendar-body;
+}
+
+// The closing time at the foot of the time axis (#1537). FullCalendar labels a slot only while it starts before
+// slotMaxTime, so the closing time gets no label of its own. It is drawn here, in a band under the grid's bottom line,
+// the way FullCalendar draws each slot label in the row under its line. The band follows the calendar in the flow, so
+// nothing above it moves: only the wrapper grows, by one label line (it inherits the slot labels' line-height).
+// The axis column is 61px wide with a 4.5px cushion, and the calendar starts 2px inside the wrapper. Measured live in
+// Chrome 157 at 1280 and 375, in the week and day views: the text right-aligns to the same edge as the slot labels.
+.closingAxisLabel {
+    box-sizing: border-box;
+    width: 61px;
+    margin-left: 2px;
+    padding-right: 4.5px;
+    text-align: right;
+}
+
 @keyframes highlightedEventPulse {
     0%, 100% {
         box-shadow: 0 0 0 2px var(--ds-color-accent-surface-hover);

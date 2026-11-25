@@ -75,6 +75,29 @@ export async function getEligibleResourcePrices(
 }
 
 /**
+ * The stored hide_price_category read as PHP and the client read it: BookingfrontendConfig's
+ * @ParseBool makes 'true', 'yes' and '1' (any case, surrounding whitespace ignored) true,
+ * and only true hides. Anything else, and no row at all, shows.
+ */
+export function parseHidePriceCategory(value: string | null | undefined): boolean {
+  return value != null && ['true', 'yes', '1'].includes(value.trim().toLowerCase());
+}
+
+/**
+ * Whether the citizen chooses no price because the price category is hidden
+ * (bookingfrontend config hide_price_category, ref #1477). Asked on every booking,
+ * so a change in the admin applies to the next time slot without a restart.
+ * PHP: ArticleRepository::hidesPriceChoice.
+ */
+export async function hidesPriceChoice(client: Queryable): Promise<boolean> {
+  const { rows } = await client.query(
+    `SELECT config_value FROM phpgw_config
+      WHERE config_app = 'bookingfrontend' AND config_name = 'hide_price_category'`,
+  );
+  return parseHidePriceCategory(rows[0]?.config_value);
+}
+
+/**
  * The option a resource's price starts out as: the only one, or else the
  * default. Two or more default rows are no default at all. Null means the
  * citizen has to choose, or that there is nothing to choose between.

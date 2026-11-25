@@ -37,6 +37,7 @@ import {Season} from "@/service/types/Building";
 import {useBuilding, useBuildingResources} from "@/service/api/building";
 import { useToast } from "@/components/toast/toast-context";
 import {isApplicationDeactivated} from "@/service/utils/deactivation-utils";
+import {closingAxisLabel, SLOT_LABEL_FORMAT} from "@/components/building-calendar/util/closing-axis-label";
 
 interface FullCalendarViewProps {
 	calendarRef: React.MutableRefObject<FullCalendar | null>,
@@ -974,7 +975,9 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 
 	const calendarVisEvents = useMemo(() => [...calendarEvents, ...tempEventArr, currentTempEvent].filter(Boolean) as EventInput[], [calendarEvents, tempEventArr, currentTempEvent]);
 
-	return (
+	// The closing time is labelled only in the time-grid views, the ones that have a time axis (#1537).
+	const closingLabel = viewMode.startsWith('timeGrid') ? closingAxisLabel(slotMaxTime, DateTime.local().locale) : null;
+	const calendar = (
 		<FullCalendar
 			ref={calendarRef}
 			plugins={[interactionPlugin, dayGridPlugin, timeGridPlugin, listPlugin]}
@@ -997,11 +1000,7 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 			eventContent={(eventInfo: FCEventContentArg<FCallEvent | FCallTempEvent>) => renderEventContent(eventInfo)}
 			views={{
 				timeGrid: {
-					slotLabelFormat: {
-						hour: '2-digit',
-						minute: '2-digit',
-						hour12: false
-					}
+					slotLabelFormat: SLOT_LABEL_FORMAT
 				},
 				list: {
 					eventClassNames: ({event: {extendedProps}}) => {
@@ -1080,6 +1079,13 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 			// }}
 			// style={{gridColumn: 2}}
 		/>
+	);
+
+	return (
+		<div className={styles.calendarBody}>
+			{calendar}
+			{closingLabel && <div className={styles.closingAxisLabel}>{closingLabel}</div>}
+		</div>
 	);
 }
 

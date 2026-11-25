@@ -215,6 +215,19 @@ class booking_soresource extends booking_socommon
 	function doValidate($entity, booking_errorstack $errors)
 	{
 		parent::doValidate($entity, $errors);
+
+		/**
+		 * A resource that is linked to hospitality cannot get direct booking (operator 2026-11-11).
+		 * Only the change unset -> set is refused: a resource that already has both, a legacy
+		 * conflict, still saves its other fields. Reached from every legacy resource save
+		 * (edit, edit_activities, edit_facilities), which all validate before they update.
+		 */
+		$refusal = (new \App\modules\booking\services\HospitalityDirectBookingGuard())
+			->checkResourceSave((int)(isset($entity['id']) ? $entity['id'] : 0), isset($entity['direct_booking']) ? $entity['direct_booking'] : null);
+		if ($refusal !== null)
+		{
+			$errors['direct_booking'] = $refusal;
+		}
 	}
 
 	function _get_conditions($query, $filters)

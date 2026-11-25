@@ -1,5 +1,5 @@
 <!-- BEGIN header -->
-<form method="post" action="{action_url}">
+<form method="post" action="{action_url}" class="pure-form config-form">
   <div class="center">
     <table class="tableCenter">
       <tr class="head_background">

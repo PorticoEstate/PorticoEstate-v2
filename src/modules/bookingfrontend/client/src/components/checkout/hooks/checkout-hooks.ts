@@ -3,8 +3,9 @@ import {useClientTranslation} from "@/app/i18n/ClientTranslationProvider";
 import {phpGWLink} from "@/service/util";
 import {IApplication} from "@/service/types/api/application.types";
 import {
-    initiateVippsPayment, 
-    VippsPaymentData, 
+    CheckoutSubmitError,
+    initiateVippsPayment,
+    VippsPaymentData,
     VippsPaymentResponse, 
     fetchExternalPaymentEligibility,
     checkVippsPaymentStatus,
@@ -100,7 +101,7 @@ export function useCheckoutApplications() {
 
             if (!response.ok) {
                 const errorData = await response.json();
-                throw new Error(errorData.error || errorData.errors?.join(', ') || 'Checkout failed');
+                throw new CheckoutSubmitError(errorData.error || errorData.errors?.join(', ') || 'Checkout failed', response.status, errorData);
             }
 
             return response.json() as Promise<CheckoutResponse>;
@@ -129,6 +130,11 @@ export function useCheckoutApplications() {
             // Rollback to previous state on error
             if (context?.previousApplications) {
                 queryClient.setQueryData(['partialApplications'], context.previousApplications);
+            }
+            // A price was set: the payment options are read again for the new total
+            // (the cart itself is read again in onSettled)
+            if (err instanceof CheckoutSubmitError && err.isPriceSet) {
+                queryClient.invalidateQueries({queryKey: ['externalPaymentEligibility']});
             }
         },
         onSuccess: (data) => {
@@ -162,6 +168,7 @@ export function useVippsPayment() {
     // Same no-fallback rule as above: the column is nullable, NULL means "not known", and a
     // default here would manufacture a language claim for every Vipps applicant.
     const {i18n} = useClientTranslation();
+    const queryClient = useQueryClient();
 
     return useMutation({
         mutationFn: async (paymentData: VippsPaymentData) => {
@@ -175,6 +182,12 @@ export function useVippsPayment() {
         },
         onError: (error: Error) => {
             console.error('Vipps payment error:', error);
+            // A price was set: the cart and the payment options are read again, so the
+            // applicant sees the amount before paying
+            if (error instanceof CheckoutSubmitError && error.isPriceSet) {
+                queryClient.invalidateQueries({queryKey: ['partialApplications']});
+                queryClient.invalidateQueries({queryKey: ['externalPaymentEligibility']});
+            }
             // Error handling will be done by the component
         }
     });

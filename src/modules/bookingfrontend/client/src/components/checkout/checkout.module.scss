@@ -259,3 +259,48 @@
         }
     }
 }
+// Billing shown as cards (billing-party-cards.tsx): layout only, the cards are Digdir's
+.billingParties {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+    max-width: 440px;
+}
+
+.billingPartyFieldset {
+    width: 100%;
+}
+
+.billingPartyList {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.billingPartyCard {
+    width: 100%;
+}
+
+.billingPartyRow {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 0.75rem;
+}
+
+.billingPartyLine {
+    display: block;
+}
+
+.billingModalFooter {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    width: 100%;
+}
+
+.recurringBillingNote {
+    max-width: 440px;
+    margin-bottom: 1.5rem;
+}

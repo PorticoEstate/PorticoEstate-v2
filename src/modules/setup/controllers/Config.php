@@ -128,11 +128,12 @@ class Config
 		$this->setup_tpl->set_var('lang_cookies_must_be_enabled', $this->setup->lang('<b>NOTE:</b> You must have cookies enabled to use setup and header admin!'));
 
 
+		$css = file_get_contents(dirname(__DIR__, 2) . "/phpgwapi/templates/pure/css/config.css");
 		if (is_file(dirname(__DIR__, 1) . "/phpgwapi/templates/pure/css/version_3/pure-min.css"))
 		{
-			$css = file_get_contents(dirname(__DIR__, 1) . "/phpgwapi/templates/pure/css/version_3/pure-min.css");
-			$this->setup_tpl->set_var('css', $css);
+			$css = file_get_contents(dirname(__DIR__, 1) . "/phpgwapi/templates/pure/css/version_3/pure-min.css") . $css;
 		}
+		$this->setup_tpl->set_var('css', $css);
 
 		// Following to ensure windows file paths are saved correctly
 		//set_magic_quotes_runtime(0);

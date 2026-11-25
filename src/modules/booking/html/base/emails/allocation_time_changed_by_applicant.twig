@@ -1,0 +1,28 @@
+{# Mail to the case officer when the applicant asks for a new time, or shortens one, on an allocation (GH #1392).
+   Every value arrives as plain text and is escaped ONCE here by autoescape. Deliberately no |safe_html
+   and no |raw anywhere: the comment is written by the applicant. nl2br escapes its input itself. #}
+<p>{{ intro }}{% if organization %} {{ organization }}{% endif %}</p>
+
+<p>
+<b>{{ l.application }}:</b> {% if application.id_string %}{{ application.id_string }} {% endif %}{{ application.name }}<br />
+{% if application.building %}<b>{{ l.building }}:</b> {{ application.building }}<br />{% endif %}
+{% if application.activity %}<b>{{ l.activity }}:</b> {{ application.activity }}<br />{% endif %}
+</p>
+
+<p>
+{% if occurrence.resource %}<b>{{ l.resource }}:</b> {{ occurrence.resource }}<br />{% endif %}
+<b>{{ l.date }}:</b> {{ occurrence.date }}<br />
+<b>{{ l.old_time }}:</b> {{ occurrence.old_time }}<br />
+<b>{{ l.new_time }}:</b> {{ occurrence.new_time }}
+</p>
+
+{% if comment %}
+<p>
+<b>{{ l.applicant_comment }}:</b><br />
+{{ comment|nl2br }}
+</p>
+{% endif %}
+
+<p>
+<a href="{{ links.case }}">{{ l.open_case }}</a>
+</p>

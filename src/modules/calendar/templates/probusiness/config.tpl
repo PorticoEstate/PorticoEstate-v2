@@ -1,5 +1,5 @@
 <!-- BEGIN header -->
-<form method="POST" action="{action_url}">
+<form method="POST" action="{action_url}" class="pure-form config-form">
 <table class="calendarCenter" align="center">
   <tr>
     <td class="header" colspan="2" align="center">&nbsp;<b>{title}</b></td>

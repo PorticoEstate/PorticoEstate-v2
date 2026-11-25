@@ -4,8 +4,9 @@
  *   node tests/catering-day-sums/run.mts
  *
  * Loads TEMP COPIES of catering-day-sum.ts and what it and checkout-total.ts import, with their import lines pointed at
- * the copies (no luxon, no path alias: tests/checkout-total/run.mts does the same). CDS_TS (optional) points at an
- * alternative copy of catering-day-sum.ts: mutate.py uses it to prove that a misassigned line turns this red.
+ * the copies (no luxon, no path alias: tests/checkout-total/run.mts does the same). CDS_TS, CTOTAL_TS and SECTION_TSX
+ * (optional) point at alternative copies of catering-day-sum.ts, checkout-total.ts and the component's source: mutate.py
+ * uses them to prove that a mutant turns this red.
  *
  * The oracle is exact BigInt arithmetic, with none of the helpers under test:
  *   - a catering line is net = quantity × unit price in øre, and its VAT = net × ITS OWN percent / 100 rounded half up
@@ -53,7 +54,7 @@ writeFileSync(
     join(dir, 'checkout-total.mts'),
     `import {hospitalityLineTotalOre, hospitalityUnitPriceIncl, sumOreOrNull} from './article-pricing.mts';\n`
     + `import {groupByServingDay} from './catering-venue-time.mts';\n`
-    + dropImports(read(join(utils, 'checkout-total.ts')))
+    + dropImports(read(process.env.CTOTAL_TS ?? join(utils, 'checkout-total.ts')))
 );
 writeFileSync(
     join(dir, 'catering-day-sum.mts'),
@@ -213,15 +214,11 @@ eq('offers: a name twice is listed once', D.cateringOffersText(['Kantina', 'Kant
 
 // ---- 7. wiring and lang (text only: the component is not rendered here) -------------------------------------------------
 
-const section = read(join(client, 'components/checkout/hospitality/hospitality-section.tsx'));
+const section = read(process.env.SECTION_TSX ?? join(client, 'components/checkout/hospitality/hospitality-section.tsx'));
 check('section: the day sum is the helper\'s, once per day',
     section.split('cateringDaySumOre(day)').length - 1 === 1);
 check('section: the day sum carries its test id', section.includes('data-testid="checkout-catering-day-sum"'));
 check('section: the day label is the helper\'s', section.includes('daySumLabel(day.dayKey)') && section.includes('cateringDaySumDate(dayKey, lang)'));
-check('section: the offers line is shown only before the first order',
-    /canAdd && listedCount === 0 &&[\s\S]{0,200}catering_offers_in_building/.test(section));
-check('section: the offers line names the already-fetched offers',
-    /cateringOffersText\(hospitalities\.map\(hospitality => hospitality\.name\), lang\)/.test(section));
 check('section: the sums are keyed by their own lang keys',
     section.includes("'bookingfrontend.catering_day_sum'") && section.includes("'bookingfrontend.catering_day_sum_undated'"));
 for (const lang of ['no', 'nn', 'en']) {
@@ -230,6 +227,17 @@ for (const lang of ['no', 'nn', 'en']) {
     check(`lang catering_day_sum_undated (${lang}) present`, new RegExp(`^catering_day_sum_undated\\tbookingfrontend\\t${lang}\\t.+$`, 'm').test(file));
     check(`lang catering_offers_in_building (${lang}) has %1`, new RegExp(`^catering_offers_in_building\\tbookingfrontend\\t${lang}\\t.*%1`, 'm').test(file));
 }
+
+// ---- 8. the offers line before the first order: two rows, on the component's source text (it is not rendered here) -----
+// The line sits under canAdd, which needs an available hospitality (allowAdd and hospitalities.length > 0), and under
+// "no order listed yet" (listedCount === 0). It names the fetched hospitalities. The live run shows the line itself.
+const gateNeedsHospitality = (text: string): boolean => /const canAdd = allowAdd && hospitalities\.length > 0;/.test(text);
+const shownBeforeFirstOrder = (text: string): boolean => /canAdd && listedCount === 0 &&[\s\S]{0,200}catering_offers_in_building/.test(text);
+const namesFetchedOffers = (text: string): boolean => /cateringOffersText\(hospitalities\.map\(hospitality => hospitality\.name\), lang\)/.test(text);
+// Row 1: no available hospitality → no info line
+check('offers line: no available hospitality → no info line', gateNeedsHospitality(section) && shownBeforeFirstOrder(section));
+// Row 2: zero orders + ≥1 available hospitality → the info line names them
+check('offers line: zero orders + an available hospitality → the line names them', shownBeforeFirstOrder(section) && namesFetchedOffers(section));
 
 console.log(`${fail === 0 ? 'PASS' : 'FAIL'} ${n - fail}/${n}`);
 process.exit(fail === 0 ? 0 : 1);

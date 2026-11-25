@@ -314,7 +314,9 @@ class HospitalityOrderRepository
 
     public function addOrderLine(array $data): int
     {
-        $amount = (float)($data['quantity'] ?? 1) * (float)$data['unit_price'];
+        // A caller that has judged the amount (the applicant's updateOrder, §49596) passes it as numeric text; any other
+        // caller gets quantity × unit price as it always did.
+        $amount = $data['amount'] ?? ((float)($data['quantity'] ?? 1) * (float)$data['unit_price']);
 
         $sql = "INSERT INTO bb_hospitality_order_line
                 (order_id, hospitality_article_id, quantity, unit_price, tax_code, amount, comment)

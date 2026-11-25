@@ -44,6 +44,7 @@ import {
     sumOreOrNull,
 } from '@/utils/article-pricing';
 import {hospitalityMenuLineForSummary, summarizeHospitalityVat} from '@/utils/hospitality-price-summary';
+import {orderedPriceLines, orderedPriceOf} from '@/utils/hospitality-order-pricing';
 import {
     computeHospitalityDeadline,
     earliestApplicationDate,
@@ -572,14 +573,19 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
         return articles;
     }, [menu]);
 
+    // The price an article is shown and summed at: a line the order already holds at what it was ordered at (its stored
+    // unit price and VAT, the server keeps them too: operator ruling D5 = a), any other article at today's menu price.
+    const priceOfArticle = (article: IHospitalityArticle) =>
+        orderedPriceOf(article.id, allArticles, existingOrder?.lines ?? []) ?? article;
+
     // The price summary on the billing basis: the sum ex VAT, the VAT per rate and the total incl. VAT, each
     // ordered line's VAT rounded once as it is billed. Not `known` as soon as an ordered article has no known
-    // VAT %: the VAT and the total then show «-», never an ex-VAT sum in their place.
+    // VAT %: the VAT and the total then show «-», never an ex-VAT sum in their place. An ordered line whose article
+    // is no longer on the menu is still summed (at its stored price), as the server still holds it.
     const priceSummary = useMemo(() => summarizeHospitalityVat(
-        allArticles
-            .filter(a => (quantities[a.id] || 0) > 0)
-            .map(a => hospitalityMenuLineForSummary(a, quantities[a.id]))
-    ), [allArticles, quantities]);
+        orderedPriceLines(quantities, allArticles, existingOrder?.lines ?? [])
+            .map(({price, quantity}) => hospitalityMenuLineForSummary(price, quantity))
+    ), [allArticles, existingOrder, quantities]);
     // The total incl. VAT of the summary, so the footer and the summary block can never disagree.
     const orderTotalOre = priceSummary.known ? priceSummary.inclOre : null;
 
@@ -699,9 +705,10 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
 
     const renderArticle = (article: IHospitalityArticle) => {
         const qty = quantities[article.id] || 0;
-        // Both incl. VAT; null (shown «-») when the article's VAT % is unknown
-        const price = hospitalityUnitPriceIncl(article);
-        const amountOre = qty > 0 ? hospitalityMenuLineTotalOre(article, qty) : null;
+        // Both incl. VAT; null (shown «-») when the article's VAT % is unknown. An ordered line at what it was ordered at.
+        const priced = priceOfArticle(article);
+        const price = hospitalityUnitPriceIncl(priced);
+        const amountOre = qty > 0 ? hospitalityMenuLineTotalOre(priced, qty) : null;
         const commentText = comments[article.id] || '';
         const commentVisible = visibleComments.has(article.id);
         const description = localizeField(article.description, i18n.language)
@@ -1087,7 +1094,7 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
                                     // ordered, and «-» when an ordered article's VAT % is unknown
                                     const orderedInGroup = group.articles.filter(a => (quantities[a.id] || 0) > 0);
                                     const groupTotalOre = sumOreOrNull(
-                                        orderedInGroup.map(a => hospitalityMenuLineTotalOre(a, quantities[a.id]))
+                                        orderedInGroup.map(a => hospitalityMenuLineTotalOre(priceOfArticle(a), quantities[a.id]))
                                     );
                                     // How many units are chosen in the category (artboard D: 3 + 1 + 30 = «34 valgt»)
                                     const selectedCount = group.articles

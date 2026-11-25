@@ -949,8 +949,19 @@ class HospitalityOrderController
 				}
 
 				$hospitalityId = (int)$order['hospitality_id'];
+				$storedLines = $this->orderRepo->getOrderLines($orderId);
+				$taxPercents = $this->articleRepo->getTaxPercentByCode();
 
-				// Validate and resolve pricing for new lines
+				// The stored lines by article, in the order they were stored. A request line for an article the order already
+				// holds is that stored line, KEPT: it keeps the unit price and VAT it was ordered at (operator ruling D5 = a,
+				// forum/pe-general/50372). The client sends no line id, so the match is by article id. Each stored line is
+				// matched once, so two lines of one article never swap prices.
+				$keptByArticle = [];
+				foreach ($storedLines as $storedLine) {
+					$keptByArticle[(int)$storedLine['hospitality_article_id']][] = $storedLine;
+				}
+
+				// Validate the lines. Only a NEW line takes today's menu price and VAT.
 				$resolvedLines = [];
 				foreach ($body['lines'] as $i => $line) {
 					if (empty($line['hospitality_article_id'])) {
@@ -959,23 +970,37 @@ class HospitalityOrderController
 					$quantity = $quantities[$i];
 
 					$articleId = (int)$line['hospitality_article_id'];
-					$pricing = $this->articleRepo->resolveEffectivePricing($articleId);
-					if (!$pricing) {
-						return ResponseHelper::sendErrorResponse(['error' => "Line {$i}: article not found"], 400, $response);
+					if (!empty($keptByArticle[$articleId])) {
+						// KEPT: the stored price and VAT, whatever the menu says now. The article's menu state does not apply to it.
+						$kept = array_shift($keptByArticle[$articleId]);
+						$unitPrice = $kept['unit_price'];
+						$taxCode = $kept['tax_code'] === null ? null : (int)$kept['tax_code'];
+					} else {
+						// NEW: today's menu price and VAT.
+						$pricing = $this->articleRepo->resolveEffectivePricing($articleId);
+						if (!$pricing) {
+							return ResponseHelper::sendErrorResponse(['error' => "Line {$i}: article not found"], 400, $response);
+						}
+
+						$article = $this->articleRepo->getArticleById($articleId);
+						if (!$article || (int)$article['hospitality_id'] !== $hospitalityId) {
+							return ResponseHelper::sendErrorResponse(['error' => "Line {$i}: article does not belong to this hospitality"], 400, $response);
+						}
+						$unitPrice = (float)$pricing['effective_price'];
+						$taxCode = (int)$pricing['effective_tax_code'];
 					}
 
-					$article = $this->articleRepo->getArticleById($articleId);
-					if (!$article || (int)$article['hospitality_id'] !== $hospitalityId) {
-						return ResponseHelper::sendErrorResponse(['error' => "Line {$i}: article does not belong to this hospitality"], 400, $response);
-					}
+					// The amount in whole øre, which the guard below judges and which the line is written with (§49596), not a float product.
+					$lineAmount = HospitalityOrderAmount::line($quantity, $unitPrice, $taxCode, $taxPercents);
 
 					// Keyed as the request keys it, so a refusal below names the request's own line.
 					$resolvedLines[$i] = [
 						'hospitality_article_id' => $articleId,
 						'quantity' => $quantity,
-						'unit_price' => (float)$pricing['effective_price'],
-						'tax_code' => (int)$pricing['effective_tax_code'],
+						'unit_price' => $unitPrice,
+						'tax_code' => $taxCode,
 						'comment' => $line['comment'] ?? null,
+						'amount' => $lineAmount === null ? null : HospitalityOrderAmount::numeric($lineAmount['net']),
 					];
 				}
 

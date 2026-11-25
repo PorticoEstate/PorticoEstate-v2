@@ -847,8 +847,11 @@ $createQ = static function (string $linesJson, array $app = [], int $location = 
     return [$invoke($makeCitizen($repo, $notifier, array_replace($application, $app)), 'createOrder', 'POST', ['id' => 84091], $body), $repo, $notifier];
 };
 /** PUT order 7 (comment 'Uten nøtter', one line of 3.00) with this JSON body text. */
-$updateQ = static function (string $json, array $app = []) use ($newRepo, $makeCitizen, $invoke, $application): array {
+$updateQ = static function (string $json, array $app = [], ?callable $arrange = null) use ($newRepo, $makeCitizen, $invoke, $application): array {
     $repo = $newRepo();
+    if ($arrange !== null) {
+        $arrange($repo);
+    }
     $notifier = new RecordingNotifier();
     return [$invoke($makeCitizen($repo, $notifier, array_replace($application, $app)), 'updateOrder', 'PUT', ['id' => 84091, 'orderId' => 7], $json), $repo, $notifier];
 };
@@ -894,7 +897,12 @@ foreach ([['2', 2], ['"2"', 2], ['2.0', 2], ['"2.0"', 2], ['1e1', 10], ['"007"',
     // Two rows each: that it is SAVED (true before this change too) and what was stored (an int; before this change a float).
     $same("create, quantity {$literal}: 201 and one order", [$r['status'], array_count_values($repo->calls)['create'] ?? 0], [201, 1]);
     $same("create, quantity {$literal}: the line is stored as the int {$want}", $repo->lineQuantities, [$want]);
-    [$r, $repo, $notifier] = $updateQ('{"comment":"CHANGED","lines":[{"hospitality_article_id":11,"quantity":' . $literal . '}]}');
+    // The ORDERED line is held at the price that fits too (1.00 at 0 %). An ordered line keeps the price it was ordered at
+    // (operator ruling D5 = a), so the menu's 1.00 no longer prices it: 99,999,999 × 45.00 is refused (see the lock rows).
+    $arrangeOrdered = $literal === '99999999' ? static function (CitizenStubRepo $repo): void {
+        $repo->lines[7][0] = array_replace($repo->lines[7][0], ['unit_price' => '1.00', 'tax_code' => 0, 'tax_percent' => 0, 'amount' => '3.00']);
+    } : null;
+    [$r, $repo, $notifier] = $updateQ('{"comment":"CHANGED","lines":[{"hospitality_article_id":11,"quantity":' . $literal . '}]}', [], $arrangeOrdered);
     $same("update, quantity {$literal}: 200, the comment saved, the order written once",
         [$r['status'], $repo->orders[7]['comment'], array_count_values($repo->calls)['update'] ?? 0], [200, 'CHANGED', 1]);
     $same("update, quantity {$literal}: the replacing line is stored as the int {$want}", $repo->lineQuantities, [$want]);

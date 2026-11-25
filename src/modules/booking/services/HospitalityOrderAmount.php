@@ -176,6 +176,16 @@ final class HospitalityOrderAmount
         return ['code' => self::CODE_TOTAL, 'line' => null];
     }
 
+    /**
+     * An øre amount as the text numeric(10,2) takes it: 1234 → "12.34", -5 → "-0.05". A line is written with the amount
+     * judged here, so the stored value is the one the guard judged, not a float product of it (§49596).
+     */
+    public static function numeric(int $ore): string
+    {
+        $magnitude = abs($ore);
+        return ($ore < 0 ? '-' : '') . intdiv($magnitude, 100) . '.' . str_pad((string)($magnitude % 100), 2, '0', STR_PAD_LEFT);
+    }
+
     /** $a × $b, or null when the product leaves int64. */
     private static function multiply(int $a, int $b): ?int
     {

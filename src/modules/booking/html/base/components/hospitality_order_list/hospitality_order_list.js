@@ -16,6 +16,8 @@
  *   });
  *
  *   list.update(newOrders);  // re-render with new data
+ * Load this component's template-specific CSS; the container receives the
+ * hospitality-order-list class to keep wide tables horizontally scrollable.
  *
  * applicationId is OPTIONAL and must stay that way. A caller that is showing
  * orders in the context of one application passes its id; clicking a row then
@@ -32,6 +34,7 @@
 class HospitalityOrderList {
 	constructor(container, options) {
 		this.container = container;
+		this.container.classList.add('hospitality-order-list');
 		this.lang = options.lang || function (k) { return k; };
 		this.columns = options.columns || {};
 		this.emptyText = options.emptyText || 'No orders';

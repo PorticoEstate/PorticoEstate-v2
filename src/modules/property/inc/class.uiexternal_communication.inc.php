@@ -1454,6 +1454,7 @@ JS;
 			'default_message'	 => $default_message,
 			'import_recipients_label' => $this->smsLabel('Import recipients'),
 			'import_recipients_help' => $this->smsLabel('CSV or Excel: header row followed by ID, address, name, Norwegian phone number and an ignored column.'),
+			'import_visibility_help' => $this->smsLabel('Excel imports only visible rows as saved; manually hidden rows are also skipped. CSV imports all rows.'),
 			'value_extra_sms_address' => $incoming_extra_sms_recipients
 		);
 		$this->flags['app_header']	 .= '::' . lang('sms');

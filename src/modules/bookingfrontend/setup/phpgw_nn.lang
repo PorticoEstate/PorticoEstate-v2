@@ -1334,3 +1334,4 @@ catering_offers_in_building	bookingfrontend	nn	Bygget tilbyr bevertning: %1.
 hospitality_dialog_day_help	bookingfrontend	nn	Romma du har søkt om denne dagen
 hospitality_dialog_time_within_kitchen	bookingfrontend	nn	Innanfor serveringstida i %1, %2–%3
 hospitality_dialog_on_site_place_help	bookingfrontend	nn	Maten blir servert i %1 og blir ikkje levert til eit rom.
+hospitality_dialog_time_before_day	bookingfrontend	nn	Vel dag for å sjå klokkesletta som kan veljast

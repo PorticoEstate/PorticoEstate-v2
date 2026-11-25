@@ -1334,3 +1334,4 @@ catering_offers_in_building	bookingfrontend	en	The building offers catering: %1.
 hospitality_dialog_day_help	bookingfrontend	en	The rooms you have applied for this day
 hospitality_dialog_time_within_kitchen	bookingfrontend	en	Within the serving hours at %1, %2–%3
 hospitality_dialog_on_site_place_help	bookingfrontend	en	The food is served at %1 and is not delivered to a room.
+hospitality_dialog_time_before_day	bookingfrontend	en	Choose a day to see the times you can pick

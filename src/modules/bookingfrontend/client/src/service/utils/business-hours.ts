@@ -83,8 +83,7 @@ export function isWithinBusinessHours(
 
 /**
  * The seasons active at `dt` that carry one of `resourceIds`. An empty `resourceIds` matches every
- * season (see the warning on isWithinBusinessHours). Shared by isWithinBusinessHours and
- * openingSpanForDay, so the time list and the help text judge a day by the same seasons.
+ * season (see the warning on isWithinBusinessHours).
  */
 function activeSeasonsAt(dt: DateTime, resourceIds: string[], seasons: Season[]): Season[] {
 	return seasons.filter(season => {
@@ -99,31 +98,4 @@ function activeSeasonsAt(dt: DateTime, resourceIds: string[], seasons: Season[])
 
 		return season.active && dt >= seasonStart && dt <= seasonEnd && hasMatchingResources;
 	});
-}
-
-/**
- * The span of one resource's opening hours on the day of `date`: the earliest boundary start to the
- * latest boundary end, over the seasons isWithinBusinessHours judges that day by. Null when no active
- * season covers the day for the resource, or when no season is defined at all.
- *
- * This names the hours in a help text. It is NOT a gate: a time inside the span but in a gap between
- * two boundaries is still refused by isWithinBusinessHours, which callers must keep using for the list
- * of times they offer.
- */
-export function openingSpanForDay(
-	date: Date,
-	resourceId: string,
-	seasons: Season[] | undefined,
-): {from: string; to: string} | null {
-	if (!seasons || seasons.length === 0) return null;
-	const dt = DateTime.fromJSDate(date);
-	const dayBoundaries = activeSeasonsAt(dt, [resourceId], seasons)
-		.flatMap(season => season.boundaries.filter(b => b.wday === dt.weekday));
-	if (dayBoundaries.length === 0) return null;
-	// The same midnight rule as isWithinBusinessHours: a boundary reaching 23:45 is open until midnight.
-	const endOf = (b: {to_: string}) => (b.to_ >= '23:45:00' ? '24:00:00' : b.to_);
-	const from = dayBoundaries.reduce((min, b) => (b.from_ < min ? b.from_ : min), dayBoundaries[0].from_);
-	const to = dayBoundaries.reduce((max, b) => (endOf(b) > max ? endOf(b) : max), endOf(dayBoundaries[0]));
-	// 'HH:mm:ss' in, 'HH:mm' out: the help text names hours and minutes only.
-	return {from: from.slice(0, 5), to: to.slice(0, 5)};
 }

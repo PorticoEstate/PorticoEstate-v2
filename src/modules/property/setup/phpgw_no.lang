@@ -1,6 +1,7 @@
 new coordinator	property	no	Ny koordinator
 import recipients	property	no	Importer mottakere
 csv or excel: header row followed by id, address, name, norwegian phone number and an ignored column.	property	no	CSV eller Excel: overskriftsrad etterfulgt av ID, adresse, navn, norsk telefonnummer og en kolonne som ignoreres.
+excel imports only visible rows as saved; manually hidden rows are also skipped. csv imports all rows.	property	no	Excel importerer bare lagrede synlige rader; dette utelater også manuelt skjulte rader. CSV importerer alle rader.
 importing recipients	property	no	Importerer mottakere
 recipients imported	property	no	Mottakere importert
 invalid phone numbers in rows	property	no	Ugyldige telefonnumre på radene

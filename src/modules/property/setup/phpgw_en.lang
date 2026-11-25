@@ -1,6 +1,7 @@
 %1 Buildings has been updated to not active of %2 already not active	property	en	%1 Buildings has been updated to not active of %2 already not active
 import recipients	property	en	Import recipients
 csv or excel: header row followed by id, address, name, norwegian phone number and an ignored column.	property	en	CSV or Excel: header row followed by ID, address, name, Norwegian phone number and an ignored column.
+excel imports only visible rows as saved; manually hidden rows are also skipped. csv imports all rows.	property	en	Excel imports only visible rows as saved; manually hidden rows are also skipped. CSV imports all rows.
 importing recipients	property	en	Importing recipients
 recipients imported	property	en	Recipients imported
 invalid phone numbers in rows	property	en	Invalid phone numbers in rows

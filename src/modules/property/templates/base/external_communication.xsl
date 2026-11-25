@@ -61,9 +61,12 @@
 						</div>
 						<div class="pure-control-group">
 							<label for="sms_recipient_file"><xsl:value-of select="import_recipients_label"/></label>
-							<input type="file" id="sms_recipient_file" accept=".csv,.xls,.xlsx" class="pure-input-3-4"/>
-							<div><xsl:value-of select="import_recipients_help"/></div>
-							<div id="sms_import_status" role="status" aria-live="polite"></div>
+							<input type="file" id="sms_recipient_file" accept=".csv,.xls,.xlsx" class="pure-input-3-4" aria-describedby="sms_import_help sms_import_visibility"/>
+							<div class="pure-controls" style="margin-top: 0; overflow-wrap: anywhere">
+								<div id="sms_import_help"><xsl:value-of select="import_recipients_help"/></div>
+								<div id="sms_import_visibility"><xsl:value-of select="import_visibility_help"/></div>
+								<div id="sms_import_status" role="status" aria-live="polite"></div>
+							</div>
 						</div>
 
 						<div class="pure-control-group">

@@ -1,1 +1,6 @@
-/* Intentionally empty: keeps Digdir template resolution from falling back to the base component CSS, so native Digdir table/tag styling remains in control. */
+/* Keep native Digdir table/tag styling while containing wide order tables. */
+.hospitality-order-list {
+	min-width: 0;
+	max-width: 100%;
+	overflow-x: auto;
+}

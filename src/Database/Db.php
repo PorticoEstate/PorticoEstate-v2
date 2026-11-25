@@ -1129,7 +1129,7 @@ class Db
 
 		if ($num_rows <= 0)
 		{
-			$maxmatches = (int)Settings::getInstance()->get('user')['preferences']['common']['maxmatchs'] ?? 15;
+			$maxmatches = (int)Settings::getInstance()->get('user')['preferences']['common']['maxmatchs'] ? (int)Settings::getInstance()->get('user')['preferences']['common']['maxmatchs'] : 15;
 			$num_rows = $maxmatches;
 		}
 

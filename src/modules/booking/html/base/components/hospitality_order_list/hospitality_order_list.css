@@ -1,6 +1,8 @@
 .hospitality-order-list,
 #hospitality-orders,
 #hospitality-orders-list {
+	min-width: 0;
+	max-width: 100%;
 	overflow-x: auto;
 }
 

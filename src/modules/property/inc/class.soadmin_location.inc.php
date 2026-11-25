@@ -118,7 +118,7 @@ use App\modules\phpgwapi\services\SchemaProc\SchemaProc;
 			return $standard;
 		}
 
-		function read_config( $data = 0 )
+		function read_config( $data = array() )
 		{
 			if (isset($data['start']))
 			{
@@ -135,6 +135,8 @@ use App\modules\phpgwapi\services\SchemaProc\SchemaProc;
 				$sort	 = (isset($data['sort']) ? $data['sort'] : 'DESC');
 				$order	 = (isset($data['order']) ? $data['order'] : '');
 			}
+
+			$allrows = isset($data['allrows']) ? $data['allrows'] : true;
 
 			if ($order)
 			{
@@ -159,7 +161,14 @@ use App\modules\phpgwapi\services\SchemaProc\SchemaProc;
 			$this->db->query($sql, __LINE__, __FILE__);
 			$this->total_records = $this->db->num_rows();
 
-			$this->db->limit_query($sql . $ordermethod, $start, __LINE__, __FILE__);
+			if (!$allrows)
+			{
+				$this->db->limit_query($sql . $ordermethod, $start, __LINE__, __FILE__);
+			}
+			else
+			{
+				$this->db->query($sql . $ordermethod, __LINE__, __FILE__);
+			}
 
 			$config = array();
 			while ($this->db->next_record())

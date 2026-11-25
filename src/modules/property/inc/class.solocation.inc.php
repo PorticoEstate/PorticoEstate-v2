@@ -1400,7 +1400,7 @@ class property_solocation
 			}
 		}
 
-		$config = $this->soadmin_location->read_config('');
+		$config = $this->soadmin_location->read_config();
 
 		$config_count = count($config);
 		for ($i = 0; $i < $config_count; $i++)

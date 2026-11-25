@@ -1016,7 +1016,7 @@ function check_and_submit_valid_session()
 	var projectApiClient = createProjectApiClient(form);
 	var saveRequestRaw = projectApiClient.buildSaveRequest(project_id);
 	var saveRequest = normalizeProjectSaveRequest(saveRequestRaw, project_id, copyProjectRequested);
-	var requestUrl = phpgwEnsureServerPrefix(saveRequest.url);
+	var requestUrl = saveRequest.url;
 	var projectId = Number(project_id);
 	var isCreate = copyProjectRequested || !projectId;
 	var requestOptions = {

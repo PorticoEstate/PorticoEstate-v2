@@ -5,6 +5,9 @@
 {% block styles %}
 <style>{{ source('@digdir_views/application/show/application_show.css') }}</style>
 <style>{{ source('@views/components/search_select/search_select.css') }}</style>
+{% if enable_hospitality %}
+<style>{{ source('@digdir_views/components/hospitality_order_list/hospitality_order_list.css') }}</style>
+{% endif %}
 {% endblock %}
 
 {% block content %}

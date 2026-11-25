@@ -1,0 +1,56 @@
+// Step indicator above the checkout (GH #1478, unit D). designsystemet-react
+// 1.9.0 has no stepper, so this is the one custom piece. Every value is a
+// Digdir token; nothing is hard-coded.
+
+.steps {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--ds-size-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: var(--ds-font-size-sm);
+    color: var(--ds-color-neutral-text-subtle);
+}
+
+.step {
+    display: flex;
+    align-items: center;
+    gap: var(--ds-size-2);
+}
+
+.step + .step::before {
+    content: "";
+    width: var(--ds-size-4);
+    height: var(--ds-border-width-default);
+    background: var(--ds-color-neutral-border-default);
+}
+
+.number {
+    box-sizing: border-box;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--ds-size-6);
+    height: var(--ds-size-6);
+    border: var(--ds-border-width-default) solid var(--ds-color-neutral-border-default);
+    border-radius: 50%;
+    font-weight: var(--ds-font-weight-medium);
+}
+
+.done .number {
+    background: var(--ds-color-accent-base-default);
+    border-color: var(--ds-color-accent-base-default);
+    color: var(--ds-color-accent-contrast-default);
+}
+
+.current {
+    color: var(--ds-color-text-default);
+    font-weight: var(--ds-font-weight-semibold);
+}
+
+.current .number {
+    border-color: var(--ds-color-accent-base-default);
+    color: var(--ds-color-accent-base-default);
+}

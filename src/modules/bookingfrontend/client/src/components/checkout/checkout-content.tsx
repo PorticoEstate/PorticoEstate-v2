@@ -15,6 +15,7 @@ import {CheckoutSubmitError} from "@/service/api/api-utils";
 import {useRouter} from "next/navigation";
 import { useTrans } from '@/app/i18n/ClientTranslationProvider';
 import RegulationDocuments from './regulation-documents';
+import CheckoutSteps from './checkout-steps';
 import {IShortResource} from "@/service/pecalendar.types";
 
 const CheckoutContent: FC = () => {
@@ -446,6 +447,7 @@ const CheckoutContent: FC = () => {
 
     return (
         <div className={styles.content}>
+            <CheckoutSteps />
             <div ref={organizerSectionRef}>
                 <CheckoutEventDetails 
                     user={user} 

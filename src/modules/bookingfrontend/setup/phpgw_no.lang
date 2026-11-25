@@ -1337,3 +1337,5 @@ hospitality_dialog_time_within_kitchen	bookingfrontend	no	Innenfor serveringstid
 hospitality_dialog_on_site_place_help	bookingfrontend	no	Maten serveres i %1 og leveres ikke til et rom.
 hospitality_dialog_time_before_day	bookingfrontend	no	Velg dag for å se klokkeslettene som kan velges
 hospitality_dialog_time_none	bookingfrontend	no	Ingen tider tilgjengelig denne dagen
+checkout_steps_aria	bookingfrontend	no	Steg %1 av %2
+checkout_step_send	bookingfrontend	no	Send

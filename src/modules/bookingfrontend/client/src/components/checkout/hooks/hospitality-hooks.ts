@@ -7,6 +7,8 @@ import {
     CreateHospitalityOrderRequest,
     UpdateHospitalityOrderRequest,
 } from "@/service/types/api/hospitality.types";
+import {CateringState} from "@/utils/article-pricing";
+import {cartCateringState} from "@/utils/checkout-total";
 
 /**
  * The server refused a change to an order or its cancellation. 409 is the deadline guard (a deadline passed, the
@@ -78,9 +80,6 @@ export function useHospitalityOrders(applicationId: number | undefined) {
     return useQuery<IHospitalityOrder[]>(hospitalityOrdersQuery(applicationId));
 }
 
-/** What the cart knows of its catering: `pending` (still being read), `read`, or `unreadable` (a read failed). */
-export type CartCateringState = 'pending' | 'read' | 'unreadable';
-
 /**
  * Every catering order of the cart's applications, for the checkout's totals (GH #1478). With `enabled` false
  * (catering switched off) nothing is read and the answer is «read, none»: the caller decides whether catering
@@ -89,14 +88,12 @@ export type CartCateringState = 'pending' | 'read' | 'unreadable';
 export function useCartCateringOrders(
     applicationIds: number[],
     enabled: boolean
-): {orders: IHospitalityOrder[]; state: CartCateringState} {
+): {orders: IHospitalityOrder[]; state: CateringState} {
     return useQueries({
         queries: enabled ? applicationIds.map(id => hospitalityOrdersQuery(id)) : [],
-        combine: (results): {orders: IHospitalityOrder[]; state: CartCateringState} => ({
+        combine: (results): {orders: IHospitalityOrder[]; state: CateringState} => ({
             orders: results.flatMap(result => result.data ?? []),
-            state: results.some(result => result.isError)
-                ? 'unreadable'
-                : results.some(result => result.isPending) ? 'pending' : 'read',
+            state: cartCateringState(results),
         }),
     });
 }

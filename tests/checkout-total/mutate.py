@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """
-Mutation driver for tests/checkout-total/run.mts (task 50144): each mutant of utils/checkout-total.ts (or of
-cart-section.tsx, for the recurring section) carries ONE deliberate defect in the checkout's total, and the harness must
-go red on it. The unmutated files must be green. Mutants are written to a temp dir, never to the tree.
+Mutation driver for tests/checkout-total/run.mts (tasks 50144, 50232): each mutant of utils/checkout-total.ts (or of
+cart-section.tsx, for the recurring section and for the wiring of the catering read, or of hospitality-hooks.ts) carries
+ONE deliberate defect in the checkout's total, and the harness must go red on it. The unmutated files must be green.
+Mutants are written to a temp dir, never to the tree.
 
     python3 tests/checkout-total/mutate.py
 
@@ -17,8 +18,9 @@ import tempfile
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 SRC = os.path.join(ROOT, 'src/modules/bookingfrontend/client/src/utils/checkout-total.ts')
 CART = os.path.join(ROOT, 'src/modules/bookingfrontend/client/src/components/checkout/cart-section.tsx')
+HOOKS = os.path.join(ROOT, 'src/modules/bookingfrontend/client/src/components/checkout/hooks/hospitality-hooks.ts')
 # Which file a mutant changes, and the variable run.mts reads its alternative copy from
-TARGETS = {'total': (SRC, 'CT_TS', '.ts'), 'cart': (CART, 'CART_TSX', '.tsx')}
+TARGETS = {'total': (SRC, 'CT_TS', '.ts'), 'cart': (CART, 'CART_TSX', '.tsx'), 'hooks': (HOOKS, 'HOOKS_TS', '.ts')}
 RUN = os.path.join(ROOT, 'tests/checkout-total/run.mts')
 
 LINE_ORE = """export const cateringLineOre = (line: Pick<IHospitalityOrderLine, 'amount' | 'tax_percent'>): number | null =>
@@ -66,6 +68,37 @@ MUTANTS = [
                         />''',
      '                        null',
      'cart'),
+    # Task 50232: a catering read that FAILED must make the total unknown («-»), never a sum that leaves it out.
+    # The mapping itself (cartCateringInput): an unreadable read passes the orders on, as the cart did before
+    ('unreadable-read-passes-orders-on',
+     "state === 'unreadable' ? null : orders;",
+     'orders;'),
+    # ... the total: a null catering input read as «no catering»
+    ('null-catering-input-read-as-none',
+     'if (cateringOrders === null) return null;',
+     'cateringOrders = cateringOrders ?? [];'),
+    # ... the state of the reads: a failed read not counted, or hidden behind one that is still going
+    ('failed-read-not-counted-in-state',
+     "reads.some(read => read.isError) ? 'unreadable' : reads.some(read => read.isPending) ? 'pending' : 'read'",
+     "reads.some(read => read.isPending) ? 'pending' : 'read'"),
+    ('failed-read-hidden-behind-pending',
+     "reads.some(read => read.isError) ? 'unreadable' : reads.some(read => read.isPending) ? 'pending' : 'read'",
+     "reads.some(read => read.isPending) ? 'pending' : reads.some(read => read.isError) ? 'unreadable' : 'read'"),
+    # ... the wiring in cart-section (the state of 9d308841c: the orders go in whatever the state is) ...
+    ('cart-passes-orders-whatever-the-state',
+     'cartCateringInput(catering.state, enableHospitality ? catering.orders : [])',
+     'enableHospitality ? catering.orders : []',
+     'cart'),
+    # ... or the mapping is called but not told the state
+    ('cart-tells-the-mapping-the-read-went-fine',
+     'cartCateringInput(catering.state, ',
+     "cartCateringInput('read', ",
+     'cart'),
+    # ... or the hook stops reporting a failed read
+    ('hook-reports-no-failed-read',
+     'state: cartCateringState(results),',
+     "state: 'read',",
+     'hooks'),
 ]
 
 

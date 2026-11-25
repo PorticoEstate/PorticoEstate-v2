@@ -6,8 +6,9 @@
  * Loads TEMP COPIES of the Next client's utils (checkout-total.ts and what it imports: article-pricing.ts, cost-utils.ts,
  * catering-status.ts, catering-venue-time.ts, hospitality-deadline.ts) with their import lines pointed at the copies, so
  * luxon and the path alias are not needed (Node >= 22.18 strips the types itself). CT_TS (optional) points at an
- * alternative copy of checkout-total.ts and CART_TSX one of cart-section.tsx: mutate.py uses them to prove that a
- * deliberately broken total, or a cart that stops listing the recurring applications' catering, turns this red.
+ * alternative copy of checkout-total.ts, CART_TSX one of cart-section.tsx and HOOKS_TS one of hospitality-hooks.ts:
+ * mutate.py uses them to prove that a deliberately broken total, a cart that stops listing the recurring applications'
+ * catering, or a cart that counts a catering read that failed as «no catering», turns this red.
  *
  * The oracle is exact BigInt arithmetic, no floats and none of the helpers under test:
  *   - a stored application line (room rental, equipment / services) is amount + tax in øre, as the server sums
@@ -21,8 +22,13 @@
  * catering once), scope (a section adds only ITS applications' catering), an unknown VAT % (total unknown, never a
  * guess), and the invariant «the total is the sum of the lines the checkout lists».
  *
- * What it can NOT do is render the components: cart-section.tsx and hospitality-section.tsx are only checked as
- * source text (section 9), and the live run is what shows the page.
+ * A catering read that FAILED (task 50232, follow-up to the above): the total is unknown, shown «-», never the sum of
+ * the orders that were read (section 10). The state → input mapping (cartCateringInput) and the state of the reads
+ * (cartCateringState) are pure and run here; that cart-section is the only caller on the path from its catering
+ * orders to a total is checked as source text.
+ *
+ * What it can NOT do is render the components: cart-section.tsx, hospitality-hooks.ts and hospitality-section.tsx are
+ * only checked as source text (section 9), and the live run is what shows the page.
  *
  * Exit code: 0 all pass, 1 any failure.
  */
@@ -62,20 +68,24 @@ writeFileSync(
     + dropImports(read(process.env.CT_TS ?? join(utils, 'checkout-total.ts')))
 );
 const C: any = await import(pathToFileURL(join(dir, 'checkout-total.mts')).href);
+// The helper that turns a total into what the cart prints: «-» for an unknown one (the same copy checkout-total.mts uses)
+const A: any = await import(pathToFileURL(join(dir, 'article-pricing.mts')).href);
 
 // ---- harness -------------------------------------------------------------------------------------------------------
 
 let fail = 0;
 let n = 0;
+// The fixtures carry their BigInt oracle value, so a value handed to eq/check may hold one: print it, never throw on it
+const show = (value: unknown): string => JSON.stringify(value, (_key, v) => (typeof v === 'bigint' ? `${v}n` : v));
 const check = (name: string, ok: boolean, detail: unknown = '') => {
     n++;
     if (!ok) {
         fail++;
-        console.log(`FAIL ${name} ${typeof detail === 'string' ? detail : JSON.stringify(detail)}`);
+        console.log(`FAIL ${name} ${typeof detail === 'string' ? detail : show(detail)}`);
     }
 };
 const eq = (name: string, got: unknown, want: unknown) =>
-    check(name, JSON.stringify(got) === JSON.stringify(want), {got, want});
+    check(name, show(got) === show(want), {got, want});
 
 // ---- oracle (BigInt, no helper under test) --------------------------------------------------------------------------
 
@@ -270,7 +280,13 @@ eq('no catering at all = stored', C.cartTotalOre([roomCatering], [], one), Numbe
 // ---- 9. source checks (text only: the components are not rendered here) ---------------------------------------------------
 const cart = read(process.env.CART_TSX ?? join(client, 'components/checkout/cart-section.tsx'));
 const section = read(join(client, 'components/checkout/hospitality/hospitality-section.tsx'));
-check('cart-section totals go through cartTotalOre', /cartTotalOre\(apps, enableHospitality \? catering\.orders : \[\], instancesOf\)/.test(cart));
+check('cart-section totals go through cartTotalOre, its catering through cartCateringInput(the state, the orders)',
+    /cartTotalOre\(apps, cartCateringInput\(catering\.state, enableHospitality \? catering\.orders : \[\]\), instancesOf\)/.test(cart));
+// The one path from the cart's catering orders into a total. A second one (a total worked out from `catering.orders`
+// by itself) would not know a read had failed. The count is exactly 1, so it cannot pass on a file with none.
+eq('cart-section: `catering.orders` is read exactly once, inside cartCateringInput(...)', (cart.match(/catering\.orders/g) ?? []).length, 1);
+const hooks = read(process.env.HOOKS_TS ?? join(client, 'components/checkout/hooks/hospitality-hooks.ts'));
+check('useCartCateringOrders takes its state from cartCateringState(results)', /state: cartCateringState\(results\),/.test(hooks));
 check('cart-section no longer sums order.sum by itself', !/calculateApplicationCost/.test(cart));
 check('cart-section shows no total while the catering is pending', /!cateringPending &&/.test(cart));
 check('the recurring section lists catering, without «Legg til»', /allowAdd=\{false\}/.test(cart));
@@ -280,6 +296,49 @@ for (const lang of ['no', 'nn', 'en']) {
     const file = read(join(root, `src/modules/bookingfrontend/setup/phpgw_${lang}.lang`));
     check(`lang key catering_checkout_serving_time (${lang}) has %1`, new RegExp(`^catering_checkout_serving_time\\tbookingfrontend\\t${lang}\\t.*%1`, 'm').test(file));
 }
+
+// ---- 10. a catering read that FAILED: the total is unknown, shown «-», never a sum that leaves catering out (task 50232) ----
+// What the cart is told by the reads of its applications' orders (cartCateringState) decides what its catering input is
+// (cartCateringInput); a null input makes every total unknown (cartTotalOre), and an unknown total is printed «-».
+const failedRead = {isError: true, isPending: false};
+const okRead = {isError: false, isPending: false};
+const waitingRead = {isError: false, isPending: true};
+eq('state: every read done', C.cartCateringState([okRead, okRead]), 'read');
+eq('state: catering off (no reads at all) is read', C.cartCateringState([]), 'read');
+eq('state: one read still going', C.cartCateringState([okRead, waitingRead]), 'pending');
+eq('state: one read failed', C.cartCateringState([okRead, failedRead]), 'unreadable');
+eq('state: a failed read beside one still going is unreadable, not pending', C.cartCateringState([waitingRead, failedRead]), 'unreadable');
+eq('state: the only read failed', C.cartCateringState([failedRead]), 'unreadable');
+
+// The cart's catering orders as the hook hands them over: app 3's read FAILED, so none of its orders arrived (a first
+// read), or some did (a refetch that failed after an earlier read: the query keeps what it read before).
+const unreadableNone = C.cartCateringInput('unreadable', []);
+const unreadableKept = C.cartCateringInput('unreadable', cateringApp3);
+eq('unreadable: no orders are passed on, however many the query still holds (first read)', unreadableNone, null);
+eq('unreadable: no orders are passed on, however many the query still holds (failed refetch)', unreadableKept, null);
+eq('unreadable: the total is unknown (first read)', C.cartTotalOre([roomCatering], unreadableNone, one), null);
+eq('unreadable: the total is unknown (failed refetch)', C.cartTotalOre([roomCatering], unreadableKept, one), null);
+eq('unreadable: the total is printed «-» (first read)', A.formatOreOrDash(C.cartTotalOre([roomCatering], unreadableNone, one)), '-');
+eq('unreadable: the total is printed «-» (failed refetch)', A.formatOreOrDash(C.cartTotalOre([roomCatering], unreadableKept, one)), '-');
+// ... for the grand total and for every section, since the cart has ONE state for all its reads
+eq('unreadable: grand total and each section are unknown',
+    [[roomOnly, roomExtras, roomCatering], [roomOnly], [roomExtras], [roomCatering]].map(apps => C.cartTotalOre(apps, unreadableNone, one)),
+    [null, null, null, null]);
+eq('unreadable: a recurring section is unknown too', C.cartTotalOre([recurring], C.cartCateringInput('unreadable', recurringCatering), () => 3), null);
+// The chain from the reads, as the hook gives them: one of three reads failed → unknown
+eq('one of the cart\'s reads failed → «-»',
+    A.formatOreOrDash(C.cartTotalOre([roomOnly, roomCatering], C.cartCateringInput(C.cartCateringState([okRead, failedRead, waitingRead]), cateringApp3), one)), '-');
+
+// Controls: the same cart when the reads went through shows the number, and the number the old wiring showed in the
+// failed case (the orders read so far: none) was a number too, and a smaller one.
+eq('read: the total with the catering counted', C.cartTotalOre([roomCatering], C.cartCateringInput('read', cateringApp3), one), totalApp3);
+eq('read: printed as a number, not «-»', A.formatOreOrDash(C.cartTotalOre([roomCatering], C.cartCateringInput('read', cateringApp3), one)) === '-', false);
+eq('read, no catering orders: the stored lines only', C.cartTotalOre([roomCatering], C.cartCateringInput('read', []), one), Number(roomCatering.oracleOre));
+eq('catering off: the stored lines only (an empty read is not an unreadable one)', C.cartTotalOre([roomOnly], C.cartCateringInput(C.cartCateringState([]), []), one), Number(roomOnly.oracleOre));
+check('pending: the orders read so far, as they are (the cart shows no total until all are read)', C.cartCateringInput('pending', cateringApp3) === cateringApp3);
+const oldSilentFigure = C.cartTotalOre([roomCatering], [], one);
+check('control: a failed read used to leave a smaller number in the total (the stored lines only)',
+    typeof oldSilentFigure === 'number' && oldSilentFigure < (totalApp3 as number), {oldSilentFigure, totalApp3});
 
 console.log(`${fail === 0 ? 'PASS' : 'FAIL'} ${n - fail}/${n}`);
 process.exit(fail === 0 ? 0 : 1);

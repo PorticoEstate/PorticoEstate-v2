@@ -6,7 +6,7 @@ import styles from './checkout.module.scss';
 import ShoppingCartTable from "@/components/layout/header/shopping-cart/shopping-cart-table";
 import { RecurringInfoUtils, calculateRecurringInstances } from '@/utils/recurring-utils';
 import { formatOreOrDash } from "@/utils/article-pricing";
-import { cartTotalOre } from "@/utils/checkout-total";
+import { cartCateringInput, cartTotalOre } from "@/utils/checkout-total";
 import { useBuildingSeasons, useServerSettings } from "@/service/hooks/api-hooks";
 import BuildingIcon from "@/icons/BuildingIcon";
 import HospitalitySection from "./hospitality/hospitality-section";
@@ -64,8 +64,10 @@ const CartSection: FC<CartSectionProps> = ({applications, setCurrentApplication,
 
     // What a list of applications costs incl. VAT in whole øre: their stored lines plus THEIR catering orders (none
     // when catering is off); null when the catering is unknown (a read failed, or a line's VAT % is not known).
+    // cartCateringInput is the only way the orders reach a total: a read that failed gives null, so the total is shown
+    // «-» and not a sum that leaves that application's catering out.
     const calculateTotal = (apps: IApplication[]): number | null =>
-        cartTotalOre(apps, enableHospitality ? catering.orders : [], instancesOf);
+        cartTotalOre(apps, cartCateringInput(catering.state, enableHospitality ? catering.orders : []), instancesOf);
 
     // A room whose price is still to be chosen counts as 0 in the sum, so the
     // total is not shown until the price is chosen

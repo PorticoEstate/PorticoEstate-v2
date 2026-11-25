@@ -142,7 +142,11 @@ try {
     const modalSrc = readFileSync(modal, 'utf8');
     check('call sites: no hard-wired nb-NO in the section', !/nb-NO/.test(sectionSrc));
     check('call sites: no hard-wired nb-NO in the order dialog', !/nb-NO/.test(modalSrc));
-    check('call sites: the section\'s serving time takes the UI language', /formatDayMonth\(date, lang\)/.test(sectionSrc));
+    // Since task 50144 (GH #1478) the section lists its orders under day headings, built in venue time by
+    // checkoutCateringDays → groupByServingDay (tests/hospitality-deadline/run_serving_days.mts holds the text); the
+    // call site must hand it the UI language.
+    check('call sites: the section\'s serving days take the UI language',
+        /checkoutCateringDays\(orders, lang, /.test(sectionSrc) && /const lang = i18n\.language;/.test(sectionSrc));
     check('call sites: the section\'s notice dates take the UI language',
         /formatDeadlineDateTime\(cancelBy, lang\)/.test(sectionSrc) && /formatDayMonthTime\(anchor, lang\)/.test(sectionSrc));
     check('call sites: the dialog\'s deadline text takes the UI language', /formatDeadlineDateTime\(cancelBy, i18n\.language\)/.test(modalSrc));

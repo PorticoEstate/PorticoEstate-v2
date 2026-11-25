@@ -1,4 +1,4 @@
-import {useMutation, useQuery, useQueryClient} from "@tanstack/react-query";
+import {useMutation, useQueries, useQuery, useQueryClient} from "@tanstack/react-query";
 import {phpGWLink} from "@/service/util";
 import {
     IHospitality,
@@ -42,20 +42,50 @@ export function useHospitalityMenu(hospitalityId: number | undefined) {
     });
 }
 
+/**
+ * The ONE description of an application's catering-order read. useHospitalityOrders and useCartCateringOrders both
+ * use it, so they share a cache entry: the checkout's total reads the very orders the catering section lists, and
+ * no extra request is made for it.
+ */
+const hospitalityOrdersQuery = (applicationId: number | undefined) => ({
+    queryKey: ['hospitalityOrders', applicationId],
+    queryFn: async (): Promise<IHospitalityOrder[]> => {
+        const url = phpGWLink(['bookingfrontend', 'applications', applicationId!, 'hospitality-orders']);
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error('Failed to fetch hospitality orders');
+        }
+        return response.json();
+    },
+    enabled: !!applicationId,
+    retry: false,
+    refetchOnWindowFocus: false,
+});
+
 export function useHospitalityOrders(applicationId: number | undefined) {
-    return useQuery<IHospitalityOrder[]>({
-        queryKey: ['hospitalityOrders', applicationId],
-        queryFn: async () => {
-            const url = phpGWLink(['bookingfrontend', 'applications', applicationId!, 'hospitality-orders']);
-            const response = await fetch(url);
-            if (!response.ok) {
-                throw new Error('Failed to fetch hospitality orders');
-            }
-            return response.json();
-        },
-        enabled: !!applicationId,
-        retry: false,
-        refetchOnWindowFocus: false,
+    return useQuery<IHospitalityOrder[]>(hospitalityOrdersQuery(applicationId));
+}
+
+/** What the cart knows of its catering: `pending` (still being read), `read`, or `unreadable` (a read failed). */
+export type CartCateringState = 'pending' | 'read' | 'unreadable';
+
+/**
+ * Every catering order of the cart's applications, for the checkout's totals (GH #1478). With `enabled` false
+ * (catering switched off) nothing is read and the answer is «read, none»: the caller decides whether catering
+ * being off is known yet.
+ */
+export function useCartCateringOrders(
+    applicationIds: number[],
+    enabled: boolean
+): {orders: IHospitalityOrder[]; state: CartCateringState} {
+    return useQueries({
+        queries: enabled ? applicationIds.map(id => hospitalityOrdersQuery(id)) : [],
+        combine: (results): {orders: IHospitalityOrder[]; state: CartCateringState} => ({
+            orders: results.flatMap(result => result.data ?? []),
+            state: results.some(result => result.isError)
+                ? 'unreadable'
+                : results.some(result => result.isPending) ? 'pending' : 'read',
+        }),
     });
 }
 

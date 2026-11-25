@@ -1,3 +1,4 @@
+@use '../../user/application/price-lines' as price;
 @import "../../../styles/util.module";
 
 .hospitalitySection {
@@ -29,6 +30,28 @@
     flex-direction: column;
     gap: 0.75rem;
     margin-top: 0.75rem;
+}
+
+/* The catering in the cart, one day after the other (GH #1478): the day as a heading, its orders under it */
+.cateringDay + .cateringDay {
+    margin-top: 1.5rem;
+}
+
+.cateringDayHeading {
+    margin: 0;
+}
+
+/* An order's lines: «Vare | N × enhetspris | Beløp», the same table as Min side's (price-lines.scss), which stacks
+   each line at phone width */
+.cateringLines {
+    @include price.lines;
+    margin-top: 0.5rem;
+}
+
+/* «Ordretotal inkl. mva» under an order of more than one line */
+.cateringOrderTotal {
+    @include price.total;
+    margin: 0.5rem 0 0;
 }
 
 .orderCard {

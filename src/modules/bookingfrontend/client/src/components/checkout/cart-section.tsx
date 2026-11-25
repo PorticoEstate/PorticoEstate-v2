@@ -4,12 +4,14 @@ import {useTrans} from "@/app/i18n/ClientTranslationProvider";
 import {IApplication} from "@/service/types/api/application.types";
 import styles from './checkout.module.scss';
 import ShoppingCartTable from "@/components/layout/header/shopping-cart/shopping-cart-table";
-import { calculateApplicationCost, formatCurrency } from "@/utils/cost-utils";
 import { RecurringInfoUtils, calculateRecurringInstances } from '@/utils/recurring-utils';
+import { formatOreOrDash } from "@/utils/article-pricing";
+import { cartTotalOre } from "@/utils/checkout-total";
 import { useBuildingSeasons, useServerSettings } from "@/service/hooks/api-hooks";
 import BuildingIcon from "@/icons/BuildingIcon";
 import HospitalitySection from "./hospitality/hospitality-section";
 import ArticlesSection from "./articles/articles-section";
+import { useCartCateringOrders } from "./hooks/hospitality-hooks";
 
 interface CartSectionProps {
     applications: IApplication[];
@@ -24,8 +26,14 @@ interface CartSectionProps {
 
 const CartSection: FC<CartSectionProps> = ({applications, setCurrentApplication, buildingParentIds, onBuildingParentIdChange, showPriceChoiceErrors, pendingPriceApplicationIds}) => {
     const t = useTrans();
-    const {data: serverSettings} = useServerSettings();
+    const {data: serverSettings, isPending: serverSettingsPending} = useServerSettings();
     const enableHospitality = !!serverSettings?.booking_config?.enable_hospitality;
+
+    // The cart's catering orders, from the same cache the catering sections list them from (GH #1478). Until it is
+    // known whether catering is on, and while the orders are being read, no total is shown: a total without the
+    // catering would be a wrong number, not an early one.
+    const catering = useCartCateringOrders(applications.map(app => app.id), enableHospitality);
+    const cateringPending = serverSettingsPending || catering.state === 'pending';
 
     // Fetch seasons for all unique buildings
     const buildingIds = [...new Set(applications.map(item => item.building_id))];
@@ -48,28 +56,29 @@ const CartSection: FC<CartSectionProps> = ({applications, setCurrentApplication,
         })
     }
 
-    // Calculate total cost for a list of applications
-    const calculateTotal = (apps: IApplication[]): number => {
-        return apps.reduce((total, app) => {
-            const cost = calculateApplicationCost(app);
+    // A recurring application's stored lines count once per instance in its seasons; a single booking once.
+    const instancesOf = (app: IApplication): number =>
+        RecurringInfoUtils.isRecurring(app)
+            ? calculateRecurringInstances(app, seasonsMap.get(app.building_id)).length
+            : 1;
 
-            if (RecurringInfoUtils.isRecurring(app)) {
-                const seasons = seasonsMap.get(app.building_id);
-                const recurringInstances = calculateRecurringInstances(app, seasons);
-                return total + (cost * recurringInstances.length);
-            }
-
-            return total + cost;
-        }, 0);
-    };
+    // What a list of applications costs incl. VAT in whole øre: their stored lines plus THEIR catering orders (none
+    // when catering is off); null when the catering is unknown (a read failed, or a line's VAT % is not known).
+    const calculateTotal = (apps: IApplication[]): number | null =>
+        cartTotalOre(apps, enableHospitality ? catering.orders : [], instancesOf);
 
     // A room whose price is still to be chosen counts as 0 in the sum, so the
     // total is not shown until the price is chosen
     const hasPendingPrice = (apps: IApplication[]): boolean =>
         apps.some(app => pendingPriceApplicationIds?.has(app.id) ?? false);
 
-    const formatTotal = (apps: IApplication[], total: number): string =>
-        hasPendingPrice(apps) ? t('bookingfrontend.price_pending') : formatCurrency(total);
+    const formatTotal = (apps: IApplication[], totalOre: number | null): string =>
+        hasPendingPrice(apps) ? t('bookingfrontend.price_pending') : formatOreOrDash(totalOre);
+
+    // A total is shown once the catering is known, when there is something to pay, its price is still to be chosen,
+    // or it is unknown (shown «-», never a sum that leaves something out).
+    const showsTotal = (apps: IApplication[], totalOre: number | null): boolean =>
+        !cateringPending && (totalOre === null || totalOre > 0 || hasPendingPrice(apps));
 
     // Separate recurring and regular applications, then group regular applications by building
     const {regularApplicationsByBuilding, recurringApplications} = useMemo(() => {
@@ -144,7 +153,7 @@ const CartSection: FC<CartSectionProps> = ({applications, setCurrentApplication,
                             applications={buildingGroup.applications}
                         />
                         )}
-                        {showSectionTotals && (sectionTotal > 0 || hasPendingPrice(buildingGroup.applications)) && (
+                        {showSectionTotals && showsTotal(buildingGroup.applications, sectionTotal) && (
                             <div className={styles.sectionTotal}>
                                 <strong>{t('bookingfrontend.total')}:</strong>
                                 <strong>{formatTotal(buildingGroup.applications, sectionTotal)}</strong>
@@ -171,7 +180,16 @@ const CartSection: FC<CartSectionProps> = ({applications, setCurrentApplication,
                             onParentIdChange={undefined}
                         />
                         <ArticlesSection applications={recurringApplications} showPriceChoiceErrors={showPriceChoiceErrors}/>
-                        {showSectionTotals && (recurringTotal > 0 || hasPendingPrice(recurringApplications)) && (
+                        {/* No catering is started here; the orders a recurring application already has are listed,
+                            because the total counts them */}
+                        {enableHospitality && (
+                        <HospitalitySection
+                            applicationIds={recurringApplications.map(a => a.id)}
+                            applications={recurringApplications}
+                            allowAdd={false}
+                        />
+                        )}
+                        {showSectionTotals && showsTotal(recurringApplications, recurringTotal) && (
                             <div className={styles.sectionTotal}>
                                 <strong>{t('bookingfrontend.total')}:</strong>
                                 <strong>{formatTotal(recurringApplications, recurringTotal)}</strong>
@@ -182,7 +200,7 @@ const CartSection: FC<CartSectionProps> = ({applications, setCurrentApplication,
             })()}
 
             {/* Grand Total */}
-            {(grandTotal > 0 || hasPendingPrice(applications)) && (
+            {showsTotal(applications, grandTotal) && (
                 <div className={styles.grandTotal}>
                     <strong>{t('bookingfrontend.total')}:</strong>
                     <strong>{formatTotal(applications, grandTotal)}</strong>

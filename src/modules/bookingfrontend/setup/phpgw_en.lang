@@ -1331,3 +1331,6 @@ hospitality_available_form_info	bookingfrontend	en	You can order food and drink 
 catering_day_sum	bookingfrontend	en	Catering sum %1
 catering_day_sum_undated	bookingfrontend	en	Catering sum
 catering_offers_in_building	bookingfrontend	en	The building offers catering: %1.
+hospitality_dialog_day_help	bookingfrontend	en	The rooms you have applied for this day
+hospitality_dialog_time_within_kitchen	bookingfrontend	en	Within the serving hours at %1, %2–%3
+hospitality_dialog_on_site_place_help	bookingfrontend	en	The food is served at %1 and is not delivered to a room.

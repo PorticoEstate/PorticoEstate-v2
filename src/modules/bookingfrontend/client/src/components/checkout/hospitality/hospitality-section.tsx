@@ -10,6 +10,7 @@ import {formatOreOrDash, formatQuantity} from '@/utils/article-pricing';
 import {formatCurrency} from '@/utils/cost-utils';
 import {cancellationNotice, orderAnchor} from '@/utils/catering-cancellation-notice';
 import {CheckoutCateringOrder, cateringTotalOre, checkoutCateringDays} from '@/utils/checkout-total';
+import {cateringDaySumDate, cateringDaySumOre, cateringOffersText} from '@/utils/catering-day-sum';
 import {formatDayMonthTime, formatDeadlineDateTime} from '@/utils/hospitality-deadline';
 import HospitalityOrderModal from './hospitality-order-modal';
 import styles from './hospitality.module.scss';
@@ -200,6 +201,13 @@ const HospitalitySection: FC<HospitalitySectionProps> = ({applicationIds, applic
         .replace('%1', () => orderIdentity(order))
         .replace('%2', () => formatDeadlineDateTime(cancelBy, lang));
 
+    /** «Sum bevertning 22. april» for a venue day; «Sum bevertning» for the orders without a serving time. */
+    const daySumLabel = (dayKey: string | null): string => {
+        if (dayKey === null) return t('bookingfrontend.catering_day_sum_undated');
+        const date = cateringDaySumDate(dayKey, lang);
+        return t('bookingfrontend.catering_day_sum').replace('%1', () => date);
+    };
+
     return (
         <div className={styles.hospitalitySection}>
             <div className={styles.sectionHeader}>
@@ -251,6 +259,16 @@ const HospitalitySection: FC<HospitalitySectionProps> = ({applicationIds, applic
                 </Alert>
             )}
 
+            {/* Before the first order: one line naming the building's offers. The per-order deadlines above need an
+                order, so they are not shown yet. */}
+            {canAdd && listedCount === 0 && (
+                <Alert data-color="info" data-size="sm" style={{marginBottom: '0.75rem'}}>
+                    <Paragraph data-size="sm">
+                        {t('bookingfrontend.catering_offers_in_building')
+                            .replace('%1', () => cateringOffersText(hospitalities.map(hospitality => hospitality.name), lang))}
+                    </Paragraph>
+                </Alert>
+            )}
             {listedCount === 0 && (
                 <Paragraph data-size="sm">{t('bookingfrontend.no_hospitality_added')}</Paragraph>
             )}
@@ -270,6 +288,10 @@ const HospitalitySection: FC<HospitalitySectionProps> = ({applicationIds, applic
                             <CateringOrderBlock key={item.order.id} item={item} onEdit={editHandlerFor(item.order)}/>
                         ))}
                     </div>
+                    <Paragraph data-size="sm" className={styles.cateringOrderTotal} data-testid="checkout-catering-day-sum">
+                        <span>{daySumLabel(day.dayKey)}</span>
+                        <span>{formatOreOrDash(cateringDaySumOre(day))}</span>
+                    </Paragraph>
                 </section>
             ))}
 

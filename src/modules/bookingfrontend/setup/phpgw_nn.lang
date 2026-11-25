@@ -1328,3 +1328,6 @@ hospitality_available	bookingfrontend	nn	Mat og drikke kan bestillast
 hospitality_available_title	bookingfrontend	nn	Mat og drikke
 hospitality_available_room_info	bookingfrontend	nn	Du kan bestille mat og drikke til dette rommet. Det gjer du i siste steg, før du sender søknaden.
 hospitality_available_form_info	bookingfrontend	nn	Du kan bestille mat og drikke til romma du har valt. Det gjer du i siste steg, før du sender søknaden.
+catering_day_sum	bookingfrontend	nn	Sum bevertning %1
+catering_day_sum_undated	bookingfrontend	nn	Sum bevertning
+catering_offers_in_building	bookingfrontend	nn	Bygget tilbyr bevertning: %1.

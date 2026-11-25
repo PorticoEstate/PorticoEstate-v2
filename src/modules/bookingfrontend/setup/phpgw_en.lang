@@ -1328,3 +1328,6 @@ hospitality_available	bookingfrontend	en	Food and drink can be ordered
 hospitality_available_title	bookingfrontend	en	Food and drink
 hospitality_available_room_info	bookingfrontend	en	You can order food and drink for this room. You do that in the last step, before you send the application.
 hospitality_available_form_info	bookingfrontend	en	You can order food and drink for the rooms you have chosen. You do that in the last step, before you send the application.
+catering_day_sum	bookingfrontend	en	Catering sum %1
+catering_day_sum_undated	bookingfrontend	en	Catering sum
+catering_offers_in_building	bookingfrontend	en	The building offers catering: %1.

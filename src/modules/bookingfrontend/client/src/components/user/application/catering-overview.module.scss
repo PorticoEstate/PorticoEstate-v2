@@ -1,6 +1,6 @@
 // The catering section on Min side (GH #1423): each serving on a grey surface, the price summary and the
 // 375 px stack. Text, buttons, the Alert, the Dialog and the Table are the design system's own; only the
-// layout and the one surface colour live here, and only from its tokens.
+// layout, the one surface colour and the 375 px button height live here, the colour only from its tokens.
 
 @use './price-lines' as price;
 
@@ -230,6 +230,12 @@ $stack-breakpoint: price.$stack-breakpoint;
         > :not(button) {
             grid-column: 1 / -1;
             justify-self: start;
+        }
+
+        // The design's 44 px for Rediger and Avbestill (GH #1485). The design system has no button size for it:
+        // data-size sm is 42 px and md is 48 px, measured at 375 and at 1280.
+        > button {
+            --dsc-button-size: 44px;
         }
     }
 

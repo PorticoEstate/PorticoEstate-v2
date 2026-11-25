@@ -1019,6 +1019,7 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
                         Locked like the rest of the order content (+/-, line comments). */}
                     <Field>
                         <Label>{t('bookingfrontend.special_requirements')}</Label>
+                        <Field.Description>{t('bookingfrontend.special_requirements_help')}</Field.Description>
                         <Textarea
                             rows={3}
                             value={specialRequirements}

@@ -1323,3 +1323,4 @@ cancellation_deadline_info_order	bookingfrontend	en	The order on %1 can be cance
 catering_amount_too_large	bookingfrontend	en	The amount for one of the lines is too large.
 catering_order_total_too_large	bookingfrontend	en	The order total is too large.
 catering_checkout_serving_time	bookingfrontend	en	at %1
+special_requirements_help	bookingfrontend	en	Goes to the kitchen. State the number and what, for example «2 gluten-free, 1 with a nut allergy». Do not write names.

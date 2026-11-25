@@ -1323,3 +1323,4 @@ cancellation_deadline_info_order	bookingfrontend	nn	Bevertning %1 kan avbestilla
 catering_amount_too_large	bookingfrontend	nn	Beløpet for éi av linjene er for stort.
 catering_order_total_too_large	bookingfrontend	nn	Totalbeløpet for bestillinga er for stort.
 catering_checkout_serving_time	bookingfrontend	nn	kl. %1
+special_requirements_help	bookingfrontend	nn	Går til kjøkenet. Skriv kor mange og kva, til dømes «2 glutenfrie, 1 med nøtteallergi». Ikkje skriv namn.

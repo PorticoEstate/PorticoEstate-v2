@@ -91,13 +91,21 @@ try {
 const verbose = Boolean(process.env.KP_VERBOSE);
 const failures: string[] = [];
 let passed = 0;
+const show = (value: unknown): string => JSON.stringify(value, (_k, v) => (typeof v === 'number' && !Number.isFinite(v) ? String(v) : v))?.slice(0, 400) ?? 'undefined';
+/** `want` may be a thunk: an expectation that reads the module is then evaluated inside the row, so a missing module fails the row. */
 const same = (name: string, got: () => unknown, want: unknown): void => {
+    let value: unknown;
+    let expected: unknown;
     try {
-        assert.deepStrictEqual(got(), want);
+        value = got();
+        expected = typeof want === 'function' ? (want as () => unknown)() : want;
+        assert.deepStrictEqual(value, expected);
         passed++;
         if (verbose) console.log(`ROW PASS ${name}`);
     } catch (error) {
-        const detail = `${name} — ${(error as Error).message.split('\n').slice(0, 4).join(' | ')}`;
+        const detail = value === undefined
+            ? `${name} — threw: ${(error as Error).message.split('\n')[0]}`
+            : `${name} — got ${show(value)} want ${show(expected)}`;
         failures.push(detail);
         if (verbose) console.log(`ROW FAIL ${detail}`);
     }
@@ -149,8 +157,8 @@ const storedTotalOre = (lines: any[]): number =>
 /** The dialog's total incl. VAT in øre, as the modal computes it: quantities × the price each article is held at. */
 const dialogTotalOre = (menuArticles: any[], lines: any[], quantities: Record<number, number>): number | null => {
     const s = summary.summarizeHospitalityVat(
-        pricing.orderedPriceLines(quantities, menuArticles, lines)
-            .map(({price, quantity}: any) => summary.hospitalityMenuLineForSummary(price, quantity))
+        pricing.orderedDialogRows(quantities, menuArticles, lines)
+            .map((row: any) => summary.hospitalityMenuLineForSummary(row.price, row.quantity))
     );
     return s.known ? s.inclOre : null;
 };
@@ -216,6 +224,30 @@ same('14. editing in a new Brød 2 before saving: the dialog total is the stored
     () => dialogTotalOre(menuMoved, stateB, {...quantitiesOf(stateB), 14: 2}), storedTotalOre(stateC));
 same('15. after saving state C, the dialog total equals the stored total',
     () => dialogTotalOre(menuMoved, stateC, quantitiesOf(stateC)), storedTotalOre(stateC));
+
+// 16–18. An ordered line whose article has left the menu is LISTED read-only, and the dialog's total is the sum of the listed rows.
+// Ølfri (16) is ordered 2 × 30,00 at 25 %: 7 500 øre incl. VAT. Menu rows are listed with onMenu true.
+const rowsA = (): any[] => pricing.orderedDialogRows(quantitiesOf(stateA), menuMoved, stateA);
+// Off the menu in state A: Ølfri (16, deactivated) and Nopris (17, price row gone).
+same('16. the dialog lists the ordered Ølfri and Nopris, off the menu, read-only: name, quantity and stored price',
+    () => rowsA().filter((row: any) => !row.onMenu),
+    [
+        {articleId: 16, name: 'A16', quantity: 2, onMenu: false, price: {effective_price: '30.00', effective_tax_percent: 25}},
+        {articleId: 17, name: 'A17', quantity: 1, onMenu: false, price: {effective_price: '50.00', effective_tax_percent: 25}},
+    ]);
+same('16. the on-menu rows are the ordered articles still on the menu',
+    () => rowsA().filter((row: any) => row.onMenu).map((row: any) => row.articleId),
+    [11, 12, 13, 15]);
+same('17. the listed rows add up to the dialog total, and that is the stored total (66 561 øre)',
+    () => rowsA().reduce((sum: number, row: any) => sum + articlePricing.hospitalityMenuLineTotalOre(row.price, row.quantity), 0),
+    storedTotalOre(stateA));
+same('17. the dialog total on state A equals the sum of the listed rows',
+    () => dialogTotalOre(menuMoved, stateA, quantitiesOf(stateA)),
+    () => rowsA().reduce((sum: number, row: any) => sum + articlePricing.hospitalityMenuLineTotalOre(row.price, row.quantity), 0));
+same('18. taking Ølfri to 0 removes its row and its charge: the total is 66 561 − 7 500 = 59 061 øre',
+    () => [pricing.orderedDialogRows({...quantitiesOf(stateA), 16: 0}, menuMoved, stateA).some((row: any) => row.articleId === 16),
+        dialogTotalOre(menuMoved, stateA, {...quantitiesOf(stateA), 16: 0})],
+    [false, 59061]);
 
 // Information, not a row: what the dialog as it stands on base would total for state A (it sums menu prices only).
 if (summary && articlePricing) {

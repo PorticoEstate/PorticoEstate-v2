@@ -991,7 +991,11 @@ class HospitalityOrderController
 					}
 
 					// The amount in whole øre, which the guard below judges and which the line is written with (§49596), not a float product.
+					// A line whose amount cannot be judged is refused here, before any write: it is never written with a float fallback.
 					$lineAmount = HospitalityOrderAmount::line($quantity, $unitPrice, $taxCode, $taxPercents);
+					if ($lineAmount === null) {
+						return ResponseHelper::sendErrorResponse(['error' => "Line {$i}: amount is not a number"], 400, $response);
+					}
 
 					// Keyed as the request keys it, so a refusal below names the request's own line.
 					$resolvedLines[$i] = [
@@ -1000,7 +1004,7 @@ class HospitalityOrderController
 						'unit_price' => $unitPrice,
 						'tax_code' => $taxCode,
 						'comment' => $line['comment'] ?? null,
-						'amount' => $lineAmount === null ? null : HospitalityOrderAmount::numeric($lineAmount['net']),
+						'amount' => HospitalityOrderAmount::numeric($lineAmount['net']),
 					];
 				}
 

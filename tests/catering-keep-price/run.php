@@ -560,6 +560,34 @@ $same('12. a change to Kake only, with Kaffe re-priced on the menu: the change l
 );
 
 // =======================================================================================================
+// 16. A line whose amount cannot be judged is refused BEFORE any write: a float fallback would write it. Three cases:
+//     a kept line whose stored price is not a number, a new line whose menu price is NaN, and a kept line whose amount
+//     does not fit the column (the guard's own judgement, reached with a stored price).
+$storedBad = $storedDefault;
+$storedBad[0] = [401, 11, '3.00', 'abc', 1, '135.00'];
+$r = $run($menuDefault, $storedBad, $req($untouched));
+$same('16a. a kept line whose stored price is not a number: 400, not written as a float', $r['status'], 400);
+$same('16a. nothing is written and the lines are as they were',
+    [$r['repo']->wrote, $linesOf($r['repo'])],
+    [false, array_map(static fn(array $t): array => [$t[1], $t[2], $t[3], $t[4], $t[5]], $storedBad)]
+);
+
+$menuNaN = $menuDefault;
+$menuNaN[14] = array_replace($menuRow(14, 'Brød', '60.00', 2), ['base_price' => NAN]);
+$r = $run($menuNaN, $storedDefault, $req([...$untouched, [14, 2]]));
+$same('16b. a new Brød line whose menu price is NaN: 400', $r['status'], 400);
+$same('16b. nothing is written', [$r['repo']->wrote, $linesOf($r['repo'])], [false, $expectedDefault]);
+
+$storedHuge = $storedDefault;
+$storedHuge[0] = [401, 11, '3.00', '99999999.99', 1, '135.00'];
+$r = $run($menuDefault, $storedHuge, $req([[11, 99999999], [12, 2], [13, 1], [15, 1], [16, 2], [17, 1]]));
+$same('16c. a kept line that does not fit (99 999 999 × 99 999 999,99): 422', $r['status'], 422);
+$same('16c. nothing is written',
+    [$r['repo']->wrote, $linesOf($r['repo'])],
+    [false, array_map(static fn(array $t): array => [$t[1], $t[2], $t[3], $t[4], $t[5]], $storedHuge)]
+);
+
+// =======================================================================================================
 // Result
 // =======================================================================================================
 $total = $passed + count($failures);

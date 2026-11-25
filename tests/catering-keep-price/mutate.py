@@ -39,6 +39,12 @@ MUTANTS = {
     'M3 a new line takes an old price': [
         (CONTROLLER, NEW_PRICE, '$unitPrice = $storedLines[0][\'unit_price\'] ?? (float)$pricing[\'effective_price\'];'),
     ],
+    # An amount the guard cannot judge is written with a float fallback instead of being refused.
+    'M5 float fallback for an unjudged amount': [
+        (CONTROLLER, 'if ($lineAmount === null) {', 'if (false) {'),
+        (CONTROLLER, "'amount' => HospitalityOrderAmount::numeric($lineAmount['net']),",
+         "'amount' => $lineAmount === null ? null : HospitalityOrderAmount::numeric($lineAmount['net']),"),
+    ],
     # Lines matched by request position, not by article: a kept line takes the price of whatever stored line sits there.
     'M4 match by request position': [
         (CONTROLLER, MATCH, 'if (isset($storedLines[$i]) || !empty($keptByArticle[$articleId])) {'),

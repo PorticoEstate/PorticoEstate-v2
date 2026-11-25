@@ -44,7 +44,7 @@ import {
     sumOreOrNull,
 } from '@/utils/article-pricing';
 import {hospitalityMenuLineForSummary, summarizeHospitalityVat} from '@/utils/hospitality-price-summary';
-import {orderedPriceLines, orderedPriceOf} from '@/utils/hospitality-order-pricing';
+import {orderedDialogRows, orderedPriceOf} from '@/utils/hospitality-order-pricing';
 import {
     computeHospitalityDeadline,
     earliestApplicationDate,
@@ -582,10 +582,16 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
     // ordered line's VAT rounded once as it is billed. Not `known` as soon as an ordered article has no known
     // VAT %: the VAT and the total then show «-», never an ex-VAT sum in their place. An ordered line whose article
     // is no longer on the menu is still summed (at its stored price), as the server still holds it.
+    // The dialog's rows: every ordered article, on the menu or not. The total is the sum of these rows, so every line
+    // charged is a line the dialog lists (a row whose article left the menu is listed read-only, below the menu).
+    const dialogRows = useMemo(
+        () => orderedDialogRows(quantities, allArticles, existingOrder?.lines ?? []),
+        [allArticles, existingOrder, quantities]
+    );
+    const offMenuRows = dialogRows.filter(row => !row.onMenu);
     const priceSummary = useMemo(() => summarizeHospitalityVat(
-        orderedPriceLines(quantities, allArticles, existingOrder?.lines ?? [])
-            .map(({price, quantity}) => hospitalityMenuLineForSummary(price, quantity))
-    ), [allArticles, existingOrder, quantities]);
+        dialogRows.map(row => hospitalityMenuLineForSummary(row.price, row.quantity))
+    ), [dialogRows]);
     // The total incl. VAT of the summary, so the footer and the summary block can never disagree.
     const orderTotalOre = priceSummary.known ? priceSummary.inclOre : null;
 
@@ -1129,6 +1135,54 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
                                 {menu?.ungrouped_articles && menu.ungrouped_articles.length > 0 && (
                                     <div>
                                         {menu.ungrouped_articles.map(renderArticle)}
+                                    </div>
+                                )}
+
+                                {/* Ordered lines whose article has left the menu: read-only in price, but still counted in the total,
+                                    so the applicant sees every line charged. Taking the quantity to 0 removes the line, as any line. */}
+                                {offMenuRows.length > 0 && (
+                                    <div>
+                                        {offMenuRows.map(row => {
+                                            const unitIncl = hospitalityUnitPriceIncl(row.price);
+                                            const amountOre = hospitalityMenuLineTotalOre(row.price, row.quantity);
+                                            return (
+                                                <div key={row.articleId} className={styles.menuItem}>
+                                                    <div className={styles.menuRow}>
+                                                        <span className={styles.menuName}>
+                                                            {row.name}
+                                                            <span className={styles.menuDesc}>{t('bookingfrontend.no_longer_on_menu')}</span>
+                                                        </span>
+                                                        <span className={styles.menuPrice}>{unitIncl === null ? '-' : formatCurrency(unitIncl)}</span>
+                                                        <span className={styles.menuQty}>
+                                                            <Button
+                                                                variant="tertiary"
+                                                                data-size="sm"
+                                                                data-color="accent"
+                                                                icon={true}
+                                                                onClick={() => setQuantity(row.articleId, row.quantity - 1)}
+                                                                disabled={!menuEnabled}
+                                                                aria-label={`${t('common.decrease')}: ${row.name}`}
+                                                            >
+                                                                <MinusCircleIcon aria-hidden="true"/>
+                                                            </Button>
+                                                            <span className={styles.qtyValue}>{row.quantity}</span>
+                                                            <Button
+                                                                variant="tertiary"
+                                                                data-size="sm"
+                                                                data-color="accent"
+                                                                icon={true}
+                                                                onClick={() => setQuantity(row.articleId, row.quantity + 1)}
+                                                                disabled={!menuEnabled}
+                                                                aria-label={`${t('common.increase')}: ${row.name}`}
+                                                            >
+                                                                <PlusCircleIcon aria-hidden="true"/>
+                                                            </Button>
+                                                        </span>
+                                                        <span className={styles.menuAmount}>{formatOreOrDash(amountOre)}</span>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
                                     </div>
                                 )}
                             </div>

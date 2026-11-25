@@ -1339,3 +1339,4 @@ hospitality_dialog_time_before_day	bookingfrontend	no	Velg dag for å se klokkes
 hospitality_dialog_time_none	bookingfrontend	no	Ingen tider tilgjengelig denne dagen
 checkout_steps_aria	bookingfrontend	no	Steg %1 av %2
 checkout_step_send	bookingfrontend	no	Send
+no_longer_on_menu	bookingfrontend	no	ikke lenger på menyen

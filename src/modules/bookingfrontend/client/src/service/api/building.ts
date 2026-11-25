@@ -142,7 +142,11 @@ export async function fetchResourceDocuments(buildingId: number | string, type_f
     return result.map(a => ({...a, owner_type: 'resource'}));
 }
 
-export function getDocumentLink(doc: IDocument, type: 'building' | 'resource' | 'application' | 'organization'): string {
-    const url = phpGWLink(['bookingfrontend', type + 's', 'document', doc.id, 'download']);
+/**
+ * @param secret An application document is only served to whoever may view the application: pass the
+ *               application's secret when the page was opened through its secret link
+ */
+export function getDocumentLink(doc: IDocument, type: 'building' | 'resource' | 'application' | 'organization', secret?: string): string {
+    const url = phpGWLink(['bookingfrontend', type + 's', 'document', doc.id, 'download'], secret ? {secret} : undefined);
     return url
 }

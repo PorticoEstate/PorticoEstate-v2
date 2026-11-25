@@ -201,7 +201,7 @@
 			</td>
 		</tr>
 		<tr>
-			<td>{lang_hide_price_category}:<br/><small>{lang_hide_price_category_note}</small></td>
+			<td>{lang_hide_price_category}:<br/><small>{lang_hide_price_category_note_no_choice}</small></td>
 			<td>
 				<select name="newsettings[hide_price_category]" class="pure-u-1">
 					<option value="0"{selected_hide_price_category_0}>{lang_No}</option>

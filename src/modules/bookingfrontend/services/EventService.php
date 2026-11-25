@@ -3,6 +3,7 @@
 namespace App\modules\bookingfrontend\services;
 
 use App\Database\Db;
+use App\helpers\OwnerIdentifier;
 use App\modules\bookingfrontend\helpers\UserHelper;
 use App\modules\bookingfrontend\models\Event;
 use App\modules\bookingfrontend\models\Resource;
@@ -74,26 +75,42 @@ class EventService
             }
         }
         if (count($toDelete) > 0) {
-            $this->repository->deleteResources($toDelete);
+            $this->repository->deleteResources($existingEvent['id'], $toDelete);
         }
 
         //Set new resources
-        $shouldInsert = false;
         $toInsert = [];
         foreach ($data['resource_ids'] as $newResource) {
             if (!in_array($newResource, $resourceIds)) {
-                $shouldInsert = true;
-                array_push($toInsert,
-                    [
-                        'id' => $existingEvent['id'],
-                        'resourceId' => $newResource
-                    ]
-                );
+                $toInsert[] = $newResource;
             }
         }
-        if ($shouldInsert) {
+        if (count($toInsert) > 0) {
             $this->repository->insertResources($existingEvent['id'], $toInsert);
         }
+    }
+
+    /**
+     * The resource_ids of a PATCH body as a list of distinct ints, or null when it is not a list of positive integers
+     * (an int, or a string of digits only) within bb_resource.id's integer range. Anything else is refused rather than
+     * cast: '5abc' is not resource 5.
+     */
+    public function resourceIdsFromRequest(mixed $value): ?array
+    {
+        if (!is_array($value) || !array_is_list($value)) {
+            return null;
+        }
+        $ids = [];
+        foreach ($value as $id) {
+            if (is_string($id) && ctype_digit($id) && strlen($id) <= 10) {
+                $id = (int)$id;
+            }
+            if (!is_int($id) || $id < 1 || $id > 2147483647) {
+                return null;
+            }
+            $ids[] = $id;
+        }
+        return array_values(array_unique($ids));
     }
 
     private function saveNewDates(int $id, array $data)
@@ -111,6 +128,14 @@ class EventService
         $stmt->execute([':id' => $id]);
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
+    /**
+     * Whether the viewer owns the event, by its ssn or by an organisation they are a delegate of.
+     *
+     * An identifier that is empty on either side never matches (OwnerIdentifier::isEmpty, the rule the serialiser's
+     * owner arms use): a guest has no ssn, and was otherwise the owner of every event stored without one. The
+     * organisation number MinId2 gives every organisation with an ssn and no number ('000000000') is the same for
+     * all of them, so it never matches either, on either side.
+     */
     public function checkEventOwnerShip(array $existingEvent)
     {
         $ownerSsn = $existingEvent['customer_ssn'];
@@ -119,10 +144,22 @@ class EventService
         $userOrgs = $this->bouser->organizations
             ? array_column($this->bouser->organizations, 'orgnr')
             : [];
-        return
-            $ssn === $ownerSsn ||
-            in_array($ownerOrgNum, $userOrgs);
 
+        $isOwnerBySsn = !OwnerIdentifier::isEmpty($ssn)
+            && !OwnerIdentifier::isEmpty($ownerSsn)
+            && $ssn === $ownerSsn;
+
+        $userOrgNumbers = array_filter(
+            $userOrgs,
+            fn($orgNumber) => !OwnerIdentifier::isEmpty($orgNumber) && !OwnerIdentifier::isPlaceholderOrgNumber($orgNumber)
+        );
+        // Compared as strings: loosely, '0' equals '00000' and '994239929' equals '0994239929', so another
+        // organisation's spelling of the same digits would pass. An int on either side is still its own digits.
+        $isOwnerByOrganization = !OwnerIdentifier::isEmpty($ownerOrgNum)
+            && !OwnerIdentifier::isPlaceholderOrgNumber($ownerOrgNum)
+            && in_array((string)$ownerOrgNum, array_map('strval', $userOrgNumbers), true);
+
+        return $isOwnerBySsn || $isOwnerByOrganization;
     }
     public function updateEvent(array $data, array $existingEvent)
     {

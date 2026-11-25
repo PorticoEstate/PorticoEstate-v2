@@ -75,6 +75,16 @@ export const RecurringInfoUtils = {
 
     isRecurring: (application: IApplication): boolean => {
         return !!RecurringInfoUtils.parse(application.recurring_info);
+    },
+
+    // Whether the server keeps the recurring organisation: ApplicationService.php tests !empty($recurring_info).
+    // The client holds the server's text on REST. On WS the services re-stringify non-string values
+    // (application.service.ts:84, delivered-application.service.ts:344), so jsonb 0 arrives as '0'.
+    // jsonb "" is '""' on REST but '' on WS, since a string is not re-stringified; PHP sees it as non-empty.
+    // Known limits: on WS, jsonb "0" arrives as '0' (as jsonb 0 does) and jsonb null arrives as null (as SQL NULL
+    // does), so both are treated as empty where PHP keeps them. The server-side fix is a separate change.
+    isServerNonEmpty: (recurring_info: string | null | undefined): boolean => {
+        return recurring_info != null && recurring_info !== '0';
     }
 };
 

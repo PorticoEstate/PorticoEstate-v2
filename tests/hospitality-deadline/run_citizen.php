@@ -17,6 +17,11 @@
  *   (6) a throw AFTER the committed write must not turn into a 500: the re-read of the order in
  *       deleteOrder, createOrder and updateOrder, with a RuntimeException, a PDOException and a TypeError.
  *       A failing write and a failing pre-write read must still say so.
+ *   (7) the quantity of a catering line is a positive WHOLE number for every unit (task 47994): the value table of
+ *       HospitalityOrderQuantity, and the real createOrder / updateOrder refusing a fraction, zero, a negative, a non-number
+ *       or a number above the column's capacity with a translated 400 and NOTHING written, and still saving a whole one.
+ *   (8) the same rule in the ADMIN order API (addLine, updateLine): a translated 400 in that controller's {error} shape, nothing
+ *       written, the judged int stored and recorded in the changelog (task 47994, C1b).
  *
  * Mail is never sent (the notifier is a recording stub) and storage/emails is never touched.
  *
@@ -49,6 +54,7 @@ foreach ([
     'modules/booking/services/CateringText.php',
     'modules/booking/services/CateringLangSwitch.php',
     'modules/booking/services/CateringMailRenderer.php',
+    'modules/booking/services/CateringChangeText.php',
     'modules/booking/services/TranslationLangSwitch.php',
     'modules/booking/repositories/HospitalityOrderRepository.php',
     'modules/bookingfrontend/services/applications/CateringChangeNotifier.php',
@@ -57,6 +63,17 @@ foreach ([
     'modules/booking/controllers/HospitalityOrderController.php',
 ] as $file) {
     require_once $root . '/src/' . $file;
+}
+// The whole-number rule (task 47994) is a class of its own. Guarded, so that a tree WITHOUT it (the base the rows of section 7 are
+// shown red on) answers with failed rows, not with a fatal error.
+$quantityFile = $root . '/src/modules/booking/services/HospitalityOrderQuantity.php';
+if (is_file($quantityFile)) {
+    require_once $quantityFile;
+}
+// The amount bound (§49596) is judged by both controllers' write paths; its own rows are in tests/hospitality-amount/.
+$amountFile = $root . '/src/modules/booking/services/HospitalityOrderAmount.php';
+if (is_file($amountFile)) {
+    require_once $amountFile;
 }
 
 use App\modules\booking\controllers\HospitalityOrderController as AdminOrderController;
@@ -126,6 +143,10 @@ final class CitizenStubRepo extends HospitalityOrderRepository
     public array $changelog = [];
     /** @var list<string> */
     public array $calls = [];
+    /** @var list<array> what updateOrderLine() was handed, as handed */
+    public array $lineUpdates = [];
+    /** @var list<mixed> the `quantity` addOrderLine() was handed, as handed (an int stays an int): what was STORED, before the column's own rounding */
+    public array $lineQuantities = [];
     /** @var list<array> */
     public array $entries = [];
     public bool $wrote = false;
@@ -140,6 +161,15 @@ final class CitizenStubRepo extends HospitalityOrderRepository
 
     public function __construct()
     {
+    }
+
+    /** One transaction (§49596). The stub has no connection: it runs the work and counts the bracket. */
+    public int $transactions = 0;
+
+    public function transactional(callable $work): mixed
+    {
+        $this->transactions++;
+        return $work();
     }
 
     public function getById(int $id): ?array
@@ -221,6 +251,8 @@ final class CitizenStubRepo extends HospitalityOrderRepository
 
     public function addOrderLine(array $data): int
     {
+        $this->calls[] = 'addOrderLine';
+        $this->lineQuantities[] = $data['quantity'] ?? 1;
         $id = $this->nextLineId++;
         $this->lines[(int)$data['order_id']][] = [
             'id' => $id,
@@ -238,8 +270,29 @@ final class CitizenStubRepo extends HospitalityOrderRepository
         return $id;
     }
 
+    public function getOrderLineById(int $lineId): ?array
+    {
+        foreach ($this->lines as $rows) {
+            foreach ($rows as $line) {
+                if ((int)$line['id'] === $lineId) {
+                    return $line;
+                }
+            }
+        }
+        return null;
+    }
+
+    public function updateOrderLine(int $lineId, array $data): bool
+    {
+        $this->calls[] = 'updateOrderLine';
+        $this->lineUpdates[] = $data;
+        $this->wrote = true;
+        return true;
+    }
+
     public function deleteOrderLine(int $lineId): bool
     {
+        $this->calls[] = 'deleteOrderLine';
         foreach ($this->lines as $orderId => $rows) {
             $this->lines[$orderId] = array_values(array_filter($rows, static fn(array $l) => (int)$l['id'] !== $lineId));
         }
@@ -345,13 +398,23 @@ final class StubHospitalityRepo extends HospitalityRepository
 
 final class StubArticleRepo extends HospitalityArticleRepository
 {
+    /** The article's price and tax code. 45.00 at code 1 (25 %) unless a row needs an amount that fits (§49596). */
+    public static float $price = 45.0;
+    public static int $taxCode = 1;
+
     public function __construct()
     {
     }
 
     public function resolveEffectivePricing(int $articleId): ?array
     {
-        return ['effective_price' => 45.0, 'effective_tax_code' => 1];
+        return ['effective_price' => self::$price, 'effective_tax_code' => self::$taxCode];
+    }
+
+    /** fm_ecomva as the fixture lines describe it: code 1 is 25 % (their tax_percent), code 0 is 0 %. */
+    public function getTaxPercentByCode(): array
+    {
+        return [0 => 0, 1 => 25];
     }
 
     public function getArticleById(int $id): ?array
@@ -735,6 +798,248 @@ $check('control: the same stub DOES make the real re-read throw (so the arms abo
 })());
 
 unlink($logFile);
+
+// =======================================================================================================
+// 7. The quantity of a catering line is a positive WHOLE number, for every unit (task 47994, C1; operator ruling,
+//    request 206): refused with a translated 400 BEFORE anything is written
+// =======================================================================================================
+$quantityClass = '\\App\\modules\\booking\\services\\HospitalityOrderQuantity';
+$haveQuantity = class_exists($quantityClass, false);
+$check('quantity: HospitalityOrderQuantity is loaded from this tree', $haveQuantity, "the class does not exist under {$root}");
+
+// [the JSON literal as a request body carries it, what whole() answers]. A string is judged by its SPELLING, a number by its VALUE.
+$wholeTable = [
+    ['2', 2], ['"2"', 2], ['2.0', 2], ['"2.0"', 2], ['1e1', 10], ['"007"', 7], ['"00000000000000000002"', 2], ['1', 1], ['"1.00"', 1],
+    ['99999999', 99999999], ['99999999.0', 99999999], ['"99999999"', 99999999],
+    ['0', null], ['"0"', null], ['0.0', null], ['-0.0', null], ['-1', null], ['"-1"', null], ['-0.5', null],
+    ['2.5', null], ['"2.5"', null], ['2.004', null], ['0.5', null], ['"1e1"', null], ['" 2"', null], ['"2 "', null], ['"2\\n"', null],
+    ['"2abc"', null], ['"abc"', null], ['""', null], ['"0x2"', null], ['"+2"', null], ['"2."', null], ['".5"', null], ['"2,0"', null],
+    ['true', null], ['false', null], ['null', null], ['[2]', null], ['[]', null], ['{"a":1}', null],
+    ['1e400', null], ['100000000', null], ['"100000000"', null], ['12345678901234567890', null], ['"12345678901234567890"', null], ['9007199254740993', null],
+    // 2^64 + 8192 as a float: PHP's (int) wraps it to 8192, which would pass the range test, so the float branch must refuse it by value first.
+    ['18446744073709560000', null], ['18446744073709563904', null],
+    // The NEGATIVE half of the same wrap (task 48533): a JSON number below -2^63 is a float, and (int) of it wraps modulo 2^64 to a
+    // POSITIVE number in 1..MAX that the final range test would accept. -(2^64 - 2048) wraps to +2048, -(2^64 - 4096) to +4096,
+    // -(2^65 - 4096) to +4096 (the next period). -1e30 and -INF (1e400's negative) wrap to something refused anyway; they are rows
+    // so that a lower bound written some other way cannot lose them.
+    ['-18446744073709549568', null], ['-18446744073709547520', null], ['-36893488147419099136', null], ['-1e30', null], ['-1e400', null],
+    // Positive control: the numbers those floats wrap TO are valid quantities, so a wrap that got through really would be accepted.
+    ['2048', 2048], ['4096', 4096], ['2048.0', 2048],
+];
+if ($haveQuantity) {
+    foreach ($wholeTable as [$literal, $want]) {
+        $same("quantity whole(): {$literal} -> " . var_export($want, true), $quantityClass::whole(json_decode("[{$literal}]", true)[0]), $want);
+    }
+    $same('quantity ofLine(): no `quantity` key is 1', $quantityClass::ofLine(['hospitality_article_id' => 11]), 1);
+    $same('quantity ofLine(): `quantity: null` is 1', $quantityClass::ofLine(['quantity' => null]), 1);
+    $same('quantity ofLine(): 3 is 3', $quantityClass::ofLine(['quantity' => 3]), 3);
+    $same('quantity ofLine(): 2.5 is refused', $quantityClass::ofLine(['quantity' => 2.5]), null);
+    $same('quantity ofLine(): a line that is not an array (5) is left to the article-id refusal: 1', $quantityClass::ofLine(5), 1);
+    $same('quantity ofLine(): a string line is left to the article-id refusal: 1', $quantityClass::ofLine('abc'), 1);
+}
+
+$servingIsoQ = gmdate('c', strtotime('+30 days'));
+/** POST an order with these lines (a JSON array text). Returns [response, repo, notifier]. */
+$createQ = static function (string $linesJson, array $app = [], int $location = 5) use ($newRepo, $makeCitizen, $invoke, $application, $servingIsoQ): array {
+    $repo = $newRepo();
+    $notifier = new RecordingNotifier();
+    $body = '{"hospitality_id":3,"location_resource_id":' . $location . ',"serving_time_iso":"' . $servingIsoQ . '","lines":' . $linesJson . '}';
+    return [$invoke($makeCitizen($repo, $notifier, array_replace($application, $app)), 'createOrder', 'POST', ['id' => 84091], $body), $repo, $notifier];
+};
+/** PUT order 7 (comment 'Uten nøtter', one line of 3.00) with this JSON body text. */
+$updateQ = static function (string $json, array $app = []) use ($newRepo, $makeCitizen, $invoke, $application): array {
+    $repo = $newRepo();
+    $notifier = new RecordingNotifier();
+    return [$invoke($makeCitizen($repo, $notifier, array_replace($application, $app)), 'updateOrder', 'PUT', ['id' => 84091, 'orderId' => 7], $json), $repo, $notifier];
+};
+$writeCalls = ['create', 'update', 'addOrderLine', 'deleteOrderLine'];
+$wroteNothing = static fn(CitizenStubRepo $repo, RecordingNotifier $notifier): array =>
+    [$repo->wrote, array_values(array_intersect($repo->calls, $writeCalls)), count($repo->entries), count($notifier->payloads)];
+
+// Refused: the request answers 400 with the translated error, the code and the offending line, and NOTHING is written.
+$refusedQuantities = ['2.5', '"2.5"', '0.5', '2.004', '0', '-1', '"abc"', 'true', 'false', '[2]', '1e400', '100000000', '"2abc"', '"1e1"', '" 2"', '0.0',
+    // Beyond int64 and negative (task 48533): (int) wraps these to +2048 / +4096 unless the float is refused by value first. Shared by
+    // all four APIs: the applicant's create and update here, the admin addLine and updateLine in section 8.
+    '-18446744073709549568', '-18446744073709547520', '-36893488147419099136', '-1e30', '-1e400', '-0.0'];
+foreach ($refusedQuantities as $literal) {
+    [$r, $repo, $notifier] = $createQ('[{"hospitality_article_id":11,"quantity":' . $literal . '}]');
+    $json = json_decode($r['body'], true) ?: [];
+    $same("create, quantity {$literal}: no exception", $r['threw']?->getMessage(), null);
+    $same("create, quantity {$literal}: 400, the translated error, code and line", [$r['status'], $json['error'] ?? null, $json['code'] ?? null, $json['line'] ?? null],
+        [400, '!catering_quantity_not_whole', 'quantity_not_whole', 0]);
+    $same("create, quantity {$literal}: nothing written (no order, no line, no case entry, no mail)", $wroteNothing($repo, $notifier), [false, [], 0, 0]);
+
+    [$r, $repo, $notifier] = $updateQ('{"comment":"CHANGED","lines":[{"hospitality_article_id":11,"quantity":' . $literal . '}]}');
+    $json = json_decode($r['body'], true) ?: [];
+    $same("update, quantity {$literal}: no exception", $r['threw']?->getMessage(), null);
+    $same("update, quantity {$literal}: 400, the translated error, code and line", [$r['status'], $json['error'] ?? null, $json['code'] ?? null, $json['line'] ?? null],
+        [400, '!catering_quantity_not_whole', 'quantity_not_whole', 0]);
+    $same("update, quantity {$literal}: nothing written: not the comment, not the lines (the refusal comes BEFORE the order's own fields are saved)",
+        [$wroteNothing($repo, $notifier), $repo->orders[7]['comment'], array_column($repo->lines[7], 'quantity')], [[false, [], 0, 0], 'Uten nøtter', ['3.00']]);
+}
+
+// The second line is the bad one: the answer names line 1, and the good line before it was not written either.
+[$r, $repo, $notifier] = $createQ('[{"hospitality_article_id":11,"quantity":2},{"hospitality_article_id":11,"quantity":2.5}]');
+$same('create, line 1 is fractional: 400 naming line 1, nothing written', [$r['status'], json_decode($r['body'], true)['line'] ?? null, $wroteNothing($repo, $notifier)], [400, 1, [false, [], 0, 0]]);
+[$r, $repo, $notifier] = $updateQ('{"comment":"CHANGED","lines":[{"hospitality_article_id":11,"quantity":2},{"hospitality_article_id":11,"quantity":2.5}]}');
+$same('update, line 1 is fractional: 400 naming line 1, nothing written, comment unchanged',
+    [$r['status'], json_decode($r['body'], true)['line'] ?? null, $wroteNothing($repo, $notifier), $repo->orders[7]['comment']], [400, 1, [false, [], 0, 0], 'Uten nøtter']);
+
+// Accepted: whole numbers, in any spelling the table accepts, are stored as the INT they were read as.
+foreach ([['2', 2], ['"2"', 2], ['2.0', 2], ['"2.0"', 2], ['1e1', 10], ['"007"', 7], ['99999999', 99999999]] as [$literal, $want]) {
+    // 99,999,999 × 45.00 is 4,499,999,955.00, which no money column holds: since §49596 it is refused with a 422 before anything
+    // is written (tests/hospitality-amount). The quantity's upper edge is held here at a price that fits: 1.00 at 0 %.
+    [StubArticleRepo::$price, StubArticleRepo::$taxCode] = $literal === '99999999' ? [1.0, 0] : [45.0, 1];
+    [$r, $repo, $notifier] = $createQ('[{"hospitality_article_id":11,"quantity":' . $literal . '}]');
+    // Two rows each: that it is SAVED (true before this change too) and what was stored (an int; before this change a float).
+    $same("create, quantity {$literal}: 201 and one order", [$r['status'], array_count_values($repo->calls)['create'] ?? 0], [201, 1]);
+    $same("create, quantity {$literal}: the line is stored as the int {$want}", $repo->lineQuantities, [$want]);
+    [$r, $repo, $notifier] = $updateQ('{"comment":"CHANGED","lines":[{"hospitality_article_id":11,"quantity":' . $literal . '}]}');
+    $same("update, quantity {$literal}: 200, the comment saved, the order written once",
+        [$r['status'], $repo->orders[7]['comment'], array_count_values($repo->calls)['update'] ?? 0], [200, 'CHANGED', 1]);
+    $same("update, quantity {$literal}: the replacing line is stored as the int {$want}", $repo->lineQuantities, [$want]);
+}
+[StubArticleRepo::$price, StubArticleRepo::$taxCode] = [45.0, 1];
+[$r, $repo] = $createQ('[{"hospitality_article_id":11}]');
+$same('create, no quantity key: 201 and one line (unchanged)', [$r['status'], count($repo->lineQuantities)], [201, 1]);
+$same('create, no quantity key: the line is the int 1', $repo->lineQuantities, [1]);
+[$r, $repo] = $createQ('[{"hospitality_article_id":11,"quantity":null}]');
+$same('create, quantity null: 201 and one line (unchanged)', [$r['status'], count($repo->lineQuantities)], [201, 1]);
+$same('create, quantity null: the line is the int 1', $repo->lineQuantities, [1]);
+[$r, $repo] = $updateQ('{"comment":"CHANGED"}');
+$same('update with NO lines (a comment-only edit): 200, the comment saved, the lines untouched',
+    [$r['status'], $repo->orders[7]['comment'], $repo->lineQuantities, array_column($repo->lines[7], 'quantity')], [200, 'CHANGED', [], ['3.00']]);
+
+// Order: the refusals that were already there keep their place relative to the new one.
+[$r, $repo, $notifier] = $createQ('[{"hospitality_article_id":11,"quantity":2.5}]', ['status' => 'REJECTED']);
+$same('order: the deadline guard (409) answers before the quantity (create)', [$r['status'], $wroteNothing($repo, $notifier)], [409, [false, [], 0, 0]]);
+[$r, $repo, $notifier] = $updateQ('{"comment":"CHANGED","lines":[{"hospitality_article_id":11,"quantity":2.5}]}', ['status' => 'REJECTED']);
+$same('order: the deadline guard (409) answers before the quantity (update)', [$r['status'], $wroteNothing($repo, $notifier)], [409, [false, [], 0, 0]]);
+[$r, $repo, $notifier] = $createQ('[{"quantity":2.5}]');
+$same('order: a line without an article id is refused for THAT first (create)', [$r['status'], json_decode($r['body'], true)['error'] ?? null], [400, 'Line 0: hospitality_article_id is required']);
+[$r, $repo, $notifier] = $createQ('[{"hospitality_article_id":11,"quantity":2.5}]', [], 99);
+$same('order: an invalid delivery location is refused before the quantity (create)', [$r['status'], json_decode($r['body'], true)['error'] ?? null], [400, 'Invalid delivery location for this hospitality']);
+[$r, $repo, $notifier] = $updateQ('{"location_resource_id":99,"lines":[{"hospitality_article_id":11,"quantity":2.5}]}');
+$same('order: an invalid delivery location is refused before the quantity (update)', [$r['status'], json_decode($r['body'], true)['error'] ?? null, $wroteNothing($repo, $notifier)],
+    [400, 'Invalid delivery location', [false, [], 0, 0]]);
+
+// The translated text exists in all three languages, once each.
+foreach (['no', 'nn', 'en'] as $langCode) {
+    $langRows = preg_grep('/^catering_quantity_not_whole\tbookingfrontend\t' . $langCode . '\t\S/', explode("\n", (string)file_get_contents($root . "/src/modules/bookingfrontend/setup/phpgw_{$langCode}.lang")));
+    $same("lang: catering_quantity_not_whole has exactly one non-empty {$langCode} row in bookingfrontend", count($langRows), 1);
+}
+$citizenText = (string)file_get_contents($root . '/src/modules/bookingfrontend/controllers/applications/HospitalityOrderController.php');
+$same('the citizen controller no longer casts a line quantity to float, and no English «quantity must be positive» is left',
+    [substr_count($citizenText, "(float)\$line['quantity']"), substr_count($citizenText, 'quantity must be positive')], [0, 0]);
+
+
+// =======================================================================================================
+// 8. The same rule in the ADMIN order API: addLine and updateLine (task 47994, C1b). An officer's request used to reach the
+//    database as it was sent: 2.5 was stored, and 0, -1 or a word came back as a 500 carrying the database's own message.
+// =======================================================================================================
+$adminOrder = static function (CitizenStubRepo $repo) use ($adminRef): object {
+    $controller = $adminRef->newInstanceWithoutConstructor();
+    $adminRef->getProperty('repository')->setValue($controller, $repo);
+    $adminRef->getProperty('articleRepository')->setValue($controller, new StubArticleRepo());
+    $adminRef->getProperty('userSettings')->setValue($controller, ['account_id' => 5]);
+    $adminRef->getProperty('acl')->setValue($controller, new class extends \App\modules\phpgwapi\security\Acl {
+        public function __construct()
+        {
+        }
+
+        public function check($location, $required, $appname = '')
+        {
+            return true;
+        }
+    });
+    return $controller;
+};
+/** POST /booking/hospitality-orders/{id}/lines with this JSON body text. Returns [response, repo]. */
+$addLineQ = static function (string $json, int $orderId = 7, ?callable $arrange = null) use ($newRepo, $adminOrder, $invoke): array {
+    $repo = $newRepo();
+    if ($arrange !== null) {
+        $arrange($repo);
+    }
+    return [$invoke($adminOrder($repo), 'addLine', 'POST', ['id' => $orderId], $json), $repo];
+};
+/** PUT /booking/hospitality-orders/{id}/lines/{lineId} (line 407 is order 7's, line 408 is order 8's, both 3.00). Returns [response, repo]. */
+$updateLineQ = static function (string $json, int $orderId = 7, int $lineId = 407, ?callable $arrange = null) use ($newRepo, $adminOrder, $invoke): array {
+    $repo = $newRepo();
+    if ($arrange !== null) {
+        $arrange($repo);
+    }
+    return [$invoke($adminOrder($repo), 'updateLine', 'PUT', ['id' => $orderId, 'lineId' => $lineId], $json), $repo];
+};
+$adminWriteCalls = ['addOrderLine', 'updateOrderLine', 'deleteOrderLine', 'create', 'update'];
+$adminWroteNothing = static fn(CitizenStubRepo $repo): array => [$repo->wrote, array_values(array_intersect($repo->calls, $adminWriteCalls)), count($repo->entries)];
+$adminRefusal = '!booking.hospitality_order_quantity_not_whole';
+
+foreach ($refusedQuantities as $literal) {
+    [$r, $repo] = $addLineQ('{"changelog_comment":"Rettet","hospitality_article_id":11,"quantity":' . $literal . '}');
+    $same("admin addLine, quantity {$literal}: no exception", $r['threw']?->getMessage(), null);
+    $same("admin addLine, quantity {$literal}: 400 with the translated error (this controller's {error} shape)",
+        [$r['status'], json_decode($r['body'], true)], [400, ['error' => $adminRefusal]]);
+    $same("admin addLine, quantity {$literal}: nothing written (no line, no changelog entry)", $adminWroteNothing($repo), [false, [], 0]);
+}
+// updateLine also refuses a PRESENT null: the column is NOT NULL and there is no default to fall back on.
+foreach (array_merge($refusedQuantities, ['null']) as $literal) {
+    [$r, $repo] = $updateLineQ('{"changelog_comment":"Rettet","quantity":' . $literal . '}');
+    $same("admin updateLine, quantity {$literal}: no exception", $r['threw']?->getMessage(), null);
+    $same("admin updateLine, quantity {$literal}: 400 with the translated error",
+        [$r['status'], json_decode($r['body'], true)], [400, ['error' => $adminRefusal]]);
+    $same("admin updateLine, quantity {$literal}: nothing written (the line is still 3.00, no changelog entry)",
+        [$adminWroteNothing($repo), array_column($repo->lines[7], 'quantity')], [[false, [], 0], ['3.00']]);
+}
+
+// Accepted: stored (and recorded in the changelog) as the int that was judged.
+foreach ([['2', 2], ['"2"', 2], ['2.0', 2], ['"2.0"', 2], ['1e1', 10], ['99999999', 99999999]] as [$literal, $want]) {
+    // As in section 7: 99,999,999 is held at a price that fits (1.00 at 0 %), for the added line and for the stored one (§49596).
+    $fits = $literal === '99999999';
+    [StubArticleRepo::$price, StubArticleRepo::$taxCode] = $fits ? [1.0, 0] : [45.0, 1];
+    // An added line of 99,999,999.00 fits only an order holding nothing else; an updated one only if it is the order's one line.
+    $arrangeAdd = $fits ? static function (CitizenStubRepo $repo): void {
+        $repo->lines[7] = [];
+    } : null;
+    $arrangeUpdate = $fits ? static function (CitizenStubRepo $repo): void {
+        $repo->lines[7][0] = array_replace($repo->lines[7][0], ['unit_price' => '1.00', 'tax_code' => 0, 'tax_percent' => 0, 'amount' => '3.00']);
+    } : null;
+    [$r, $repo] = $addLineQ('{"changelog_comment":"Rettet","hospitality_article_id":11,"quantity":' . $literal . '}', 7, $arrangeAdd);
+    $same("admin addLine, quantity {$literal}: 201, one line added, one changelog entry", [$r['status'], array_count_values($repo->calls)['addOrderLine'] ?? 0, count($repo->entries)], [201, 1, 1]);
+    $same("admin addLine, quantity {$literal}: the line AND the changelog carry the int {$want}", [$repo->lineQuantities, $repo->entries[0]['new_value']['quantity'] ?? null], [[$want], $want]);
+    [$r, $repo] = $updateLineQ('{"changelog_comment":"Rettet","quantity":' . $literal . '}', 7, 407, $arrangeUpdate);
+    $same("admin updateLine, quantity {$literal}: 200, the line updated once", [$r['status'], array_count_values($repo->calls)['updateOrderLine'] ?? 0], [200, 1]);
+    $same("admin updateLine, quantity {$literal}: the repository is handed the int {$want}", array_column($repo->lineUpdates, 'quantity'), [$want]);
+}
+[StubArticleRepo::$price, StubArticleRepo::$taxCode] = [45.0, 1];
+[$r, $repo] = $addLineQ('{"changelog_comment":"Rettet","hospitality_article_id":11}');
+$same('admin addLine, no quantity key: 201 and one line (unchanged)', [$r['status'], count($repo->lineQuantities)], [201, 1]);
+$same('admin addLine, no quantity key: the line is the int 1', $repo->lineQuantities, [1]);
+[$r, $repo] = $addLineQ('{"changelog_comment":"Rettet","hospitality_article_id":11,"quantity":null}');
+$same('admin addLine, quantity null: 201 and one line (unchanged)', [$r['status'], count($repo->lineQuantities)], [201, 1]);
+$same('admin addLine, quantity null: the line is the int 1', $repo->lineQuantities, [1]);
+[$r, $repo] = $updateLineQ('{"changelog_comment":"Rettet","comment":"Uten gluten"}');
+$same('admin updateLine with NO quantity key (a comment-only edit): 200, and the repository is not handed a quantity',
+    [$r['status'], array_count_values($repo->calls)['updateOrderLine'] ?? 0, array_key_exists('quantity', $repo->lineUpdates[0] ?? ['quantity' => 'present'])], [200, 1, false]);
+
+// Order: the refusals that were already there keep their place relative to the new one.
+[$r, $repo] = $addLineQ('{"hospitality_article_id":11,"quantity":2.5}');
+$same('admin order: changelog_comment is asked for before the quantity (addLine)', [$r['status'], json_decode($r['body'], true)], [400, ['error' => 'changelog_comment is required']]);
+[$r, $repo] = $addLineQ('{"changelog_comment":"Rettet","quantity":2.5}');
+$same('admin order: the article id is asked for before the quantity (addLine)', [$r['status'], json_decode($r['body'], true)], [400, ['error' => 'hospitality_article_id is required']]);
+[$r, $repo] = $addLineQ('{"changelog_comment":"Rettet","hospitality_article_id":11,"quantity":2.5}', 999);
+$same('admin order: an unknown order is 404 before the quantity (addLine)', [$r['status'], json_decode($r['body'], true)], [404, ['error' => 'Order not found']]);
+[$r, $repo] = $updateLineQ('{"quantity":2.5}');
+$same('admin order: changelog_comment is asked for before the quantity (updateLine)', [$r['status'], json_decode($r['body'], true)], [400, ['error' => 'changelog_comment is required']]);
+[$r, $repo] = $updateLineQ('{"changelog_comment":"Rettet","quantity":2.5}', 7, 408);
+$same('admin order: a line of another order is 404 before the quantity (updateLine)', [$r['status'], json_decode($r['body'], true)], [404, ['error' => 'Order line not found']]);
+
+foreach (['no', 'nn', 'en'] as $langCode) {
+    $langRows = preg_grep('/^hospitality_order_quantity_not_whole\tbooking\t' . $langCode . '\t\S/', explode("\n", (string)file_get_contents($root . "/src/modules/booking/setup/phpgw_{$langCode}.lang")));
+    $same("lang: hospitality_order_quantity_not_whole has exactly one non-empty {$langCode} row in booking", count($langRows), 1);
+}
+$adminText = (string)file_get_contents($root . '/src/modules/booking/controllers/HospitalityOrderController.php');
+$same('the admin controller no longer hands the raw `quantity` on: no «$body[\'quantity\'] ?? 1»', substr_count($adminText, "\$body['quantity'] ?? 1"), 0);
+
 
 // =======================================================================================================
 $total = $passed + count($failures);

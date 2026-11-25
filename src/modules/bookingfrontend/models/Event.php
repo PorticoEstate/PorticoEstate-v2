@@ -96,7 +96,7 @@ class Event extends BaseScheduleEntity
 	 * @Expose(when={
 	 *    "customer_identifier_type=ssn&&customer_ssn=$user_ssn",
 	 *    "customer_identifier_type=organization_number&&customer_organization_number=$organization_number"
-	 *   }
+	 * })
 	 */
 	public $customer_identifier_type;
 
@@ -105,7 +105,7 @@ class Event extends BaseScheduleEntity
 	 * @Expose(when={
 	 *   "customer_identifier_type=ssn&&customer_ssn=$user_ssn",
 	 *   "customer_identifier_type=organization_number&&customer_organization_number=$organization_number"
-	 *  }
+	 * })
 	 * @Short
 	 */
 	public $customer_organization_number;

@@ -44,6 +44,15 @@ class HospitalityRemoteLocation
     public $resource_name;
 
     /**
+     * True when this location is an effective link (active row on an active hospitality) to a
+     * resource that has direct booking: an existing conflict the admin UI warns about.
+     *
+     * @OA\Property(type="boolean", nullable=true)
+     * @Expose
+     */
+    public $direct_booking_conflict;
+
+    /**
      * @OA\Property(type="integer", nullable=true)
      * @Expose
      */

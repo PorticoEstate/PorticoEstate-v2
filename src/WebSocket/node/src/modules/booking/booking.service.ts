@@ -3,7 +3,13 @@ import { createHash, randomBytes } from 'crypto';
 import { DatabaseService } from '../../database/database.service';
 import { RedisService } from '../notification/redis.service';
 import { FreeTimeService } from '../freetime/freetime.service';
-import { getEligibleResourcePrices, preselectedPrice, priceCategoriesInstalled, priceLabel } from './resource-price';
+import {
+  getEligibleResourcePrices,
+  hidesPriceChoice,
+  preselectedPrice,
+  priceCategoriesInstalled,
+  priceLabel,
+} from './resource-price';
 
 /**
  * A booking takes milliseconds. A statement in its transaction that runs longer than
@@ -1491,6 +1497,9 @@ export class BookingService implements OnModuleInit {
       orderId = poResult.rows[0].id;
     }
 
+    // Whether the price category is hidden, asked for this booking (ref #1477)
+    const hidden = await hidesPriceChoice(client);
+
     // PHP: foreach ($articles as $article) { ... } — line 95-113
     for (const article of mandatoryArticles) {
       // PHP: $mapping = $this->getArticleMappingById($article['id']) — line 24-39
@@ -1516,11 +1525,17 @@ export class BookingService implements OnModuleInit {
       // Nobody can choose here: the preselected option is used, and where the
       // citizen must choose the line stays unpriced (no price row, 0) until
       // they do so in checkout, which refuses to submit it before.
-      const options = await getEligibleResourcePrices(client, article.id);
+      // With the price category hidden there is nothing to choose: the price is the
+      // mapping's, as origin/master bills it, and no price row, label or category is
+      // recorded. (Where prices tie on that query's order, which one it returns depends
+      // on the database's row order, as on master: forum/pe-general/42463.)
+      const options = hidden ? [] : await getEligibleResourcePrices(client, article.id);
       const chosen = preselectedPrice(options);
 
       // PHP: $line = [...] — line 103-110
-      const unitPrice = chosen ? parseFloat(chosen.price) : 0; // ex_tax_price
+      const unitPrice = hidden
+        ? parseFloat(mapping.price || '0')
+        : chosen ? parseFloat(chosen.price) : 0; // ex_tax_price
       const quantity = article.quantity;
       const taxPercent = parseFloat(mapping.tax_percent || '0');
 

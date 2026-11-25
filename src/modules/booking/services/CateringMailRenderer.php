@@ -18,6 +18,10 @@ use App\modules\phpgwapi\helpers\EmailTwigHelper;
  * TEXT. Every stored value arrives already decoded to plain text (CateringText); the Twig
  * environment's autoescape escapes it once when it lands in the HTML body. The subject is plain
  * text and is never HTML-escaped.
+ *
+ * BODY. The change in the words of the order page's Endringslogg — the same CateringChangeText,
+ * so the officer reads the same lines in the mail and on the page, incl. VAT per line — then the
+ * order's cancellation deadline (not on a cancellation), then the links.
  */
 final class CateringMailRenderer
 {
@@ -26,7 +30,6 @@ final class CateringMailRenderer
     public const KIND_CANCELLED = 'cancelled';
 
     private const VENUE_TIMEZONE = 'Europe/Oslo';
-    private const FIXED_FIELDS = ['hospitality', 'serving_time', 'location', 'comment', 'special_requirements', 'total'];
 
     private CateringLangSwitch $lang;
     /** @var object{render: callable}|EmailTwigHelper */
@@ -49,11 +52,16 @@ final class CateringMailRenderer
      *   application: array{id: int, id_string?: string, name?: string, building_name?: string, activity_name?: string, organization_name?: ?string},
      *   order: array{id: int, serving_time_iso?: ?string},
      *   fallback_date?: ?string,
-     *   diff: array{rows: list<array{key: string, label: ?string, from: string, to: string}>},
+     *   diff: array{rows: list<array>, old: array<string, string>, new: array<string, string>},
      *   summary: list<array{key: string, label: ?string, value: string}>,
+     *   changed_at?: ?string,
+     *   context?: array{hospitality?: ?string, serving_time?: ?string, location?: ?string},
+     *   cancel_deadline?: ?string,
      *   links: array{case: string, order: string}
      * } $payload      `serving_time_iso` is naive UTC as stored; `fallback_date` is the
-     *                 application's earliest date, naive Europe/Oslo
+     *                 application's earliest date, naive Europe/Oslo; `changed_at` and
+     *                 `cancel_deadline` are ISO-8601 instants; `context` is the order as it is now
+     *                 (CateringChangeText::contextOf)
      * @return array{subject: string, body: string}
      */
     public function render(array $payload, string $officerLang): array
@@ -61,13 +69,13 @@ final class CateringMailRenderer
         $saved = $this->lang->current();
         try {
             $this->lang->set($officerLang);
-            return $this->compose($payload);
+            return $this->compose($payload, $officerLang);
         } finally {
             $this->lang->set($saved);
         }
     }
 
-    private function compose(array $payload): array
+    private function compose(array $payload, string $lang): array
     {
         $kind = $payload['kind'];
         if (!in_array($kind, [self::KIND_ADDED, self::KIND_CHANGED, self::KIND_CANCELLED], true)) {
@@ -83,25 +91,37 @@ final class CateringMailRenderer
             lang("booking.catering_mail_subject_{$kind}", $event, $this->subjectDate($payload))
         );
 
-        // A change shows FROM -> TO; an addition or a cancellation shows the order itself.
-        if ($kind === self::KIND_CHANGED) {
-            $rows = array_map(fn(array $r): array => [
-                'label' => $this->fieldLabel($r),
-                'from' => $this->valueText($r['key'], $r['from']),
-                'to' => $this->valueText($r['key'], $r['to']),
-            ], $payload['diff']['rows']);
-        } else {
-            $rows = array_map(fn(array $r): array => [
-                'label' => $this->fieldLabel($r),
-                'value' => $this->valueText($r['key'], $r['value']),
-            ], $payload['summary']);
+        // The change as the Endringslogg words it: a change FROM -> TO, an addition or a cancellation
+        // what the order contains.
+        $summary = [];
+        foreach ($payload['summary'] ?? [] as $row) {
+            $summary[$row['key']] = $row['value'];
+        }
+        $log = CateringChangeText::describe([
+            'kind' => $kind,
+            'actor' => $payload['actor'] ?? '',
+            'changed_at' => $payload['changed_at'] ?? null,
+            'old' => $kind === self::KIND_CHANGED ? ($payload['diff']['old'] ?? []) : [],
+            'new' => $kind === self::KIND_CHANGED ? ($payload['diff']['new'] ?? []) : $summary,
+        ], $payload['context'] ?? [], $lang);
+
+        // «Avbestillingsfrist», from the same guard verdict the applicant's own page shows; not on a
+        // cancellation, and left out when there is none to show.
+        $deadline = '';
+        $until = $payload['cancel_deadline'] ?? null;
+        if ($kind !== self::KIND_CANCELLED && $until !== null && $until !== '') {
+            try {
+                $deadline = CateringChangeText::deadlineLine(new \DateTimeImmutable($until), $lang);
+            } catch (\Exception $e) {
+                // no line is better than a wrong one
+            }
         }
 
         $body = $this->twig->render('@views/emails/catering_changed_by_applicant.twig', [
-            'kind' => $kind,
             'intro' => lang("booking.catering_mail_intro_{$kind}", $actor !== '' ? $actor : lang('booking.catering_mail_the_applicant')),
             'organization' => $organization !== '' ? lang('booking.catering_mail_on_behalf_of', $organization) : '',
-            'rows' => $rows,
+            'log' => $log,
+            'deadline' => $deadline,
             'application' => [
                 'id_string' => CateringText::decode($app['id_string'] ?? ''),
                 'name' => $event,
@@ -113,13 +133,8 @@ final class CateringMailRenderer
                 'application' => lang('booking.catering_mail_application'),
                 'building' => lang('booking.catering_mail_building'),
                 'activity' => lang('booking.catering_mail_activity'),
-                'field' => lang('booking.catering_mail_field'),
-                'from' => lang('booking.catering_mail_from'),
-                'to' => lang('booking.catering_mail_to'),
-                'value' => lang('booking.catering_mail_value'),
                 'open_case' => lang('booking.catering_mail_open_case'),
                 'open_order' => lang('booking.catering_mail_open_order'),
-                'nothing' => lang('booking.catering_mail_nothing'),
             ],
         ]);
 
@@ -147,27 +162,5 @@ final class CateringMailRenderer
             }
         }
         return '';
-    }
-
-    private function fieldLabel(array $row): string
-    {
-        if (in_array($row['key'], self::FIXED_FIELDS, true)) {
-            return lang('booking.catering_field_' . $row['key']);
-        }
-        // An article line is labelled with the article's own name.
-        return (string)($row['label'] ?? $row['key']);
-    }
-
-    /** An empty side of a diff reads as "—"; the fixed status words are translated. */
-    private function valueText(string $key, string $value): string
-    {
-        if ($value === '') {
-            return lang('booking.catering_mail_nothing');
-        }
-        if ($key === 'status') {
-            $map = ['pending' => 'pending_status', 'confirmed' => 'confirmed', 'delivered' => 'delivered', 'cancelled' => 'cancelled'];
-            return isset($map[$value]) ? lang('booking.' . $map[$value]) : $value;
-        }
-        return $value;
     }
 }

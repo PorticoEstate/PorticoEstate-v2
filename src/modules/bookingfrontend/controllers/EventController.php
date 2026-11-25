@@ -171,7 +171,18 @@ class EventController
                 403
             );
         }
-    
+
+        if (isset($newData['resource_ids'])) {
+            $resourceIds = $this->service->resourceIdsFromRequest($newData['resource_ids']);
+            if ($resourceIds === null) {
+                return ResponseHelper::sendErrorResponse(
+                    ['error' => 'Invalid resource_ids'],
+                    400
+                );
+            }
+            $newData['resource_ids'] = $resourceIds;
+        }
+
         try {
             $id = $this->service->updateEvent($newData, $existingEvent);
 

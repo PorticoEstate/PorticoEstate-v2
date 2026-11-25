@@ -25,6 +25,7 @@ use App\modules\phpgwapi\controllers\Accounts\phpgwapi_user;
 use App\modules\phpgwapi\security\Acl;
 use App\modules\phpgwapi\services\Hooks;
 use App\modules\phpgwapi\services\Log;
+use App\modules\phpgwapi\services\PreferencesReader;
 
 
 
@@ -268,8 +269,8 @@ HTML;
 
 		if (!$info['email'])
 		{
-			$preferences = createObject('phpgwapi.preferences', $user_id);
-			$info['email'] = isset($preferences->data['common']['email']) && $preferences->data['common']['email'] ? $preferences->data['common']['email'] : '';
+			$preferences = PreferencesReader::read((int)$user_id, ['common']);
+			$info['email'] = isset($preferences['common']['email']) && $preferences['common']['email'] ? $preferences['common']['email'] : '';
 		}
 
 		if ($info['email'])

@@ -16,18 +16,75 @@ class HospitalityRepository
         $this->db = Db::getInstance();
     }
 
+    /**
+     * The hospitality with its main resource. resource_building_id / resource_building_name are the building
+     * the main resource sits in (the lowest building id when it is in several, as getActiveByResourceIds does),
+     * so the admin's main-resource picker can open on it; null when the resource is in no building.
+     */
     public function getById(int $id): ?array
     {
         $sql = "SELECT h.*, r.name AS resource_name,
                        r.cancellation_deadline_value AS resource_cancellation_deadline_value,
-                       r.cancellation_deadline_unit AS resource_cancellation_deadline_unit
+                       r.cancellation_deadline_unit AS resource_cancellation_deadline_unit,
+                       rb.id AS resource_building_id, rb.name AS resource_building_name
                 FROM bb_hospitality h
                 LEFT JOIN bb_resource r ON h.resource_id = r.id
+                LEFT JOIN LATERAL (
+                    SELECT b.id, b.name
+                      FROM bb_building_resource br
+                      JOIN bb_building b ON b.id = br.building_id
+                     WHERE br.resource_id = h.resource_id
+                     ORDER BY b.id
+                     LIMIT 1
+                ) rb ON true
                 WHERE h.id = :id";
         $stmt = $this->db->prepare($sql);
         $stmt->execute([':id' => $id]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
         return $row ?: null;
+    }
+
+    /** Is there a bb_resource row with this id? (A positive int that is no resource would fail on the foreign key.) */
+    public function resourceExists(int $resourceId): bool
+    {
+        $stmt = $this->db->prepare("SELECT 1 FROM bb_resource WHERE id = :id");
+        $stmt->execute([':id' => $resourceId]);
+        return $stmt->fetchColumn() !== false;
+    }
+
+    /**
+     * Would the admin's main-resource picker OFFER this resource? (Task 47994: the server refuses exactly what the picker hides.)
+     * The picker is the building search, `bb_building WHERE active = 1` (booking BuildingController::index), then a building's
+     * resources, `bb_resource.active = 1` joined through `bb_building_resource`
+     * (bookingfrontend ResourceRepository::getByBuildingId). So a resource is offered when it is active AND in at least one ACTIVE
+     * building; the picker lets the admin search ANY active building, so which building it is in does not matter. A resource in
+     * no building, or only in inactive ones, can never be reached.
+     *
+     * CASE, not a boolean EXISTS: a PostgreSQL boolean comes back as 't'/'f' through some PDO builds, and (int)'t' is 0.
+     *
+     * @return array{active: bool, in_active_building: bool}|null null = there is no such resource
+     */
+    public function mainResourceOffer(int $resourceId): ?array
+    {
+        $stmt = $this->db->prepare(
+            "SELECT r.active,
+                    CASE WHEN EXISTS (
+                        SELECT 1 FROM bb_building_resource br
+                          JOIN bb_building b ON b.id = br.building_id
+                         WHERE br.resource_id = r.id AND b.active = 1
+                    ) THEN 1 ELSE 0 END AS in_active_building
+               FROM bb_resource r
+              WHERE r.id = :id"
+        );
+        $stmt->execute([':id' => $resourceId]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        if ($row === false) {
+            return null;
+        }
+        return [
+            'active' => (int)$row['active'] === 1,
+            'in_active_building' => (int)$row['in_active_building'] === 1,
+        ];
     }
 
     /**

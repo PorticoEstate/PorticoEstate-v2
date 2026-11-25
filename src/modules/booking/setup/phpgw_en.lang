@@ -1390,3 +1390,52 @@ price_category_exists	booking	en	The category already existed and has been chose
 price_category_invalid	booking	en	Enter a name of up to 100 characters that is not just a number
 price_category_add_failed	booking	en	The category was not added. Reload the page and try again.
 price_category_unknown_not_saved	booking	en	The new price was not saved: the category does not exist
+hospitality_blocked_resource_has_direct_booking	booking	en	The resource “%1” has direct booking and cannot be linked to hospitality. Direct booking and hospitality cannot be used on the same resource. Turn off direct booking on the resource first.
+direct_booking_blocked_resource_has_hospitality	booking	en	The resource is linked to hospitality (%1) and cannot get direct booking. Direct booking and hospitality cannot be used on the same resource. Remove the link to hospitality first.
+direct_booking_conflict_warning_resource	booking	en	Warning. This resource has direct booking and is also linked to hospitality (%1). Using both on the same resource is no longer allowed. Nothing has been changed. Turn off direct booking or remove the link to hospitality.
+direct_booking_conflict_warning_hospitality	booking	en	Warning. The resources marked “Has direct booking” are linked to this hospitality. Using both on the same resource is no longer allowed. Nothing has been changed. Turn off direct booking on the resource or remove the link here.
+resource_has_direct_booking_tag	booking	en	Has direct booking
+hospitality_description_counter_under	booking	en	Characters left: %1
+hospitality_description_counter_over	booking	en	Characters over the limit: %1
+hospitality_description_max_hint	booking	en	Max %1 characters.
+hospitality_description_too_long	booking	en	The description can have at most %1 characters.
+main_resource_edit_note	booking	en	The cancellation deadline, contact details and opening hours of all orders are taken from the main resource and change when you change it.
+main_resource_has_open_orders	booking	en	The main resource cannot be changed while open orders are to be served at it (%1). Cancel them or mark them as delivered first.
+main_resource_is_remote_location	booking	en	The resource “%1” is a remote location of this hospitality and cannot also be the main resource. Remove it from the remote locations first.
+allocation_change_mail_subject_requested	booking	en	Changed by applicant: requests a new time – %1, %2
+allocation_change_mail_subject_shortened	booking	en	Changed by applicant: time shortened – %1, %2
+allocation_change_mail_intro_requested	booking	en	%1 requests a new time for one date in the application. The time is unchanged until you accept or reject.
+allocation_change_mail_intro_shortened	booking	en	%1 has shortened one time in the application. The time is already changed.
+allocation_change_mail_old_time	booking	en	Previous time
+allocation_change_mail_new_time	booking	en	New time
+allocation_change_mail_resource	booking	en	Resource
+allocation_change_mail_date	booking	en	Date
+allocation_change_mail_applicant_comment	booking	en	Comment from the applicant
+remote_location_is_main_resource	booking	en	The resource “%1” is the main resource of this hospitality and cannot also be a remote location.
+remote_location_has_open_orders	booking	en	The delivery location cannot be removed or switched off while open orders are to be served there (%1). Cancel them or mark them as delivered first.
+hospitality_description_not_string	booking	en	The description must be text.
+catering_log_added_by_applicant	booking	en	Added by the applicant
+catering_log_changed_by_applicant	booking	en	Changed by the applicant
+catering_log_cancelled_by_applicant	booking	en	Cancelled by the applicant
+catering_log_at	booking	en	%1 at %2
+catering_log_line	booking	en	%1 %2 × %3 = %4
+catering_log_from_to	booking	en	%1: %2 → %3
+catering_log_amount	booking	en	NOK %1
+catering_log_incl_vat	booking	en	incl. VAT
+catering_log_excl_vat	booking	en	excl. VAT
+catering_history_added	booking	en	Catering added — %1, %2. Changed by the applicant.
+catering_history_changed	booking	en	Catering changed — %1, %2. Changed by the applicant.
+catering_history_cancelled	booking	en	Catering cancelled — %1, %2. Changed by the applicant.
+catering_history_tag	booking	en	Catering
+catering_mail_cancel_deadline	booking	en	Cancellation deadline: %1
+notify_case_officer_on_catering_change	booking	en	Email the case officer when the applicant changes catering
+hospitality_order_quantity_not_whole	booking	en	The quantity must be a whole number of 1 or more.
+main_resource_inactive	booking	en	The resource “%1” is not active and cannot be the main resource.
+main_resource_not_in_active_building	booking	en	The resource “%1” is not in an active building and cannot be the main resource.
+deleteAssociationConfirm	booking	en	Deactivate this association?
+building_select_no_results	booking	en	No results
+no_delivery_locations	booking	en	No locations available for this hospitality
+opening_hours_unavailable	booking	en	Could not load the opening hours – all times are shown.
+hospitality_order_amount_too_large	booking	en	The amount for one of the lines is too large.
+hospitality_order_total_too_large	booking	en	The order total is too large.
+no_results	booking	en	No results

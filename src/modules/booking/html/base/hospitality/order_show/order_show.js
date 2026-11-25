@@ -170,24 +170,32 @@
 			String(absOffset % 60).padStart(2, '0');
 	}
 
+	// Rebuilds the time list for a date. Returns true when the list opened on the stored slot,
+	// i.e. the officer can see the stored time there; false when it opened on the placeholder.
 	function populateEditTimeSlots(timeEl, dateIdx, currentIso)
 	{
 		timeEl.innerHTML = '<option value="">' + esc(lang('selectTime')) + '</option>';
 		timeEl.disabled = true;
-		if (dateIdx === '' || !appDatesData[dateIdx]) return;
+		if (dateIdx === '' || !appDatesData[dateIdx]) return false;
 
 		var range = appDatesData[dateIdx];
 		var slots = generate15MinIntervals(range.from_, range.to_);
 		var currentTs = currentIso ? new Date(currentIso).getTime() : null;
+		var openedOnStored = false;
 		slots.forEach(function (slot)
 		{
 			var opt = document.createElement('option');
 			opt.value = fmtNaiveIso(slot);
 			opt.textContent = fmtTimeHHMM(slot);
-			if (currentTs && Math.abs(slot.getTime() - currentTs) < 60000) opt.selected = true;
+			if (currentTs && Math.abs(slot.getTime() - currentTs) < 60000)
+			{
+				opt.selected = true;
+				openedOnStored = true;
+			}
 			timeEl.appendChild(opt);
 		});
 		timeEl.disabled = false;
+		return openedOnStored;
 	}
 
 	var penIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.85 2.85 0 014 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>';
@@ -594,6 +602,12 @@
 
 			if (fieldType === 'datetime')
 			{
+				// The serving time (and the application its date belongs to) goes with a save only
+				// when the officer chose a time. Nothing chosen is not «clear it»: the time list can
+				// hold no slot for the stored time (no date lists the location, several dates, a
+				// stored time off the date's grid), and it then reads as the empty placeholder.
+				if (!el.dataset.timeTouched) return;
+
 				var dateEl = el.querySelector('[data-edit-date]');
 				var timeEl = el.querySelector('[data-edit-time]');
 				newValue = timeEl.value || null;
@@ -620,10 +634,29 @@
 		return payload;
 	}
 
+	// True when the officer picked a date and has not chosen a time for it: the save is then
+	// refused, because a date alone is never sent and the officer would believe it was saved.
+	function datePickedWithoutTime()
+	{
+		var lacking = false;
+		root.querySelectorAll('[data-edit-field]').forEach(function (el)
+		{
+			if (el.dataset.fieldType !== 'datetime') return;
+			if (el.dataset.dateTouched && !el.dataset.timeTouched) lacking = true;
+		});
+		return lacking;
+	}
+
 	root.addEventListener('click', function (e)
 	{
 		var btn = e.target.closest('#save-all-changes');
 		if (!btn) return;
+
+		if (datePickedWithoutTime())
+		{
+			showToast(lang('selectTime'), 'warning');
+			return;
+		}
 
 		var detailPayload = collectDetailChanges();
 		var hasDetailChanges = Object.keys(detailPayload).length > 0;
@@ -775,16 +808,35 @@
 			var timeEl = wrapper.querySelector('[data-edit-time]');
 			var currentValue = orderData[fieldName] != null ? String(orderData[fieldName]) : '';
 
+			// True while the time list shows the stored time as its preselected slot. Re-derived on
+			// every rebuild of the list.
+			var openedOnStored = false;
+
 			if (appDatesData.length === 1)
 			{
 				dateEl.value = '0';
 				dateEl.disabled = true;
-				populateEditTimeSlots(timeEl, 0, currentValue);
+				openedOnStored = populateEditTimeSlots(timeEl, 0, currentValue);
 			}
 
+			// A new date rebuilds the time list with nothing chosen from it yet: the time mark goes,
+			// and the date mark says a time is now owed (datePickedWithoutTime).
 			dateEl.addEventListener('change', function ()
 			{
-				populateEditTimeSlots(timeEl, this.value, currentValue);
+				delete wrapper.dataset.timeTouched;
+				if (this.value === '') delete wrapper.dataset.dateTouched;
+				else wrapper.dataset.dateTouched = '1';
+				openedOnStored = populateEditTimeSlots(timeEl, this.value, currentValue);
+			});
+
+			// Only the officer's own choice in the time list counts; the slot preselected for the
+			// stored time does not. The placeholder is a choice (a clear) only where the list opened on
+			// the stored slot, so the officer saw the time they are clearing. Elsewhere it puts the
+			// list back to how it opened: nothing chosen.
+			timeEl.addEventListener('change', function ()
+			{
+				if (this.value === '' && !openedOnStored) delete wrapper.dataset.timeTouched;
+				else wrapper.dataset.timeTouched = '1';
 			});
 		});
 	}
@@ -1242,35 +1294,65 @@
 				bodyHtml += '<span class="order-show__changelog-time">' + fmtDate(entry.changed_at) + '</span>';
 				bodyHtml += '</div>';
 
-				bodyHtml += '<div class="order-show__changelog-comment">' + esc(entry.comment) + '</div>';
-
-				// Diff display
-				if (entry.old_value || entry.new_value)
-				{
-					bodyHtml += '<div class="order-show__changelog-diff">';
-					var oldObj = entry.old_value || {};
-					var newObj = entry.new_value || {};
-					var allKeys = Object.keys(Object.assign({}, oldObj, newObj));
-					allKeys.forEach(function (key)
-					{
-						var oldVal = oldObj[key] != null ? String(oldObj[key]) : '';
-						var newVal = newObj[key] != null ? String(newObj[key]) : '';
-						if (oldVal !== newVal)
-						{
-							bodyHtml += '<span class="order-show__changelog-field">' + esc(key) + ': ';
-							if (oldVal) bodyHtml += '<del>' + esc(oldVal) + '</del> ';
-							if (newVal) bodyHtml += '<ins>' + esc(newVal) + '</ins>';
-							bodyHtml += '</span>';
-						}
-					});
-					bodyHtml += '</div>';
-				}
+				var display = entry.change_type === APPLICANT_CHANGE ? entry.display : null;
+				bodyHtml += display ? readableChangeHtml(display) : rawChangeHtml(entry);
 
 				bodyHtml += '</div>';
 			});
 		}
 
 		container.innerHTML = section(lang('changelog'), bodyHtml);
+	}
+
+	// An applicant's change, put into words by the server (GH #1425, CateringChangeText): what it
+	// was, the order it is about, then one line per change, incl. VAT, in the officer's language.
+	// Every part is plain text and is escaped here, once.
+	function readableChangeHtml(display)
+	{
+		var html = '<div class="order-show__changelog-comment">' + esc(display.title) + '</div>';
+		var lines = display.lines || [];
+		if (display.context || lines.length)
+		{
+			html += '<ul class="order-show__changelog-lines">';
+			if (display.context)
+			{
+				html += '<li class="order-show__changelog-context">' + esc(display.context) + '</li>';
+			}
+			lines.forEach(function (text)
+			{
+				html += '<li>' + esc(text) + '</li>';
+			});
+			html += '</ul>';
+		}
+		return html;
+	}
+
+	// An officer's own entry (and an applicant entry the server could not put into words): the
+	// stored comment and the raw field diff.
+	function rawChangeHtml(entry)
+	{
+		var html = '<div class="order-show__changelog-comment">' + esc(entry.comment) + '</div>';
+		if (entry.old_value || entry.new_value)
+		{
+			html += '<div class="order-show__changelog-diff">';
+			var oldObj = entry.old_value || {};
+			var newObj = entry.new_value || {};
+			var allKeys = Object.keys(Object.assign({}, oldObj, newObj));
+			allKeys.forEach(function (key)
+			{
+				var oldVal = oldObj[key] != null ? String(oldObj[key]) : '';
+				var newVal = newObj[key] != null ? String(newObj[key]) : '';
+				if (oldVal !== newVal)
+				{
+					html += '<span class="order-show__changelog-field">' + esc(key) + ': ';
+					if (oldVal) html += '<del>' + esc(oldVal) + '</del> ';
+					if (newVal) html += '<ins>' + esc(newVal) + '</ins>';
+					html += '</span>';
+				}
+			});
+			html += '</div>';
+		}
+		return html;
 	}
 
 })();

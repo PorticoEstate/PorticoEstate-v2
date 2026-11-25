@@ -3,7 +3,6 @@ import {FC, useEffect, useMemo, useRef, useState} from 'react';
 import {
     Alert,
     Button,
-    Card,
     Details,
     Field,
     Fieldset,
@@ -13,6 +12,7 @@ import {
     Radio,
     Select,
     Textarea,
+    Textfield,
     Tooltip,
 } from '@digdir/designsystemet-react';
 import {MinusCircleIcon, PlusCircleIcon, ChatElipsisIcon} from '@navikt/aksel-icons';
@@ -44,12 +44,15 @@ import {
 import {hospitalityMenuLineForSummary, summarizeHospitalityVat} from '@/utils/hospitality-price-summary';
 import {
     computeHospitalityDeadline,
+    earliestApplicationDate,
     hospitalityActionWindow,
     isWorkingDaysMode,
     formatOpenDays,
     isServingDayOpen,
     isoWeekdayInVenueTz,
     formatWeekdayName,
+    formatDeadlineDateTime,
+    localeFor,
 } from '@/utils/hospitality-deadline';
 import styles from './hospitality.module.scss';
 
@@ -61,16 +64,6 @@ interface HospitalityOrderModalProps {
     onHospitalitySelect: (hospitality: IHospitality) => void;
     applications: IApplication[];
     existingOrder?: IHospitalityOrder;
-}
-
-/** The application's earliest requested start — the anchor for an order that has no serving time. */
-function earliestDate(application: IApplication | undefined): Date | null {
-    let earliest: Date | null = null;
-    for (const d of application?.dates ?? []) {
-        const from = new Date(d.from_);
-        if (!earliest || from < earliest) earliest = from;
-    }
-    return earliest;
 }
 
 /** Key of the synthetic option carrying a legacy order's stored serving time. */
@@ -104,10 +97,11 @@ function localizeField(field: Record<string, string> | null | undefined, lang: s
     return field[lang] || field[fallbackLng.key] || Object.values(field).find(v => !!v) || null;
 }
 
-/** «Ons. 23. desember»: short weekday, day and long month, first letter capital (the artboards' format). */
-function formatDayLabel(date: Date): string {
-    const text = date.toLocaleDateString('nb-NO', {weekday: 'short', day: 'numeric', month: 'long'});
-    return text.charAt(0).toLocaleUpperCase('nb-NO') + text.slice(1);
+/** «Ons. 23. desember» / «Wed 23 December»: short weekday, day and long month in the UI language, first letter capital (the artboards' format). */
+function formatDayLabel(date: Date, lang: string): string {
+    const locale = localeFor(lang);
+    const text = date.toLocaleDateString(locale, {weekday: 'short', day: 'numeric', month: 'long'});
+    return text.charAt(0).toLocaleUpperCase(locale) + text.slice(1);
 }
 
 /** The browser-local calendar day of a date, as a key (the same zone the labels and slots are built in). */
@@ -128,7 +122,7 @@ interface DateOption {
 }
 
 /** Build date options from application dates. Each option is a unique date+timerange from one application date entry. */
-function buildDateOptions(applications: IApplication[]): DateOption[] {
+function buildDateOptions(applications: IApplication[], lang: string): DateOption[] {
     const options: DateOption[] = [];
     applications.forEach(app => {
         app.dates?.forEach(d => {
@@ -138,7 +132,7 @@ function buildDateOptions(applications: IApplication[]): DateOption[] {
                 key: `${app.id}_${d.id}`,
                 from,
                 to,
-                dayLabel: formatDayLabel(from),
+                dayLabel: formatDayLabel(from, lang),
                 timeLabel: `${formatHm(from)}–${formatHm(to)}`,
                 applicationId: app.id,
             });
@@ -182,7 +176,7 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
     // The server's refusal of a save (e.g. a deadline that passed while the dialog was open).
     const [saveError, setSaveError] = useState<string | null>(null);
 
-    const dateOptions = useMemo(() => buildDateOptions(applications), [applications]);
+    const dateOptions = useMemo(() => buildDateOptions(applications, i18n.language), [applications, i18n.language]);
 
     // Collect all booked resource IDs from the applications
     const appResourceIds = useMemo(() => {
@@ -221,11 +215,11 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
             key: GRANDFATHERED_DATE_KEY,
             from: stored,
             to: stored,
-            dayLabel: formatDayLabel(stored),
+            dayLabel: formatDayLabel(stored, i18n.language),
             timeLabel: formatHm(stored),
             applicationId: existingOrder.application_id,
         };
-    }, [existingOrder, dateOptions]);
+    }, [existingOrder, dateOptions, i18n.language]);
 
     const visibleDateOptions = useMemo(
         () => grandfatheredOption ? [grandfatheredOption, ...dateOptions] : dateOptions,
@@ -436,7 +430,7 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
         if (changingSubmittedOrder && existingOrder) {
             storedAnchor = existingOrder.serving_time_iso
                 ? new Date(existingOrder.serving_time_iso)
-                : earliestDate(orderApplication);
+                : earliestApplicationDate(orderApplication);
         }
 
         const deadlineVerdict = storedAnchor
@@ -489,14 +483,14 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
         if (!cancelBy) return null;
 
         if (Date.now() > cancelBy.getTime()) {
-            return t('bookingfrontend.cancellation_deadline_passed_warning');
+            return {isPastDeadline: true, text: t('bookingfrontend.cancellation_deadline_passed_warning')};
         }
-        return t('bookingfrontend.cancellation_deadline_info')
-            .replace('%1', cancelBy.toLocaleDateString('nb-NO', {
-                day: '2-digit', month: 'short', year: 'numeric',
-                hour: '2-digit', minute: '2-digit'
-            }));
-    }, [selectedDateOption, hospitality, t]);
+        return {
+            isPastDeadline: false,
+            text: t('bookingfrontend.cancellation_deadline_info')
+                .replace('%1', formatDeadlineDateTime(cancelBy, i18n.language)),
+        };
+    }, [selectedDateOption, hospitality, t, i18n.language]);
 
     // Initialize state on open / edit
     useEffect(() => {
@@ -844,18 +838,24 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
                 group is not unmounted under the applicant's finger (or arrow keys) when the offer is switched. */}
             {hospitality ? (
                 <div className={styles.modalContent}>
-                    {/* Offer: a locked card when editing, radio boxes when there is a choice, the same card otherwise.
-                        The card is neutral: a bare Card takes the accent and would read as a selected radio box. */}
-                    {existingOrder ? (
-                        <Fieldset>
-                            <Fieldset.Legend>{t('bookingfrontend.hospitality_offer')}</Fieldset.Legend>
-                            <Fieldset.Description>{t('bookingfrontend.hospitality_offer_locked_help')}</Fieldset.Description>
-                            <Card data-color="neutral" className={styles.offerText}>
-                                <span className={styles.offerName}>{hospitality.name}</span>
-                                {offerDescription && <span className={styles.offerDescription}>{offerDescription}</span>}
-                            </Card>
-                        </Fieldset>
-                    ) : hospitalities.length > 1 ? (
+                    {/* Offer: radio boxes, one under the other, when there is a choice (#1502). When it cannot be
+                        changed (an order being edited, or the only offer) it is a read-only field: focusable and read
+                        out, with Digdir's lock on the label, unlike a disabled one. */}
+                    {existingOrder || hospitalities.length <= 1 ? (
+                        <Textfield
+                            label={t('bookingfrontend.hospitality_offer')}
+                            description={(offerDescription || existingOrder) ? (
+                                <>
+                                    {offerDescription && <span className={styles.offerDescription}>{offerDescription}</span>}
+                                    {/* A space between the two, so a screen reader does not run them together */}
+                                    {offerDescription && existingOrder && ' '}
+                                    {existingOrder && <span className={styles.offerDescription}>{t('bookingfrontend.hospitality_offer_locked_help')}</span>}
+                                </>
+                            ) : undefined}
+                            value={hospitality.name}
+                            readOnly
+                        />
+                    ) : (
                         <Fieldset>
                             <Fieldset.Legend>{t('bookingfrontend.hospitality_offer')}</Fieldset.Legend>
                             <div className={styles.offerBoxes}>
@@ -880,20 +880,12 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
                                 ))}
                             </div>
                         </Fieldset>
-                    ) : (
-                        <Fieldset>
-                            <Fieldset.Legend>{t('bookingfrontend.hospitality_offer')}</Fieldset.Legend>
-                            <Card data-color="neutral" className={styles.offerText}>
-                                <span className={styles.offerName}>{hospitality.name}</span>
-                                {offerDescription && <span className={styles.offerDescription}>{offerDescription}</span>}
-                            </Card>
-                        </Fieldset>
                     )}
 
-                    {/* Day | Place | Time: one row above the dialog's mobile breakpoint, a single column below it */}
+                    {/* Day, Place, Time: one under the other at every width (#1502) */}
                     <div className={styles.topRow}>
                         {/* Day */}
-                        <Field className={styles.topRowField}>
+                        <Field>
                             <Label>{t('bookingfrontend.day')}</Label>
                             <Select
                                 value={selectedDateKey}
@@ -937,12 +929,16 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
                             )}
                         </Field>
 
-                        {/* Place: a dropdown, or plain text when there is only one room to choose */}
-                        <Field className={styles.topRowField}>
-                            <Label>{t('bookingfrontend.delivery_location')}</Label>
-                            {singleLocation ? (
-                                <div className={styles.fieldText}>{locationLabel(singleLocation)}</div>
-                            ) : (
+                        {/* Place: a dropdown, or a read-only field when there is only one room to choose */}
+                        {singleLocation ? (
+                            <Textfield
+                                label={t('bookingfrontend.delivery_location')}
+                                value={locationLabel(singleLocation)}
+                                readOnly
+                            />
+                        ) : (
+                            <Field>
+                                <Label>{t('bookingfrontend.delivery_location')}</Label>
                                 <Select
                                     value={String(locationId)}
                                     onChange={(e) => setLocationId(parseInt(e.target.value))}
@@ -952,11 +948,11 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
                                         <option key={loc.id} value={String(loc.id)}>{locationLabel(loc)}</option>
                                     ))}
                                 </Select>
-                            )}
-                        </Field>
+                            </Field>
+                        )}
 
                         {/* Time: the booking's own times say what is possible. The grandfathered instant has no range. */}
-                        <Field className={styles.topRowField}>
+                        <Field>
                             <Label>{t('bookingfrontend.hospitality_dialog_clock_time')}</Label>
                             {selectedDateOption && selectedDateOption.key !== GRANDFATHERED_DATE_KEY && (
                                 <Field.Description>
@@ -1008,10 +1004,11 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
                         </Alert>
                     )}
 
-                    {/* Cancellation deadline warning (informational) */}
+                    {/* Cancellation deadline: information while it can still be cancelled (#1502), a warning once
+                        the deadline has passed and the order could no longer be cancelled */}
                     {cancellationWarning && (
-                        <Alert data-color="warning" data-size="sm">
-                            {cancellationWarning}
+                        <Alert data-color={cancellationWarning.isPastDeadline ? 'warning' : 'info'} data-size="sm">
+                            {cancellationWarning.text}
                         </Alert>
                     )}
 

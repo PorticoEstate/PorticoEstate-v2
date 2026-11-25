@@ -26,12 +26,20 @@
 	 data-applications-base-url="{{ phpgw_link('/booking/applications') }}"
 	 data-resources-url="{{ phpgw_link('/booking/resources') }}"
 	 data-buildings-url="{{ phpgw_link('/booking/buildings') }}"
+	 data-seasons-base-url="{{ phpgw_link('/bookingfrontend/buildings') }}"
+	 data-server-settings-url="{{ phpgw_link('/api/server-settings') }}"
 	 data-can-write="{{ can_write ? '1' : '0' }}"
 	 data-lang-loading="{{ lang('common.loading') }}"
 	 data-lang-error="{{ lang('common.error') }}"
 	 data-lang-hospitality="{{ lang('booking.hospitality') }}"
 	 data-lang-name="{{ lang('booking.name') }}"
 	 data-lang-description="{{ lang('common.description') }}"
+	 {# The counter's texts carry a %1 filled client-side: '%1' as the arg keeps it through server-side lang() #}
+	 data-description-max-length="{{ constant('App\\modules\\booking\\models\\Hospitality::DESCRIPTION_MAX_LENGTH') }}"
+	 data-lang-description-counter-under="{{ lang('booking.hospitality_description_counter_under', '%1') }}"
+	 data-lang-description-counter-over="{{ lang('booking.hospitality_description_counter_over', '%1') }}"
+	 data-lang-description-max-hint="{{ lang('booking.hospitality_description_max_hint', '%1') }}"
+	 data-lang-description-too-long="{{ lang('booking.hospitality_description_too_long', '%1') }}"
 	 data-lang-active="{{ lang('booking.active') }}"
 	 data-lang-inactive="{{ lang('booking.inactive') }}"
 	 data-lang-hidden-from-frontend="{{ lang('booking.hidden_from_frontend') }}"
@@ -81,6 +89,9 @@
 	 data-lang-cancellation-deadline="{{ lang('booking.cancellation_deadline') }}"
 	 data-lang-cancellation-deadline-from-resource="{{ lang('booking.cancellation_deadline_from_resource') }}"
 	 data-lang-main-resource="{{ lang('booking.main_resource') }}"
+	 data-lang-main-resource-edit-note="{{ lang('booking.main_resource_edit_note') }}"
+	 data-lang-direct-booking-conflict-warning="{{ lang('booking.direct_booking_conflict_warning_hospitality') }}"
+	 data-lang-resource-has-direct-booking-tag="{{ lang('booking.resource_has_direct_booking_tag') }}"
 	 data-lang-remote-locations="{{ lang('booking.remote_locations') }}"
 	 data-lang-remote-serving-disabled="{{ lang('booking.remote_serving_disabled') }}"
 	 data-lang-no-remote-locations="{{ lang('booking.no_remote_locations') }}"
@@ -100,6 +111,9 @@
 	 data-lang-unit-day="{{ lang('booking.unit_day') }}"
 	 data-lang-drag-to-reorder="{{ lang('booking.drag_to_reorder') }}"
 	 data-lang-no-orders="{{ lang('booking.no_orders') }}"
+	 data-lang-no-results="{{ lang('booking.no_results') }}"
+	 data-lang-no-delivery-locations="{{ lang('booking.no_delivery_locations') }}"
+	 data-lang-opening-hours-unavailable="{{ lang('booking.opening_hours_unavailable') }}"
 	 data-lang-saved="{{ lang('booking.saved') }}"
 	 data-lang-back-to-list="{{ lang('booking.back_to_list') }}"
 	 data-lang-hours="{{ lang('booking.hours') }}"
@@ -118,6 +132,7 @@
 	 data-lang-building="{{ lang('booking.building') }}"
 	 data-lang-select-building="{{ lang('booking.select_building') }}"
 	 data-lang-search-buildings="{{ lang('booking.search_buildings') }}"
+	 data-lang-building-select-no-results="{{ lang('booking.building_select_no_results') }}"
 	 data-lang-select-resources="{{ lang('booking.select_resources') }}"
 	 data-lang-other="{{ lang('booking.other') }}"
 	 data-lang-select-resource="{{ lang('booking.select_resource') }}"
@@ -220,6 +235,7 @@
 <script src="{{ modules_url }}/booking/js/base/building-select.js"></script>
 <script>{{ source('@base_views/components/hospitality_order_list/hospitality_order_list.js') }}</script>
 <script>{{ source('@base_views/components/hospitality_order_modal/hospitality_order_modal.js') }}</script>
+<script>{{ source('@base_views/components/char_counter/char_counter.js') }}</script>
 <script>{{ source('@views/hospitality/show/hospitality_show.js') }}</script>
 <script>
 (function initHospCollab() {

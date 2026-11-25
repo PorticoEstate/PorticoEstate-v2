@@ -409,6 +409,7 @@ class booking_uiresource extends booking_uicommon
 		$activity_path = $this->activity_bo->get_path($resource['activity_id']);
 		$top_level_activity = $activity_path ? $activity_path[0]['id'] : 0;
 		$rescategory_data = $this->rescategory_bo->get_rescategories_by_activities($top_level_activity);
+		$resource['direct_booking_conflict_html'] = $this->get_direct_booking_conflict_html($id);
 		$tabs = array();
 		$tabs['generic'] = array('label' => lang('edit permission'), 'link' => '#resource');
 		$active_tab = 'generic';
@@ -1019,6 +1020,25 @@ class booking_uiresource extends booking_uicommon
 		}
 	}
 
+	/**
+	 * A WARNING, not an error: this resource has direct booking AND is linked to hospitality, a
+	 * combination that is no longer allowed. It is shown, never fixed for the admin (the link is
+	 * not removed, direct booking is not switched off). Empty string when there is nothing to warn about.
+	 * The names are escaped here because the template prints the result unescaped (it contains links).
+	 */
+	private function get_direct_booking_conflict_html($resource_id)
+	{
+		$guard = new \App\modules\booking\services\HospitalityDirectBookingGuard();
+		$anchors = array();
+		foreach ($guard->conflictingHospitalitiesForResource((int)$resource_id) as $link)
+		{
+			$anchors[] = '<a href="/booking/view/hospitality/' . (int)$link['hospitality_id'] . '">'
+				. htmlspecialchars($link['name'], ENT_QUOTES, 'UTF-8') . '</a>';
+		}
+
+		return $anchors ? lang('booking.direct_booking_conflict_warning_resource', implode(', ', $anchors)) : '';
+	}
+
 	public function show()
 	{
 		$id = Sanitizer::get_var('id', 'int');
@@ -1084,6 +1104,7 @@ class booking_uiresource extends booking_uicommon
 			'menuaction' => 'booking.uiresource.edit_facilities',
 			'id' => $resource['id']
 		));
+		$resource['direct_booking_conflict_html'] = $this->get_direct_booking_conflict_html($resource['id']);
 
 		$tabs = array();
 		$tabs['generic'] = array(

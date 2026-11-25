@@ -523,9 +523,21 @@ export async function fetchApplication(id: number, secret?: string): Promise<IAp
     return response.json();
 }
 
-export async function fetchApplicationDocuments(applicationId: number | string, type_filter?: IDocumentCategoryQuery | IDocumentCategoryQuery[]): Promise<IDocument[]> {
-	const url = phpGWLink(["bookingfrontend", 'applications', applicationId, 'documents'],
-		type_filter && {type: Array.isArray(type_filter) ? type_filter.join(',') : type_filter});
+/**
+ * Fetch the documents of an application
+ * @param applicationId The application ID
+ * @param type_filter Optional document type filter(s)
+ * @param secret Optional secret for access without a login (the application's secret link)
+ */
+export async function fetchApplicationDocuments(applicationId: number | string, type_filter?: IDocumentCategoryQuery | IDocumentCategoryQuery[], secret?: string): Promise<IDocument[]> {
+	const params: Record<string, string> = {};
+	if (type_filter) {
+		params.type = Array.isArray(type_filter) ? type_filter.join(',') : type_filter;
+	}
+	if (secret) {
+		params.secret = secret;
+	}
+	const url = phpGWLink(["bookingfrontend", 'applications', applicationId, 'documents'], params);
 
 	const response = await fetch(url);
 	const result = await response.json();
@@ -1013,6 +1025,30 @@ export interface VippsPaymentResponse {
 	error?: string;
 }
 
+/**
+ * A checkout or Vipps submit the server refused: the status and the body, so the caller
+ * can tell a refusal it handles from any other failure.
+ */
+export class CheckoutSubmitError extends Error {
+	readonly status: number;
+	readonly payload: Record<string, unknown>;
+
+	constructor(message: string, status: number, payload: Record<string, unknown> | null) {
+		super(message);
+		this.name = 'CheckoutSubmitError';
+		this.status = status;
+		this.payload = payload ?? {};
+	}
+
+	/**
+	 * With the price category hidden, the server priced a line the applicant had not
+	 * seen and stopped the submit; the price is stored and nothing was submitted (ref #1477).
+	 */
+	get isPriceSet(): boolean {
+		return this.status === 409 && this.payload.code === 'price_set';
+	}
+}
+
 export async function initiateVippsPayment(paymentData: VippsPaymentData): Promise<VippsPaymentResponse> {
 	const url = phpGWLink(['bookingfrontend', 'applications', 'partials', 'vipps-payment']);
 	console.log('=== VIPPS API FUNCTION ===');
@@ -1044,7 +1080,7 @@ export async function initiateVippsPayment(paymentData: VippsPaymentData): Promi
 	console.log('Parsed result:', result);
 
 	if (!response.ok) {
-		throw new Error(result.error || 'Vipps payment initiation failed');
+		throw new CheckoutSubmitError(result.error || 'Vipps payment initiation failed', response.status, result);
 	}
 
 	return result;

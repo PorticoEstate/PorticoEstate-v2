@@ -128,6 +128,20 @@
 							<xsl:value-of select="config_data/application_comment_added_mail"/>
 						</textarea>
 					</div>
+					<div class="pure-control-group">
+						<label for="field_notify_case_officer_on_catering_change">
+							<xsl:value-of select="php:function('lang', 'notify_case_officer_on_catering_change')"/>
+						</label>
+						<input name="notify_case_officer_on_catering_change" type="hidden" value="0"/>
+						<input id="field_notify_case_officer_on_catering_change" class="pure-input-1-2" name="notify_case_officer_on_catering_change" type="checkbox" value="1">
+							<!-- GH #1425 D4: absent means ON (as shipped), so the box is ticked unless an unticked box stored '0'. -->
+							<xsl:if test="not(normalize-space(config_data/notify_case_officer_on_catering_change) = '0')">
+								<xsl:attribute name="checked">
+									<xsl:text>checked</xsl:text>
+								</xsl:attribute>
+							</xsl:if>
+						</input>
+					</div>
 				</fieldset>
 			</div>
 		</div>

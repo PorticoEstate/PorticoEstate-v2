@@ -15,12 +15,13 @@
      id="{{ fid }}"
      data-api-url="{{ building_api_url }}"
      data-value="{{ building_id }}"
-     data-display="{{ building_name|default('') }}">
+     data-display="{{ building_name|default('') }}"
+     data-lang-no-results="{{ lang('booking.building_select_no_results') }}">
 	<input type="text"
 	       class="building-select__input app-input"
 	       id="{{ fid }}-input"
 	       autocomplete="off"
-	       placeholder="{{ lang('Search for building') }}..."
+	       placeholder="{{ lang('booking.search_buildings') }}..."
 	       aria-expanded="false"
 	       aria-autocomplete="list"
 	       aria-controls="{{ fid }}-dropdown"

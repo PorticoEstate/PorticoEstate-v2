@@ -659,13 +659,19 @@
 		$to_date_sql = null;
 		$building_id_sql = null;
 
+		// The organisation's own events are the ones stored with its number, and only a number that names one
+		// organisation has any: the '000000000' every citizen without an organisation logs in with names nobody's.
+		$own_org_number = $logged_in_as && \App\helpers\OwnerIdentifier::identifiesOrganization($logged_in_as) ? $logged_in_as : null;
+
 		if ($filter_organization && $logged_in_as)
 		{
-			$filter_organization_sql = " AND bbe.customer_organization_number = '$logged_in_as'";
+			$filter_organization_sql = $own_org_number === null
+				? " AND 1 = 0"
+				: " AND bbe.customer_organization_number = '$own_org_number'";
 		}
-		else if (!$filter_organization && $logged_in_as)
+		else if (!$filter_organization && $own_org_number !== null)
 		{
-			$filter_organization_sql = " AND (include_in_list = 1 OR bbe.customer_organization_number = '$logged_in_as')";
+			$filter_organization_sql = " AND (include_in_list = 1 OR bbe.customer_organization_number = '$own_org_number')";
 		}
 		else
 		{

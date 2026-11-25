@@ -9,6 +9,10 @@ use App\modules\booking\repositories\HospitalityArticleRepository;
 use App\modules\booking\repositories\HospitalityOrderRepository;
 use App\modules\booking\models\HospitalityOrder;
 use App\modules\booking\models\HospitalityOrderLine;
+use App\modules\booking\services\CateringChangeText;
+use App\modules\booking\services\HospitalityOrderQuantity;
+use App\modules\booking\services\HospitalityOrderAmount;
+use App\modules\booking\services\TranslationLangSwitch;
 use App\Database\Db;
 
 use Psr\Container\ContainerInterface;
@@ -43,8 +47,74 @@ class HospitalityOrderController
 	private function orderToJson(int $orderId): array
 	{
 		$data = $this->repository->getOrderWithLines($orderId);
-		$model = new HospitalityOrder($data);
+		$model = new HospitalityOrder($this->withReadableChangelog($data));
 		return $model->serialize();
+	}
+
+	/**
+	 * GH #1425: every «Endret av søker» entry gets `display` — the change in words, incl. VAT, in the
+	 * officer's own language (CateringChangeText, the same formatter as the officer's mail). The
+	 * stored entry is left as it is; officers' own entries get nothing and render as before.
+	 *
+	 * Admin only: this controller is the booking backend's. The applicant's responses never carry
+	 * the changelog (bookingfrontend CitizenHospitalityOrder).
+	 */
+	private function withReadableChangelog(?array $order, ?string $lang = null): ?array
+	{
+		if (empty($order['changelog'])) {
+			return $order;
+		}
+		// The callers catch Exception only: nothing here may turn the order page into a 500. Without
+		// a language or a context the entries are simply shown raw, as before.
+		try {
+			$lang ??= (new TranslationLangSwitch())->current();
+			$context = CateringChangeText::contextOf($order);
+		} catch (\Throwable $e) {
+			error_log('Catering changelog left unformatted for order ' . ($order['id'] ?? '?') . ': ' . $e->getMessage());
+			return $order;
+		}
+		foreach ($order['changelog'] as &$entry) {
+			if (($entry['change_type'] ?? null) !== 'applicant_change') {
+				continue;
+			}
+			try {
+				$old = is_array($entry['old_value'] ?? null) ? $entry['old_value'] : [];
+				$new = is_array($entry['new_value'] ?? null) ? $entry['new_value'] : [];
+				$entry['display'] = CateringChangeText::describe([
+					'kind' => CateringChangeText::kindOf($entry['comment'] ?? null, $old, $new),
+					'actor' => $entry['booking_user_name'] ?? null,
+					'changed_at' => $entry['changed_at'] ?? null,
+					'old' => $old,
+					'new' => $new,
+				], $context, $lang);
+			} catch (\Throwable $e) {
+				// An entry that cannot be put into words is shown raw, as before; the page still loads.
+				error_log("Catering changelog entry {$entry['id']} could not be formatted: " . $e->getMessage());
+			}
+		}
+		unset($entry);
+		return $order;
+	}
+
+	/**
+	 * Orders by serving time, earliest first; an order without one after all that have one; ties
+	 * (and those without) by id. serving_time_iso is stored naive UTC in one format, so the strings
+	 * order as the instants do.
+	 *
+	 * @param list<array> $orders
+	 * @return list<array>
+	 */
+	public static function sortByServingTime(array $orders): array
+	{
+		usort($orders, static function (array $a, array $b): int {
+			$sa = (string)($a['serving_time_iso'] ?? '');
+			$sb = (string)($b['serving_time_iso'] ?? '');
+			if ($sa === '' || $sb === '') {
+				return [$sa === '' ? 1 : 0, (int)$a['id']] <=> [$sb === '' ? 1 : 0, (int)$b['id']];
+			}
+			return [$sa, (int)$a['id']] <=> [$sb, (int)$b['id']];
+		});
+		return $orders;
 	}
 
 	private function requireChangelogComment(array $body): ?string
@@ -69,6 +139,52 @@ class HospitalityOrderController
 	{
 		$response->getBody()->write(json_encode(['error' => $message]));
 		return $response->withHeader('Content-Type', 'application/json')->withStatus($status);
+	}
+
+	/**
+	 * 400 for a line quantity that is not a positive whole number (HospitalityOrderQuantity), in the officer's language.
+	 * Without it the raw value reached the database: 2.5 was stored, and 0, -1 or a word came back as a 500 carrying
+	 * the database's own message.
+	 */
+	private function refuseQuantity(Response $response): Response
+	{
+		return $this->jsonError($response, lang('booking.hospitality_order_quantity_not_whole'), 400);
+	}
+
+	/**
+	 * 422 for a line or an order total the money columns cannot hold (HospitalityOrderAmount, §49596), in the officer's
+	 * language, with the rule's `code`. Without it the database answered «numeric field overflow» and the officer was
+	 * shown its raw SQLSTATE.
+	 *
+	 * @param array{code: string, line: int|string|null} $refusal
+	 */
+	private function refuseAmount(Response $response, array $refusal): Response
+	{
+		$key = $refusal['code'] === HospitalityOrderAmount::CODE_LINE
+			? 'booking.hospitality_order_amount_too_large'
+			: 'booking.hospitality_order_total_too_large';
+		$response->getBody()->write(json_encode(['error' => lang($key), 'code' => $refusal['code']]));
+		return $response->withHeader('Content-Type', 'application/json')->withStatus(422);
+	}
+
+	/**
+	 * Whether this line write would leave amounts the money columns cannot hold (HospitalityOrderAmount, §49596).
+	 *
+	 * @param array      $line   the line as it will be stored: quantity, unit_price, tax_code
+	 * @param int|null   $lineId the stored line it replaces; null when it is added
+	 * @return array{code: string, line: int|string|null}|null
+	 */
+	private function amountRefusal(int $orderId, array $line, ?int $lineId): ?array
+	{
+		$before = $this->repository->getOrderLines($orderId);
+		$after = [];
+		foreach ($before as $stored) {
+			$after[] = $lineId !== null && (int)$stored['id'] === $lineId ? $line : $stored;
+		}
+		if ($lineId === null) {
+			$after[] = $line;
+		}
+		return HospitalityOrderAmount::refusal([$line], $after, $before, $this->articleRepository->getTaxPercentByCode());
 	}
 
 	/**
@@ -157,6 +273,9 @@ class HospitalityOrderController
 				} else {
 					$orders = $this->repository->getOrdersWithLinesByApplication((int)$params['application_id']);
 				}
+				// The application page's catering list reads in serving order (GH #1425 S3). Here and not
+				// in the repository: its created-DESC default also feeds the applicant's Min side.
+				$orders = self::sortByServingTime($orders);
 			} elseif (!empty($params['hospitality_id'])) {
 				$status = $params['status'] ?? null;
 				$rows = $this->repository->getByHospitalityId((int)$params['hospitality_id'], $status);
@@ -280,7 +399,7 @@ class HospitalityOrderController
 				return $this->jsonError($response, 'Order not found', 404);
 			}
 
-			$model = new HospitalityOrder($data);
+			$model = new HospitalityOrder($this->withReadableChangelog($data));
 
 			$response->getBody()->write(json_encode($model->serialize()));
 			return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
@@ -513,6 +632,12 @@ class HospitalityOrderController
 				return $this->jsonError($response, 'hospitality_article_id is required');
 			}
 
+			// A positive whole number, for every unit (task 47994). An absent or null quantity still means 1.
+			$quantity = HospitalityOrderQuantity::ofLine($body);
+			if ($quantity === null) {
+				return $this->refuseQuantity($response);
+			}
+
 			// Snapshot effective pricing from the article system
 			$pricing = $this->articleRepository->resolveEffectivePricing((int)$body['hospitality_article_id']);
 			if (!$pricing) {
@@ -526,11 +651,17 @@ class HospitalityOrderController
 			$lineData = [
 				'order_id' => $orderId,
 				'hospitality_article_id' => (int)$body['hospitality_article_id'],
-				'quantity' => $body['quantity'] ?? 1,
+				'quantity' => $quantity,
 				'unit_price' => $pricing['effective_price'],
 				'tax_code' => $pricing['effective_tax_code'],
 				'comment' => $body['comment'] ?? null,
 			];
+
+			// The amounts (§49596): the new line, and the order's gross total with it, before the line is written.
+			$amountRefusal = $this->amountRefusal($orderId, $lineData, null);
+			if ($amountRefusal !== null) {
+				return $this->refuseAmount($response, $amountRefusal);
+			}
 
 			$lineId = $this->repository->addOrderLine($lineData);
 
@@ -589,6 +720,31 @@ class HospitalityOrderController
 			$changelogComment = $this->requireChangelogComment($body);
 			if (!$changelogComment) {
 				return $this->jsonError($response, 'changelog_comment is required');
+			}
+
+			// A positive whole number, for every unit (task 47994). Read ONCE and written back, so the value that is judged is
+			// the value the repository stores and the changelog records. An absent key leaves the quantity alone (a comment-only
+			// edit); a key that is present is judged, null included: this column is NOT NULL and has no default to apply here.
+			if (array_key_exists('quantity', $body)) {
+				$quantity = HospitalityOrderQuantity::whole($body['quantity']);
+				if ($quantity === null) {
+					return $this->refuseQuantity($response);
+				}
+				$body['quantity'] = $quantity;
+			}
+
+			// The amounts (§49596), when the edit touches one: the line as updateOrderLine() will leave it (what the body
+			// sends, else what is stored; the body may carry unit_price and tax_code too), before it is written. Billing
+			// prices the line as quantity × unit_price, which is what is judged, also when only unit_price changes.
+			if (array_key_exists('quantity', $body) || array_key_exists('unit_price', $body) || array_key_exists('tax_code', $body)) {
+				$asStored = [];
+				foreach (['quantity', 'unit_price', 'tax_code'] as $field) {
+					$asStored[$field] = array_key_exists($field, $body) ? $body[$field] : ($oldLine[$field] ?? null);
+				}
+				$amountRefusal = $this->amountRefusal($orderId, $asStored, $lineId);
+				if ($amountRefusal !== null) {
+					return $this->refuseAmount($response, $amountRefusal);
+				}
 			}
 
 			// Diff line fields for changelog

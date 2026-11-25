@@ -170,24 +170,32 @@
 			String(absOffset % 60).padStart(2, '0');
 	}
 
+	// Rebuilds the time list for a date. Returns true when the list opened on the stored slot,
+	// i.e. the officer can see the stored time there; false when it opened on the placeholder.
 	function populateEditTimeSlots(timeEl, dateIdx, currentIso)
 	{
 		timeEl.innerHTML = '<option value="">' + esc(lang('selectTime')) + '</option>';
 		timeEl.disabled = true;
-		if (dateIdx === '' || !appDatesData[dateIdx]) return;
+		if (dateIdx === '' || !appDatesData[dateIdx]) return false;
 
 		var range = appDatesData[dateIdx];
 		var slots = generate15MinIntervals(range.from_, range.to_);
 		var currentTs = currentIso ? new Date(currentIso).getTime() : null;
+		var openedOnStored = false;
 		slots.forEach(function (slot)
 		{
 			var opt = document.createElement('option');
 			opt.value = fmtNaiveIso(slot);
 			opt.textContent = fmtTimeHHMM(slot);
-			if (currentTs && Math.abs(slot.getTime() - currentTs) < 60000) opt.selected = true;
+			if (currentTs && Math.abs(slot.getTime() - currentTs) < 60000)
+			{
+				opt.selected = true;
+				openedOnStored = true;
+			}
 			timeEl.appendChild(opt);
 		});
 		timeEl.disabled = false;
+		return openedOnStored;
 	}
 
 	var penIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.85 2.85 0 014 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>';
@@ -800,11 +808,15 @@
 			var timeEl = wrapper.querySelector('[data-edit-time]');
 			var currentValue = orderData[fieldName] != null ? String(orderData[fieldName]) : '';
 
+			// True while the time list shows the stored time as its preselected slot. Re-derived on
+			// every rebuild of the list.
+			var openedOnStored = false;
+
 			if (appDatesData.length === 1)
 			{
 				dateEl.value = '0';
 				dateEl.disabled = true;
-				populateEditTimeSlots(timeEl, 0, currentValue);
+				openedOnStored = populateEditTimeSlots(timeEl, 0, currentValue);
 			}
 
 			// A new date rebuilds the time list with nothing chosen from it yet: the time mark goes,
@@ -814,14 +826,17 @@
 				delete wrapper.dataset.timeTouched;
 				if (this.value === '') delete wrapper.dataset.dateTouched;
 				else wrapper.dataset.dateTouched = '1';
-				populateEditTimeSlots(timeEl, this.value, currentValue);
+				openedOnStored = populateEditTimeSlots(timeEl, this.value, currentValue);
 			});
 
 			// Only the officer's own choice in the time list counts; the slot preselected for the
-			// stored time does not.
+			// stored time does not. The placeholder is a choice (a clear) only where the list opened on
+			// the stored slot, so the officer saw the time they are clearing. Elsewhere it puts the
+			// list back to how it opened: nothing chosen.
 			timeEl.addEventListener('change', function ()
 			{
-				wrapper.dataset.timeTouched = '1';
+				if (this.value === '' && !openedOnStored) delete wrapper.dataset.timeTouched;
+				else wrapper.dataset.timeTouched = '1';
 			});
 		});
 	}

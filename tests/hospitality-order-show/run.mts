@@ -19,6 +19,10 @@
  *
  * The rule the page now keeps (49766): serving_time_iso (and application_id) are sent only when the officer CHOSE a time;
  * a date change clears that; a date picked with no time chosen is refused with the existing «select time» text (D2).
+ * Task 49934 (the follow-up, facts 49917/49918): the time PLACEHOLDER counts as a choice (a deliberate clear) only when the
+ * time list opened on the STORED slot (S, or B on its stored date), i.e. only where the officer could see the time they
+ * clear. Anywhere else choosing it puts the list back to how it opened: nothing chosen, so «no changes», or D2 if a date
+ * is still picked. On C (the stored time is in no list) that leaves «set a time» and no clear: accepted by pe-ceo, 49937.
  *
  * What it holds the page to (each row names the rule it is the test of):
  *   P1  the fixtures reach the declared edit states (date/time select value, enabled, option count) — the premise of every row
@@ -28,7 +32,15 @@
  *   L3  a line-only save sends the line and nothing for the serving time                      (FIX row: A, B, C)
  *   L4  a comment-only save sends the comment, with no serving_time_iso and no application_id (FIX row: A, B, C)
  *   L5  an intentional time change still saves, with its application_id                       (control: B, C, S)
- *   L6  a deliberate clear (the time placeholder chosen) still saves null                     (control: B, C, S)
+ *   L6  a deliberate clear (the time placeholder chosen) still saves null, where the list    (control: B on its stored
+ *       opened on the stored slot, also after another slot was chosen                         date, S)
+ *   L6c the placeholder where the stored time is in NO list is not a clear (49918)            (FIX row: C)
+ *   L6d the placeholder after a time on a date that does NOT hold the stored time: refused    (FIX row: B; the 49917 sequence)
+ *       like D2, nothing sent, the order stays on its application, the page is not wedged
+ *   L6e the list re-derives «opened on the stored slot» at every rebuild: stored date, other   (control: B)
+ *       date, stored date again, a time, the placeholder: a clear
+ *   E1  the clear map: of every realizable pick sequence, the ones that save serving_time_iso  (FIX row: B, C)
+ *       null exist exactly on B's stored date and on S
  *   L7  a time chosen, then the DATE changed: nothing is sent                                 (FIX row: B)
  *   L7b a time chosen, then the date put back to the placeholder: nothing sent, no warning    (FIX row: B)
  *   L8  the safe shape S: a save of something else sends no write for the serving time        (FIX row: S)
@@ -529,9 +541,10 @@ async function main() {
 
     // ---- L6: a deliberate clear still saves (control) ------------------------------------------------------------------
     const CLEAR: Array<[ShapeKey, number | null, string | null, number]> = [
-        ['B', 0, null, 83734],        // the date picked, the time placeholder chosen
-        ['C', null, '13:00', 84278],  // a slot chosen, then the placeholder (the list starts on the placeholder: choosing it again is not a change)
+        ['B', 0, null, 83734],        // the stored date picked (the list opens on the stored 19:00), the time placeholder chosen
+        ['B', 0, '18:00', 83734],     // …or another slot first, then the placeholder: the list opened on the stored slot
         ['S', null, null, 85166],     // the preselected slot replaced by the placeholder
+        ['S', null, '13:00', 85166],  // …or another slot first, then the placeholder
     ];
     for (const [k, dateIdx, firstPick, app] of CLEAR) {
         await attempt('L6', async () => {
@@ -541,9 +554,10 @@ async function main() {
             if (firstPick) p.pickTime(firstPick);
             p.pickTime('');
             await p.save();
-            check('L6', `${k}: choosing the time placeholder deliberately saves serving_time_iso null with its application`,
+            const how = firstPick ? ` after ${firstPick}` : '';
+            check('L6', `${k}: choosing the time placeholder${how} deliberately saves serving_time_iso null with its application`,
                 orderPuts(p).length === 1 && orderPuts(p)[0].body.serving_time_iso === null && 'serving_time_iso' in orderPuts(p)[0].body && orderPuts(p)[0].body.application_id === app, show(orderPuts(p)[0]?.body));
-            check('L6', `${k}: …and the stored serving time is cleared`, p.backend.serving === null, show(p.backend.serving));
+            check('L6', `${k}: …and the stored serving time is cleared${how}`, p.backend.serving === null, show(p.backend.serving));
         });
     }
 
@@ -633,6 +647,102 @@ async function main() {
         await p.save();
         check('D2p', 'B: a preselected slot is not a choice: the save is refused with the warning', same(p.toasts(), WARNING), show(p.toasts()));
         NO_WRITES(p, 'D2p', 'B: the stored date re-picked, the preselected slot not chosen');
+    });
+
+    // ---- L6c: the placeholder where the stored time is in NO list is not a clear (49918) ------------------------------------
+    await attempt('L6c', async () => {
+        const p = await open('C');
+        await p.edit();
+        check('L6c', 'C: the list opens on the placeholder (the stored time is in no list)', p.time().value === '' && !p.time().disabled, show(p.time().value));
+        p.pickTime('13:00'); p.pickTime('');
+        await p.save();
+        NO_WRITES(p, 'L6c', 'C: a slot chosen and then the placeholder (the list is back to how it opened)');
+        check('L6c', 'C: …no date is picked (its only date is preselected), so no warning: the page says «no changes»', same(p.toasts(), [{text: NO_CHANGES, color: 'info'}]), show(p.toasts()));
+        p.pickTime('14:00');
+        await p.save();
+        check('L6c', 'C: …and choosing a slot afterwards saves it with its application (the page is not wedged)',
+            orderPuts(p).length === 1 && orderPuts(p)[0].body.serving_time_iso === '2029-06-04T14:00:00+02:00' && orderPuts(p)[0].body.application_id === 84278, show(orderPuts(p)[0]?.body));
+    });
+    await attempt('L6c', async () => {
+        const p = await open('C');
+        await p.edit();
+        p.pickTime('13:00'); p.pickTime('');
+        p.setQuantity(SHAPES.C.lineArticle, 2);
+        await p.save();
+        check('L6c', 'C: a slot chosen, then the placeholder, then a line change: the save is the line and no order PUT',
+            linePuts(p).length === 1 && orderPuts(p).length === 0 && p.backend.serving === ORIGINAL('C'), show(p.writes()));
+    });
+
+    // ---- L6d: the placeholder after a time on a date that does not hold the stored time (the 49917 sequence) ------------------
+    const stays = (p: Page) => p.backend.order.application_id === SHAPES.B.order.application_id;
+    for (const [label, lead] of [['the 7th, a time, the placeholder', [1]], ['the stored date, then the 7th, a time, the placeholder', [0, 1]]] as Array<[string, number[]]>) {
+        await attempt('L6d', async () => {
+            const p = await open('B');
+            await p.edit();
+            for (const d of lead) p.pickDate(d);
+            p.pickTime('17:00'); p.pickTime('');
+            check('L6d', `B (${label}): the list is back on the placeholder`, p.time().value === '', show(p.time().value));
+            await p.save();
+            check('L6d', `B (${label}): Lagre answers the «select time» text, as for the date alone (D2)`, same(p.toasts(), WARNING), show(p.toasts()));
+            NO_WRITES(p, 'L6d', `B (${label})`);
+            check('L6d', `B (${label}): …the order stays on its own application`, stays(p), show(p.backend.order.application_id));
+            check('L6d', `B (${label}): …and no changelog-comment dialog was asked for`, p.dialogsShown === 0);
+            p.pickTime('18:00');
+            await p.save();
+            check('L6d', `B (${label}): …choosing a time afterwards saves it, with the date's application (the page is not wedged)`,
+                orderPuts(p).length === 1 && orderPuts(p)[0].body.serving_time_iso === '2026-06-07T18:00:00+02:00' && orderPuts(p)[0].body.application_id === 83735, show(orderPuts(p)[0]?.body));
+        });
+    }
+
+    // ---- L6e: «opened on the stored slot» is re-derived at every rebuild of the list ------------------------------------------
+    await attempt('L6e', async () => {
+        const p = await open('B');
+        await p.edit();
+        p.pickDate(1); p.pickDate(0);                    // the 7th, then back to the stored date: the list opens on the stored 19:00 again
+        check('L6e', 'B: the stored date again preselects the stored slot', p.time().value === ORIGINAL('B'), show(p.time().value));
+        p.pickTime('17:00'); p.pickTime('');
+        await p.save();
+        check('L6e', 'B: the placeholder is a clear again: saves serving_time_iso null with the stored date\'s application',
+            orderPuts(p).length === 1 && orderPuts(p)[0].body.serving_time_iso === null && orderPuts(p)[0].body.application_id === 83734, show(orderPuts(p)[0]?.body));
+        check('L6e', 'B: …and the stored serving time is cleared', p.backend.serving === null, show(p.backend.serving));
+    });
+
+    // ---- E1: the clear map ---------------------------------------------------------------------------------------------------
+    // Every realizable sequence of up to three picks in the time list (a pick of what the list already shows fires no change
+    // in a browser, and a disabled select cannot be picked), after no date or after each date the shape offers; Lagre. The
+    // places where one of them saves serving_time_iso null must be exactly where the list opens on the stored slot.
+    await attempt('E1', async () => {
+        const labels = ['', '12:30', '13:00', '17:00', '18:00', '19:00'];
+        const seqs: string[][] = [[]];
+        for (const a of labels) { seqs.push([a]); for (const b of labels) { seqs.push([a, b]); for (const c of labels) seqs.push([a, b, c]); } }
+        const clearable: string[] = [];
+        let realized = 0;
+        for (const k of SHAPE_KEYS) {
+            const probe = await open(k); await probe.edit();
+            const dates: Array<number | null> = probe.date().disabled ? [null] : [null, ...Array.from({length: probe.date().options.length - 1}, (_, i) => i)];
+            for (const d of dates) {
+                let any = false;
+                for (const seq of seqs) {
+                    const p = await open(k); await p.edit();
+                    try {
+                        if (d !== null) p.pickDate(d);
+                        for (const t of seq) {
+                            const tt = p.time();
+                            const want = t === '' ? tt.options[0] : tt.options.find(o => o.textContent === t);
+                            if (tt.disabled || !want || want.value === tt.value) throw new Error('not realizable');
+                            p.pickTime(t);
+                        }
+                    } catch { continue; }
+                    realized++;
+                    await p.save();
+                    if (p.writes().some(r => r.body && 'serving_time_iso' in r.body && r.body.serving_time_iso === null)) any = true;
+                }
+                if (any) clearable.push(`${k}/${d === null ? 'its date' : 'date ' + d}`);
+            }
+        }
+        check('E1', `the instrument ran ${realized} realizable sequences (a map of zeros would be a broken instrument)`, realized > 100, `${realized}`);
+        check('E1', 'a null serving time can be saved exactly on B\'s stored date (date 0) and on S, and nowhere else (not A, not C, not B\'s other dates)',
+            same(clearable, ['B/date 0', 'S/its date']), show(clearable));
     });
 
     // ---- INFO (not a row): what is NOT changed, recorded so the report can cite a command ---------------------------------

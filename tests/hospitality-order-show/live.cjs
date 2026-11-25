@@ -14,7 +14,9 @@
  *   line             L3 / L8   a quantity changed: only the line request
  *   comment          L4 / L8   the comment changed: one order PUT with comment + changelog_comment and nothing else
  *   change           L5   a different slot chosen: the slot and its application are sent, the DB follows
- *   clear            L6   the time placeholder chosen (after a slot, where the list starts on the placeholder): null is sent
+ *   clear            L6   (205 on its STORED date, 207) the list opens on the stored slot; the time placeholder chosen: null is sent
+ *   placeholderback  L6d  (205) the 7th, a slot, the placeholder: the warning, nothing sent (task 49934, fact 49917)
+ *                    L6c  (206) a slot, the placeholder: nothing sent, «no changes» (the stored time is in no list, fact 49918)
  *   timethendate     L7   (205) date, a time, then ANOTHER date: nothing sent, the warning
  *   datenotime       D2   (205) a date with no preselected slot, no time: the warning, nothing sent
  *   datepreselect    D2p  (205) the stored date re-picked, the stored slot preselected and not chosen: the warning, nothing sent
@@ -47,7 +49,7 @@ const WIDTHS = opt('widths', '1280,375').split(',').map(Number);
 const PATCH = opt('patch', null);
 const OUT = opt('out', null);
 const EXPECT = opt('expect', 'fix');   // what the SERVED page must inline when there is no --patch: 'fix' (this checkout's file, the window) or 'base' (the negative control)
-const BASE_SHA = process.env.HM_BASE_SHA || '7891c67b6';
+const BASE_SHA = process.env.HM_BASE_SHA || '5cafce39d';   // the tree before task 49934's change (the follow-up's base; was 7891c67b6 for 49777)
 const JS_REL = 'src/modules/booking/html/base/hospitality/order_show/order_show.js';
 const EXE = process.env.CHROMIUM_EXE || process.env.HOME + '/Library/Caches/ms-playwright/chromium-1248/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing';
 
@@ -57,12 +59,12 @@ const FIXTURE = {
   206: { shape: 'C', app: 84278, time: '2026-11-03 11:00:00', tag: 'T49718-C-1-date-stored-outside' },
   207: { shape: 'S', app: 85166, time: '2026-12-11 11:30:00', tag: 'T49718-S-1-date-slot-matches' },
 };
-const ALL_ARMS = ['load', 'edit', 'nochange', 'line', 'comment', 'change', 'clear', 'timethendate', 'datenotime', 'datepreselect'];
+const ALL_ARMS = ['load', 'edit', 'nochange', 'line', 'comment', 'change', 'clear', 'timethendate', 'datenotime', 'datepreselect', 'placeholderback'];
 const ARMS = opt('arms', ALL_ARMS.join(',')).split(',');
 const APPLIES = { // which arms a shape offers; the others print N/A with the reason
   A: ['load', 'edit', 'nochange', 'line', 'comment'],
   B: ALL_ARMS,
-  C: ['load', 'edit', 'nochange', 'line', 'comment', 'change', 'clear'],
+  C: ['load', 'edit', 'nochange', 'line', 'comment', 'change', 'placeholderback'],   // no 'clear': the stored time is in no list (49918)
   S: ['load', 'edit', 'nochange', 'line', 'comment', 'change', 'clear'],
 };
 const NA_WHY = { A: 'the date select offers no date: the page cannot pick or change a serving time on this shape (D4, recorded)', C: 'one date, disabled: the date cannot be changed', S: 'one date, disabled: the date cannot be changed' };
@@ -133,15 +135,22 @@ async function runArm(browser, ctx, width, id, arm) {
     const d = page.locator('[data-edit-date]'); const t = page.locator('[data-edit-time]');
     const firstSlotNot = (cur) => t.evaluate((s, cur) => Array.from(s.options).findIndex((o) => o.value !== '' && o.value !== cur), cur);
     if (arm === 'change' || arm === 'clear') {
-      if (await d.isEnabled()) await d.selectOption({ index: 1 });                       // B: its first date
+      if (await d.isEnabled()) await d.selectOption({ index: 1 });                       // B: its first date, the stored one
       if (arm === 'change') {
         const idx = await firstSlotNot(await t.inputValue());
         await t.selectOption({ index: idx });
         out.chosen_time = await t.inputValue();
       } else {
-        if ((await t.inputValue()) === '') await t.selectOption({ index: await firstSlotNot('') });   // an officer cannot choose the placeholder it is already on
+        out.time_before_clear = await t.inputValue();                                    // the list must open on the stored slot, or this is no clear (task 49934)
         await t.selectOption('');
       }
+    } else if (arm === 'placeholderback') {
+      if (await d.isEnabled()) await d.selectOption({ index: 2 });                       // B: the 7th, which does not hold the stored time; C: its only date is preselected
+      out.time_after_date = await t.inputValue();
+      await t.selectOption({ index: await firstSlotNot('') });                           // a slot (an officer cannot choose the placeholder the list is already on)
+      out.chosen_time = await t.inputValue();
+      await t.selectOption('');
+      out.time_after_placeholder = await t.inputValue();
     } else if (arm === 'timethendate') {
       await d.selectOption({ index: 1 }); await t.selectOption({ index: 2 }); await d.selectOption({ index: 2 });
       out.time_after_date_change = await t.inputValue();
@@ -173,6 +182,7 @@ async function runArm(browser, ctx, width, id, arm) {
 function rowOf(id, arm) {
   if (arm === 'load' || arm === 'edit') return 'L1';
   if (id === 207 && ['nochange', 'line', 'comment'].includes(arm)) return 'L8';
+  if (arm === 'placeholderback') return FIXTURE[id].shape === 'C' ? 'L6c' : 'L6d';
   return { nochange: 'L2', line: 'L3', comment: 'L4', change: 'L5', clear: 'L6', timethendate: 'L7', datenotime: 'D2', datepreselect: 'D2p' }[arm];
 }
 
@@ -186,16 +196,20 @@ function expectations(o) {
   if (o.arm === 'load') { if (!same) p.push('the DB changed on a load'); return p; }
   if (o.after_edit_non_get !== 0) p.push(`the edit toggle wrote ${o.after_edit_non_get} request(s)`);
   if (o.arm === 'edit') { if (!same) p.push('the DB changed on the edit toggle'); return p; }
-  if (['nochange', 'timethendate', 'datenotime', 'datepreselect'].includes(o.arm)) {
+  if (['nochange', 'timethendate', 'datenotime', 'datepreselect', 'placeholderback'].includes(o.arm)) {
     if (!none) p.push(`requests were sent: ${JSON.stringify(o.save_requests)}`);
     if (!same) p.push(`serving time/application changed in the DB: ${o.db_before.serving}/${o.db_before.app} → ${o.db_after.serving}/${o.db_after.app}`);
     if (o.db_after.modified !== o.db_before.modified) p.push('`modified` was bumped');
     if (o.comment_dialog_shown) p.push('the changelog-comment dialog was asked for');
-    if (o.arm === 'nochange') { if (!((o.toasts || []).length === 1 && o.toasts[0].text === NO_CHANGES)) p.push(`expected the «${NO_CHANGES}» toast, got ${JSON.stringify(o.toasts)}`); }
+    if (o.arm === 'nochange' || (o.arm === 'placeholderback' && o.shape === 'C')) { if (!((o.toasts || []).length === 1 && o.toasts[0].text === NO_CHANGES)) p.push(`expected the «${NO_CHANGES}» toast, got ${JSON.stringify(o.toasts)}`); }
     else if (!warn) p.push(`expected exactly the «${SELECT_TIME}» warning toast, got ${JSON.stringify(o.toasts)}`);
     if (o.arm === 'datepreselect' && !(o.time_after_date && o.time_after_date !== '')) p.push('premise: the stored slot was not preselected after the date was re-picked');
     if (o.arm === 'datenotime' && o.time_after_date !== '') p.push('premise: a slot was preselected, so this is not the no-slot arm');
     if (o.arm === 'timethendate' && o.time_after_date_change !== '') p.push('premise: the time list was not rebuilt on the placeholder by the date change');
+    if (o.arm === 'placeholderback') {
+      if (o.time_after_date !== '' && o.time_after_date !== undefined && o.shape === 'B') p.push('premise: a slot was preselected after the date, so the stored time is in this list');
+      if (o.time_after_placeholder !== '') p.push('premise: the placeholder was not chosen');
+    }
     return p;
   }
   if (o.arm === 'line') {
@@ -220,6 +234,7 @@ function expectations(o) {
   }
   if (o.arm === 'clear') {
     const b = o.save_requests.length === 1 ? body(o.save_requests[0]) : null;
+    if (o.time_before_clear === '') p.push('premise: the list did not open on the stored slot, so this is not a clear');
     if (!b || b.serving_time_iso !== null || !('serving_time_iso' in b)) p.push(`expected one order PUT with serving_time_iso null, got ${JSON.stringify(o.save_requests)}`);
     if (o.db_after.serving !== 'NULL') p.push(`the DB serving time is ${o.db_after.serving}, expected NULL`);
     return p;

@@ -1,0 +1,54 @@
+.config-form table:not(table table)
+{
+	width: 100%;
+	table-layout: fixed;
+}
+
+.config-form th,
+.config-form td
+{
+	overflow-wrap: anywhere;
+}
+
+.config-form input,
+.config-form select,
+.config-form textarea
+{
+	box-sizing: border-box;
+	max-width: 100%;
+}
+
+.config-form .button_group
+{
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: center;
+	gap: 0.5rem;
+	margin-top: 1rem;
+}
+
+@media screen and (max-width: 47.99em)
+{
+	/* Stack only the settings table, preserving nested control tables. */
+	.config-form table:not(table table),
+	.config-form table:not(table table) > :is(thead, tbody, tfoot),
+	.config-form table:not(table table) > :is(thead, tbody, tfoot) > tr,
+	.config-form table:not(table table) > :is(thead, tbody, tfoot) > tr > :is(th, td)
+	{
+		display: block;
+		width: 100%;
+		box-sizing: border-box;
+	}
+
+	.config-form table:not(table table) > tbody > tr > td:first-child:not([colspan])
+	{
+		padding-bottom: 0.25rem;
+		font-weight: bold;
+	}
+
+	.config-form table:not(table table) > tbody > tr > td + td
+	{
+		border-top: 0;
+		border-left: 0;
+	}
+}

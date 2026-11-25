@@ -6,6 +6,7 @@ use App\modules\phpgwapi\services\Log;
 use App\modules\phpgwapi\services\Cache;
 use App\Database\Db;
 use App\modules\booking\helpers\CommentParts;
+use App\modules\booking\helpers\EventFormFallback;
 
 phpgw::import_class('booking.uicommon');
 
@@ -337,6 +338,21 @@ class booking_uievent extends booking_uicommon
 		$entity = $this->extract_form_data($defaults);
 		$errors = $this->validate($entity);
 		return array($entity, $errors);
+	}
+
+	/**
+	 * The edit form shows the application's participants and audience when the event has none (#1498).
+	 * Display only: the caller runs this on a GET, and a POST is validated against the event's own rows.
+	 */
+	protected function fill_form_from_application(array &$event)
+	{
+		if (empty($event['application_id']) || (!empty($event['agegroups']) && !empty($event['audience'])))
+		{
+			return;
+		}
+
+		$application = CreateObject('booking.boapplication')->read_single((int)$event['application_id']);
+		$event = array_merge($event, EventFormFallback::fillFor($event, $application ?: array()));
 	}
 
 	protected function add_comment(&$event, $comment, $type = 'comment')
@@ -1172,6 +1188,11 @@ class booking_uievent extends booking_uicommon
 			phpgw::no_access('booking', lang('missing entry. Id %1 is invalid', $id));
 		}
 
+		if ($_SERVER['REQUEST_METHOD'] !== 'POST')
+		{
+			$this->fill_form_from_application($event);
+		}
+
 		$resource_participant_limit_gross = CreateObject('booking.soresource')->get_participant_limit($event['resources'], true);
 		$resource_participant_limit = 0;
 		if (!empty($resource_participant_limit_gross['results'][0]['quantity']) && $resource_participant_limit_gross['results'][0]['quantity'] > 0)
@@ -1221,10 +1242,15 @@ class booking_uievent extends booking_uicommon
 			$customer['customer_organization_name'] = $event['customer_organization_name'];
 			$customer['customer_organization_id'] = $event['customer_organization_id'];
 			$organization = $this->organization_bo->read_single($event['customer_organization_id']);
-			$customer['customer_identifier_type'] = 'organization_number';
-			$customer['customer_ssn'] = $organization['customer_internal'];
-			$customer['customer_organization_number'] = $organization['organization_number'];
-			$customer['customer_internal'] = $organization['customer_internal'];
+			// Nothing is stored: suggest the organisation's own number, if it has one. Without a number there is
+			// nothing to suggest, and «Organisasjonsnummer» with an empty field is not what was stored.
+			if (!empty($organization['organization_number']))
+			{
+				$customer['customer_identifier_type'] = 'organization_number';
+				$customer['customer_ssn'] = $organization['customer_internal'];
+				$customer['customer_organization_number'] = $organization['organization_number'];
+				$customer['customer_internal'] = $organization['customer_internal'];
+			}
 		}
 
 		if ($_SERVER['REQUEST_METHOD'] == 'POST')
@@ -1329,12 +1355,14 @@ class booking_uievent extends booking_uicommon
 					}
 				}
 			}
-			elseif ($_POST['customer_identifier_type'] == 'ssn')
+			// The type extract_customer_identifier() resolved, not the one posted: a type posted with no number
+			// is no invoice information, and storing it would put a type on the event with an empty number.
+			elseif ($event['customer_identifier_type'] == 'ssn')
 			{
 				$event['customer_identifier_type'] = 'ssn';
 				$event['customer_ssn'] = Sanitizer::get_var('customer_ssn');
 			}
-			elseif ($_POST['customer_identifier_type'] == 'organization_number')
+			elseif ($event['customer_identifier_type'] == 'organization_number')
 			{
 				$event['customer_identifier_type'] = 'organization_number';
 				$event['customer_organization_number'] = Sanitizer::get_var('customer_organization_number', 'string', 'POST');
@@ -1723,7 +1751,7 @@ class booking_uievent extends booking_uicommon
 			$errors['booking'] = lang('Overlaps with existing booking %1. Remember to send a notification', " #" . implode(', #', $errors['booking'][0]));
 		}
 		$this->flash_form_errors($errors);
-		if ($customer['customer_identifier_type'])
+		if (!empty($customer['customer_identifier_type']))
 		{
 			$event['customer_identifier_type'] = $customer['customer_identifier_type'];
 			$event['customer_ssn'] = $customer['customer_ssn'];

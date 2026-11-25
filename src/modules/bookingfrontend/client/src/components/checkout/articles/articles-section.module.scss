@@ -11,9 +11,23 @@
     margin-bottom: 1rem;
 }
 
-// Application title row grouping its article lines
+// One body per application (#1502): fewer lines and more air between the applications. A line only under its
+// title row and under its last line, none between the lines of one application, and room above and below them.
+.group > tr:not(:first-child):not(:last-child) > td {
+    border-bottom-color: transparent;
+}
+
+.group > tr:nth-child(2) > td {
+    padding-top: var(--ds-size-4);
+}
+
+.group > tr:last-child:not(:first-child) > td {
+    padding-bottom: var(--ds-size-4);
+}
+
+// Application title row grouping its article lines: tinted, as the design's group rows
 .groupRow td {
-    background: var(--ds-color-neutral-surface-default);
+    background: var(--ds-color-accent-surface-tinted);
     font-weight: var(--ds-font-weight-semibold);
 }
 

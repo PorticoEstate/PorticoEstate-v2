@@ -3,6 +3,7 @@ namespace App\modules\bookingfrontend\repositories;
 
 use PDO;
 use App\Database\Db;
+use App\helpers\OwnerIdentifier;
 use App\modules\bookingfrontend\models\Event;
 use App\modules\bookingfrontend\models\Resource;
 
@@ -73,24 +74,41 @@ class EventRepository
         return json_decode($stmt->fetch()['event_resources']);
     }
 
-    public function deleteResources(array $resourceIds)
+    /**
+     * Unlink the given resources from this event only; the same resources stay linked to every other event.
+     */
+    public function deleteResources(int $eventId, array $resourceIds)
     {
-        $deleteSql =
-        "DELETE FROM bb_event_resource
-        WHERE resource_id IN (" . implode(', ', $resourceIds) . ")";
-        $insertStmt = $this->db->prepare($deleteSql);
-        $insertStmt->execute();
+        if (!$resourceIds) {
+            return;
+        }
+        $params = [':event_id' => $eventId];
+        $placeholders = [];
+        foreach (array_values($resourceIds) as $i => $resourceId) {
+            $placeholders[] = ":resource_id_{$i}";
+            $params[":resource_id_{$i}"] = (int)$resourceId;
+        }
+        $deleteSql = "DELETE FROM bb_event_resource"
+            . " WHERE event_id = :event_id"
+            . " AND resource_id IN (" . implode(', ', $placeholders) . ")";
+        $deleteStmt = $this->db->prepare($deleteSql);
+        $deleteStmt->execute($params);
     }
 
-    public function insertResources(int $id, array $resourceIds)
+    /**
+     * Link the given resources to this event, as bound integers.
+     */
+    public function insertResources(int $eventId, array $resourceIds)
     {
-        $insertSql = "INSERT INTO bb_event_resource (event_id, resource_id) VALUES ";
-        $insertSql .= implode(', ', array_map(function($value) {
-            return "($value[id], $value[resourceId])";
-        }, $resourceIds));
-
-        $insertStmt = $this->db->prepare($insertSql);
-        $insertStmt->execute();
+        if (!$resourceIds) {
+            return;
+        }
+        $insertStmt = $this->db->prepare(
+            "INSERT INTO bb_event_resource (event_id, resource_id) VALUES (:event_id, :resource_id)"
+        );
+        foreach ($resourceIds as $resourceId) {
+            $insertStmt->execute([':event_id' => $eventId, ':resource_id' => (int)$resourceId]);
+        }
     }
 
     public function currentParticipants(int $id, $registeredIn = false): int
@@ -113,18 +131,31 @@ class EventRepository
         return $data['cnt'] ? $data['cnt'] : 0;
     }
 
+    /**
+     * The latest registration for this event whose stored phone ends with $phone (so 99999999 finds +4799999999).
+     * The phone is bound, and only matches itself: LIKE's wildcards in it are escaped.
+     */
     public function findRegistration(int $id, string $phone)
     {
         $sql = "SELECT id, email, from_, to_, quantity"
         . " FROM bb_participant"
         . " WHERE reservation_type='event'"
         . " AND reservation_id=:id"
-        . " AND phone LIKE '%{$phone}'"
+        . " AND phone LIKE :phone ESCAPE '\\'"
         . " ORDER BY id DESC";
 
         $stmt = $this->db->prepare($sql);
-        $stmt->execute(['id' => $id]);
+        $stmt->execute(['id' => $id, 'phone' => '%' . $this->likeLiteral($phone)]);
         return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * $value with LIKE's wildcards (% and _) and the escape character (\) escaped, so that in a pattern it matches
+     * only itself. The statements using it say ESCAPE '\'.
+     */
+    private function likeLiteral(string $value): string
+    {
+        return addcslashes($value, '\\%_');
     }
 
     public function updateDates($id, $data)
@@ -190,11 +221,11 @@ class EventRepository
         $sql = "UPDATE bb_participant SET $fieldName=:$fieldName"
         . " WHERE reservation_type='event'"
         . " AND reservation_id=:eventId"
-        . " AND phone LIKE :phone";
+        . " AND phone LIKE :phone ESCAPE '\\'";
         $stmt = $this->db->prepare($sql);
         $stmt->execute([
             'eventId' => $id,
-            'phone' => $phone,
+            'phone' => $this->likeLiteral($phone),
             $fieldName =>  $value
         ]);
     }
@@ -365,17 +396,24 @@ class EventRepository
 			$params[':facility_type_id'] = $facilityTypeId;
 		}
 		
-		// Handle visibility and logged-in filtering exactly like the original
+		// Handle visibility and logged-in filtering exactly like the original. The user's own events are the ones stored
+		// with their organisation number, and only a number that names one organisation has any: the '000000000' every
+		// citizen without an organisation logs in with names nobody's (OwnerIdentifier).
+		$ownOrgNumber = $loggedInAs && OwnerIdentifier::identifiesOrganization($loggedInAs) ? $loggedInAs : null;
 		if ($filterByOrganization && $loggedInAs) {
 			// Only show user's own events if explicitly filtering by organization only
-			$conditions[] = "bb_event.customer_organization_number = :logged_in_org";
-			$params[':logged_in_org'] = $loggedInAs;
-		} else if ($loggedInAs) {
+			if ($ownOrgNumber === null) {
+				$conditions[] = "1 = 0";
+			} else {
+				$conditions[] = "bb_event.customer_organization_number = :logged_in_org";
+				$params[':logged_in_org'] = $ownOrgNumber;
+			}
+		} else if ($ownOrgNumber !== null) {
 			// Show public events AND user's own events (most common case)
 			$conditions[] = "(bb_event.include_in_list = 1 OR bb_event.customer_organization_number = :logged_in_org)";
-			$params[':logged_in_org'] = $loggedInAs;
+			$params[':logged_in_org'] = $ownOrgNumber;
 		} else {
-			// Not logged in, only show public events
+			// Not logged in, or logged in with a number that names no organisation: only show public events
 			$conditions[] = "bb_event.include_in_list = 1";
 		}
 		

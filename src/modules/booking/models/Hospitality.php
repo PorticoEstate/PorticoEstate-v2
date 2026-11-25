@@ -19,6 +19,35 @@ class Hospitality
     use SerializableTrait;
 
     /**
+     * The offer's description is shown in the citizen's «Legg til bevertning» dialog, so it is kept short (#1502).
+     */
+    public const DESCRIPTION_MAX_LENGTH = 70;
+
+    /**
+     * Is this description too long to store? Counted in Unicode code points, the unit the admin counter
+     * counts in too, so «æøå» counts 3 and an emoji 1 (strlen would count bytes). The string is counted as
+     * it will be stored, not trimmed. NULL and '' are allowed.
+     *
+     * @param mixed $description
+     */
+    public static function descriptionTooLong($description): bool
+    {
+        return is_string($description) && mb_strlen($description, 'UTF-8') > self::DESCRIPTION_MAX_LENGTH;
+    }
+
+    /**
+     * Is this description present but not text (an array, a number, a boolean)? Such a value cannot be stored as a
+     * description, so it is refused rather than handed to the repository. NULL is allowed: it clears the field
+     * (operator ruling, 47045 (c)).
+     *
+     * @param mixed $description
+     */
+    public static function descriptionNotText($description): bool
+    {
+        return $description !== null && !is_string($description);
+    }
+
+    /**
      * @OA\Property(type="integer")
      * @Expose
      */
@@ -130,6 +159,30 @@ class Hospitality
      * @Expose
      */
     public $resource_name;
+
+    /**
+     * The building the main resource sits in (the lowest building id when it is in several), so the admin UI
+     * can open the main-resource picker on it. Null when the resource is in no building, and on the list.
+     *
+     * @OA\Property(type="integer", nullable=true)
+     * @Expose
+     */
+    public $resource_building_id;
+
+    /**
+     * @OA\Property(type="string", nullable=true)
+     * @Expose
+     */
+    public $resource_building_name;
+
+    /**
+     * True when this hospitality is active and its own resource has direct booking: an existing
+     * conflict the admin UI warns about. Filled by the controller on read (show, update); null elsewhere.
+     *
+     * @OA\Property(type="boolean", nullable=true)
+     * @Expose
+     */
+    public $direct_booking_conflict;
 
     /**
      * @OA\Property(type="integer", nullable=true)

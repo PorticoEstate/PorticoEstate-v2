@@ -190,7 +190,7 @@
 				}
 			}
 
-			if ($values[$id_name] && $this->location_info['id']['type'] == 'int' && !ctype_digit($values[$id_name]))
+			if ($values[$id_name] && $this->location_info['id']['type'] == 'int' && !preg_match('/^-?[0-9]+$/', $values[$id_name]))
 			{
 				$this->receipt['error'][] = array('msg' => lang('Please enter an integer !'));
 				unset($values[$id_name]);

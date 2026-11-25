@@ -10,6 +10,9 @@ use App\modules\booking\models\Date;
 use App\modules\booking\models\Document;
 use App\modules\booking\models\Order;
 use App\modules\booking\repositories\ApplicationRepository;
+use App\modules\booking\repositories\HospitalityOrderRepository;
+use App\modules\booking\services\CateringChangeText;
+use App\modules\booking\services\TranslationLangSwitch;
 use App\modules\booking\services\ApplicationChangeRequestService;
 use App\modules\booking\services\ApplicationService;
 use App\modules\booking\services\DocumentService;
@@ -605,9 +608,33 @@ class ApplicationController
 		try {
 			$rows = $this->repo->fetchComments($id);
 			$comments = array_map(fn($row) => (new ApplicationComment($row))->serialize(), $rows);
-			return ResponseHelper::sendJSONResponse($comments, 200, $response);
+			return ResponseHelper::sendJSONResponse($this->withCateringHistory($id, $comments), 200, $response);
 		} catch (Exception $e) {
 			return ResponseHelper::sendErrorResponse(['error' => $e->getMessage()], 500);
+		}
+	}
+
+	/**
+	 * GH #1425 S4: one «Historikk» line per catering change the applicant made from Min side, read
+	 * from the orders' case entries and shown among the comments («Bevertning lagt til — Kantina,
+	 * 4. juni 2029 kl. 15:00. Endret av søker.»), in the officer's language.
+	 *
+	 * READ-SIDE only: nothing is written to bb_application_comment, so this stays on the officer's
+	 * page — that table is also listed on the applicant's legacy page and counted by
+	 * getCommentStats. Anything that goes wrong here leaves the comments as they were.
+	 */
+	private function withCateringHistory(int $applicationId, array $comments): array
+	{
+		try {
+			$rows = (new HospitalityOrderRepository())->getApplicantChangesByApplication($applicationId);
+			if ($rows === []) {
+				return $comments;
+			}
+			$lang = (new TranslationLangSwitch())->current();
+			return CateringChangeText::mergeHistory($comments, CateringChangeText::historyItems($rows, $lang));
+		} catch (\Throwable $e) {
+			error_log("Catering history left out of application {$applicationId}'s comments: " . $e->getMessage());
+			return $comments;
 		}
 	}
 

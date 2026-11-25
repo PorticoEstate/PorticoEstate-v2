@@ -23,11 +23,16 @@ class SmsRecipientImport
 		$recipients = [];
 		$invalidRows = [];
 		$lastRow = $sheet->getHighestDataRow();
+		$rowDimensions = $sheet->getRowDimensions();
 
 		try
 		{
 			for ($row = 2; $row <= $lastRow; $row++)
 			{
+				if (isset($rowDimensions[$row]) && !$rowDimensions[$row]->getVisible())
+				{
+					continue;
+				}
 				$parts = [];
 				for ($column = 1; $column <= 3; $column++)
 				{
@@ -61,7 +66,7 @@ class SmsRecipientImport
 
 		if (!$recipients && !$invalidRows)
 		{
-			throw new RuntimeException('No recipients found after the header row.');
+			throw new RuntimeException('No visible recipients found after the header row.');
 		}
 		return ['recipients' => $recipients, 'invalid_rows' => $invalidRows];
 	}

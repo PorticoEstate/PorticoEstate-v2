@@ -12,6 +12,20 @@
 	var alertSuccess = document.getElementById('alert-success');
 	var alertError = document.getElementById('alert-error');
 
+	var descError = document.getElementById('description-error');
+
+	// The description has a length limit (#1502). It counts what is sent: the trimmed text, as the payload trims.
+	var descCounter = CharCounter.attach(descInput, {
+		limit: CFG.descriptionMaxLength,
+		under: L.description_counter_under,
+		over: L.description_counter_over,
+		hint: L.description_max_hint,
+		value: function () { return descInput.value.trim(); }
+	});
+	descInput.addEventListener('input', function () {
+		if (!descCounter.exceeded()) descError.hidden = true;
+	});
+
 	var buildingContainer = document.getElementById('building-select');
 
 	// Init building selector
@@ -81,6 +95,12 @@
 		if (!resourceId) {
 			showAlert(alertError, L.select_resource);
 			resourceSelect.focus();
+			return;
+		}
+		if (descCounter.exceeded()) {
+			descError.textContent = L.description_too_long.replace('%1', String(CFG.descriptionMaxLength));
+			descError.hidden = false;
+			descInput.focus();
 			return;
 		}
 

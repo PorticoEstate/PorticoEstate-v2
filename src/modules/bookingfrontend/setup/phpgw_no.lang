@@ -1296,3 +1296,30 @@ booking_outside_horizon	bookingfrontend	no	Tidspunktet er utenfor tillatt bookin
 unauthorized	bookingfrontend	no	Du har ikke tilgang til dette
 hide price category	bookingfrontend	no	Skjul priskategori i den nye klienten
 hide price category note	bookingfrontend	no	Når aktiv vises ikke «Hvem søker du som?»-valget og bryteren «Velg pris per ressurs»; søkeren velger pris per ressurs. Endrer ikke priser eller lagrede data.
+hours_short	bookingfrontend	no	t
+hide price category note no choice	bookingfrontend	no	Når aktiv velger ikke søkeren pris: verken priskategori eller pris per ressurs vises, og hver ressurs faktureres med standardprisen, ellers prisen med nyeste dato, slik som før søkeren kunne velge. Har flere priser samme dato og ingen er standard, er det ikke bestemt hvilken som brukes, så merk én som standard. Søknader som alt er sendt beholder prisen; en tidsslotbooking som venter på prisvalg får denne prisen ved utsjekking.
+price_set_check_amount	bookingfrontend	no	Prisen er nå satt. Se over beløpet og send inn på nytt.
+no_hospitality_added	bookingfrontend	no	Ingen bevertning lagt til
+choose_billing_party	bookingfrontend	no	Hvem skal faktureres?
+billing_party_custom	bookingfrontend	no	Tilpasset
+billing_address	bookingfrontend	no	Fakturaadresse
+edit_billing_information	bookingfrontend	no	Rediger fakturainformasjon
+birth_number	bookingfrontend	no	Fødselsnummer
+recurring_billing_note	bookingfrontend	no	%1 er registrert på %2, og organisasjonen faktureres. Kontaktpersonen og adressen du velger nedenfor lagres på søknaden.
+catering_quantity_not_whole	bookingfrontend	no	Antall må være et helt tall på 1 eller mer.
+close calendar without season	bookingfrontend	no	Steng kalender når bygg mangler sesong
+close calendar without season note	bookingfrontend	no	Når aktiv vises bygg uten definert sesong som stengt
+allow old template	bookingfrontend	no	Tillat gammel mal
+allow old template note	bookingfrontend	no	Når aktiv kan brukere som har valgt den gamle malen bli værende på den. Når av tvinges de nye sidene for adresser som har en ny versjon.
+highlighted buildings	bookingfrontend	no	Utvalgte bygg
+comma separated building ids	bookingfrontend	no	Kommaseparerte bygg-ID-er
+develope mode	bookingfrontend	no	Utviklermodus
+bypass external login	bookingfrontend	no	Hopp over ekstern innlogging
+debug external logn	bookingfrontend	no	Feilsøk ekstern innlogging
+debug local login	bookingfrontend	no	Feilsøk lokal innlogging
+test person	bookingfrontend	no	Testperson
+support email address	bookingfrontend	no	Brukerstøtte e-post adresse
+cancellation_deadline_passed_orders	bookingfrontend	no	Gjelder bevertning:
+cancellation_deadline_info_order	bookingfrontend	no	Bevertning %1 kan avbestilles innen %2
+catering_amount_too_large	bookingfrontend	no	Beløpet for én av linjene er for stort.
+catering_order_total_too_large	bookingfrontend	no	Totalbeløpet for bestillingen er for stort.

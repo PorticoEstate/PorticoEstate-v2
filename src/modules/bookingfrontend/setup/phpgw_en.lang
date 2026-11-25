@@ -1295,3 +1295,30 @@ booking_outside_horizon	bookingfrontend	en	The time is outside the allowed booki
 unauthorized	bookingfrontend	en	You are not authorised to do this
 hide price category	bookingfrontend	en	Hide price category in the new client
 hide price category note	bookingfrontend	en	When enabled, the «Who are you applying as?» choice and the «Choose the price per resource» switch are not shown; the applicant chooses a price per resource. Prices and stored data are not changed.
+hours_short	bookingfrontend	en	h
+hide price category note no choice	bookingfrontend	en	When enabled, the applicant chooses no price: neither the price category nor a price per resource is shown, and each resource is billed at its default price, otherwise its most recently dated price, as before applicants could choose. If several prices share that date and none is the default, which one is used is not defined, so mark one as default. Applications already submitted keep their price; a time-slot booking still waiting for a price choice gets this price at checkout.
+price_set_check_amount	bookingfrontend	en	The price has now been set. Check the amount and submit again.
+no_hospitality_added	bookingfrontend	en	No catering added
+choose_billing_party	bookingfrontend	en	Who should be invoiced?
+billing_party_custom	bookingfrontend	en	Custom
+billing_address	bookingfrontend	en	Billing address
+edit_billing_information	bookingfrontend	en	Edit billing information
+birth_number	bookingfrontend	en	National identity number
+recurring_billing_note	bookingfrontend	en	%1 is registered to %2, and the organisation is invoiced. The contact person and address you choose below are saved on the application.
+catering_quantity_not_whole	bookingfrontend	en	The quantity must be a whole number of 1 or more.
+close calendar without season	bookingfrontend	en	Close calendar when building has no season
+close calendar without season note	bookingfrontend	en	When enabled, buildings without a defined season are shown as closed
+allow old template	bookingfrontend	en	Allow old template
+allow old template note	bookingfrontend	en	When enabled, users who selected the old template stay on it. When disabled, the new pages are forced for paths that have a new version.
+highlighted buildings	bookingfrontend	en	Highlighted buildings
+comma separated building ids	bookingfrontend	en	Comma-separated building IDs
+develope mode	bookingfrontend	en	Developer mode
+bypass external login	bookingfrontend	en	Bypass external login
+debug external logn	bookingfrontend	en	Debug external login
+debug local login	bookingfrontend	en	Debug local login
+test person	bookingfrontend	en	Test person
+support email address	bookingfrontend	en	Support email address
+cancellation_deadline_passed_orders	bookingfrontend	en	Applies to:
+cancellation_deadline_info_order	bookingfrontend	en	The order on %1 can be cancelled until %2
+catering_amount_too_large	bookingfrontend	en	The amount for one of the lines is too large.
+catering_order_total_too_large	bookingfrontend	en	The order total is too large.

@@ -33,7 +33,7 @@ class BuildingSelect {
         this.selectedId = options.value || parseInt(container.dataset.value, 10) || null;
         this.selectedName = options.displayValue || container.dataset.display || '';
         this.isOpen = false;
-        this.loading = false;
+        this.loadingPromise = null; // the one request for the list, shared by every caller
 
         // Store bound handlers for proper cleanup
         this._boundOnFocus = this._onFocus.bind(this);
@@ -122,31 +122,32 @@ class BuildingSelect {
     }
 
     _fetchBuildings() {
-        if (this.loading) return Promise.resolve();
-        this.loading = true;
+        // A caller that arrives while the request is in flight gets the SAME promise, so its .then runs once
+        // this.buildings is set (it used to get an already-resolved one and filtered a null list).
+        if (this.loadingPromise) return this.loadingPromise;
 
-        return fetch(this.apiUrl, { credentials: 'same-origin' })
+        this.loadingPromise = fetch(this.apiUrl, { credentials: 'same-origin' })
             .then(function (r) {
                 if (!r.ok) throw new Error('HTTP ' + r.status);
                 return r.json();
             })
             .then(function (data) {
                 this.buildings = data;
-                this.loading = false;
             }.bind(this))
             .catch(function (err) {
                 console.error('BuildingSelect: failed to fetch buildings', err);
                 this.buildings = [];
-                this.loading = false;
             }.bind(this));
+        return this.loadingPromise;
     }
 
     _filter() {
         var query = this.input.value.toLowerCase().trim();
+        var buildings = this.buildings || []; // not loaded yet: nothing to list, never a throw
         if (!query) {
-            this.filtered = this.buildings.slice();
+            this.filtered = buildings.slice();
         } else {
-            this.filtered = this.buildings.filter(function (b) {
+            this.filtered = buildings.filter(function (b) {
                 return b.name.toLowerCase().indexOf(query) !== -1;
             });
         }
@@ -160,7 +161,7 @@ class BuildingSelect {
         if (this.filtered.length === 0) {
             var empty = document.createElement('li');
             empty.className = 'building-select__empty';
-            empty.textContent = 'Ingen treff';
+            empty.textContent = this.container.dataset.langNoResults || '';
             this.dropdown.appendChild(empty);
             return;
         }

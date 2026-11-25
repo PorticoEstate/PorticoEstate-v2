@@ -1270,7 +1270,11 @@ class booking_socompleted_reservation_export extends booking_socommon
 					$fakturalinje['pris']		 = str_pad($pris_inkl_mva * 100, 8, '0', STR_PAD_LEFT) . ' ';
 					$fakturalinje['grunnlag']	 = str_pad($order_line['quantity'] * 100, 9, '0', STR_PAD_LEFT); //'000000100'; // antall. De 2 siste posisjoner er desimaler.
 					$fakturalinje['belop']		 = str_pad(($order_line['amount'] + $order_line['tax']) * 100, 10, '0', STR_PAD_LEFT) . ' ';
-					$fakturalinje['mvakode']	 = str_pad($order_line['tax_code'], 3, ' ', STR_PAD_LEFT);
+					
+					if($order_line['tax_code'] >= 0)
+					{
+						$fakturalinje['mvakode']	 = str_pad($order_line['tax_code'], 3, ' ', STR_PAD_LEFT);
+					}
 
 					#				$fakturalinje['saksnr'] = ;
 
@@ -3572,7 +3576,10 @@ public function format_agresso_55(array &$reservations, array $account_codes, $s
 					$_item['art_descr']	 = str_pad(substr(iconv("utf-8", "ISO-8859-1//TRANSLIT", $order_line['name']), 0, 255), 255, ' ');
 					$_item['article']	 = str_pad(substr(strtoupper($_article_code), 0, 25), 25, ' ');
 					$_item['amount']	 = $this->format_cost_55(($order_line['amount']));
-					$_item['tax_code']	 = str_pad($order_line['tax_code'], 25, ' ', STR_PAD_LEFT);
+					if($order_line['tax_code'] >= 0)
+					{
+						$_item['tax_code']	 = str_pad($order_line['tax_code'], 25, ' ', STR_PAD_LEFT);
+					}
 					$_item['value_1']	 = str_pad($order_line['quantity'] * 100, 20, 0, STR_PAD_LEFT); //Units. Multiplied by 100.
 					$_item['line_no']	 = str_pad($line_no, 4, 0, STR_PAD_LEFT);
 
@@ -3746,7 +3753,11 @@ public function format_agresso_55(array &$reservations, array $account_codes, $s
 					$_item['art_descr']	 = str_pad(substr(iconv("utf-8", "ISO-8859-1//TRANSLIT", $order_line['name']), 0, 255), 255, ' ');
 					$_item['article']	 = str_pad(substr(strtoupper($_article_code), 0, 25), 25, ' ');
 					$_item['amount']	 = $this->format_cost_55(($order_line['amount']));
-					$_item['tax_code']	 = str_pad($order_line['tax_code'], 25, ' ', STR_PAD_LEFT);
+					if($order_line['tax_code'] >= 0)
+					{
+						$_item['tax_code']	 = str_pad($order_line['tax_code'], 25, ' ', STR_PAD_LEFT);
+					}
+					// $_item['tax_code']	 = str_pad($order_line['tax_code'], 25, ' ', STR_PAD_LEFT);
 					$_item['value_1']	 = str_pad($order_line['quantity'] * 100, 20, 0, STR_PAD_LEFT); //Units. Multiplied by 100.
 					$_item['line_no']	 = str_pad($line_no, 4, 0, STR_PAD_LEFT);
 

@@ -60,32 +60,72 @@
 
 			$sql = "SELECT id"
 				. " FROM bb_participant"
-				. " WHERE reservation_type='{$entity['reservation_type']}'"
-				. " AND reservation_id=" . (int) $entity['reservation_id']
-				. " AND phone='{$entity['phone']}' {$filter}";
+				. " WHERE reservation_type = :reservation_type"
+				. " AND reservation_id = :reservation_id"
+				. " AND phone = :phone{$filter}";
 
-			$this->db->query($sql, __LINE__, __FILE__);
-			if ($this->db->next_record())
+			$statement = $this->db->prepare($sql);
+			$statement->execute(array(
+				'reservation_type'	 => (string)$entity['reservation_type'],
+				'reservation_id'	 => (int)$entity['reservation_id'],
+				'phone'				 => (string)$entity['phone']
+			));
+			if ($statement->fetch(PDO::FETCH_ASSOC))
 			{
 				$errors['phone'] = lang('Phone is already registered');
 			}
 		}
 
+		/**
+		 * The latest registration of a number for a reservation: the one the public registration page
+		 * (bookingfrontend.uiparticipant.add) checks in or out instead of adding a new one.
+		 *
+		 * It is the same number when phone_key() of the stored phone equals phone_key($phone), so 91234567,
+		 * +4791234567 and 0047 91234567 find each other. Part of a number, or a phone with no digits, finds
+		 * nothing: this used to be "the stored phone ends with $phone", with $phone in the SQL text, so '%', '_'
+		 * or a last digit found somebody else's registration, and the page then wrote over it.
+		 *
+		 * @param string $reservation_type
+		 * @param int $reservation_id
+		 * @param string $phone as the page got it
+		 * @param string $register_type register_pre, register_in or register_out
+		 * @return array 'id' (empty when there is no registration to update), and that registration's
+		 *	'phone' as stored, 'email', 'quantity', 'from_' and 'to_' ('' when there is none)
+		 */
 		function get_previous_registration($reservation_type, $reservation_id, $phone, $register_type)
 		{
-			$sql = "SELECT id, email, from_, to_, quantity"
-				. " FROM bb_participant"
-				. " WHERE reservation_type='{$reservation_type}'"
-				. " AND reservation_id=" . (int) $reservation_id
-				. " AND phone LIKE '%{$phone}'"
-				. " ORDER BY id DESC";
-			$this->db->query($sql, __LINE__, __FILE__);
-			$this->db->next_record();
+			$registration = array('id' => '', 'phone' => '', 'email' => '', 'quantity' => '', 'from_' => '', 'to_' => '');
 
-			$id			 = $this->db->f('id');
-			$to_		 = $this->db->f('to_');
-			$from_		 = $this->db->f('from_');
-			$quantity	 = $this->db->f('quantity');
+			$key = is_string($phone) ? self::phone_key($phone) : '';
+			if ($key !== '')
+			{
+				$sql = "SELECT id, phone, email, from_, to_, quantity"
+					. " FROM bb_participant"
+					. " WHERE reservation_type = :reservation_type"
+					. " AND reservation_id = :reservation_id"
+					. " ORDER BY id DESC";
+				$statement = $this->db->prepare($sql);
+				$statement->execute(array(
+					'reservation_type'	 => (string)$reservation_type,
+					'reservation_id'	 => (int)$reservation_id
+				));
+				while ($row = $statement->fetch(PDO::FETCH_ASSOC))
+				{
+					if (self::phone_key((string)$row['phone']) === $key)
+					{
+						foreach (array_keys($registration) as $field)
+						{
+							$registration[$field] = isset($row[$field]) ? $row[$field] : '';
+						}
+						break;
+					}
+				}
+			}
+
+			$id			 = $registration['id'];
+			$to_		 = $registration['to_'];
+			$from_		 = $registration['from_'];
+			$quantity	 = $registration['quantity'];
 
 			/**
 			 * Re-entry to the event
@@ -112,7 +152,8 @@
 
 			return array(
 				'id'		 => $id,
-				'email'		 => $this->db->f('email'),
+				'phone'		 => $registration['phone'],
+				'email'		 => $registration['email'],
 				'quantity'	 => $quantity,
 				'from_'		 => $from_,
 				'to_'		 => $to_
@@ -135,12 +176,16 @@
 
 			$sql = "SELECT sum(quantity) as cnt"
 				. " FROM bb_participant"
-				. " WHERE reservation_type='{$reservation_type}'"
-				. " AND reservation_id=" . (int) $reservation_id
+				. " WHERE reservation_type = :reservation_type"
+				. " AND reservation_id = :reservation_id"
 				. " {$filtermethod}";
-			$this->db->query($sql, __LINE__, __FILE__);
-			$this->db->next_record();
-			return (int)$this->db->f('cnt');
+			$statement = $this->db->prepare($sql);
+			$statement->execute(array(
+				'reservation_type'	 => (string)$reservation_type,
+				'reservation_id'	 => (int)$reservation_id
+			));
+			$row = $statement->fetch(PDO::FETCH_ASSOC);
+			return (int)($row ? $row['cnt'] : 0);
 		}
 		
 		/**

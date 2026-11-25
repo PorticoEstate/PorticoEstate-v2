@@ -1,6 +1,7 @@
 {# Mail to the case officer when the applicant adds, changes or cancels a catering order (GH #1425).
    Every value arrives as decoded plain text and is escaped ONCE here by autoescape. Deliberately no
-   |safe_html and no |raw anywhere: comments and special requirements are written by the applicant. #}
+   |safe_html and no |raw anywhere: comments and special requirements are written by the applicant.
+   `log` is CateringChangeText's wording, the same lines as the order page's Endringslogg. #}
 <p>{{ intro }}{% if organization %} {{ organization }}{% endif %}</p>
 
 <p>
@@ -9,33 +10,20 @@
 {% if application.activity %}<b>{{ l.activity }}:</b> {{ application.activity }}<br />{% endif %}
 </p>
 
-{% if rows %}
-<table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse;border-color:#cccccc">
-  <thead>
-    <tr>
-      <th align="left">{{ l.field }}</th>
-      {% if kind == 'changed' %}
-      <th align="left">{{ l.from }}</th>
-      <th align="left">{{ l.to }}</th>
-      {% else %}
-      <th align="left">{{ l.value }}</th>
-      {% endif %}
-    </tr>
-  </thead>
-  <tbody>
-    {% for row in rows %}
-    <tr>
-      <td valign="top">{{ row.label }}</td>
-      {% if kind == 'changed' %}
-      <td valign="top">{{ row.from }}</td>
-      <td valign="top">{{ row.to }}</td>
-      {% else %}
-      <td valign="top">{{ row.value }}</td>
-      {% endif %}
-    </tr>
-    {% endfor %}
-  </tbody>
-</table>
+<p>
+<b>{{ log.heading }}</b>
+{% if log.context %}<br />{{ log.context }}{% endif %}
+</p>
+{% if log.lines %}
+<ul>
+  {% for line in log.lines %}
+  <li>{{ line }}</li>
+  {% endfor %}
+</ul>
+{% endif %}
+
+{% if deadline %}
+<p><b>{{ deadline }}</b></p>
 {% endif %}
 
 <p>

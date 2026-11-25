@@ -1,5 +1,5 @@
 <!-- BEGIN header -->
-<form method="post" action="{action_url}">
+<form method="post" action="{action_url}" class="pure-form config-form">
 	<table class="pure-table pure-table-bordered pure-table-striped pure-form">
 		<th>
 		<td colspan="2"><font color="{th_text}">&nbsp;<b>{title}</b></font></td>

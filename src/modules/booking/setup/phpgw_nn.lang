@@ -1365,3 +1365,54 @@ price_category_exists	booking	nn	Kategorien fanst frå før og er vald
 price_category_invalid	booking	nn	Skriv eit namn på inntil 100 teikn som ikkje berre er eit tal
 price_category_add_failed	booking	nn	Kategorien vart ikkje lagd til. Last sida på nytt og prøv igjen.
 price_category_unknown_not_saved	booking	nn	Den nye prisen vart ikkje lagra: kategorien finst ikkje
+hospitality_blocked_resource_has_direct_booking	booking	nn	Ressursen «%1» har direktebooking og kan ikkje koplast til bevertning. Direktebooking og bevertning kan ikkje brukast på same ressurs. Slå av direktebooking på ressursen først.
+direct_booking_blocked_resource_has_hospitality	booking	nn	Ressursen er kopla til bevertning (%1) og kan ikkje få direktebooking. Direktebooking og bevertning kan ikkje brukast på same ressurs. Fjern koplinga til bevertning først.
+direct_booking_conflict_warning_resource	booking	nn	Åtvaring. Denne ressursen har direktebooking og er samstundes kopla til bevertning (%1). Det er ikkje lenger tillate å bruke begge på same ressurs. Ingenting er endra. Slå av direktebooking eller fjern koplinga til bevertning.
+direct_booking_conflict_warning_hospitality	booking	nn	Åtvaring. Ressursane som er merkte «Har direktebooking» er kopla til denne bevertninga. Det er ikkje lenger tillate å bruke begge på same ressurs. Ingenting er endra. Slå av direktebooking på ressursen eller fjern koplinga her.
+resource_has_direct_booking_tag	booking	nn	Har direktebooking
+hospitality_description_counter_under	booking	nn	%1 teikn igjen
+hospitality_description_counter_over	booking	nn	%1 teikn for mykje
+hospitality_description_max_hint	booking	nn	Maks %1 teikn.
+hospitality_description_too_long	booking	nn	Beskrivinga kan ha maks %1 teikn.
+main_resource_edit_note	booking	nn	Avbestillingsfrist, kontaktinformasjon og opningstider for alle bestillingar blir henta frå hovudressursen og endrar seg når du byter han.
+main_resource_has_open_orders	booking	nn	Hovudressursen kan ikkje byttast så lenge det finst opne bestillingar som skal leverast til han (%1). Avlys dei eller set dei som leverte først.
+main_resource_is_remote_location	booking	nn	Ressursen «%1» er ein ekstern lokasjon for denne bevertninga og kan ikkje samtidig vere hovudressurs. Fjern han frå dei eksterne lokasjonane først.
+allocation_change_mail_subject_requested	booking	nn	Endra av søkjar: ønskjer nytt tidspunkt – %1, %2
+allocation_change_mail_subject_shortened	booking	nn	Endra av søkjar: tidspunkt forkorta – %1, %2
+allocation_change_mail_intro_requested	booking	nn	%1 bed om nytt tidspunkt for éin dato i søknaden. Tida er uendra til du godtek eller avslår.
+allocation_change_mail_intro_shortened	booking	nn	%1 har forkorta eitt tidspunkt i søknaden. Tida er allereie endra.
+allocation_change_mail_old_time	booking	nn	Tidlegare tid
+allocation_change_mail_new_time	booking	nn	Ny tid
+allocation_change_mail_resource	booking	nn	Ressurs
+allocation_change_mail_date	booking	nn	Dato
+allocation_change_mail_applicant_comment	booking	nn	Kommentar frå søkjar
+remote_location_is_main_resource	booking	nn	Ressursen «%1» er hovudressursen for denne bevertninga og kan ikkje samtidig vere ekstern lokasjon.
+remote_location_has_open_orders	booking	nn	Lokasjonen kan ikkje fjernast eller setjast inaktiv så lenge det finst opne bestillingar som skal leverast dit (%1). Avlys dei eller set dei som leverte først.
+hospitality_description_not_string	booking	nn	Skildringa må vere tekst.
+catering_log_added_by_applicant	booking	nn	Lagt til av søkjar
+catering_log_changed_by_applicant	booking	nn	Endra av søkjar
+catering_log_cancelled_by_applicant	booking	nn	Avbestilt av søkjar
+catering_log_at	booking	nn	%1 kl. %2
+catering_log_line	booking	nn	%1 %2 × %3 = %4
+catering_log_from_to	booking	nn	%1: %2 → %3
+catering_log_amount	booking	nn	%1 kr
+catering_log_incl_vat	booking	nn	inkl. mva
+catering_log_excl_vat	booking	nn	ekskl. mva
+catering_history_added	booking	nn	Bevertning lagd til — %1, %2. Endra av søkjar.
+catering_history_changed	booking	nn	Bevertning endra — %1, %2. Endra av søkjar.
+catering_history_cancelled	booking	nn	Bevertning avbestilt — %1, %2. Endra av søkjar.
+catering_history_tag	booking	nn	Bevertning
+catering_mail_cancel_deadline	booking	nn	Avbestillingsfrist: %1
+notify_case_officer_on_catering_change	booking	nn	Send e-post til sakshandsamar når søkjar endrar bevertning
+hospitality_order_quantity_not_whole	booking	nn	Antalet må vere eit heilt tal på 1 eller meir.
+main_resource_inactive	booking	nn	Ressursen «%1» er ikkje aktiv og kan ikkje veljast som hovudressurs.
+main_resource_not_in_active_building	booking	nn	Ressursen «%1» ligg ikkje i ein aktiv bygning og kan ikkje veljast som hovudressurs.
+deleteAssociationConfirm	booking	nn	Deaktivere denne koplinga?
+activateAssociationConfirm	booking	nn	Aktiver denne koplinga igjen?
+activate	booking	nn	Aktiver
+building_select_no_results	booking	nn	Ingen treff
+no_delivery_locations	booking	nn	Ingen tilgjengelege lokale for denne bevertninga
+opening_hours_unavailable	booking	nn	Kunne ikkje hente opningstidene – alle tider blir viste.
+hospitality_order_amount_too_large	booking	nn	Beløpet for éi av linjene er for stort.
+hospitality_order_total_too_large	booking	nn	Totalbeløpet for bestillinga er for stort.
+no_results	booking	nn	Ingen treff

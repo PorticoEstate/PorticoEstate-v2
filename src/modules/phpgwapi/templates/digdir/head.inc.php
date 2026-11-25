@@ -101,6 +101,7 @@ else
 $stylesheets = array();
 
 $stylesheets[] = "/phpgwapi/templates/pure/css/global.css";
+$stylesheets[] = "/phpgwapi/templates/pure/css/config.css";
 $stylesheets[] = "/phpgwapi/templates/pure/css/action-bar.css";
 $stylesheets[] = "/phpgwapi/templates/pure/css/version_3/pure-min.css";
 $stylesheets[] = "/phpgwapi/templates/pure/css/pure-extension.css";

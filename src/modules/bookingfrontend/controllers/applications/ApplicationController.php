@@ -1122,6 +1122,74 @@ class ApplicationController extends DocumentController
 
 
     /**
+     * @OA\Get(
+     *     path="/bookingfrontend/applications/{id}/documents",
+     *     summary="List the documents of an application",
+     *     description="Only for whoever may view the application, as GET /bookingfrontend/applications/{id}: with its secret, from the session of its partial, or as the logged-in applicant or a delegate of its organisation.",
+     *     tags={"Applications"},
+     *     @OA\Parameter(name="id", in="path", description="ID of the application", required=true, @OA\Schema(type="integer")),
+     *     @OA\Parameter(name="secret", in="query", description="The application's secret, for access without a login", required=false, @OA\Schema(type="string")),
+     *     @OA\Parameter(name="type", in="query", description="Document categories, comma-separated, or 'images'", required=false, @OA\Schema(type="string")),
+     *     @OA\Response(response=200, description="List of documents", @OA\JsonContent(type="array", @OA\Items(ref="#/components/schemas/Document"))),
+     *     @OA\Response(response=403, description="Unauthorized to view this application"),
+     *     @OA\Response(response=404, description="Application not found")
+     * )
+     */
+    public function getDocuments(Request $request, Response $response, array $args): Response
+    {
+        try {
+            $application = $this->applicationService->getApplicationById((int)$args['id']);
+        } catch (Exception $e) {
+            return ResponseHelper::sendErrorResponse(['error' => 'Error fetching documents'], 500);
+        }
+        if (!$application) {
+            return ResponseHelper::sendErrorResponse(['error' => 'Application not found'], 404);
+        }
+
+        if (!$this->applicationHelper->canViewApplication($application, $request)) {
+            return ResponseHelper::sendErrorResponse(['error' => 'Unauthorized to view this application'], 403);
+        }
+
+        return parent::getDocuments($request, $response, $args);
+    }
+
+    /**
+     * @OA\Get(
+     *     path="/bookingfrontend/applications/document/{id}/download",
+     *     summary="Download a document of an application",
+     *     description="Only for whoever may view the application the document belongs to, as GET /bookingfrontend/applications/{id}.",
+     *     tags={"Applications"},
+     *     @OA\Parameter(name="id", in="path", description="ID of the document", required=true, @OA\Schema(type="integer")),
+     *     @OA\Parameter(name="secret", in="query", description="The application's secret, for access without a login", required=false, @OA\Schema(type="string")),
+     *     @OA\Response(response=200, description="Document file"),
+     *     @OA\Response(response=403, description="Unauthorized to view this document"),
+     *     @OA\Response(response=404, description="Document, its application or its file not found")
+     * )
+     */
+    public function downloadDocument(Request $request, Response $response, array $args): Response
+    {
+        try {
+            $document = $this->documentService->getDocumentById((int)$args['id']);
+            $application = $document ? $this->applicationService->getApplicationById((int)$document->owner_id) : null;
+        } catch (Exception $e) {
+            return ResponseHelper::sendErrorResponse(['error' => 'Error downloading document'], 500);
+        }
+        if (!$document) {
+            return ResponseHelper::sendErrorResponse(['error' => 'Document not found'], 404);
+        }
+        if (!$application) {
+            return ResponseHelper::sendErrorResponse(['error' => 'Associated application not found'], 404);
+        }
+
+        if (!$this->applicationHelper->canViewApplication($application, $request)) {
+            return ResponseHelper::sendErrorResponse(['error' => 'Unauthorized to view this document'], 403);
+        }
+
+        return parent::downloadDocument($request, $response, $args);
+    }
+
+
+    /**
      * @OA\Post(
      *     path="/bookingfrontend/applications/{id}/documents",
      *     summary="Upload documents for an application",

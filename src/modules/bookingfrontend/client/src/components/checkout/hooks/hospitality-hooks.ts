@@ -8,6 +8,17 @@ import {
     UpdateHospitalityOrderRequest,
 } from "@/service/types/api/hospitality.types";
 
+/**
+ * The server refused a change to an order. 409 is the deadline guard (a deadline passed, the order is locked or
+ * the application is closed); the controller uses 409 for nothing else, so the status alone says «too late».
+ */
+export class HospitalityOrderRefusal extends Error {
+    constructor(message: string, readonly status: number) {
+        super(message);
+        this.name = 'HospitalityOrderRefusal';
+    }
+}
+
 export function useAvailableHospitalities(applicationId: number | undefined) {
     return useQuery<IHospitality[]>({
         queryKey: ['availableHospitalities', applicationId],
@@ -138,7 +149,7 @@ export function useUpdateHospitalityOrder(applicationId: number | undefined) {
             });
             if (!response.ok) {
                 const errorData = await response.json();
-                throw new Error(errorData.error || 'Failed to update order');
+                throw new HospitalityOrderRefusal(errorData.error || 'Failed to update order', response.status);
             }
             return response.json() as Promise<IHospitalityOrder>;
         },

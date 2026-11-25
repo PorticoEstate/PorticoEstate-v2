@@ -26,10 +26,12 @@ import {
 } from '@/service/types/api/hospitality.types';
 import {IApplication, IApplicationDate} from '@/service/types/api/application.types';
 import {
+    HospitalityOrderRefusal,
     useHospitalityMenu,
     useCreateHospitalityOrder,
     useUpdateHospitalityOrder,
 } from '../hooks/hospitality-hooks';
+import KitchenContact from '@/components/user/application/kitchen-contact';
 import {useBuildingSeasons, useServerSettings} from '@/service/hooks/api-hooks';
 import {isWithinBusinessHours} from '@/service/utils/business-hours';
 import {formatCurrency} from '@/utils/cost-utils';
@@ -173,8 +175,9 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
     // against the stored order at save time, to tell an untouched note from an edited one.
     const prefilledSpecialRequirements = useRef('');
     const [editingQty, setEditingQty] = useState<number | null>(null);
-    // The server's refusal of a save (e.g. a deadline that passed while the dialog was open).
-    const [saveError, setSaveError] = useState<string | null>(null);
+    // The server's refusal of a save (e.g. a deadline that passed while the dialog was open). `tooLate` is the
+    // deadline guard's 409: the order can no longer be changed here, so the dialog also says who to ask.
+    const [saveError, setSaveError] = useState<{message: string; tooLate: boolean} | null>(null);
 
     const dateOptions = useMemo(() => buildDateOptions(applications, i18n.language), [applications, i18n.language]);
 
@@ -653,7 +656,10 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
         } catch (error) {
             // The server refuses what the deadlines no longer allow (409) and says why. Keep the
             // dialog open and show it; an unhandled rejection here left the user with nothing.
-            setSaveError(error instanceof Error ? error.message : String(error));
+            setSaveError({
+                message: error instanceof Error ? error.message : String(error),
+                tooLate: error instanceof HospitalityOrderRefusal && error.status === 409,
+            });
         }
     };
 
@@ -997,11 +1003,18 @@ const HospitalityOrderModal: FC<HospitalityOrderModalProps> = ({
                         </Alert>
                     )}
 
-                    {/* The server refused the save (a deadline passed, the order was locked, ...) */}
+                    {/* The server refused the save (a deadline passed, the order was locked, ...). Refused as too
+                        late, the kitchen's contact follows under it: the one Min side shows for a locked serving,
+                        which every order of the GET carries. A new order has none. */}
                     {saveError && (
-                        <Alert data-color="danger" data-size="sm" role="alert">
-                            {saveError}
-                        </Alert>
+                        <>
+                            <Alert data-color="danger" data-size="sm" role="alert">
+                                {saveError.message}
+                            </Alert>
+                            {saveError.tooLate && existingOrder?.contact && (
+                                <KitchenContact contact={existingOrder.contact}/>
+                            )}
+                        </>
                     )}
 
                     {/* Cancellation deadline: information while it can still be cancelled (#1502), a warning once

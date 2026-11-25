@@ -19,6 +19,7 @@ const CheckoutSteps: FC = () => {
 
     return (
         <ol
+            role="list"
             className={styles.steps}
             aria-label={t('bookingfrontend.checkout_steps_aria')
                 .replace('%1', String(CURRENT_STEP))

@@ -13,6 +13,7 @@ use App\modules\booking\models\HospitalityRemoteLocation;
 use App\modules\booking\models\HospitalityArticleGroup;
 use App\modules\booking\models\HospitalityArticle;
 use App\modules\bookingfrontend\helpers\WebSocketHelper;
+use App\modules\bookingfrontend\services\CacheService;
 
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ResponseInterface as Response;
@@ -36,6 +37,24 @@ class HospitalityController
 		$this->articleRepository = new HospitalityArticleRepository();
 		$this->orderRepository = new HospitalityOrderRepository();
 		$this->directBookingGuard = new HospitalityDirectBookingGuard();
+	}
+
+	/**
+	 * The citizen pages show «Mat og drikke kan bestilles» from has_hospitality, which rides on the search data and
+	 * the resource payloads (HospitalityRepository::getResourceIdsWithHospitality). Every write below can change
+	 * which resources offer food and drink, so each calls this once it has been stored: the Next.js server caches
+	 * (tags search-data, resources) and the open browsers' queries are dropped instead of lagging up to an hour.
+	 *
+	 * Never lets a failure reach the admin: the write is already committed, and a cache that could not be reached
+	 * is not a reason to answer 500. Throwable, not Exception: a TypeError from the cache layer is an Error.
+	 */
+	private function invalidateHospitalityMarking(): void
+	{
+		try {
+			(new CacheService())->invalidateHospitality();
+		} catch (\Throwable $e) {
+			error_log('HospitalityController: could not invalidate the hospitality marking caches: ' . $e->getMessage());
+		}
 	}
 
 	/**
@@ -419,6 +438,7 @@ class HospitalityController
 			$id = $this->repository->create($body);
 			$row = $this->repository->getById($id);
 			$model = new Hospitality($row);
+			$this->invalidateHospitalityMarking();
 
 			$response->getBody()->write(json_encode($model->serialize()));
 			return $response->withHeader('Content-Type', 'application/json')->withStatus(201);
@@ -582,6 +602,7 @@ class HospitalityController
 			$model = new Hospitality($row);
 			// The UI merges this response over what it holds: keep the warning flag in it.
 			$model->direct_booking_conflict = $this->directBookingGuard->conflictFlagsForHospitality($row, [])['main'];
+			$this->invalidateHospitalityMarking();
 
 			// Broadcast update via WebSocket. A moved main resource is also the Resources tab's main section and
 			// its leave-the-main-out filter, so the other admins' pages are told to rebuild that tab too.
@@ -626,6 +647,7 @@ class HospitalityController
 			}
 
 			$this->repository->delete($id);
+			$this->invalidateHospitalityMarking();
 
 			$accountId = (int)$this->userSettings['account_id'];
 			WebSocketHelper::sendEntityNotificationAsync(
@@ -726,6 +748,7 @@ class HospitalityController
 			}
 
 			$this->repository->addRemoteLocation($id, (int)$body['resource_id']);
+			$this->invalidateHospitalityMarking();
 
 			$rows = $this->repository->getRemoteLocations($id);
 			$results = array_map(function ($r) {
@@ -775,6 +798,7 @@ class HospitalityController
 			}
 
 			$this->repository->removeRemoteLocation($id, $resourceId);
+			$this->invalidateHospitalityMarking();
 
 			$accountId = (int)$this->userSettings['account_id'];
 			WebSocketHelper::sendEntityNotificationAsync(
@@ -840,6 +864,7 @@ class HospitalityController
 			}
 
 			$this->repository->toggleRemoteLocation($id, $resourceId, (bool)$body['active']);
+			$this->invalidateHospitalityMarking();
 
 			$accountId = (int)$this->userSettings['account_id'];
 			WebSocketHelper::sendEntityNotificationAsync(

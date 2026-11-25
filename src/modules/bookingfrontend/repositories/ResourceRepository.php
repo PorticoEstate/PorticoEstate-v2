@@ -6,6 +6,7 @@ use PDO;
 use App\Database\Db;
 use App\modules\bookingfrontend\models\Resource;
 use App\modules\bookingfrontend\models\Participant;
+use App\modules\booking\repositories\HospitalityRepository;
 
 class ResourceRepository
 {
@@ -228,13 +229,34 @@ class ResourceRepository
 
     /**
      * Create and serialize resources from data array
+     *
+     * @param bool $withHospitality set has_hospitality on every resource first (one query for the whole list)
      */
-    public function createAndSerialize(array $dataArray, array $userRoles = [], bool $short = false): array
+    public function createAndSerialize(array $dataArray, array $userRoles = [], bool $short = false, bool $withHospitality = false): array
     {
-        return array_map(function ($data) use ($userRoles, $short) {
-            $resource = $this->createResource($data);
-            return $resource->serialize($userRoles, $short);
-        }, $dataArray);
+        $resources = array_map([$this, 'createResource'], $dataArray);
+        if ($withHospitality) {
+            $this->setHasHospitality($resources);
+        }
+        return array_map(fn(Resource $resource) => $resource->serialize($userRoles, $short), $resources);
+    }
+
+    /**
+     * Set has_hospitality (true or false, never null) on each resource: whether the citizen checkout offers
+     * food and drink for it. ONE query however many resources there are; the answer is the checkout's own
+     * predicate (HospitalityRepository::getResourceIdsWithHospitality), so the marking cannot promise
+     * what the checkout does not offer.
+     *
+     * @param Resource[] $resources
+     * @return Resource[] the same objects
+     */
+    public function setHasHospitality(array $resources): array
+    {
+        $offered = array_fill_keys((new HospitalityRepository())->getResourceIdsWithHospitality(), true);
+        foreach ($resources as $resource) {
+            $resource->has_hospitality = isset($offered[(int)$resource->id]);
+        }
+        return $resources;
     }
 
     /**

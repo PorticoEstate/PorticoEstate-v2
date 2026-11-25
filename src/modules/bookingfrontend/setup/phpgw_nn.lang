@@ -1324,3 +1324,7 @@ catering_amount_too_large	bookingfrontend	nn	Beløpet for éi av linjene er for 
 catering_order_total_too_large	bookingfrontend	nn	Totalbeløpet for bestillinga er for stort.
 catering_checkout_serving_time	bookingfrontend	nn	kl. %1
 special_requirements_help	bookingfrontend	nn	Går til kjøkenet. Skriv kor mange og kva, til dømes «2 glutenfrie, 1 med nøtteallergi». Ikkje skriv namn.
+hospitality_available	bookingfrontend	nn	Mat og drikke kan bestillast
+hospitality_available_title	bookingfrontend	nn	Mat og drikke
+hospitality_available_room_info	bookingfrontend	nn	Du kan bestille mat og drikke til dette rommet. Det gjer du i siste steg, før du sender søknaden.
+hospitality_available_form_info	bookingfrontend	nn	Du kan bestille mat og drikke til romma du har valt. Det gjer du i siste steg, før du sender søknaden.

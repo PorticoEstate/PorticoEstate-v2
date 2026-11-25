@@ -8,6 +8,11 @@ import {Button, Spinner} from "@digdir/designsystemet-react";
 import {useClientTranslation} from "@/app/i18n/ClientTranslationProvider";
 import parse from "html-react-parser";
 import {extractDescriptionText, unescapeHTML} from "@/components/building-page/util/building-text-util";
+import {
+    HospitalityAlert,
+    HospitalityLine,
+    useHospitalityEnabled
+} from "@/components/hospitality-notice/hospitality-notice";
 
 interface ResourceInfoPopperContentProps {
     resource_id: string
@@ -19,6 +24,7 @@ const ResourceInfoModalContent: FC<ResourceInfoPopperContentProps> = (props) => 
     const resource = useResource(props.resource_id);
     const {t, i18n} = useClientTranslation();
     const description = useMemo(() => resource?.data?.description_json ? extractDescriptionText(resource.data.description_json, i18n) : null, [resource])
+    const hasHospitality = useHospitalityEnabled() && resource.data?.has_hospitality === true;
 
     return (
         <>
@@ -38,6 +44,13 @@ const ResourceInfoModalContent: FC<ResourceInfoPopperContentProps> = (props) => 
                 }
 
                 {!resource.isLoading && (<Fragment>
+                    {hasHospitality && (<Fragment>
+                        <HospitalityLine hasHospitality/>
+                        <div>
+                            <h4>{t('bookingfrontend.hospitality_available_title')}</h4>
+                            <HospitalityAlert hasHospitality variant="room" headingLevel={5}/>
+                        </div>
+                    </Fragment>)}
                     {description && (
                         <div>
                             <h4>{t('bookingfrontend.description')}</h4>

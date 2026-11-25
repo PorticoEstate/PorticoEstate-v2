@@ -566,6 +566,19 @@ final class HarnessWebSocketHelper
 }
 class_alias(HarnessWebSocketHelper::class, 'App\modules\bookingfrontend\helpers\WebSocketHelper');
 
+/**
+ * The citizen caches are replaced by a recorder: a stored write now drops them (#1424, tests/hospitality-marking holds that), and the real
+ * CacheService makes an HTTP request to Next.js and a WebSocket broadcast, neither of which this harness may reach.
+ */
+final class HarnessCacheService
+{
+    public function invalidateHospitality(): bool
+    {
+        return true;
+    }
+}
+class_alias(HarnessCacheService::class, 'App\modules\bookingfrontend\services\CacheService');
+
 /** What the doubles answer from, and what they RECORD. */
 final class HarnessWorld
 {

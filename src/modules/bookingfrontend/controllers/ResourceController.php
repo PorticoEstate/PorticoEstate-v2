@@ -229,6 +229,7 @@ class ResourceController extends DocumentController
             }
 
             $resource = $this->resourceRepository->createResource($result);
+            $this->resourceRepository->setHasHospitality([$resource]);
             $serializedResource = $resource->serialize($this->getUserRoles());
 
             $response->getBody()->write(json_encode($serializedResource));
@@ -375,7 +376,7 @@ class ResourceController extends DocumentController
             $stmt->execute();
             $results = $stmt->fetchAll(\PDO::FETCH_ASSOC);
 
-            $resources = $this->resourceRepository->createAndSerialize($results, $this->getUserRoles(), $short);
+            $resources = $this->resourceRepository->createAndSerialize($results, $this->getUserRoles(), $short, true);
 
             $totalCount = $this->getTotalCountByBuilding($buildingId);
 

@@ -412,4 +412,27 @@ class CacheService
 
 		return $httpResult['success'] || $wsResult;
 	}
+
+	/**
+	 * Invalidate caches when a hospitality, or one of its delivery locations, is created, edited or deleted.
+	 * Which resources offer food and drink (Resource::has_hospitality) rides on the search data and on the
+	 * resource payloads, so those, and no others, are dropped. Any resource can be the main resource or a
+	 * delivery location, so it is every resource that is affected: no id is passed.
+	 *
+	 * @return bool True if at least one invalidation succeeded
+	 */
+	public function invalidateHospitality(): bool
+	{
+		// HTTP: Revalidate server-side Next.js caches (the tags the search data and the resource fetches carry)
+		$httpResult = $this->sendCacheReset('tag=search-data&tag=resources');
+
+		// WebSocket: Invalidate client-side React Query caches (a key prefix matches every id under it)
+		$wsResult = $this->sendWebSocketInvalidation([
+			['searchData'],           // has_hospitality on every search hit
+			['resource'],             // GET /resources/{id}: the resource page and the info dialog
+			['buildingResources']     // GET /buildings/{id}/resources: the calendar list and the application form
+		]);
+
+		return $httpResult['success'] || $wsResult;
+	}
 }

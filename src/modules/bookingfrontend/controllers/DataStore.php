@@ -210,6 +210,8 @@ class DataStore
 
 			// Use ResourceRepository to get resources with participant limits (latest limit only to avoid duplicates)
 			$resourceEntities = $this->resourceRepository->getWithParticipantLimits($resourceIds);
+			// «Mat og drikke kan bestilles» on the search hits: one extra query for all resources
+			$this->resourceRepository->setHasHospitality($resourceEntities);
 
 			$resources = [];
 			foreach ($resourceEntities as $resource) {

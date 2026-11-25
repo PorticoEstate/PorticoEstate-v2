@@ -15,6 +15,7 @@ import {Button} from "@digdir/designsystemet-react";
 import Link from "next/link";
 import BuildingIcon from "@/icons/BuildingIcon";
 import {HighlightEntity} from "@/components/building-calendar/building-calendar.types";
+import {HospitalityAlert} from "@/components/hospitality-notice/hospitality-notice";
 
 interface ResourceParams {
     id: string;
@@ -73,7 +74,7 @@ const Resource = async (props: ResourceProps) => {
     const {t} = await getTranslation();
     return (
         <main>
-            <ResourceHeader building={building} resource={resource} town={town} />
+            <ResourceHeader building={building} resource={resource} town={town} hasHospitality={resource.has_hospitality} />
 			<ShortDectionAccordion short_description={resource.short_description} />
 			<div style={{display: 'flex', marginTop: '1rem'}}>
 				<Button asChild variant={'secondary'} color={'neutral'}
@@ -83,6 +84,9 @@ const Resource = async (props: ResourceProps) => {
 				</Button>
 			</div>
 			<BuildingPhotos object={resource} type={'resource'} />
+
+            {/* Above the description and the calendar, and not inside the folded description where it would be missed */}
+            <HospitalityAlert hasHospitality={resource.has_hospitality} variant="room" />
 
             <section className={'my-2'}>
                 <DescriptionAccordion description_json={resource.description_json}/>

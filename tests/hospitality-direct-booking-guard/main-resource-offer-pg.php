@@ -69,6 +69,16 @@ final class OfferWebSocketHelper
 }
 class_alias(OfferWebSocketHelper::class, 'App\modules\bookingfrontend\helpers\WebSocketHelper');
 
+/** The citizen caches are replaced by a recorder (#1424): a stored write drops them, and the real one reaches Next.js and the WebSocket server. */
+final class OfferCacheService
+{
+    public function invalidateHospitality(): bool
+    {
+        return true;
+    }
+}
+class_alias(OfferCacheService::class, 'App\modules\bookingfrontend\services\CacheService');
+
 require_once getenv('REPOSITORY_FILE') ?: $root . '/src/modules/booking/repositories/HospitalityRepository.php';
 require_once getenv('CONTROLLER_FILE') ?: $root . '/src/modules/booking/controllers/HospitalityController.php';
 

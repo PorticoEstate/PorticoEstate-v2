@@ -1324,3 +1324,7 @@ catering_amount_too_large	bookingfrontend	en	The amount for one of the lines is 
 catering_order_total_too_large	bookingfrontend	en	The order total is too large.
 catering_checkout_serving_time	bookingfrontend	en	at %1
 special_requirements_help	bookingfrontend	en	Goes to the kitchen. State the number and what, for example «2 gluten-free, 1 with a nut allergy». Do not write names.
+hospitality_available	bookingfrontend	en	Food and drink can be ordered
+hospitality_available_title	bookingfrontend	en	Food and drink
+hospitality_available_room_info	bookingfrontend	en	You can order food and drink for this room. You do that in the last step, before you send the application.
+hospitality_available_form_info	bookingfrontend	en	You can order food and drink for the rooms you have chosen. You do that in the last step, before you send the application.

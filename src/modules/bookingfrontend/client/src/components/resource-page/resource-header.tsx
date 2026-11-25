@@ -9,15 +9,18 @@ import DividerCircle from "@/components/util/DividerCircle";
 import { IResource } from "@/service/types/resource.types";
 import ResourceIcon from "@/icons/ResourceIcon";
 import BuildingIcon from "@/icons/BuildingIcon";
+import {HospitalityLine} from "@/components/hospitality-notice/hospitality-notice";
 
 interface ResourceHeaderProps {
 	resource: IShortResource | IResource;
 	building: IBuilding;
 	town?: ISearchDataTown;
+	/** Food and drink can be ordered for the room: has_hospitality of GET /resources/{id} */
+	hasHospitality?: boolean;
 }
 
 const ResourceHeader = async (props: ResourceHeaderProps) => {
-	const {building, resource, town} = props
+	const {building, resource, town, hasHospitality} = props
 	return (
 		<section className={`${styles.buildingHeader}`}>
 			<div className={styles.buildingName}>
@@ -33,6 +36,7 @@ const ResourceHeader = async (props: ResourceHeaderProps) => {
 				<span><DividerCircle/> <MapModal city={building.city} street={building.street}
 												 zip={building.zip_code}/></span>
 			</div>
+			<HospitalityLine hasHospitality={hasHospitality}/>
 
 
 		</section>

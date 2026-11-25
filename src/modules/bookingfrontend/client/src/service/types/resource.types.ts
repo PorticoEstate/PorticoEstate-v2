@@ -36,5 +36,6 @@ export interface IResource {
     building_id: number | null;
 	description_json?: string;
 	short_description: string | null; // JSON string containing localized descriptions
+	has_hospitality?: boolean; // Food and drink can be ordered for this room (the checkout's own predicate); absent where the endpoint does not set it
 }
 

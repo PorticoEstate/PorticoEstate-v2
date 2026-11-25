@@ -52,6 +52,7 @@ import {ResourceUsesTimeSlots, ResourceIsDirectBooking} from "@/components/build
 import {Trans} from "react-i18next";
 import ApplicationLoginLink from "@/components/building-calendar/modules/event/edit/application-login-link";
 import {useToast} from "@/components/toast/toast-context";
+import {HospitalityAlert, useHospitalityEnabled} from "@/components/hospitality-notice/hospitality-notice";
 
 interface ApplicationCrudProps {
 	selectedTempApplication?: Partial<FCallTempEvent>;
@@ -852,6 +853,15 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 			return !!resource && !ResourceUsesTimeSlots(resource) && ResourceIsDirectBooking(resource);
 		});
 	}, [buildingResources, selectedResources]);
+
+	// Food and drink is ordered in the last step, so say so up front when a chosen room has it. Not for a
+	// repeating application: the checkout offers no food and drink for those (cart-section.tsx).
+	const hospitalityEnabled = useHospitalityEnabled();
+	const hasSelectedHospitalityResource = useMemo(() => {
+		if (!buildingResources || !selectedResources?.length) return false;
+		return selectedResources.some(resId => buildingResources.find(r => r.id === +resId)?.has_hospitality === true);
+	}, [buildingResources, selectedResources]);
+	const showHospitalityNotice = hospitalityEnabled && hasSelectedHospitalityResource && !isRecurring;
 
 	// Calculate time boundaries for start time
 	const [startMinTime, startMaxTime] = useMemo(() => {
@@ -1831,25 +1841,31 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 						</div>
 					)}
 
-					{/* Articles section - only show if activated in server settings */}
-					{selectedResources.length > 0 && serverSettings?.booking_config?.activate_application_articles === true && (
+					{/* Articles section - the table only shows if activated in server settings. The food and drink notice
+					    sits under the section's heading, above the table, and stays even where the table is off. */}
+					{selectedResources.length > 0 && (articlesEnabled || showHospitalityNotice) && (
 						<div className={`${styles.formGroup} ${styles.wide}`}>
-							<div className={styles.resourcesHeader}>
-								<h4>{t('bookingfrontend.articles')}</h4>
-							</div>
-							<Controller
-								name="articles"
-								control={control}
-								render={({field}) => (
-									<ArticleTable
-										resourceIds={selectedResources.map(id => parseInt(id))}
-										selectedArticles={field.value || []}
-										onArticlesChange={field.onChange}
-										startTime={watch('start')}
-										endTime={watch('end')}
-									/>
-								)}
-							/>
+							{articlesEnabled && (
+								<div className={styles.resourcesHeader}>
+									<h4>{t('bookingfrontend.articles')}</h4>
+								</div>
+							)}
+							<HospitalityAlert hasHospitality={showHospitalityNotice} variant="form" headingLevel={5}/>
+							{articlesEnabled && (
+								<Controller
+									name="articles"
+									control={control}
+									render={({field}) => (
+										<ArticleTable
+											resourceIds={selectedResources.map(id => parseInt(id))}
+											selectedArticles={field.value || []}
+											onArticlesChange={field.onChange}
+											startTime={watch('start')}
+											endTime={watch('end')}
+										/>
+									)}
+								/>
+							)}
 						</div>
 					)}
 					{!noAudiences && (

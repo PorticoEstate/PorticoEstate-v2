@@ -11,10 +11,11 @@ import {useIsMobile} from "@/service/hooks/is-mobile";
 import {useTrans} from "@/app/i18n/ClientTranslationProvider";
 import {useIsOrganization} from "@/components/building-calendar/calendar-context";
 import {useBuilding} from "@/service/api/building";
+import {HospitalityLine} from "@/components/hospitality-notice/hospitality-notice";
 
 
 
-type ResourceLabelType = Pick<Partial<CalendarResourceFilterOption>, 'buildingId' | 'value' | "deactivated"> & Pick<CalendarResourceFilterOption, 'label'>
+type ResourceLabelType = Pick<Partial<CalendarResourceFilterOption>, 'buildingId' | 'value' | "deactivated" | 'hasHospitality'> & Pick<CalendarResourceFilterOption, 'label'>
 
 const ResourceLabel: FC<{ resource: ResourceLabelType; onInfo?: () => void }> = ({resource, onInfo}) => {
 	const isMobile = useIsMobile();
@@ -39,6 +40,8 @@ const ResourceLabel: FC<{ resource: ResourceLabelType; onInfo?: () => void }> = 
 							{building.name}
 						</span>
 					)}
+					{/* On a row of its own under the name: the names already truncate in this narrow list */}
+					<HospitalityLine hasHospitality={resource.hasHospitality}/>
 				</div>
 
 			</div>

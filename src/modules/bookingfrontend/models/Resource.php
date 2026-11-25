@@ -314,6 +314,18 @@ class Resource
      */
     public $participant_count;
 
+    /**
+     * Derived, not a column: true when the citizen checkout offers hospitality for this resource
+     * (HospitalityRepository::getResourceIdsWithHospitality). Set by the endpoints that feed the
+     * «Mat og drikke kan bestilles» marking; null (and so absent from the payload) everywhere else.
+     *
+     * @ORM\Transient
+     * @Expose
+     * @Short
+     * @OA\Property(description="Whether food and drink can be ordered for this resource (an active hospitality serves it)", type="boolean", nullable=true)
+     */
+    public $has_hospitality;
+
     public function __construct($data = [])
     {
         if (!empty($data))

@@ -326,6 +326,37 @@ class HospitalityRepository
     }
 
     /**
+     * The ids of every resource the citizen checkout offers hospitality for: the SET form of
+     * getActiveByResourceIds(), answered in one query for all resources.
+     *
+     * getActiveByResourceIds([$id]) is non-empty exactly when $id is in this list (tests/hospitality-marking
+     * holds the two together on every resource). A resource is in the list when an ACTIVE hospitality
+     *   - has it as its own resource and serves on site (allow_on_site_hospitality), or
+     *   - has it as an ACTIVE remote location and serves on site OR delivers (remote_serving_enabled).
+     * This is what "Mat og drikke kan bestilles" promises, so it must not drift from the checkout's predicate.
+     *
+     * @return int[] ascending, without duplicates
+     */
+    public function getResourceIdsWithHospitality(): array
+    {
+        $sql = "SELECT h.resource_id AS resource_id
+                  FROM bb_hospitality h
+                 WHERE h.active = 1
+                   AND h.allow_on_site_hospitality = 1
+                UNION
+                SELECT rl.resource_id AS resource_id
+                  FROM bb_hospitality_remote_location rl
+                  JOIN bb_hospitality h ON h.id = rl.hospitality_id
+                 WHERE h.active = 1
+                   AND rl.active = 1
+                   AND (h.allow_on_site_hospitality = 1 OR h.remote_serving_enabled = 1)
+                ORDER BY resource_id";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute();
+        return array_map('intval', $stmt->fetchAll(PDO::FETCH_COLUMN));
+    }
+
+    /**
      * Find active hospitalities that serve any of the given resource IDs.
      * A resource is "served" if it's the main resource (with allow_on_site_hospitality)
      * or an active remote location (with remote_serving_enabled).

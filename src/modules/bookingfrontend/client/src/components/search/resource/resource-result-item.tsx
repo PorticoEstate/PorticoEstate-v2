@@ -12,6 +12,7 @@ import {useIsMobile} from "@/service/hooks/is-mobile";
 import {createDomainResourceUrl, createDomainBuildingUrl} from "@/service/multi-domain-utils";
 import ResourceIcon from "@/icons/ResourceIcon";
 import {ArrowRightIcon} from "@navikt/aksel-icons";
+import {HospitalityLine} from "@/components/hospitality-notice/hospitality-notice";
 
 interface ResourceResultItemProps {
 	resource: ISearchResource & { building?: ISearchDataBuilding };
@@ -242,6 +243,9 @@ const ResourceResultItem: FC<ResourceResultItemProps> = ({resource, selectedDate
 					{/*})}*/}
 					{resource.building?.name}
 				</Paragraph>
+
+				{/* A room of another domain is not marked: that instance's own hospitality setting is not known here */}
+				<HospitalityLine hasHospitality={!isExternalDomain && resource.has_hospitality}/>
 
 				{/* TODO: Add facilities/amenities icons here when data is available */}
 

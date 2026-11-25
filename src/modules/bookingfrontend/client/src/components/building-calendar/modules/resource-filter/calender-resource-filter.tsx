@@ -23,6 +23,7 @@ import {ResourceUsesTimeSlots} from "@/components/building-calendar/util/calende
 import {useBuilding} from "@/service/api/building";
 import {isApplicationDeactivated} from "@/service/utils/deactivation-utils";
 import {IResource} from "@/service/types/resource.types";
+import {HospitalityLine} from "@/components/hospitality-notice/hospitality-notice";
 
 
 interface GroupedResources {
@@ -34,7 +35,9 @@ export interface CalendarResourceFilterOption {
 	value: string;
 	label: string;
 	deactivated?: boolean;
-	buildingId: number | string
+	buildingId: number | string;
+	/** Food and drink can be ordered for the room (has_hospitality of GET /buildings/{id}/resources) */
+	hasHospitality?: boolean;
 }
 
 interface CalendarResourceFilterProps {
@@ -117,11 +120,12 @@ const CalendarResourceFilter: FC<CalendarResourceFilterProps> = ({
 		const normal: CalendarResourceFilterOption[] = [];
 
 		(resources || []).forEach(resource => {
-			const option = {
+			const option: CalendarResourceFilterOption = {
 				value: resource.id.toString(),
 				label: resource.name,
 				deactivated: building ? isApplicationDeactivated(resource, building) : resource.deactivate_application,
-				buildingId: resource.building_id!
+				buildingId: resource.building_id!,
+				hasHospitality: resource.has_hospitality
 			};
 
 			if (ResourceUsesTimeSlots(resource)) {
@@ -240,12 +244,15 @@ const CalendarResourceFilter: FC<CalendarResourceFilterProps> = ({
 									<div className={`${styles.resourceLabel} text-normal`}>
 										<div className={styles.resourceLabelWrapper}>
 											<ColourCircle resourceId={+resource.value} size={'medium'}/>
-											<span>{resource.label}</span>
-											{resource.deactivated && (
-												<span className={styles.deactivatedText}>
-													({t('bookingfrontend.booking_unavailable')})
-												</span>
-											)}
+											<div className={styles.resourceTitle}>
+												<span>{resource.label}</span>
+												{resource.deactivated && (
+													<span className={styles.deactivatedText}>
+														({t('bookingfrontend.booking_unavailable')})
+													</span>
+												)}
+												<HospitalityLine hasHospitality={resource.hasHospitality}/>
+											</div>
 										</div>
 										{!isMobile && (
 											<Button

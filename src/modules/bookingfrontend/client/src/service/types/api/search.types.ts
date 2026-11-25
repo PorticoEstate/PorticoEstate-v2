@@ -71,6 +71,7 @@ export interface ISearchResource {
 	domain_name?: string; // Multi-domain name for cross-domain search results
 	domain_url?: string; // Multi-domain base URL for redirects
 	original_id?: number; // Original ID before domain transformation
+	has_hospitality?: boolean; // Food and drink can be ordered for this room (the checkout's own predicate)
 }
 
 export interface ISearchDataTown {

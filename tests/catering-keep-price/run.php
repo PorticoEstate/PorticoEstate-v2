@@ -72,7 +72,12 @@ if (!function_exists('lang')) {
 // --- assertion kit (same shape as run_citizen.php) -----------------------------------------------------
 $failures = [];
 $passed = 0;
-$check = static function (string $name, bool $ok, string $detail = '') use (&$failures, &$passed): void {
+// KP_VERBOSE=1 prints every row, PASS or FAIL, so a base run can be listed row by row.
+$verbose = getenv('KP_VERBOSE') !== false;
+$check = static function (string $name, bool $ok, string $detail = '') use (&$failures, &$passed, $verbose): void {
+    if ($verbose) {
+        echo ($ok ? 'ROW PASS ' : 'ROW FAIL ') . $name . "\n";
+    }
     if ($ok) {
         $passed++;
         return;

@@ -6,7 +6,8 @@
  * Loads TEMP COPIES of the Next client's utils (checkout-total.ts and what it imports: article-pricing.ts, cost-utils.ts,
  * catering-status.ts, catering-venue-time.ts, hospitality-deadline.ts) with their import lines pointed at the copies, so
  * luxon and the path alias are not needed (Node >= 22.18 strips the types itself). CT_TS (optional) points at an
- * alternative copy of checkout-total.ts: mutate.py uses it to prove that a deliberately broken total turns this red.
+ * alternative copy of checkout-total.ts and CART_TSX one of cart-section.tsx: mutate.py uses them to prove that a
+ * deliberately broken total, or a cart that stops listing the recurring applications' catering, turns this red.
  *
  * The oracle is exact BigInt arithmetic, no floats and none of the helpers under test:
  *   - a stored application line (room rental, equipment / services) is amount + tax in øre, as the server sums
@@ -240,11 +241,25 @@ eq('section of app 1 ignores app 3 catering', C.cartTotalOre([roomOnly], caterin
 eq('grand total of all three', C.cartTotalOre([roomOnly, roomExtras, roomCatering], cateringApp3, one),
     Number(roomOnly.oracleOre + roomExtras.oracleOre + roomCatering.oracleOre + cateringOracle));
 
-// ---- 7. recurring: stored lines × instances, catering once ---------------------------------------------------------------
+// ---- 7. recurring (declaration ⑥, pe-pm 50167): a recurring application with catering orders → its catering is
+//         LISTED (the recurring section) and counted ONCE; only its stored lines go × instances --------------------------
 const recurring = application(4, [{amount: '400.00', tax: '100.00'}]);
 const recurringOrder = cateringOrder(41, 4, '2026-12-10T12:00:00+01:00', 'pending', [{qty: '2', unit: '100.00', percent: 15, name: 'Lunsj'}]);
-eq('recurring: stored × 3 + catering once', C.cartTotalOre([recurring], [recurringOrder], () => 3),
-    Number(recurring.oracleOre * 3n + recurringOrder.oracleOre));
+const recurringOrder2 = cateringOrder(42, 4, '2026-12-17T12:00:00+01:00', 'pending', [{qty: '1', unit: '40.59', percent: 0, name: 'Farris'}]);
+const recurringCatering = [recurringOrder, recurringOrder2];
+const recurringTotal = C.cartTotalOre([recurring], recurringCatering, () => 3);
+eq('⑥ recurring: stored × 3 + catering once', recurringTotal,
+    Number(recurring.oracleOre * 3n + recurringOrder.oracleOre + recurringOrder2.oracleOre));
+const recurringDays = C.checkoutCateringDays(recurringCatering, 'no', NOW);
+eq('⑥ recurring: its catering is listed, per day', recurringDays.map((d: any) => [d.dayKey, d.orders.map((o: any) => o.order.id)]),
+    [['2026-12-10', [41]], ['2026-12-17', [42]]]);
+const recurringListed = recurringDays.flatMap((d: any) => d.orders.flatMap((o: any) => o.lines.map((l: any) => l.ore)))
+    .reduce((s: number, v: number) => s + v, 0);
+eq('⑥ recurring: total = stored × instances + Σ listed catering lines', recurringTotal, C.applicationStoredOre(recurring) * 3 + recurringListed);
+check('⑥ recurring: the catering is NOT multiplied (control: × 3 is a different number)',
+    recurringTotal !== (C.applicationStoredOre(recurring) + recurringListed) * 3, {recurringTotal});
+check('⑥ recurring: the cart renders the recurring section\'s catering without «Legg til»',
+    /applicationIds=\{recurringApplications\.map\(a => a\.id\)\}[\s\S]{0,120}allowAdd=\{false\}/.test(read(process.env.CART_TSX ?? join(client, 'components/checkout/cart-section.tsx'))));
 
 // ---- 8. an unknown VAT % makes the total unknown, never a guess -----------------------------------------------------------
 const unknownVat = cateringOrder(51, 3, DAY1_NOON, 'pending', [{qty: '1', unit: '100.00', percent: null, name: 'Ukjent mva'}]);
@@ -253,7 +268,7 @@ eq('unknown VAT on a CANCELLED order does not matter', C.cartTotalOre([roomCater
 eq('no catering at all = stored', C.cartTotalOre([roomCatering], [], one), Number(roomCatering.oracleOre));
 
 // ---- 9. source checks (text only: the components are not rendered here) ---------------------------------------------------
-const cart = read(join(client, 'components/checkout/cart-section.tsx'));
+const cart = read(process.env.CART_TSX ?? join(client, 'components/checkout/cart-section.tsx'));
 const section = read(join(client, 'components/checkout/hospitality/hospitality-section.tsx'));
 check('cart-section totals go through cartTotalOre', /cartTotalOre\(apps, enableHospitality \? catering\.orders : \[\], instancesOf\)/.test(cart));
 check('cart-section no longer sums order.sum by itself', !/calculateApplicationCost/.test(cart));

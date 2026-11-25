@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
-Mutation driver for tests/checkout-total/run.mts (task 50144): each mutant of utils/checkout-total.ts carries ONE
-deliberate defect in the checkout's total, and the harness must go red on it. The unmutated file must be green.
+Mutation driver for tests/checkout-total/run.mts (task 50144): each mutant of utils/checkout-total.ts (or of
+cart-section.tsx, for the recurring section) carries ONE deliberate defect in the checkout's total, and the harness must
+go red on it. The unmutated files must be green. Mutants are written to a temp dir, never to the tree.
 
     python3 tests/checkout-total/mutate.py
 
@@ -15,11 +16,15 @@ import tempfile
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 SRC = os.path.join(ROOT, 'src/modules/bookingfrontend/client/src/utils/checkout-total.ts')
+CART = os.path.join(ROOT, 'src/modules/bookingfrontend/client/src/components/checkout/cart-section.tsx')
+# Which file a mutant changes, and the variable run.mts reads its alternative copy from
+TARGETS = {'total': (SRC, 'CT_TS', '.ts'), 'cart': (CART, 'CART_TSX', '.tsx')}
 RUN = os.path.join(ROOT, 'tests/checkout-total/run.mts')
 
 LINE_ORE = """export const cateringLineOre = (line: Pick<IHospitalityOrderLine, 'amount' | 'tax_percent'>): number | null =>
     hospitalityLineTotalOre(line);"""
 
+# (name, old, new[, target]); target defaults to 'total' (utils/checkout-total.ts)
 MUTANTS = [
     ('catering-dropped-from-total',
      'return catering === null ? null : stored + catering;',
@@ -45,6 +50,22 @@ MUTANTS = [
     ('listed-lines-not-what-is-counted',
      'ore: cateringLineOre(line),',
      'ore: hospitalityLineTotalOre({...line, tax_percent: 25}),'),
+    # Declaration ⑥ (pe-pm 50167): a recurring application's catering is counted ONCE, never × its instances
+    ('recurring-catering-multiplied',
+     'const catering = cateringTotalOre(cateringOrders.filter(order => ids.has(order.application_id)));',
+     'const catering = applications.reduce<number | null>((sum, application) => {\n'
+     '        const own = cateringTotalOre(cateringOrders.filter(order => order.application_id === application.id));\n'
+     '        return sum === null || own === null ? null : sum + own * instancesOf(application);\n'
+     '    }, 0);'),
+    # ... and LISTED: the recurring section renders the catering it counts
+    ('recurring-section-lists-no-catering',
+     '''                        <HospitalitySection
+                            applicationIds={recurringApplications.map(a => a.id)}
+                            applications={recurringApplications}
+                            allowAdd={false}
+                        />''',
+     '                        null',
+     'cart'),
 ]
 
 
@@ -63,17 +84,18 @@ def main():
         return 1
     print('ok   original: green (' + original.stdout.strip().splitlines()[-1] + ')')
 
-    text = open(SRC, encoding='utf8').read()
     bad = 0
     with tempfile.TemporaryDirectory() as tmp:
-        for name, frm, to in MUTANTS:
+        for name, frm, to, *rest in MUTANTS:
+            source, env_name, suffix = TARGETS[rest[0] if rest else 'total']
+            text = open(source, encoding='utf8').read()
             if text.count(frm) != 1:
                 print(f'FAIL {name}: the text to mutate is not in the file exactly once')
                 bad = 1
                 continue
-            path = os.path.join(tmp, f'{name}.ts')
+            path = os.path.join(tmp, f'{name}{suffix}')
             open(path, 'w', encoding='utf8').write(text.replace(frm, to))
-            result = run({'CT_TS': path})
+            result = run({env_name: path})
             if result.returncode == 0:
                 print(f'FAIL {name}: the harness stayed GREEN on a broken total')
                 bad = 1

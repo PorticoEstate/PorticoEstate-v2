@@ -1438,3 +1438,4 @@ no_delivery_locations	booking	en	No locations available for this hospitality
 opening_hours_unavailable	booking	en	Could not load the opening hours – all times are shown.
 hospitality_order_amount_too_large	booking	en	The amount for one of the lines is too large.
 hospitality_order_total_too_large	booking	en	The order total is too large.
+no_results	booking	en	No results

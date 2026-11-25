@@ -1737,6 +1737,7 @@
 			items: groups,
 			allowEmpty: true,
 			emptyLabel: '-- ' + lang('ungroupedArticles') + ' --',
+			emptyText: lang('noResults'),
 			allowCreate: true,
 			createLabel: lang('add') + ' "{query}"',
 			onCreate: function (name)

@@ -70,7 +70,6 @@
 
 		function buildSaveRequest()
 		{
-			var queryParts = [];
 			var originalLocationCode = (
 				query.location_code
 				|| deps.getLocationFieldValue(form, 'input[name="location_code"]')
@@ -97,22 +96,18 @@
 			var hasExistingLocation = (!isNaN(routeLocationId) && routeLocationId > 0) || !!originalLocationCode;
 			var isUpdate = hasExistingLocation && !!originalLocationCode;
 			var requestUrl = isUpdate
-				? '/property/location/' + encodeURIComponent(originalLocationCode)
-				: '/property/location';
+				? 'property/location/' + encodeURIComponent(originalLocationCode)
+				: 'property/location';
+			var params = {};
 
 			var clickHistory = getClickHistoryToken(tokenStoreKey, query, deps);
 			if (clickHistory)
 			{
-				queryParts.push('click_history=' + encodeURIComponent(clickHistory));
-			}
-
-			if (queryParts.length)
-			{
-				requestUrl += '?' + queryParts.join('&');
+				params.click_history = encodeURIComponent(clickHistory);
 			}
 
 			return {
-				url: requestUrl,
+				url: global.phpGWLink(requestUrl, params),
 				method: isUpdate ? 'PUT' : 'POST'
 			};
 		}
@@ -191,30 +186,26 @@
 			}
 
 			var isCreate = !id;
-			var url = '/property/entity/' + encodeURIComponent(type) + '/' + entityId + '/' + catId;
+			var url = 'property/entity/' + encodeURIComponent(type) + '/' + entityId + '/' + catId;
 			if (!isCreate)
 			{
 				url += '/' + id;
 			}
 
-			var queryParts = [];
+			var params = {};
 			if (typeof bypass !== 'undefined' && bypass !== null && bypass !== '')
 			{
-				queryParts.push('bypass=' + encodeURIComponent(bypass));
+				params.bypass = encodeURIComponent(bypass);
 			}
 
 			var clickHistory = getClickHistoryToken(tokenStoreKey, query, deps);
 			if (clickHistory)
 			{
-				queryParts.push('click_history=' + encodeURIComponent(clickHistory));
-			}
-			if (queryParts.length)
-			{
-				url += '?' + queryParts.join('&');
+				params.click_history = encodeURIComponent(clickHistory);
 			}
 
 			return {
-				url: url,
+				url: global.phpGWLink(url, params),
 				method: isCreate ? 'POST' : 'PUT',
 				isCreate: isCreate,
 				type: type,
@@ -257,22 +248,17 @@
 			var projectId = parseInt(currentProjectId, 10);
 			var isUpdate = !isNaN(projectId) && projectId > 0;
 			var basePath = isUpdate
-				? '/property/project/' + encodeURIComponent(projectId)
-				: '/property/project/create';
-			var queryParts = [];
+				? 'property/project/' + encodeURIComponent(projectId)
+				: 'property/project/create';
+			var params = {};
 			var clickHistory = getClickHistoryToken(tokenStoreKey, query, deps);
 			if (clickHistory)
 			{
-				queryParts.push('click_history=' + encodeURIComponent(clickHistory));
-			}
-			var requestUrl = basePath;
-			if (queryParts.length)
-			{
-				requestUrl += '?' + queryParts.join('&');
+				params.click_history = encodeURIComponent(clickHistory);
 			}
 
 			return {
-				url: requestUrl,
+				url: global.phpGWLink(basePath, params),
 				method: isUpdate ? 'PUT' : 'POST'
 			};
 		}

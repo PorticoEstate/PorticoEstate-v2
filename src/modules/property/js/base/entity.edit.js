@@ -198,12 +198,15 @@ this.showlightbox_add_inventory = function (location_id, id)
 		return;
 	}
 
-	var sUrl = '/property/entity/' + encodeURIComponent(ctx.type)
+	var oArgs = {
+		location_id: encodeURIComponent(location_id)
+	};
+
+	var sUrl = phpGWLink('property/entity/' + encodeURIComponent(ctx.type)
 		+ '/' + encodeURIComponent(ctx.entityId)
 		+ '/' + encodeURIComponent(ctx.catId)
 		+ '/' + encodeURIComponent(id)
-		+ '/inventory/add?location_id=' + encodeURIComponent(location_id);
-	sUrl = phpgwEnsureServerPrefix(sUrl);
+		+ '/inventory/add', oArgs);
 
 	TINY.box.show({
 		iframe: sUrl, boxid: 'frameless', width: Math.round($(window).width() * 0.9), height: Math.round($(window).height() * 0.9), fixed: false, maskid: 'darkmask', maskopacity: 40, mask: true, animate: true,
@@ -223,13 +226,13 @@ this.showlightbox_edit_inventory = function (location_id, id, inventory_id)
 		return;
 	}
 
-	var sUrl = '/property/entity/' + encodeURIComponent(ctx.type)
+	var oArgs = { location_id: encodeURIComponent(location_id) };
+	var sUrl = phpGWLink('property/entity/' + encodeURIComponent(ctx.type)
 		+ '/' + encodeURIComponent(ctx.entityId)
 		+ '/' + encodeURIComponent(ctx.catId)
 		+ '/' + encodeURIComponent(id)
 		+ '/inventory/' + encodeURIComponent(inventory_id)
-		+ '/edit?location_id=' + encodeURIComponent(location_id);
-	sUrl = phpgwEnsureServerPrefix(sUrl);
+		+ '/edit', oArgs);
 
 	TINY.box.show({
 		iframe: sUrl, boxid: 'frameless', width: Math.round($(window).width() * 0.9), height: Math.round($(window).height() * 0.9), fixed: false, maskid: 'darkmask', maskopacity: 40, mask: true, animate: true,
@@ -249,13 +252,13 @@ this.showlightbox_show_calendar = function (location_id, id, inventory_id)
 		return;
 	}
 
-	var sUrl = '/property/entity/' + encodeURIComponent(ctx.type)
+	var oArgs = { location_id: encodeURIComponent(location_id) };
+	var sUrl = phpGWLink('property/entity/' + encodeURIComponent(ctx.type)
 		+ '/' + encodeURIComponent(ctx.entityId)
 		+ '/' + encodeURIComponent(ctx.catId)
 		+ '/' + encodeURIComponent(id)
 		+ '/inventory/' + encodeURIComponent(inventory_id)
-		+ '/calendar?location_id=' + encodeURIComponent(location_id);
-	sUrl = phpgwEnsureServerPrefix(sUrl);
+		+ '/calendar', oArgs);
 
 	TINY.box.show({
 		iframe: sUrl, boxid: 'frameless', width: Math.round($(window).width() * 0.9), height: Math.round($(window).height() * 0.9), fixed: false, maskid: 'darkmask', maskopacity: 40, mask: true, animate: true,
@@ -275,11 +278,11 @@ this.showlightbox_assigned_history = function (serie_id)
 		return;
 	}
 
-	var sUrl = '/property/entity/' + encodeURIComponent(ctx.type)
+	var oArgs = { serie_id: encodeURIComponent(serie_id) };
+	var sUrl = phpGWLink('property/entity/' + encodeURIComponent(ctx.type)
 		+ '/' + encodeURIComponent(ctx.entityId)
 		+ '/' + encodeURIComponent(ctx.catId)
-		+ '/assigned-history?serie_id=' + encodeURIComponent(serie_id);
-	sUrl = phpgwEnsureServerPrefix(sUrl);
+		+ '/assigned-history', oArgs);
 
 	TINY.box.show({
 		iframe: sUrl, boxid: 'frameless', width: Math.round($(window).width() * 0.9), height: Math.round($(window).height() * 0.9), fixed: false, maskid: 'darkmask', maskopacity: 40, mask: true, animate: true,
@@ -299,12 +302,11 @@ this.refresh_inventory = function (location_id, id)
 		return;
 	}
 
-	var requestUrl = '/property/entity/' + encodeURIComponent(type)
+	var requestUrl = phpGWLink('property/entity/' + encodeURIComponent(type)
 		+ '/' + encodeURIComponent(entityId)
 		+ '/' + encodeURIComponent(catId)
 		+ '/' + encodeURIComponent(id)
-		+ '/inventory';
-	requestUrl = phpgwEnsureServerPrefix(requestUrl);
+		+ '/inventory', {});
 
 	var api = oTable3.api();
 	api.ajax.url(requestUrl).load();
@@ -787,28 +789,24 @@ function createEntityApiClient(form)
 			}
 
 			var isCreate = !id;
-			var url = '/property/entity/' + encodeURIComponent(type) + '/' + entityId + '/' + catId;
+			var url = 'property/entity/' + encodeURIComponent(type) + '/' + entityId + '/' + catId;
 			if (!isCreate)
 			{
 				url += '/' + id;
 			}
 
-			var queryParts = [];
+			var oArgs = {};
 			if (typeof bypass !== 'undefined' && bypass !== null && bypass !== '')
 			{
-				queryParts.push('bypass=' + encodeURIComponent(bypass));
+				oArgs.bypass = encodeURIComponent(bypass);
 			}
 			if (window.__entityClickHistoryToken)
 			{
-				queryParts.push('click_history=' + encodeURIComponent(window.__entityClickHistoryToken));
-			}
-			if (queryParts.length)
-			{
-				url += '?' + queryParts.join('&');
+				oArgs.click_history = encodeURIComponent(window.__entityClickHistoryToken);
 			}
 
 			return {
-				url: phpgwEnsureServerPrefix(url),
+				url: phpGWLink(url, oArgs),
 				method: isCreate ? 'POST' : 'PUT',
 				isCreate: isCreate,
 				type: type,
@@ -1061,7 +1059,7 @@ $(function ()
 			};
 		}
 
-		fetch(phpgwEnsureServerPrefix(restRequest.url), fetchOptions)
+		fetch(restRequest.url, fetchOptions)
 			.then(function (response)
 			{
 				return response.json()
@@ -1110,7 +1108,7 @@ $(function ()
 					);
 					setTimeout(function ()
 					{
-						window.location.href = phpgwEnsureServerPrefix(redirectUrl);
+						window.location.href = redirectUrl;
 					}, 1200);
 				}
 				else if (submitter && submitter.name === 'values[save]')
@@ -1122,7 +1120,7 @@ $(function ()
 					);
 					setTimeout(function ()
 					{
-						window.location.href = phpgwEnsureServerPrefix(indexUrl);
+						window.location.href = indexUrl;
 					}, 1200);
 				}
 				else

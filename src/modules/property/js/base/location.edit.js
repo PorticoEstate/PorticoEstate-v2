@@ -377,18 +377,21 @@ function createLocationNavigationClient(form)
 		{
 			var typeId = query.type_id || '';
 			var lookupTenant = query.lookup_tenant || '';
-			var target = 'index.php?menuaction=property.uilocation.edit&location_code=' + encodeURIComponent(locationCode);
+			var params = {
+				menuaction: 'property.uilocation.edit',
+				location_code: encodeURIComponent(locationCode)
+			};
 
 			if (typeId)
 			{
-				target += '&type_id=' + encodeURIComponent(typeId);
+				params.type_id = encodeURIComponent(typeId);
 			}
 			if (lookupTenant)
 			{
-				target += '&lookup_tenant=' + encodeURIComponent(lookupTenant);
+				params.lookup_tenant = encodeURIComponent(lookupTenant);
 			}
 
-			return target;
+			return phpGWLink('index.php', params);
 		}
 	};
 }
@@ -409,7 +412,6 @@ function createLocationApiClient(form)
 	return {
 		buildSaveRequest: function ()
 		{
-			var queryParts = [];
 			var originalLocationCode = (
 				query.location_code
 				|| getLocationFieldValue(form, 'input[name="location_code"]')
@@ -436,21 +438,17 @@ function createLocationApiClient(form)
 			var hasExistingLocation = (!isNaN(routeLocationId) && routeLocationId > 0) || !!originalLocationCode;
 			var isUpdate = hasExistingLocation && !!originalLocationCode;
 			var requestUrl = isUpdate
-				? '/property/location/' + encodeURIComponent(originalLocationCode)
-				: '/property/location';
+				? 'property/location/' + encodeURIComponent(originalLocationCode)
+				: 'property/location';
+			var oArgs = {};
 
 			if (window.__locationClickHistoryToken)
 			{
-				queryParts.push('click_history=' + encodeURIComponent(window.__locationClickHistoryToken));
-			}
-
-			if (queryParts.length)
-			{
-				requestUrl += '?' + queryParts.join('&');
+				oArgs.click_history = encodeURIComponent(window.__locationClickHistoryToken);
 			}
 
 			return {
-				url: phpgwEnsureServerPrefix(requestUrl),
+				url: phpGWLink(requestUrl, oArgs),
 				method: isUpdate ? 'PUT' : 'POST'
 			};
 		},
@@ -636,7 +634,7 @@ $(function ()
 			formData.set('location_code', dynamicLocationCode);
 		}
 
-		fetch(phpgwEnsureServerPrefix(restRequest.url), {
+		fetch(restRequest.url, {
 			method: restRequest.method,
 			headers: { 'Content-Type': 'application/json' },
 			credentials: 'same-origin',
@@ -691,7 +689,7 @@ $(function ()
 				var redirectUrl = buildLocationEditRedirectUrl(savedLocationCode, form);
 				setTimeout(function ()
 				{
-					window.location.href = phpgwEnsureServerPrefix(redirectUrl);
+					window.location.href = redirectUrl;
 				}, 700);
 			})
 			.catch(function (error)

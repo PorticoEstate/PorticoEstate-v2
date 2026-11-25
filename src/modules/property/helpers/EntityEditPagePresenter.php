@@ -379,7 +379,7 @@ class EntityEditPagePresenter
 		if (!isset($payload['get_files_java_url'])
 			&& isset($context['type'], $context['entity_id'], $context['cat_id'], $context['id']))
 		{
-			$payload['get_files_java_url'] = '/property/entity/' . urlencode($context['type'])
+			$payload['get_files_java_url'] = 'property/entity/' . urlencode($context['type'])
 				. '/' . (int) $context['entity_id']
 				. '/' . (int) $context['cat_id']
 				. '/' . (int) $context['id'] . '/files';
@@ -388,7 +388,7 @@ class EntityEditPagePresenter
 		if (!isset($payload['get_checklists_url'])
 			&& isset($context['type'], $context['entity_id'], $context['cat_id']))
 		{
-			$payload['get_checklists_url'] = '/property/entity/' . urlencode($context['type'])
+			$payload['get_checklists_url'] = 'property/entity/' . urlencode($context['type'])
 				. '/' . (int) $context['entity_id']
 				. '/' . (int) $context['cat_id'] . '/checklists';
 		}
@@ -396,7 +396,7 @@ class EntityEditPagePresenter
 		if (!isset($payload['get_cases_url'])
 			&& isset($context['type'], $context['entity_id'], $context['cat_id']))
 		{
-			$payload['get_cases_url'] = '/property/entity/' . urlencode($context['type'])
+			$payload['get_cases_url'] = 'property/entity/' . urlencode($context['type'])
 				. '/' . (int) $context['entity_id']
 				. '/' . (int) $context['cat_id'] . '/cases';
 		}
@@ -404,7 +404,7 @@ class EntityEditPagePresenter
 		if (!isset($payload['get_controls_url'])
 			&& isset($context['type'], $context['entity_id'], $context['cat_id']))
 		{
-			$payload['get_controls_url'] = '/property/entity/' . urlencode($context['type'])
+			$payload['get_controls_url'] = 'property/entity/' . urlencode($context['type'])
 				. '/' . (int) $context['entity_id']
 				. '/' . (int) $context['cat_id'] . '/controls';
 		}
@@ -412,7 +412,7 @@ class EntityEditPagePresenter
 		if (!isset($payload['get_cases_for_checklist_url'])
 			&& isset($context['type'], $context['entity_id'], $context['cat_id']))
 		{
-			$payload['get_cases_for_checklist_url'] = '/property/entity/' . urlencode($context['type'])
+			$payload['get_cases_for_checklist_url'] = 'property/entity/' . urlencode($context['type'])
 				. '/' . (int) $context['entity_id']
 				. '/' . (int) $context['cat_id'] . '/cases-for-checklist';
 		}
@@ -521,20 +521,20 @@ class EntityEditPagePresenter
 			'entity_group_name' => $input['entity_group_name'] ?? '',
 			'validator' => $input['validator'] ?? '',
 			'content_images' => $input['content_images'] ?? array(),
-			'get_files_java_url' => '/property/entity/' . urlencode($input['type'])
+			'get_files_java_url' => 'property/entity/' . urlencode($input['type'])
 				. '/' . (int) $input['entity_id']
 				. '/' . (int) $input['cat_id']
 				. '/' . (int) $input['id'] . '/files',
-			'get_checklists_url' => '/property/entity/' . urlencode($input['type'])
+			'get_checklists_url' => 'property/entity/' . urlencode($input['type'])
 				. '/' . (int) $input['entity_id']
 				. '/' . (int) $input['cat_id'] . '/checklists',
-			'get_cases_url' => '/property/entity/' . urlencode($input['type'])
+			'get_cases_url' => 'property/entity/' . urlencode($input['type'])
 				. '/' . (int) $input['entity_id']
 				. '/' . (int) $input['cat_id'] . '/cases',
-			'get_controls_url' => '/property/entity/' . urlencode($input['type'])
+			'get_controls_url' => 'property/entity/' . urlencode($input['type'])
 				. '/' . (int) $input['entity_id']
 				. '/' . (int) $input['cat_id'] . '/controls',
-			'get_cases_for_checklist_url' => '/property/entity/' . urlencode($input['type'])
+			'get_cases_for_checklist_url' => 'property/entity/' . urlencode($input['type'])
 				. '/' . (int) $input['entity_id']
 				. '/' . (int) $input['cat_id'] . '/cases-for-checklist',
 		);

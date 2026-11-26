@@ -1339,3 +1339,5 @@ hospitality_dialog_time_none	bookingfrontend	nn	Ingen tider tilgjengeleg denne d
 checkout_steps_aria	bookingfrontend	nn	Steg %1 av %2
 checkout_step_send	bookingfrontend	nn	Send
 no_longer_on_menu	bookingfrontend	nn	ikkje lenger på menyen
+overlap_conflict_at	bookingfrontend	nn	Første kollisjon: {{res}}, {{when}}.
+overlap_multi_day_hint	bookingfrontend	nn	Tida du har valt går samanhengande frå {{from}} til {{to}}. Ønskjer du same tid kvar veke, vel du sluttid same dag som starttid, slår på «{{toggle}}» og set «{{until}}» til {{last}}.

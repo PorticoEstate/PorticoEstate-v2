@@ -15,7 +15,7 @@ import {
 } from '@digdir/designsystemet-react';
 import {DateTime} from 'luxon';
 import MobileDialog from '@/components/dialog/mobile-dialog';
-import {useTrans} from '@/app/i18n/ClientTranslationProvider';
+import {useClientTranslation, useTrans} from '@/app/i18n/ClientTranslationProvider';
 import {useBuilding, useBuildingResources} from '@/service/api/building';
 import {isWithinBusinessHours as isWithinBusinessHoursShared} from '@/service/utils/business-hours';
 import {FCallTempEvent} from '@/components/building-calendar/building-calendar.types';
@@ -49,6 +49,7 @@ import {isDevMode, phpGWLink} from "@/service/util";
 import {IEvent} from "@/service/pecalendar.types";
 import {isApplicationDeactivated} from "@/service/utils/deactivation-utils";
 import {ResourceUsesTimeSlots, ResourceIsDirectBooking} from "@/components/building-calendar/util/calender-helpers";
+import {findFirstFormConflict, joinNames, spansMultipleDays} from "@/components/building-calendar/util/form-overlap";
 import {Trans} from "react-i18next";
 import ApplicationLoginLink from "@/components/building-calendar/modules/event/edit/application-login-link";
 import {useToast} from "@/components/toast/toast-context";
@@ -249,6 +250,7 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 	const [hasExternalChanges, setHasExternalChanges] = useState(false);
 	const {building, buildingResources, audience, agegroups, noAudiences, noAgeGroups, partials, existingApplication} = props;
 	const t = useTrans();
+	const {i18n} = useClientTranslation();
 	// A form error is either a translation key (schema message) or text already translated by setError().
 	// t() of the latter shows "TRANSLATION MISSING FOR ..." on its first render, so translate keys only.
 	const translateIfKey = (message?: string) => message?.startsWith('bookingfrontend.') ? t(message) : message;
@@ -943,51 +945,80 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 		return DateTime.fromJSDate(date).toFormat('yyyy-MM-dd\'T\'HH:mm');
 	};
 
-	// Live overlap detection - reactively checks for conflicts whenever dates, resources, or events change
-	const hasOverlapConflict = useMemo(() => {
-		if (!events || !startTime || !endTime || !selectedResources?.length || !buildingResources) return false;
+	// Live overlap detection - reactively checks for conflicts whenever dates, resources, or events change.
+	// Returns the first colliding booking so the message can say what collides and when (#1573).
+	const overlapConflict = useMemo(() => {
+		if (!events || !startTime || !endTime || !selectedResources?.length || !buildingResources) return null;
 
-		const selectStart = DateTime.fromJSDate(startTime);
-		const selectEnd = DateTime.fromJSDate(endTime);
-
-		if (selectStart < DateTime.now()) return false;
+		if (DateTime.fromJSDate(startTime) < DateTime.now()) return null;
 
 		const selectedResourceIds = selectedResources.map(Number);
 
 		// Only check resources with deny_application_if_booked flag
-		const resourcesWithDenyFlag = buildingResources
-			.filter(res => selectedResourceIds.includes(res.id) && res.deny_application_if_booked === 1);
+		const denyResourceIds = buildingResources
+			.filter(res => selectedResourceIds.includes(res.id) && res.deny_application_if_booked === 1)
+			.map(res => res.id);
 
-		if (resourcesWithDenyFlag.length === 0) return false;
-
-		const denyResourceIds = resourcesWithDenyFlag.map(res => res.id);
-
-		// Get events that use any of the deny-flagged resources
-		const relevantEvents = events.filter(event => {
-			if (existingApplication && existingApplication.id === event.id) return false;
-			return event.resources.some(res => denyResourceIds.includes(res.id));
-		});
-
-		return relevantEvents.some(event => {
-			const eventStart = DateTime.fromISO(event.from_);
-			const eventEnd = DateTime.fromISO(event.to_);
-			return !(selectEnd <= eventStart || selectStart >= eventEnd);
-		});
+		return findFirstFormConflict(
+			events,
+			startTime.getTime(),
+			endTime.getTime(),
+			denyResourceIds,
+			existingApplication?.id
+		);
 	}, [events, startTime, endTime, selectedResources, buildingResources, existingApplication]);
+	const hasOverlapConflict = overlapConflict !== null;
+
+	// «Ressurs-overlapping oppdaget» alone does not tell the person where to look. Name the first
+	// colliding booking, and when the chosen time runs over several days without repeat, point to
+	// the repeat switch: that is the usual way to end up here (a weekly course entered as one
+	// non-stop booking from the first to the last week).
+	const overlapMessage = useMemo(() => {
+		if (!overlapConflict || !startTime || !endTime) return null;
+
+		const dateTime = (d: DateTime) => d.toFormat('dd.MM.yyyy HH:mm');
+		const parts = [t('bookingfrontend.resource_overlap_detected')];
+
+		const conflictStart = DateTime.fromISO(overlapConflict.from_);
+		const conflictEnd = DateTime.fromISO(overlapConflict.to_);
+		if (conflictStart.isValid && conflictEnd.isValid) {
+			const when = conflictStart.hasSame(conflictEnd, 'day')
+				? `${dateTime(conflictStart)}–${conflictEnd.toFormat('HH:mm')}`
+				: `${dateTime(conflictStart)}–${dateTime(conflictEnd)}`;
+			const selectedResourceIds = (selectedResources || []).map(Number);
+			const resourceNames = (buildingResources || [])
+				.filter(res => selectedResourceIds.includes(res.id)
+					&& res.deny_application_if_booked === 1
+					&& overlapConflict.resources.some(conflictRes => conflictRes.id === res.id))
+				.map(res => res.name);
+			parts.push(t('bookingfrontend.overlap_conflict_at', {res: joinNames(resourceNames, i18n?.language), when}));
+		}
+
+		if (!isRecurring && spansMultipleDays(startTime, endTime)) {
+			parts.push(t('bookingfrontend.overlap_multi_day_hint', {
+				from: dateTime(DateTime.fromJSDate(startTime)),
+				to: dateTime(DateTime.fromJSDate(endTime)),
+				toggle: t('bookingfrontend.make_recurring'),
+				until: t('bookingfrontend.repeat_until_date'),
+				last: DateTime.fromJSDate(endTime).toFormat('dd.MM.yyyy'),
+			}));
+		}
+		return parts.join(' ');
+	}, [overlapConflict, startTime, endTime, isRecurring, selectedResources, buildingResources, t, i18n?.language]);
 
 	// Live-update the resources error when overlap status changes
 	useEffect(() => {
-		if (hasOverlapConflict) {
-			setError('resources', {
-				type: 'manual',
-				message: t('bookingfrontend.resource_overlap_detected')
-			});
-		} else {
-			if (errors.resources?.message === t('bookingfrontend.resource_overlap_detected')) {
-				clearErrors('resources');
+		if (overlapMessage) {
+			if (errors.resources?.message !== overlapMessage) {
+				setError('resources', {
+					type: 'overlap',
+					message: overlapMessage
+				});
 			}
+		} else if (errors.resources?.type === 'overlap') {
+			clearErrors('resources');
 		}
-	}, [hasOverlapConflict, setError, clearErrors, t, errors.resources?.message]);
+	}, [overlapMessage, setError, clearErrors, errors.resources?.message, errors.resources?.type]);
 
 	const onSubmit = async (data: ApplicationFormData) => {
 		if (!building || !buildingResources) {
@@ -1040,8 +1071,8 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 		// Block submission if overlap detected on deny_application_if_booked resources
 		if (hasOverlapConflict) {
 			setError('resources', {
-				type: 'manual',
-				message: t('bookingfrontend.resource_overlap_detected')
+				type: 'overlap',
+				message: overlapMessage || t('bookingfrontend.resource_overlap_detected')
 			});
 			dateSectionRef.current?.scrollIntoView({behavior: 'smooth', block: 'start'});
 			return;

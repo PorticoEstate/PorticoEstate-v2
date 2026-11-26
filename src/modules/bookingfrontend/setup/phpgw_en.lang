@@ -1339,3 +1339,5 @@ hospitality_dialog_time_none	bookingfrontend	en	No times available this day
 checkout_steps_aria	bookingfrontend	en	Step %1 of %2
 checkout_step_send	bookingfrontend	en	Send
 no_longer_on_menu	bookingfrontend	en	no longer on the menu
+overlap_conflict_at	bookingfrontend	en	First conflict: {{res}}, {{when}}.
+overlap_multi_day_hint	bookingfrontend	en	The time you chose runs non-stop from {{from}} to {{to}}. For the same time every week, pick an end time on the same day as the start, turn on “{{toggle}}” and set “{{until}}” to {{last}}.

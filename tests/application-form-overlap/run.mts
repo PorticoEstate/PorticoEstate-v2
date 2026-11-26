@@ -18,7 +18,8 @@
  *   2. the intended booking, one Thursday 19-21, does not collide; edges that only touch do not collide;
  *   3. only deny-flagged resources count; an excluded id (the application being edited) does not count; an event
  *      with unreadable times still blocks, as before the change, but a readable collision is named first; resource
- *      names are joined with «og»/«and» in the UI language;
+ *      names are joined with «og»/«and» in the UI language, Nynorsk also in a browser that has no Nynorsk list data
+ *      (Chromium: Node's ICU has it, so the rows on the real Intl.ListFormat cannot see that, see 3d);
  *   4. spansMultipleDays: the five-week span does, a Thursday evening does not, an evening ending at midnight does
  *      not, an overnight booking does;
  *   5. the wiring, by source pattern: the form uses the helper, names the collision with overlap_conflict_at,
@@ -101,6 +102,41 @@ try {
 	eq('bokmål list uses «og»', joinNames(['Møteplassen', 'Pølsesvingen', 'Spikeren'], 'no'), 'Møteplassen, Pølsesvingen og Spikeren');
 	eq('nynorsk list uses «og»', joinNames(['Møteplassen', 'Spikeren'], 'nn'), 'Møteplassen og Spikeren');
 	eq('english list uses «and»', joinNames(['Møteplassen', 'Pølsesvingen', 'Spikeren'], 'en'), 'Møteplassen, Pølsesvingen, and Spikeren');
+
+	// 3d. a browser with no Nynorsk list data. Chromium has none: in Chrome 158
+	// Intl.ListFormat.supportedLocalesOf(['nn', 'nb', 'no', 'en']) is ['nb', 'no', 'en'], so a bare 'nn' falls through to
+	// the browser's default locale and an en-US Chrome printed «Møteplassen, Pølsesvingen, and Spikeren» in a Nynorsk
+	// sentence. Node's ICU has 'nn', which is why the rows above cannot see it. The stand-in below puts that browser on top
+	// of the real ICU data: a locale without data is dropped, and when none is left the browser default (en-US) answers.
+	const RealListFormat = Intl.ListFormat;
+	const asked: Array<string | string[] | undefined> = [];
+	class ChromiumListFormat {
+		constructor(locales?: string | string[], options?: Intl.ListFormatOptions) {
+			asked.push(locales);
+			const wanted = typeof locales === 'string' ? [locales] : (locales ?? []);
+			const withData = wanted.filter(tag => !/^nn(-|$)/i.test(tag));
+			return new RealListFormat(withData.length > 0 ? withData : 'en-US', options);
+		}
+	}
+	const three = ['Møteplassen', 'Pølsesvingen', 'Spikeren'];
+	const installListFormat = (impl: typeof Intl.ListFormat): void => { (Intl as {ListFormat: typeof Intl.ListFormat}).ListFormat = impl; };
+	installListFormat(ChromiumListFormat as unknown as typeof Intl.ListFormat);
+	try {
+		// controls: the stand-in can fail the way Chrome does, and can succeed the way Chrome does with a fallback
+		eq('control: the Chromium stand-in answers a bare «nn» in English', new Intl.ListFormat('nn', {style: 'long', type: 'conjunction'}).format(three), 'Møteplassen, Pølsesvingen, and Spikeren');
+		eq('control: the Chromium stand-in answers [«nn», «nb»] with «og»', new Intl.ListFormat(['nn', 'nb'], {style: 'long', type: 'conjunction'}).format(three), 'Møteplassen, Pølsesvingen og Spikeren');
+
+		asked.length = 0;
+		eq('no Nynorsk list data: nynorsk list uses «og»', joinNames(three, 'nn'), 'Møteplassen, Pølsesvingen og Spikeren');
+		const nynorskAsked = asked.flat();
+		check('no Nynorsk list data: «nn» is asked for with «nb» after it', nynorskAsked.includes('nn') && nynorskAsked.indexOf('nb') > nynorskAsked.indexOf('nn'), JSON.stringify(asked));
+		eq('no Nynorsk list data: two nynorsk names use «og»', joinNames(['Møteplassen', 'Spikeren'], 'nn'), 'Møteplassen og Spikeren');
+		eq('no Nynorsk list data: bokmål list uses «og»', joinNames(three, 'no'), 'Møteplassen, Pølsesvingen og Spikeren');
+		eq('no Nynorsk list data: english list uses «and»', joinNames(three, 'en'), 'Møteplassen, Pølsesvingen, and Spikeren');
+		eq('no Nynorsk list data: an unset language falls back to bokmål «og»', joinNames(three, undefined), 'Møteplassen, Pølsesvingen og Spikeren');
+	} finally {
+		installListFormat(RealListFormat);
+	}
 
 	// 4. spansMultipleDays
 	eq('Thursday 19-21 is one day', spansMultipleDays(at('2027-01-21T19:00:00+01:00'), at('2027-01-21T21:00:00+01:00')), false);

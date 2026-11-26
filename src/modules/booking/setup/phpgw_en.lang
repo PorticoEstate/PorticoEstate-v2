@@ -1439,3 +1439,5 @@ opening_hours_unavailable	booking	en	Could not load the opening hours – all ti
 hospitality_order_amount_too_large	booking	en	The amount for one of the lines is too large.
 hospitality_order_total_too_large	booking	en	The order total is too large.
 no_results	booking	en	No results
+allocations generated from season %1 (%2 - %3)	booking	en	Allocations generated from season %1 (%2 - %3)
+application generated from season %1 by %2	booking	en	Application generated from season %1 by %2

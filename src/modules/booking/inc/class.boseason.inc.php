@@ -240,8 +240,10 @@
 					if ($write)
 					{
 						$this->so->transaction_begin();
-						foreach ($valid as $alloc)
+						$application_ids = $this->add_applications_for_allocations($season, $valid);
+						foreach ($valid as &$alloc)
 						{
+							$alloc['application_id'] = $application_ids[$alloc['organization_id']] ?? null;
 							$receipt = 	$this->bo_allocation->add($alloc);
 							$alloc['id'] = $receipt['id'];
 
@@ -261,12 +263,99 @@
 								$sopurchase_order->add_purchase_order($purchase_order);
 							}
 						}
+						unset($alloc);
 						$this->so->transaction_commit();
 					}
 					return array('valid' => $valid, 'invalid' => $invalid);
 				}
 			}
 			while (true);
+		}
+
+		/**
+		 * Create one ACCEPTED application per organization covering all its allocations
+		 *
+		 * @param array $season
+		 * @param array $allocations
+		 * @return array organization_id => application_id
+		 */
+		protected function add_applications_for_allocations( array $season, array $allocations )
+		{
+			$grouped = array();
+			foreach ($allocations as $alloc)
+			{
+				$grouped[$alloc['organization_id']][] = $alloc;
+			}
+
+			$so_application = CreateObject('booking.soapplication');
+			$so_organization = CreateObject('booking.soorganization');
+			$application_ids = array();
+			$account_id = $this->current_account_id();
+			$account_fullname = booking_account_helper::current_account_fullname();
+
+			foreach ($grouped as $organization_id => $org_allocations)
+			{
+				$organization = $so_organization->read_single($organization_id);
+				$contact = !empty($organization['contacts'][0]) ? $organization['contacts'][0] : array();
+
+				$dates = array();
+				$resources = array();
+				foreach ($org_allocations as $alloc)
+				{
+					$dates["{$alloc['from_']}_{$alloc['to_']}"] = array('from_' => $alloc['from_'], 'to_' => $alloc['to_']);
+					foreach ((array)$alloc['resources'] as $resource_id)
+					{
+						$resources[(int)$resource_id] = (int)$resource_id;
+					}
+				}
+
+				$application = array(
+					'active'						 => '1',
+					'display_in_dashboard'			 => 0,
+					'type'							 => 'application',
+					'status'						 => 'ACCEPTED',
+					'secret'						 => bin2hex(random_bytes(16)),
+					'created'						 => 'now',
+					'modified'						 => 'now',
+					'owner_id'						 => $account_id,
+					'case_officer_id'				 => $account_id,
+					'building_id'					 => $season['building_id'],
+					'building_name'					 => $season['building_name'],
+					'activity_id'					 => $organization['activity_id'],
+					'name'							 => $season['name'],
+					'description'					 => lang('allocations generated from season %1 (%2 - %3)', $season['name'], $season['from_'], $season['to_']),
+					'organizer'						 => $organization['name'],
+					'contact_name'					 => !empty($contact['name']) ? $contact['name'] : $organization['name'],
+					'contact_email'					 => !empty($contact['email']) ? $contact['email'] : (string)$organization['email'],
+					'contact_phone'					 => !empty($contact['phone']) ? $contact['phone'] : (string)$organization['phone'],
+					'responsible_street'			 => (string)$organization['street'],
+					'responsible_zip_code'			 => (string)$organization['zip_code'],
+					'responsible_city'				 => (string)$organization['city'],
+					'customer_identifier_type'		 => 'organization_number',
+					'customer_organization_number'	 => $organization['organization_number'],
+					'customer_organization_id'		 => $organization['id'],
+					'customer_organization_name'	 => $organization['name'],
+					'dates'							 => array_values($dates),
+					'resources'						 => array_values($resources),
+					'comments'						 => array(
+						array(
+							'time'			 => 'now',
+							'author'		 => $account_fullname,
+							'comment'		 => lang('application generated from season %1 by %2', $season['name'], $account_fullname),
+							'type'			 => 'comment',
+							'element_type'	 => null,
+							'element_id'	 => null
+						)
+					),
+				);
+
+				$receipt = $so_application->add($application);
+				$so_application->update_id_string($receipt['id']);
+				$so_application->update_from_field((int)$receipt['id']);
+				$application_ids[$organization_id] = $receipt['id'];
+			}
+
+			return $application_ids;
 		}
 
 		function compile_purchase_order( $alloc )

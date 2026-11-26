@@ -1440,3 +1440,5 @@ opening_hours_unavailable	booking	no	Kunne ikke hente åpningstidene – alle ti
 hospitality_order_amount_too_large	booking	no	Beløpet for én av linjene er for stort.
 hospitality_order_total_too_large	booking	no	Totalbeløpet for bestillingen er for stort.
 no_results	booking	no	Ingen treff
+allocations generated from season %1 (%2 - %3)	booking	no	Tildelinger generert fra sesong %1 (%2 - %3)
+application generated from season %1 by %2	booking	no	Søknad generert fra sesong %1 av %2

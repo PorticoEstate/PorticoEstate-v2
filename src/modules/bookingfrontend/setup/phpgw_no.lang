@@ -1323,3 +1323,5 @@ cancellation_deadline_passed_orders	bookingfrontend	no	Gjelder bevertning:
 cancellation_deadline_info_order	bookingfrontend	no	Bevertning %1 kan avbestilles innen %2
 catering_amount_too_large	bookingfrontend	no	Beløpet for én av linjene er for stort.
 catering_order_total_too_large	bookingfrontend	no	Totalbeløpet for bestillingen er for stort.
+overlap_conflict_at	bookingfrontend	no	Første kollisjon: {{res}}, {{when}}.
+overlap_multi_day_hint	bookingfrontend	no	Tiden du har valgt går sammenhengende fra {{from}} til {{to}}. Ønsker du samme tid hver uke, velger du sluttid samme dag som starttid, slår på «{{toggle}}» og setter «{{until}}» til {{last}}.

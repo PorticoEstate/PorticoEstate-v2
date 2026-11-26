@@ -1322,3 +1322,5 @@ cancellation_deadline_passed_orders	bookingfrontend	en	Applies to:
 cancellation_deadline_info_order	bookingfrontend	en	The order on %1 can be cancelled until %2
 catering_amount_too_large	bookingfrontend	en	The amount for one of the lines is too large.
 catering_order_total_too_large	bookingfrontend	en	The order total is too large.
+overlap_conflict_at	bookingfrontend	en	First conflict: {{res}}, {{when}}.
+overlap_multi_day_hint	bookingfrontend	en	The time you chose runs non-stop from {{from}} to {{to}}. For the same time every week, pick an end time on the same day as the start, turn on “{{toggle}}” and set “{{until}}” to {{last}}.

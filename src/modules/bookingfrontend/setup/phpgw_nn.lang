@@ -1322,3 +1322,5 @@ cancellation_deadline_passed_orders	bookingfrontend	nn	Gjeld bevertning:
 cancellation_deadline_info_order	bookingfrontend	nn	Bevertning %1 kan avbestillast innan %2
 catering_amount_too_large	bookingfrontend	nn	Beløpet for éi av linjene er for stort.
 catering_order_total_too_large	bookingfrontend	nn	Totalbeløpet for bestillinga er for stort.
+overlap_conflict_at	bookingfrontend	nn	Første kollisjon: {{res}}, {{when}}.
+overlap_multi_day_hint	bookingfrontend	nn	Tida du har valt går samanhengande frå {{from}} til {{to}}. Ønskjer du same tid kvar veke, vel du sluttid same dag som starttid, slår på «{{toggle}}» og set «{{until}}» til {{last}}.

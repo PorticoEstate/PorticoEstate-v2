@@ -38,6 +38,7 @@ import {useBuilding, useBuildingResources} from "@/service/api/building";
 import { useToast } from "@/components/toast/toast-context";
 import {isApplicationDeactivated} from "@/service/utils/deactivation-utils";
 import {closingAxisLabel, SLOT_LABEL_FORMAT} from "@/components/building-calendar/util/closing-axis-label";
+import {findSelectionOverlap} from "@/components/building-calendar/util/selection-overlap";
 
 interface FullCalendarViewProps {
 	calendarRef: React.MutableRefObject<FullCalendar | null>,
@@ -784,61 +785,56 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 		const resourcesWithDenyFlag = [...new Set(resourcesWithDenyFlagArr?.map(a => a.id))];
 		const hasResourceWithDenyFlag = resourcesWithDenyFlag && resourcesWithDenyFlag.length > 0;
 
-		// Check for overlap with each event's actual times
-		let overlapEventName = '';
+		// Check the selection against each event's actual times. A booking on a resource that does not
+		// allow overlaps is a real overlap; closed time (outside opening hours) is not, and must not be
+		// reported as one, since the calendar shows no booking there (#1573).
+		const overlap = findSelectionOverlap(
+			relevantEvents
+				.filter(event => event.extendedProps.actualStart || event.start)
+				.map(event => ({
+					start: (event.extendedProps.actualStart || event.start!).getTime(),
+					end: (event.extendedProps.actualEnd || event.end || event.extendedProps.actualStart || event.start!).getTime(),
+					type: event.extendedProps.type,
+					closed: !!event.extendedProps.closed,
+					title: event.title,
+				})),
+			selectStart.toMillis(),
+			selectEnd.toMillis(),
+			hasResourceWithDenyFlag
+		);
 
-		const hasNoOverlap = !relevantEvents.some(event => {
-			// Get actual start and end times from extendedProps
-			const eventStart = DateTime.fromJSDate(event.extendedProps.actualStart || event.start!);
-			const eventEnd = DateTime.fromJSDate(event.extendedProps.actualEnd || event.end!);
+		// Show a toast notification ONLY on final user selection
+		if (overlap.kind === 'closed' && span.end && span.start) {
+			addToast({
+				type: 'info',
+				text: t('bookingfrontend.outside_opening_hours') || 'Outside opening hours',
+				autoHide: true,
+				messageId: 'outside_business_hours'
+			});
+		}
 
-			// Check if the selection overlaps with this event
-			const overlap = !(selectEnd <= eventStart || selectStart >= eventEnd);
-
-			// If there's a resource with deny_application_if_booked=1, block overlaps with booking, allocation, or event
-			if (overlap && hasResourceWithDenyFlag &&
-				(event.extendedProps.type === 'booking' ||
-					event.extendedProps.type === 'allocation' ||
-					event.extendedProps.type === 'event')) {
-				// Store the overlapping event name if available
-				if (event.title) {
-					overlapEventName = event.title;
-				}
-				return true;
-			}
-
-			// If there's no deny flag, use the standard rules (only block closed)
-			return !!(overlap && (event.extendedProps.closed));
-
-
-		});
-
-		// If we have an overlap, show a toast notification ONLY on final user selection
-		if (!hasNoOverlap && span.end && span.start) { // This indicates a complete selection
-			// Include the overlapping event name in the message if available
+		if (overlap.kind === 'booked' && span.end && span.start) {
 			let message = <span>{t('bookingfrontend.resource_overlap_detected')}</span>;
 
-
 			// Create a unique messageId based on the overlapping resources and event
-			const resourceNames = resourcesWithDenyFlag?.map(resource => {
+			const resourceNames = resourcesWithDenyFlag.map(resource => {
 				const res = resources?.find(r => r.id === resource);
 				return res?.name || resource.toString();
 			});
-			if (resourceNames) {
+			if (resourceNames.length > 0) {
 				message = <span>{message}<br />{t('bookingfrontend.no_overlap', {res: resourceNames.join(', ')})}</span>
 			}
-			const messageId = `overlap_${resourceNames.join('_')}_${overlapEventName || 'unknown'}`;
+			const messageId = `overlap_${resourceNames.join('_')}_${overlap.title || 'unknown'}`;
 
 			addToast({
 				type: 'info',
-				// title: t('bookingfrontend.booking_conflict'),
 				text: message,
 				autoHide: true,
 				messageId: messageId
 			});
 		}
 
-		return hasNoOverlap;
+		return overlap.kind === null;
 	}, [enabledResources, events, resources, addToast, t, buildingId, seasons, isDateCoveredBySeason]);
 
 	const handleEventResize = useCallback((resizeInfo: EventResizeDoneArg | EventDropArg) => {

@@ -1442,3 +1442,5 @@ hospitality_order_total_too_large	booking	no	Totalbeløpet for bestillingen er f
 no_results	booking	no	Ingen treff
 allocations generated from season %1 (%2 - %3)	booking	no	Tildelinger generert fra sesong %1 (%2 - %3)
 application generated from season %1 by %2	booking	no	Søknad generert fra sesong %1 av %2
+total including hospitality (incl. vat)	booking	no	Totalt inkludert bevertning (inkl. mva.)
+unable to calculate hospitality cost	booking	no	Kan ikke beregne kostnaden for bevertning.

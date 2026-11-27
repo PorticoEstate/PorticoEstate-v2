@@ -7,6 +7,8 @@ use App\modules\phpgwapi\services\Cache;
 use App\Database\Db;
 use App\modules\booking\helpers\CommentParts;
 use App\modules\booking\helpers\EventFormFallback;
+use App\modules\booking\repositories\HospitalityOrderRepository;
+use App\modules\booking\services\HospitalityOrderDiff;
 
 phpgw::import_class('booking.uicommon');
 
@@ -1265,6 +1267,28 @@ class booking_uievent extends booking_uicommon
 			list($event, $errors) = $this->extract_and_validate($event);
 		}
 
+		$hospitality_cost_ore = 0;
+		if ($_SERVER['REQUEST_METHOD'] == 'POST' && !empty($config['activate_application_articles']) && !empty($event['application_id']))
+		{
+			$orders = (new HospitalityOrderRepository())->getOrdersWithLinesByApplication((int)$event['application_id']);
+			foreach ($orders as $order)
+			{
+				if ($order['status'] === 'cancelled')
+				{
+					continue;
+				}
+				foreach ($order['lines'] as $line)
+				{
+					if (!is_numeric($line['amount']) || !is_numeric($line['tax_percent']))
+					{
+						$errors['cost'] = lang('Unable to calculate hospitality cost');
+						break 2;
+					}
+					$hospitality_cost_ore += HospitalityOrderDiff::lineInclOre((float)$line['amount'], (float)$line['tax_percent']);
+				}
+			}
+		}
+
 		if ($event['description'])
 		{
 			$event['description'] =  html_entity_decode($event['description']);
@@ -1385,11 +1409,6 @@ class booking_uievent extends booking_uicommon
 			if ($_POST['cost'] != 0 and !$event['customer_organization_number'] and !$event['customer_ssn'])
 			{
 				$errors['invoice_data'] = lang('There is set a cost, but no invoice data is filled inn');
-			}
-
-			if ($_POST['cost'] != $_POST['cost_orig'])
-			{
-				$this->add_cost_history($event, Sanitizer::get_var('cost_comment'), Sanitizer::get_var('cost', 'float'));
 			}
 
 			if (!$errors['event'] and !$errors['resource_number'] and !$errors['organization_number'] and !$errors['invoice_data'] && !$errors['contact_name'] && !$errors['cost'])
@@ -1713,14 +1732,17 @@ class booking_uievent extends booking_uicommon
 					{
 						$purchase_order_id = $this->sopurchase_order->add_purchase_order($purchase_order);
 						$purchase_order_result =  $this->sopurchase_order->get_single_purchase_order($purchase_order_id);
-						if ($purchase_order_result['sum'] && $purchase_order_result['sum'] != $event['cost'])
+						if (isset($purchase_order_result['sum']))
 						{
-							$this->add_cost_history($event, lang('cost is set'), $purchase_order_result['sum']);
-							$event['cost'] = $purchase_order_result['sum'];
+							$event['cost'] = (float)$purchase_order_result['sum'] + $hospitality_cost_ore / 100;
 						}
 					}
 					/** END purchase order */
 
+					if ($event['cost'] != $_POST['cost_orig'])
+					{
+						$this->add_cost_history($event, Sanitizer::get_var('cost_comment'), $event['cost']);
+					}
 					$receipt = $this->bo->update($event);
 
 
@@ -1789,6 +1811,8 @@ class booking_uievent extends booking_uicommon
 				self::add_javascript('booking', 'base', 'purchase_order_edit.js');
 			}
 		}
+
+		self::add_javascript('booking', 'base', 'hospitality_order_show.js');
 
 		$event['resources_json'] = json_encode(array_map('intval', $event['resources']));
 		$event['application_link'] = self::link(array(

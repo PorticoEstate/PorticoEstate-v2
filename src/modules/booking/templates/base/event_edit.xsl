@@ -456,7 +456,15 @@
 								</input>
 							</div>
 							<div class="pure-control-group">
-								<label for="field_cost">
+								<label for="field_cost" id="field_cost_label">
+									<xsl:attribute name="data-cost-label"><xsl:value-of select="php:function('lang', 'Cost')"/></xsl:attribute>
+									<xsl:attribute name="data-hospitality-label">
+										<xsl:variable name="total_label" select="php:function('lang', 'Total including hospitality (incl. VAT)')"/>
+										<xsl:choose>
+											<xsl:when test="starts-with($total_label, '!')"><xsl:value-of select="php:function('lang', 'Cost')"/> + <xsl:value-of select="php:function('lang', 'hospitality_orders')"/> (<xsl:value-of select="php:function('lang', 'catering_log_incl_vat')"/>)</xsl:when>
+											<xsl:otherwise><xsl:value-of select="$total_label"/></xsl:otherwise>
+										</xsl:choose>
+									</xsl:attribute>
 									<xsl:value-of select="php:function('lang', 'Cost')" />
 								</label>
 								<input id="field_cost" name="cost" type="text" class="pure-u-1 pure-u-sm-1-2 pure-u-md-1">
@@ -643,15 +651,19 @@
 								<div id="articles_container" class="pure-custom" style="display:inline-block;"></div>
 							</div>
 							<div class="pure-control-group">
-								<div id="participant_container"/>
+								<label for="hospitality_orders_container">
+									<xsl:value-of select="php:function('lang', 'hospitality_orders')" />
+								</label>
+								<div id="hospitality_orders_container" class="pure-custom" style="display:inline-block;"></div>
 							</div>
 
 							<div class="heading">
-								<!--<legend>-->
 								<h3>
 									<xsl:value-of select="php:function('lang', 'participants')" />
 								</h3>
-								<!--</legend>-->
+								<div class="pure-control-group">
+									<div id="participant_container" />
+								</div>
 							</div>
 							<div class="pure-control-group">
 								<label for="field_sms_content">
@@ -771,10 +783,11 @@
 		var reservation_id = '<xsl:value-of select="event/id"/>';
 		var initialSelection = <xsl:value-of select="event/resources_json"/>;
 		var initialAudience = <xsl:value-of select="event/audience_json"/>;
+		var application_id = '<xsl:value-of select="event/application_id"/>';
 		$('#field_customer_identifier_type').attr("data-validation","customer_identifier").attr("data-validation-error-msg","<xsl:value-of select="php:function('lang', 'There is set a cost, but no invoice data is filled inn')" />");
 
 		var event_id = <xsl:value-of select="event/id"/>;
-		var lang = <xsl:value-of select="php:function('js_lang','Name', 'phone', 'email', 'Resource Type', 'quantity', 'from', 'to', 'send sms', 'article', 'Select', 'price', 'unit', 'tax', 'unit cost', 'quantity', 'Selected', 'Delete', 'Sum', 'tax code', 'percent', 'sms_send_failed')"/>;
+		var lang = <xsl:value-of select="php:function('js_lang','Name', 'phone', 'email', 'Resource Type', 'quantity', 'from', 'to', 'send sms', 'article', 'Select', 'price', 'unit', 'tax', 'unit cost', 'quantity', 'Selected', 'Delete', 'Sum', 'tax code', 'percent', 'sms_send_failed', 'Unable to calculate hospitality cost')"/>;
 
 
     <![CDATA[

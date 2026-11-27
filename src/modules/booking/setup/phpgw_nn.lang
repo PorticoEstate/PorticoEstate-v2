@@ -1418,3 +1418,5 @@ hospitality_order_total_too_large	booking	nn	Totalbeløpet for bestillinga er fo
 no_results	booking	nn	Ingen treff
 allocations generated from season %1 (%2 - %3)	booking	nn	Tildelingar generert frå sesong %1 (%2 - %3)
 application generated from season %1 by %2	booking	nn	Søknad generert frå sesong %1 av %2
+total including hospitality (incl. vat)	booking	nn	Totalt inkludert servering (inkl. mva.)
+unable to calculate hospitality cost	booking	nn	Kan ikkje berekne kostnaden for servering.

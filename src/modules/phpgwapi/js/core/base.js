@@ -406,8 +406,9 @@ document.addEventListener('DOMContentLoaded', function() {
 (function ()
 {
 	var unscrollableAncestors = '.pure-table-scroll, .dataTables_wrapper, .dt-container, .table-responsive, #submitbox';
+	var tableSelector = 'table.pure-table, table.table-responsive';
 
-	function wrapPureTable(table)
+	function wrapScrollableTable(table)
 	{
 		var parent = table.parentNode;
 		if (!parent || table.parentElement.closest(unscrollableAncestors))
@@ -429,21 +430,21 @@ document.addEventListener('DOMContentLoaded', function() {
 		wrapper.appendChild(table);
 	}
 
-	function wrapPureTables(root)
+	function wrapScrollableTables(root)
 	{
-		if (root.matches && root.matches('table.pure-table'))
+		if (root.matches && root.matches(tableSelector))
 		{
-			wrapPureTable(root);
+			wrapScrollableTable(root);
 		}
 		if (root.querySelectorAll)
 		{
-			root.querySelectorAll('table.pure-table').forEach(wrapPureTable);
+			root.querySelectorAll(tableSelector).forEach(wrapScrollableTable);
 		}
 	}
 
 	document.addEventListener('DOMContentLoaded', function ()
 	{
-		wrapPureTables(document.body);
+		wrapScrollableTables(document.body);
 		new MutationObserver(function (mutations)
 		{
 			mutations.forEach(function (mutation)
@@ -452,7 +453,7 @@ document.addEventListener('DOMContentLoaded', function() {
 				{
 					if (node.nodeType === Node.ELEMENT_NODE)
 					{
-						wrapPureTables(node);
+						wrapScrollableTables(node);
 					}
 				});
 			});

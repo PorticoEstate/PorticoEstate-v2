@@ -88,22 +88,27 @@ class booking_async_task_update_reservation_state extends booking_async_task
 					/**
 					 * For vipps kan det være flere krav, for etterfakturering vil det være ett
 					 */
+					$_reservation = $bo->read_single($reservation['id']);
+					$_cost = (float)$_reservation['cost'];
 					foreach ($orders as $order_id)
 					{
 						$this->add_payment($order_id);
 						$order = $this->sopurchase_order->get_single_purchase_order($order_id);
-						$_reservation = $bo->read_single($reservation['id']);
-
-						// An order with no lines returns no rows at all, so 'sum' is unset rather than
-						// zero: assigning it writes NULL to cost. Test the lines, not the sum - an
-						// order that genuinely totals zero is a real price and must still be written.
-						if ($this->activate_application_articles && !empty($order['lines']) && (float)$_reservation['cost'] != (float)$order['sum'])
-						{
-							$_reservation['cost'] = $order['sum'];
-							$this->add_cost_history($_reservation, 'update from order', $order['sum']);
-							$bo->update($_reservation);
-						}
+						
+						/*
+						 * TODO
+						 * Check if any is already paid or processed before adding to the cost.
+						 */
+						$_cost +=  (float)$order['sum'];
 					}
+
+					if($_cost != (float)$_reservation['cost'])
+					{
+						$this->add_cost_history($_reservation, 'update from order', $_cost);
+					}
+
+					$_reservation['cost'] = $_cost;
+					$bo->update($_reservation);
 				}
 
 				$bo->complete_expired($expired['results']);

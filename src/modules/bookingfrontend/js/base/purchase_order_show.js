@@ -177,6 +177,10 @@ function set_sum(xTable)
 	tableFooter.appendChild(tableFooterTr);
 	xTable.appendChild(tableFooter);
 
+	if (document.getElementById('hospitality_orders_container') && typeof update_event_cost === 'function')
+	{
+		update_event_cost();
+	}
 }
 
 

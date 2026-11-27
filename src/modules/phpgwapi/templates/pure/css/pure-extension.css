@@ -62,8 +62,15 @@ body > .content {
 	padding: 0 1rem;
 }
 
-/* Wrapped around inline .pure-table elements by phpgwapi/js/core/base.js. */
+/* Keep shrink-to-fit table containers within their available space. */
+:where(div:has(> .pure-table-scroll)) {
+	min-width: 0;
+	max-width: 100%;
+}
+
+/* Wrapped around inline tables by phpgwapi/js/core/base.js. */
 .pure-table-scroll {
+	min-width: 0;
 	max-width: 100%;
 	overflow-x: auto;
 	-webkit-overflow-scrolling: touch;

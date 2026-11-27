@@ -647,7 +647,7 @@ function add_to_bastet(element)
 
 function set_sum(xTable)
 {
-	var tableFooter = document.getElementById('tfoot');
+	var tableFooter = xTable.tFoot;
 	if (tableFooter)
 	{
 		tableFooter.parentNode.removeChild(tableFooter);
@@ -690,14 +690,20 @@ function set_sum(xTable)
 
 	tableFooterTrTd2.innerHTML = temp_total_sum.toFixed(2);
 
-	$('#field_cost').val(temp_total_sum.toFixed(2));
-
 	tableFooterTr.appendChild(tableFooterTrTd2);
 	tableFooterTr.appendChild(document.createElement('td'));
 
 	tableFooter.appendChild(tableFooterTr);
 	xTable.appendChild(tableFooter);
 
+	if (document.getElementById('hospitality_orders_container') && typeof update_event_cost === 'function')
+	{
+		update_event_cost();
+	}
+	else
+	{
+		$('#field_cost').val(temp_total_sum.toFixed(2));
+	}
 }
 
 function empty_from_bastet(element)
@@ -731,7 +737,7 @@ function empty_from_bastet(element)
 		}
 	}
 
-	$('#sum_price_table').html(temp_total_sum.toFixed(2));
+	$(xTableBody.parentNode).find('#sum_price_table').html(temp_total_sum.toFixed(2));
 
 	var xTable = element.parentNode.parentNode.parentNode.parentNode;
 

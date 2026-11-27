@@ -69,6 +69,7 @@ Located in `/src/modules/phpgwapi/templates/digdir/components/`:
 - `designsystemet-compat.css` - Bootstrap-to-Designsystemet compatibility layer
 - Standard Bootstrap CSS classes mapped to Designsystemet design tokens
 - Shared [configuration form styles](../pure/css/config.css) are loaded by the application shells and installer. Configuration templates use `class="pure-form config-form"` on their form; settings stack below 48em while nested control tables retain their layout.
+- Shared inline-table scrolling wraps Pure tables and tables marked `table-responsive`, including dynamically inserted tables. Existing responsive containers and DataTables retain their own scrolling.
 
 ## Usage
 

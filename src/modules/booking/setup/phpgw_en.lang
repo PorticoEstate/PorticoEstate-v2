@@ -1441,3 +1441,5 @@ hospitality_order_total_too_large	booking	en	The order total is too large.
 no_results	booking	en	No results
 allocations generated from season %1 (%2 - %3)	booking	en	Allocations generated from season %1 (%2 - %3)
 application generated from season %1 by %2	booking	en	Application generated from season %1 by %2
+total including hospitality (incl. vat)	booking	en	Total including hospitality (incl. VAT)
+unable to calculate hospitality cost	booking	en	Unable to calculate hospitality cost.

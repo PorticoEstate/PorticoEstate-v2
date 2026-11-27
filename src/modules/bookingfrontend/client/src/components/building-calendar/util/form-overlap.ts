@@ -62,11 +62,15 @@ export function findFirstFormConflict<T extends FormOverlapEvent>(
 
 /**
  * «A, B og C» in the form's language. The client uses 'no' for bokmål, which Intl calls 'nb'.
+ *
+ * 'nn' is asked for as ['nn', 'nb']: Chromium has no Nynorsk list data, so a bare 'nn' falls back to the
+ * browser's own default locale and an en-US browser prints «A, B, and C» in a Nynorsk sentence (measured in
+ * Chrome 158). Nynorsk and bokmål both write «og», so bokmål is the right fallback.
  */
 export function joinNames(names: string[], language: string | undefined): string {
-	const locale = language === 'no' ? 'nb' : (language || 'nb');
+	const locales = language === 'nn' ? ['nn', 'nb'] : [language === 'no' ? 'nb' : (language || 'nb')];
 	try {
-		return new Intl.ListFormat(locale, {style: 'long', type: 'conjunction'}).format(names);
+		return new Intl.ListFormat(locales, {style: 'long', type: 'conjunction'}).format(names);
 	} catch {
 		return names.join(', ');
 	}

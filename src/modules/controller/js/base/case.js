@@ -698,7 +698,7 @@ function addNewValueToRegulationReference(control_item_id, input_text, lang_new_
 	 * alertify.prompt(title, message, value, onok, oncancel);
 	 *
 	 */
-	alertify.prompt(input_text, lang_new_value, ''
+	var promptDialog = alertify.prompt(input_text, lang_new_value, ''
 		, function (evt, value)
 		{
 			var new_value = value;
@@ -742,4 +742,23 @@ function addNewValueToRegulationReference(control_item_id, input_text, lang_new_
 			alertify.error('Cancel')
 		});
 
+	var addReference = document.getElementById('add_reference_option');
+	var modal = addReference && addReference.closest('.modal.show');
+	if (modal)
+	{
+		var promptRoot = promptDialog.elements.root;
+		var originalParent = promptRoot.parentNode;
+		var previousOnClose = promptDialog.get('onclose');
+		modal.appendChild(promptRoot);
+		promptDialog.set('onclose', function ()
+		{
+			originalParent.appendChild(promptRoot);
+			promptDialog.set('onclose', previousOnClose || null);
+			if (typeof previousOnClose === 'function')
+			{
+				return previousOnClose.call(this);
+			}
+		});
+		promptRoot.querySelector('.ajs-input').focus();
+	}
 }
